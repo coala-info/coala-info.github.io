@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: "Coala"
-  text: "Convert CMD Tools into LLM Agents"
-  tagline: Leverage the Model Context Protocol (MCP) to bridge command-line tools and Large Language Models
+  text: "Command-line LLM-agent Adapter"
+  tagline: A standard-based framework for converting command-line tools into agentic toolsets
   image:
     src: /Coala.svg
     alt: Coala
@@ -18,46 +18,42 @@ hero:
       link: https://github.com/rworkflow/coala
 
 features:
-  - icon: 🔒
-    title: Local Data Handling
-    details: Run professional tools on local data securely, without uploading sensitive files to the cloud.
   - icon: 🔌
     title: Universal Integration
-    details: Easily convert any command-line tool into an MCP-based agent with minimal effort.
+    details: Convert any command-line tool into an MCP-compliant agentic toolset through a standards-based framework.
   - icon: 🌐
     title: CWL Ecosystem
-    details: Leverage the vast, open-source CWL community—especially strong in bioinformatics—for tool definitions.
-  - icon: 🤖
-    title: Natural Language Interface
-    details: Access advanced tools and workflows through natural language, lowering the barrier to entry.
-  - icon: 🐳
-    title: Containerized Execution
-    details: Tools run in isolated containers, ensuring reproducibility and avoiding dependency conflicts.
+    details: Leverage the vast, open-source CWL community for command-line tool definitions.
   - icon: ⚡
-    title: Flexible & Scalable
-    details: Works with any LLM or client that supports MCP, enabling vendor-agnostic, modular workflows.
+    title: Low Maintenance Burden
+    details: Treat tool definitions as data rather than code. No need to write custom Python wrappers for every individual tool.
+  - icon: 🐳
+    title: Reproducible by Design
+    details: Tools run in Docker containers, ensuring scientific reproducibility and preventing local dependency conflicts.
+  - icon: 🤖
+    title: Natural Language Interaction
+    details: Access command-line tools tools interactively through natural language queries.
+  - icon: 🔒
+    title: Local Data Handling
+    details: Run command-line tools on local data, without the need to upload sensitive files to the external servers.
 
 ---
 
 ## Overview
 
-Coala (local COmmAnd-line LLM-agent Adapter) is a Python package that converts any command-line tool into a Large Language Model (LLM) agent. This allows you to interact with the tool using natural language, making it easier to use and integrate with other applications.
+Coala (Command-line LLM-agent Adapter) is a standards-based framework that converts command-line tools into agentic toolsets by bridging the Model Context Protocol (MCP) and Common Workflow Language (CWL). Coala treats tool definitions as data rather than hard-coded logic, allowing Large Language Models (LLMs) to discover and execute reproducible analyses without the need to write custom wrappers for every individual tool.
 
-The framework works by converting CWL (Common Workflow Language) tool definitions into MCP-compatible agents that can be discovered and invoked by LLMs through natural language queries. Here's how it works: you create an MCP server instance using `mcp_api`, register your domain-specific tools by providing their CWL definitions via `add_tool()`, and then start the server. The MCP server exposes these tools as discoverable agents that any MCP-compatible client (like Cursor) can query and invoke.
+- MCP acts as a "USB-C port", standardizing how LLMs connect to tools and data, regardless of the underlying infrastructure or vendor.
+- CWL acts as the "Blueprint," providing an open standard for describing command-line tools with validated schemas and containerized environments.
 
-When an LLM needs to use a tool, it queries the MCP server for available tools, selects the appropriate one, and invokes it with the necessary parameters. The tool executes within a containerized environment (as specified in the CWL), processes the request, and returns results back through the MCP protocol to the LLM, which then presents the answer to the user in natural language.
 
 ## How It Works
 
-Coala leverages the Model Context Protocol (MCP) to bridge command-line tools and Large Language Models (LLMs). MCP acts as a "USB-C port" for AI applications, standardizing how LLMs connect to tools and data, regardless of the underlying infrastructure or vendor.
+The Coala framework, implemented in a Python package, operates on a three-tier architecture to translate natural-language queries into reproducible tool execution.
 
-### Infrastructure
+- **Client Layer**: Any MCP-compliant client application (e.g., Claude Desktop, Cursor, or custom interfaces) that utilizes LLMs (such as Gemini, GPT-5, or Claude) to enable natural language interaction.
+- **Bridge Layer**: A local, generic MCP server that acts as a schema translator. Unlike standard MCP servers that require custom Python wrappers for each tool, the bridge layer automatically parses CWL definitions and exposes the CWL-described command-line tools as executable MCP utilities.
+- **Execution Layer**: A standard CWL runner that executes the underlying binaries within containerized environments (Docker). This ensures that analyses are reproducible and isolated from the host system's dependencies.
 
-The core infrastructure consists of:
-
-- **MCP Server**: Hosted locally using `mcp_api`, it exposes tool agents over the MCP protocol.
-- **Tool Agents**: Any CWL-described command-line tool can be wrapped and registered as an agent using `add_tool`.
-- **MCP Client**: Typically running alongside an LLM, it discovers available tool agents, queries their capabilities, and invokes them as needed.
-
-When an LLM decides to use a tool, it sends the required parameters to the MCP client, which then calls the appropriate agent on the MCP server. The agent pulls the necessary container and executes the tool with the provided parameters, returning results to the LLM.
+The user sends a natural language query to the MCP Client (e.g., Claude Desktop). The Client retrieves the tool list from the MCP server. The LLM selects the appropriate tool and sends a structured request for the analysis. Coala translates this selection into a CWL job and executes it within a container (Docker), ensuring reproducibility. The execution logs and results are returned to the LLM, which interprets them and presents the final answer to the user.
 
