@@ -38,22 +38,22 @@ Configure your MCP client (e.g., in Cursor) to connect to the server:
 ```json
 {
     "mcpServers": {
-        "coala": {
-            "url": "http://localhost:8000/mcp",
-            "transport": "streamable-http"
+        "rnaseq": {
+            "command": "python",
+            "args": ["/path/to/examples/RNASeq/rnaseq_question.py"]
         }
     }
 }
 ```
+
+Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path to the `rnaseq_question.py` file in your workspace.
 
 ## Use Case Workflow
 
 ### Step 1: Download GEO Dataset
 
 **User Query:**
-```
-download sample information and count matrix for GSE164141
-```
+> download sample information and count matrix for GSE164141
 
 **Tool Invocation:**
 ```json
@@ -99,9 +99,7 @@ download sample information and count matrix for GSE164141
 ### Step 2: Differential Expression Analysis
 
 **User Query:**
-```
-For the Count Matrix of GSE164141, sample can be labelled to 2 groups: minus,minus,minus,plus,plus,plus. Do a DEG for the samples between the two groups.
-```
+> For the Count Matrix of GSE164141, sample can be labelled to 2 groups: minus,minus,minus,plus,plus,plus. Do a DEG for the samples between the two groups.
 
 **Tool Invocation:**
 ```json
@@ -151,9 +149,7 @@ For the Count Matrix of GSE164141, sample can be labelled to 2 groups: minus,min
 ### Step 3: Download Pathway Database
 
 **User Query:**
-```
-Download C4 pathways from msigdb.
-```
+> Download C4 pathways from msigdb.
 
 **Tool Invocation:**
 ```json
@@ -197,9 +193,7 @@ Download C4 pathways from msigdb.
 ### Step 4: Gene Set Enrichment Analysis
 
 **User Query:**
-```
-Do a GSEA analysis using the previous DEG results and downloaded C4 pathways.
-```
+> Do a GSEA analysis using the previous DEG results and downloaded C4 pathways.
 
 **Tool Invocation:**
 ```json
@@ -248,9 +242,7 @@ Do a GSEA analysis using the previous DEG results and downloaded C4 pathways.
 ### Step 5: Generate Enrichment Plot
 
 **User Query:**
-```
-create enrichment plot for "MORF_BUB3" pathway
-```
+> create enrichment plot for "MORF_BUB3" pathway
 
 **Tool Invocation:**
 ```json
