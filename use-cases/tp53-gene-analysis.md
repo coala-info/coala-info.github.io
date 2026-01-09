@@ -32,22 +32,22 @@ Configure your MCP client (e.g., in Cursor) to connect to the server:
 ```json
 {
     "mcpServers": {
-        "coala": {
-            "url": "http://localhost:8000/mcp",
-            "transport": "streamable-http"
+        "vcf": {
+            "command": "python",
+            "args": ["/path/to/examples/vcf/vcf_question.py"]
         }
     }
 }
 ```
+
+Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to the `vcf_question.py` file in your workspace.
 
 ## Use Case Workflow
 
 ### Step 1: Retrieve Gene Information
 
 **User Query:**
-```
-give me a summary about gene "TP53"
-```
+> give me a summary about gene "TP53"
 
 **Tool Invocation:**
 ```json
@@ -102,9 +102,7 @@ give me a summary about gene "TP53"
 ### Step 2: Subset Variants from ClinVar VCF
 
 **User Query:**
-```
-Subset variants in the gene "TP53" from the https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
-```
+> Subset variants in the gene "TP53" from the https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
 
 **Tool Invocation:**
 ```json
@@ -151,9 +149,7 @@ Subset variants in the gene "TP53" from the https://ftp.ncbi.nlm.nih.gov/pub/cli
 ### Step 3: Query Variant Information
 
 **User Query:**
-```
-check the variant: 17 7673542 G A
-```
+> check the variant: 17 7673542 G A
 
 **Tool Invocation:**
 ```json

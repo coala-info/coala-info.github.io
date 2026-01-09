@@ -28,22 +28,22 @@ Configure your MCP client (e.g., in Cursor) to connect to the server:
 ```json
 {
     "mcpServers": {
-        "coala": {
-            "url": "http://localhost:8000/mcp",
-            "transport": "streamable-http"
+        "pdf": {
+            "command": "python",
+            "args": ["/path/to/examples/pdf/pdf_question.py"]
         }
     }
 }
 ```
+
+Note: Replace `/path/to/examples/pdf/pdf_question.py` with the actual path to the `pdf_question.py` file in your workspace.
 
 ## Use Case Workflow
 
 ### Step 1: Extract Specific Pages from a PDF
 
 **User Query:**
-```
-extract page 2 and 3 from test_123.pdf to test_23.pdf
-```
+> extract page 2 and 3 from test_123.pdf to test_23.pdf
 
 **What Happens:**
 1. The LLM identifies that PDF page extraction is needed
@@ -64,9 +64,7 @@ extract page 2 and 3 from test_123.pdf to test_23.pdf
 ### Step 2: Combine Multiple PDF Files
 
 **User Query:**
-```
-combine test_23.pdf and test_abc.pdf to test_23abc.pdf
-```
+> combine test_23.pdf and test_abc.pdf to test_23abc.pdf
 
 **What Happens:**
 1. The LLM identifies that PDF combination is needed
