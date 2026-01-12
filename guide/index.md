@@ -12,12 +12,14 @@ Coala integrates the [Common Workflow Language (CWL)](https://www.commonwl.org/s
 - **Bridge Layer:** A local, generic MCP server that acts as a schema translator. Unlike standard MCP servers that require custom Python wrappers for each tool, the bridge layer automatically parses CWL definitions and exposes the CWL-described command-line tools as executable MCP utilities.
 - **Execution Layer:** A standard CWL runner that executes the underlying binaries within containerized environments (Docker). This ensures that analyses are reproducible and isolated from the host system's dependencies.
 
+<!-- This text is a hidden note and will not be displayed in the rendered index.
 ### Quick Start
 
 1. **Initialize:** Create a local MCP server instance using `mcp_api()`.
 2. **Register:** Load your domain-specific tools described in CWL via `add_tool()` (supports local files or repositories).
 3. **Serve:** Start the MCP server using `mcp.serve()`.
- 
+--> 
+
 ### The Workflow
 
 - **Interact:** The user sends a natural language query to the MCP Client (e.g., Claude Desktop).
