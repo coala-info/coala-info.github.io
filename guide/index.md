@@ -14,9 +14,10 @@ Coala integrates the [Common Workflow Language (CWL)](https://www.commonwl.org/s
 
 ### Quick Start
 
-1. **Initialize:** Create a local MCP server instance using `mcp_api()`.
-2. **Register:** Load your domain-specific tools described in CWL via `add_tool()` (supports local files or repositories).
-3. **Serve:** Start the MCP server using `mcp.serve()`. 
+1. **Initialize:** Create a local MCP server instance.
+2. **Register:** Load your CWL-described tools (supports local files or repositories).
+3. **Connect:** Start the MCP server and link it to your MCP client.
+4. **Use** Chat with the LLM agent to execute the task. 
 
 ### The Workflow
 
