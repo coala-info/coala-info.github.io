@@ -18,7 +18,7 @@ mcp.serve()
 ```
 
 This creates an MCP server that exposes one command-line tool:
-- `pdftk_cat`: The core command in the command-line tool [PDFtk] (https://www.pdflabs.com/docs/pdftk-man-page/)
+- `pdftk_cat`: The core command in the command-line tool [PDFtk](https://www.pdflabs.com/docs/pdftk-man-page/)
 
 You can configure your MCP client (e.g., Cursor, Claude Desktop) to connect to the MCP server using one of two methods:
 
