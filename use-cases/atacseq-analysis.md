@@ -1,39 +1,21 @@
-# Use Case: ATAC-Seq Peak Calling and Visualization
+# Use Case: ATAC-Seq Analysis
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform ATAC-Seq peak calling and visualization. We'll use macs3 to identify open chromatin regions from ATAC-Seq data ([MACS3](#macs3)), ChIPseeker to annotate peaks with genomic features ([ChIPseeker](#chipseeker)), and pyGenomeTracks to visualize the peaks alongside gene annotations ([pyGenomeTracks](#pygenometracks)).
+This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). 
 
-### What is ATAC-Seq?
-
-In many eukaryotic organisms, such as humans, the genome is tightly packed and organized with the help of nucleosomes (chromatin). A nucleosome is a complex formed by eight histone proteins that is wrapped with ~147bp of DNA. When the DNA is being actively transcribed into RNA, the DNA will be opened and loosened from the nucleosome complex.
-
-**A**ssay for **T**ransposase-**A**ccessible **C**hromatin using **seq**uencing (ATAC-Seq) is a method to investigate the accessibility of chromatin and thus a method to determine regulatory mechanisms of gene expression. The method can help identify:
-- **Promoter regions**: DNA regions close to the transcription start site (TSS) containing binding sites for transcription factors
-- **Enhancers**: DNA regions that can be located up to 1 Mb downstream or upstream of the promoter that increase transcription
-- **Silencers**: DNA regions that decrease or inhibit gene expression
-
-### How ATAC-Seq Works
-
-With ATAC-Seq, to find accessible (open) chromatin regions, the genome is treated with a hyperactive derivative of the **Tn5 transposase**. During ATAC-Seq:
-
-1. The modified Tn5 inserts DNA sequences corresponding to truncated Nextera adapters into open regions of the genome
-2. Concurrently, the DNA is sheared by the transposase activity
-3. The read library is then prepared for sequencing, including PCR amplification with full Nextera adapters
-
-ATAC-Seq has become popular for identifying accessible regions of the genome as it's easier, faster, and requires fewer cells than alternative techniques such as FAIRE-Seq and DNase-Seq.
+<!-- 
+This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, We'll use macs3 to identify open chromatin regions from ATAC-Seq data ([MACS3](#macs3)), ChIPseeker to annotate peaks with genomic features ([ChIPseeker](#chipseeker)), and pyGenomeTracks to visualize the peaks alongside gene annotations ([pyGenomeTracks](#pygenometracks)).
 
 ### About the Dataset
+-->
 
-This tutorial uses data from the study of [Buenrostro et al. 2013](https://doi.org/10.1038/nmeth.2688), the first paper on the ATAC-Seq method. The data is from a human lymphoblastoid cell line called **GM12878** (purified CD4+ T cells). 
-
-For this example, we use a subset of reads that map to **chromosome 22** (`SRR891268_chr22.bed`), which provides a manageable dataset size while still demonstrating the complete workflow.
 
 ## Setup
 
 ### MCP Server Configuration
 
-Create an MCP server with ATAC-Seq analysis tools as shown in `examples/atac-seq/atac_question.py`:
+Start an MCP server with ATAC-Seq analysis tools as shown in `examples/atac-seq/atacseq_query.py`:
 
 ```python
 from coala.mcp_api import mcp_api
@@ -48,33 +30,35 @@ mcp.serve()
 ```
 
 This server exposes three tools:
-- **`macs3_callpeak`**: Calls peaks from ATAC-Seq/ChIP-Seq data using macs3
+- **`macs3_callpeak`**: Calls peaks from ATAC-Seq data using macs3
 - **`ChiPSeeker`**: Annotates peaks with genomic features using ChIPseeker
-- **`pygenometracks_peak`**: Visualizes peaks and coverage tracks using pyGenomeTracks
+- **`pygenometracks_peak`**: Visualizes peaks and coverage tracks alongside gene annotations using pyGenomeTracks
 
 ### MCP Client Configuration
 
-Configure your MCP client (e.g., in Cursor) to connect to the server:
+Configure your MCP client (e.g., Claude Desktop, Cursor) to connect to the MCP server:
 
 ```json
 {
     "mcpServers": {
         "atacseq": {
             "command": "python",
-            "args": ["/path/to/examples/atac-seq/atac_question.py"]
+            "args": ["/path/to/examples/atac-seq/atacseq_query.py"]
         }
     }
 }
 ```
 
-Note: Replace `/path/to/examples/atac-seq/atac_question.py` with the actual path to the `atac_question.py` file in your workspace.
+Note: Replace `/path/to/examples/atac-seq/atacseq_query.py` with the actual path to the `atacseq_query.py` file in your workspace.
 
 ## Use Case Workflow
+
+For demonstration purposes, we utilize human ATAC-Seq data from the GM12878 human lymphoblastoid cell line ([Buenrostro et al.](https://doi.org/10.1038/nmeth.2688)), using a downsampled dataset adapted from the Galaxy ATAC-seq tutorial.
 
 ### Step 1: Call Peaks with macs3
 
 **User Query:**
-> Here is a treatment bed file for the ATAC-seq data: SRR891268_chr22.bed. Call peaks for the treatment bed file. According to the tutorial, the extension size should be 200bp and shift size should be -100. Do not build the shifting model. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Use a more sophisticated signal processing approach to find subpeak summits in each enriched peak region.
+> Here is a treatment bed file for the ATAC-seq data: SRR891268_demo.bed. Call peaks for the treatment bed file. To get the coverage centered on the 5’ extended 100bp each side, the extension size should be 200bp and shift size should be -100. Do not build the shifting model. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Use a more sophisticated signal processing approach to find subpeak summits in each enriched peak region.
 >
 Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 
@@ -83,14 +67,14 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 {
   "tool": "macs3_callpeak",
   "parameters": {
-    "treatment": "/path/to/SRR891268_chr22.bed",
+    "treatment": "/path/to/SRR891268_demo.bed",
     "extsize": 200,
     "shift": -100,
     "nomodel": true,
     "keepdup": "all",
     "bdg": true,
     "summits": true,
-    "name": "SRR891268_chr22"
+    "name": "SRR891268_demo"
   }
 }
 ```
@@ -99,23 +83,23 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 ```json
 {
   "controlBdg": {
-    "basename": "SRR891268_chr22_control_lambda.bdg",
+    "basename": "SRR891268_demo_control_lambda.bdg",
     "size": 16683479
   },
   "narrowPeak": {
-    "basename": "SRR891268_chr22_peaks.narrowPeak",
+    "basename": "SRR891268_demo_peaks.narrowPeak",
     "size": 18176
   },
   "summitsBed": {
-    "basename": "SRR891268_chr22_summits.bed",
+    "basename": "SRR891268_demo_summits.bed",
     "size": 12641
   },
   "teatBdg": {
-    "basename": "SRR891268_chr22_treat_pileup.bdg",
+    "basename": "SRR891268_demo_treat_pileup.bdg",
     "size": 16653579
   },
   "xlsPeak": {
-    "basename": "SRR891268_chr22_peaks.xls",
+    "basename": "SRR891268_demo_peaks.xls",
     "size": 20791
   },
   "tool_name": "macs3_callpeak",
@@ -128,11 +112,11 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 >
 > | Output | File | Size |
 > |--------|------|------|
-> | **narrowPeak** | `SRR891268_chr22_peaks.narrowPeak` | 18.2 KB |
-> | **Summits BED** | `SRR891268_chr22_summits.bed` | 12.6 KB |
-> | **Peak XLS** | `SRR891268_chr22_peaks.xls` | 20.8 KB |
-> | **Treatment bedGraph** | `SRR891268_chr22_treat_pileup.bdg` | 16.7 MB |
-> | **Control lambda bedGraph** | `SRR891268_chr22_control_lambda.bdg` | 16.7 MB |
+> | **narrowPeak** | `SRR891268_demo_peaks.narrowPeak` | 18.2 KB |
+> | **Summits BED** | `SRR891268_demo_summits.bed` | 12.6 KB |
+> | **Peak XLS** | `SRR891268_demo_peaks.xls` | 20.8 KB |
+> | **Treatment bedGraph** | `SRR891268_demo_treat_pileup.bdg` | 16.7 MB |
+> | **Control lambda bedGraph** | `SRR891268_demo_control_lambda.bdg` | 16.7 MB |
 >
 > All your specified parameters were applied:
 > - Extension size: 200bp
@@ -165,7 +149,7 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 {
   "tool": "macs3_callpeak",
   "parameters": {
-    "treatment": "/path/to/SRR891268_chr22.bed",
+    "treatment": "/path/to/SRR891268_demo.bed",
     "extsize": 200,
     "shift": -100,
     "nomodel": true,
@@ -173,7 +157,7 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
     "bdg": true,
     "summits": true,
     "qvalue": 0.001,
-    "name": "SRR891268_chr22_q001"
+    "name": "SRR891268_demo_q001"
   }
 }
 ```
@@ -182,23 +166,23 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 ```json
 {
   "narrowPeak": {
-    "basename": "SRR891268_chr22_q001_peaks.narrowPeak",
+    "basename": "SRR891268_demo_q001_peaks.narrowPeak",
     "size": 11021
   },
   "summitsBed": {
-    "basename": "SRR891268_chr22_q001_summits.bed",
+    "basename": "SRR891268_demo_q001_summits.bed",
     "size": 7813
   },
   "xlsPeak": {
-    "basename": "SRR891268_chr22_q001_peaks.xls",
+    "basename": "SRR891268_demo_q001_peaks.xls",
     "size": 13000
   },
   "teatBdg": {
-    "basename": "SRR891268_chr22_q001_treat_pileup.bdg",
+    "basename": "SRR891268_demo_q001_treat_pileup.bdg",
     "size": 16653579
   },
   "controlBdg": {
-    "basename": "SRR891268_chr22_q001_control_lambda.bdg",
+    "basename": "SRR891268_demo_q001_control_lambda.bdg",
     "size": 16683479
   },
   "tool_name": "macs3_callpeak",
@@ -219,14 +203,14 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 ### Step 4: Annotate Peaks with ChiPSeeker
 
 **User Query:**
-> Annotate the narrow peaks, SRR891268_chr22_peaks.narrowPeak.
+> Annotate the narrow peaks, SRR891268_demo_peaks.narrowPeak.
 
 **Tool Invocation:**
 ```json
 {
   "tool": "ChiPSeeker",
   "parameters": {
-    "peak": "/path/to/SRR891268_chr22_peaks.narrowPeak"
+    "peak": "/path/to/SRR891268_demo_peaks.narrowPeak"
   }
 }
 ```
@@ -235,11 +219,11 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 ```json
 {
   "ann": {
-    "basename": "SRR891268_chr22_peaks.narrowPeak_peakAnno.csv",
+    "basename": "SRR891268_demo_peaks.narrowPeak_peakAnno.csv",
     "size": 42281
   },
   "pie": {
-    "basename": "SRR891268_chr22_peaks.narrowPeak_AnnoPie.pdf",
+    "basename": "SRR891268_demo_peaks.narrowPeak_AnnoPie.pdf",
     "size": 5813
   },
   "tool_name": "ChiPSeeker",
@@ -250,14 +234,14 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 **Chat Response:**
 > Peak annotation completed successfully. Generated files:
 >
-> 1. **SRR891268_chr22_peaks.narrowPeak_peakAnno.csv** (42K) - Annotation results in CSV format with:
+> 1. **SRR891268_demo_peaks.narrowPeak_peakAnno.csv** (42K) - Annotation results in CSV format with:
 >    - Peak coordinates (seqnames, start, end, width)
 >    - Peak metadata (V4-V10 from narrowPeak)
 >    - Genomic annotation (annotation column: e.g., "Distal Intergenic", "Intron")
 >    - Nearest gene information (geneId, transcriptId, distanceToTSS)
 >    - Gene coordinates and strand
 >
-> 2. **SRR891268_chr22_peaks.narrowPeak_AnnoPie.pdf** (5.7K) - Pie chart showing the distribution of peaks across genomic features
+> 2. **SRR891268_demo_peaks.narrowPeak_AnnoPie.pdf** (5.7K) - Pie chart showing the distribution of peaks across genomic features
 >
 > The annotation shows peaks are annotated with their genomic context, including whether they fall in promoters, introns, exons, or intergenic regions, along with the nearest gene and distance to the transcription start site (TSS).
 
@@ -267,18 +251,18 @@ The following table shows a preview of the peak annotation results:
 
 | Peak ID | Chromosome | Start | End | Width | Annotation | Gene ID | Transcript ID | Distance to TSS |
 |---------|------------|-------|-----|-------|------------|---------|---------------|-----------------|
-| SRR891268_chr22_peak_1 | chr1 | 629839 | 630055 | 217 | Distal Intergenic | 729759 | uc010nxv.2 | -7805 |
-| SRR891268_chr22_peak_2 | chr1 | 633891 | 634174 | 284 | Distal Intergenic | 729759 | uc010nxv.2 | -11857 |
-| SRR891268_chr22_peak_3 | chr10 | 99659162 | 99659391 | 230 | Intron (uc001kot.2/55118, intron 6 of 11) | 55118 | uc001kot.2 | 36732 |
-| SRR891268_chr22_peak_4 | chr11 | 4393681 | 4393880 | 200 | Distal Intergenic | 143496 | uc010qye.2 | -4065 |
-| SRR891268_chr22_peak_5 | chr12 | 88142166 | 88142365 | 200 | Distal Intergenic | 400058 | uc021rbq.1 | 36123 |
-| SRR891268_chr22_peak_6 | chr13 | 100674844 | 100675043 | 200 | Distal Intergenic | 7546 | uc001von.3 | 40818 |
-| SRR891268_chr22_peak_7 | chr17 | 22521277 | 22521506 | 230 | Distal Intergenic | 100462977 | uc002gzb.2 | 498840 |
-| SRR891268_chr22_peak_8 | chr20 | 63009184 | 63009383 | 200 | Distal Intergenic | 140849 | uc002yio.1 | 87446 |
-| SRR891268_chr22_peak_9 | chr22 | 17084749 | 17085091 | 343 | Promoter (1-2kb) | 387590 | uc002zls.1 | 1948 |
+| SRR891268_demo_peak_1 | chr1 | 629839 | 630055 | 217 | Distal Intergenic | 729759 | uc010nxv.2 | -7805 |
+| SRR891268_demo_peak_2 | chr1 | 633891 | 634174 | 284 | Distal Intergenic | 729759 | uc010nxv.2 | -11857 |
+| SRR891268_demo_peak_3 | chr10 | 99659162 | 99659391 | 230 | Intron (uc001kot.2/55118, intron 6 of 11) | 55118 | uc001kot.2 | 36732 |
+| SRR891268_demo_peak_4 | chr11 | 4393681 | 4393880 | 200 | Distal Intergenic | 143496 | uc010qye.2 | -4065 |
+| SRR891268_demo_peak_5 | chr12 | 88142166 | 88142365 | 200 | Distal Intergenic | 400058 | uc021rbq.1 | 36123 |
+| SRR891268_demo_peak_6 | chr13 | 100674844 | 100675043 | 200 | Distal Intergenic | 7546 | uc001von.3 | 40818 |
+| SRR891268_demo_peak_7 | chr17 | 22521277 | 22521506 | 230 | Distal Intergenic | 100462977 | uc002gzb.2 | 498840 |
+| SRR891268_demo_peak_8 | chr20 | 63009184 | 63009383 | 200 | Distal Intergenic | 140849 | uc002yio.1 | 87446 |
+| SRR891268_demo_peak_9 | chr22 | 17084749 | 17085091 | 343 | Promoter (1-2kb) | 387590 | uc002zls.1 | 1948 |
 
 **Peak Annotation Visualization:**
-![ATAC-Seq Peak Annotation](./SRR891268_chr22_peaks.narrowPeak_AnnoPie.png)
+![ATAC-Seq Peak Annotation](./SRR891268_demo_peaks.narrowPeak_AnnoPie.png)
 
 *Figure: ChIPseeker pie chart showing the distribution of ATAC-Seq peaks across genomic features. The chart displays the percentage of peaks falling into different genomic regions such as promoters, introns, exons, 5' UTR, 3' UTR, and intergenic regions, providing insight into where accessible chromatin regions are located relative to gene structures.*
 
@@ -292,8 +276,8 @@ The following table shows a preview of the peak annotation results:
 {
   "tool": "pygenometracks_peak",
   "parameters": {
-    "peak": "/path/to/SRR891268_chr22_peaks.narrowPeak",
-    "bedgraph": "/path/to/SRR891268_chr22_treat_pileup.bdg",
+    "peak": "/path/to/SRR891268_demo_peaks.narrowPeak",
+    "bedgraph": "/path/to/SRR891268_demo_treat_pileup.bdg",
     "gene": "/path/to/chr22_gene.bed",
     "tracks": "/path/to/peak.ini",
     "region": "chr22:37,193,000-37,252,000",
@@ -419,3 +403,25 @@ https://www.bioconductor.org/packages/release/bioc/html/ChIPseeker.html
 <a id="pygenometracks"></a>
 pyGenomeTracks
 https://github.com/deeptools/pyGenomeTracks
+
+<!--
+### What is ATAC-Seq?
+
+In many eukaryotic organisms, such as humans, the genome is tightly packed and organized with the help of nucleosomes (chromatin). A nucleosome is a complex formed by eight histone proteins that is wrapped with ~147bp of DNA. When the DNA is being actively transcribed into RNA, the DNA will be opened and loosened from the nucleosome complex.
+
+**A**ssay for **T**ransposase-**A**ccessible **C**hromatin using **seq**uencing (ATAC-Seq) is a method to investigate the accessibility of chromatin and thus a method to determine regulatory mechanisms of gene expression. The method can help identify:
+- **Promoter regions**: DNA regions close to the transcription start site (TSS) containing binding sites for transcription factors
+- **Enhancers**: DNA regions that can be located up to 1 Mb downstream or upstream of the promoter that increase transcription
+- **Silencers**: DNA regions that decrease or inhibit gene expression
+
+### How ATAC-Seq Works
+
+With ATAC-Seq, to find accessible (open) chromatin regions, the genome is treated with a hyperactive derivative of the **Tn5 transposase**. During ATAC-Seq:
+
+1. The modified Tn5 inserts DNA sequences corresponding to truncated Nextera adapters into open regions of the genome
+2. Concurrently, the DNA is sheared by the transposase activity
+3. The read library is then prepared for sequencing, including PCR amplification with full Nextera adapters
+
+ATAC-Seq has become popular for identifying accessible regions of the genome as it's easier, faster, and requires fewer cells than alternative techniques such as FAIRE-Seq and DNase-Seq.
+-->
+
