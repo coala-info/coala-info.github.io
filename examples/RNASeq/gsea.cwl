@@ -19,7 +19,7 @@ requirements:
       args)"
     writable: false
 - class: DockerRequirement
-  dockerPull: hubentu/gsea
+  dockerPull: hubentu/fgsea:1.32.2
 - class: NetworkAccess
   networkAccess: true
 arguments:

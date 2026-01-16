@@ -6,7 +6,7 @@ doc: "Perform eigenvalue decomposition to calculate compartment signal."
 requirements:
   InlineJavascriptRequirement: {}
   DockerRequirement:
-    dockerPull: hubentu/cooltools_bedwig
+    dockerPull: hubentu/cooltools_bedwig:0.7.1_2.10
 
 baseCommand: [cooltools, eigs-cis]
 

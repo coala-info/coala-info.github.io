@@ -7,7 +7,7 @@ requirements:
   InlineJavascriptRequirement: {}
   DockerRequirement:
     # Use the image containing cooltools and ucsc-bedgraphtobigwig
-    dockerPull: hubentu/cooltools_bedwig
+    dockerPull: hubentu/cooltools_bedwig:0.7.1_2.10
 
 baseCommand: [cooltools, insulation]
 
