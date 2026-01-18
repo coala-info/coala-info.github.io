@@ -2,7 +2,7 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform a complete RNA-Seq analysis workflow: downloading data from GEO, performing differential gene expression (DEG) analysis, running Gene Set Enrichment Analysis (GSEA), and generating enrichment plots. We'll use the GSE164141 dataset as an example, which contains RNA-Seq data from BT549 breast cancer cells.
+This use case demonstrates how to use Coala to perform a complete RNA-Seq analysis workflow: downloading data from GEO, describing sample information, performing differential gene expression (DEG) analysis, downloading curated gene sets from MSigDB, running Gene Set Enrichment Analysis (GSEA) with canonical pathways, and generating enrichment plots. We'll use the GSE164141 dataset as an example, which contains RNA-Seq data from BT549 triple-negative breast cancer cells comparing MUC1-C silenced (treatment) vs control conditions.
 
 ## Setup
 
@@ -50,10 +50,10 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 
 ## Use Case Workflow
 
-### Step 1: Download GEO Dataset
+### Step 1: Download GEO Dataset and Describe Study Design
 
 **User Query:**
-> download sample information and count matrix for GSE164141
+> download GSE164141 dataset and describe the study design
 
 **Tool Invocation:**
 ```json
@@ -82,7 +82,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```
 
 **Chat Response:**
-> Successfully downloaded the data for **GSE164141**. Here are the files retrieved:
+> Successfully downloaded the data for **GSE164141** and extracted study design information. Here are the files retrieved:
 >
 > **1. Series Matrix File (Sample Information):**
 > - File: `GSE164141_series_matrix.txt.gz`
@@ -94,20 +94,47 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 > - Size: 443,412 bytes
 > - Contains: Raw counts matrix for BT549 cell line RNA-seq data
 >
-> These files can now be used for downstream analysis such as differential gene expression (DEG) analysis.
+> **Study Design Overview:**
+>
+> **Study Title:** "MUC1-C integrates activation of the IFN-γ pathway with suppression of the tumor immune microenvironment in triple-negative breast cancer"
+>
+> **GEO Accession:** GSE164141  
+> **Study Type:** Expression profiling by high throughput sequencing (RNA-Seq)
+>
+> **Experimental Design:**
+> - **Study Type:** Comparative analysis of MUC1-C silencing effects on global transcriptional profiles
+> - **Comparison:** Treatment (MUC1-C silenced) vs Control (MUC1-C active)
+> - **Biological Question:** Effects of MUC1-C silencing on global transcriptional profiles in human TNBC cells
+> - **Cell Line:** BT-549 (triple-negative breast cancer cell line, female, Homo sapiens)
+>
+> **Treatment Conditions:**
+> - **Control Group (DOXminus):** Cells treated with 0.1% DMSO (vehicle control) - 3 biological replicates (GSM4998116, GSM4998117, GSM4998118)
+> - **Treatment Group (DOXplus):** Cells treated with 500 ng/ml doxycycline to induce MUC1-C silencing via shRNA (MISSION shRNA TRCN0000122938) - 3 biological replicates (GSM4998119, GSM4998120, GSM4998121)
+> - **Total Samples:** 6 samples (3 control + 3 treatment)
+>
+> **Methodology:**
+> - **Sequencing Platform:** Illumina HiSeq 2500
+> - **Library Preparation:** TruSeq Stranded mRNA (Illumina)
+> - **Genome Build:** GRCh38.p7 (GRCh38.74)
+> - **Mapping:** STAR (version 2.7.3a) to human genome
+> - **Gene Annotation:** GENCODE version 25
+> - **Quantification:** STAR QuantMode (GeneCounts) function
+> - **Analysis:** DESeq2 (version 1.24.0) for differential expression
+>
+> *Note: Study design information was extracted by reading the series matrix file using standard file inspection commands (e.g., `gunzip -c GSE164141_series_matrix.txt.gz | head -100`).*
 
 ### Step 2: Differential Expression Analysis
 
 **User Query:**
-> For the Count Matrix of GSE164141, sample can be labelled to 2 groups: minus,minus,minus,plus,plus,plus. Do a DEG for the samples between the two groups.
+> perform differential expression analysis between treatment and control groups
 
 **Tool Invocation:**
 ```json
 {
   "tool": "DEG",
   "parameters": {
-    "counts": "/tmp/tmpzf9hfd0n/GSE164141_BT549_RawCounts_Matrix.csv.gz",
-    "group": "minus,minus,minus,plus,plus,plus"
+    "counts": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/GSE164141_BT549_RawCounts_Matrix.csv.gz",
+    "group": "control,control,control,treatment,treatment,treatment"
   }
 }
 ```
@@ -116,8 +143,10 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "deg": {
-    "basename": "DEG_plus_minus.csv",
-    "size": 4570052
+    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmp7g9_s3lm/DEG_treatment_control.csv",
+    "basename": "DEG_treatment_control.csv",
+    "size": 4570091,
+    "checksum": "sha1$81f4b3ca39a830731ad712734364290f9a9b29d3"
   },
   "tool_name": "DEG",
   "tool_version": "quay.io/biocontainers/bioconductor-deseq2:1.46.0--r44he5774e6_1"
@@ -125,39 +154,50 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```
 
 **Chat Response:**
-> The differential gene expression analysis completed successfully.
+> The differential expression analysis completed successfully.
 >
 > **DEG Analysis Output:**
-> - File: `DEG_plus_minus.csv`
-> - Size: 4,570,052 bytes (~4.5 MB)
+> - File: `DEG_treatment_control.csv`
+> - Size: 4,570,091 bytes (~4.4 MB)
 >
-> **Analysis Details:**
-> - **Comparison**: plus vs minus groups
-> - **Method**: DESeq2
-> - **Samples**: 6 total (3 minus, 3 plus)
+> **Analysis Summary:**
+> - **Total genes analyzed:** 56,002
+> - **Genes with valid results:** 25,467 (45.5%)
+> - **Significantly DE genes (padj < 0.05):** 10,321 genes
+>   - **Upregulated:** 4,789 genes
+>   - **Downregulated:** 5,532 genes
+> - **Significantly DE genes (padj < 0.01):** 8,896 genes
+>
+> **Top Downregulated Genes (MUC1-C silencing):**
+> - CXCL10 (log2FC: -12.86) - chemokine, immune response
+> - RSAD2 (log2FC: -11.13) - antiviral response
+> - OAS2 (log2FC: -10.22) - antiviral response
+> - OAS1 (log2FC: -9.49) - antiviral response
+> - IFI44L (log2FC: -9.42) - interferon-induced
+>
+> **Biological Interpretation:**
+> MUC1-C silencing shows strong effects on immune-related pathways. Many downregulated genes are interferon-stimulated genes (ISGs) and antiviral response genes, consistent with the study's focus on immune microenvironment modulation.
 >
 > **Output Columns:**
 > - `baseMean`: Average normalized count across all samples
-> - `log2FoldChange`: Log2 fold change (plus/minus)
+> - `log2FoldChange`: Log2 fold change (treatment/control)
 > - `lfcSE`: Standard error of the log2 fold change
 > - `stat`: Wald test statistic
 > - `pvalue`: Raw p-value
 > - `padj`: Adjusted p-value (Benjamini-Hochberg correction)
->
-> The DEG results can be used for downstream analyses such as Gene Set Enrichment Analysis (GSEA) or pathway analysis.
 
-### Step 3: Download Pathway Database
+### Step 3: Download Curated Gene Sets from MSigDB
 
 **User Query:**
-> Download C4 pathways from msigdb.
+> download curated gene sets from Molecular Signatures Database
 
 **Tool Invocation:**
 ```json
 {
   "tool": "pathdb",
   "parameters": {
-    "collection": "C4",
-    "species": "human"
+    "species": "Homo sapiens",
+    "collection": "C2"
   }
 }
 ```
@@ -166,8 +206,10 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "pathway": {
-    "basename": "human_C4_pathway.txt",
-    "size": 615405
+    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpteowgv18/Homosapiens_C2_pathway.txt",
+    "basename": "Homosapiens_C2_pathway.txt",
+    "size": 4195065,
+    "checksum": "sha1$2f806230683ff6c7207163bfc56015e40e11ac0b"
   },
   "tool_name": "pathdb",
   "tool_version": "hubentu/gsea"
@@ -175,33 +217,35 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```
 
 **Chat Response:**
-> Successfully downloaded the C4 pathway collection from MSigDB.
+> Successfully downloaded curated gene sets from MSigDB.
 >
 > **Pathway Database Output:**
-> - File: `human_C4_pathway.txt`
-> - Size: 615,405 bytes (~615 KB)
+> - File: `Homosapiens_C2_pathway.txt`
+> - Size: 4,195,065 bytes (~4.0 MB)
 > - Species: Homo sapiens
 >
-> **About C4 Collection:**
-> The C4 collection contains **computational gene sets** from MSigDB, which includes:
-> - Cancer modules derived from large-scale cancer expression data
-> - Cancer gene neighborhoods
-> - Computationally derived gene sets
+> **About C2 Collection:**
+> The C2 collection contains **curated gene sets** from MSigDB, which includes:
+> - Canonical pathways from KEGG, Reactome, BioCarta, Pathway Interaction Database
+> - Published gene signatures from scientific literature
+> - **Total pathways:** 7,561 gene sets
 >
-> Each row in the file contains a pathway ID followed by the associated gene symbols, ready for use in Gene Set Enrichment Analysis (GSEA).
+> Each row in the file contains a pathway name followed by gene symbols, ready for use in Gene Set Enrichment Analysis (GSEA). The collection includes canonical pathways such as REACTOME_INTERFERON_SIGNALING, KEGG_RIBOSOME, and many others.
 
-### Step 4: Gene Set Enrichment Analysis
+### Step 4: Gene Set Enrichment Analysis with Canonical Pathways
 
 **User Query:**
-> Do a GSEA analysis using the previous DEG results and downloaded C4 pathways.
+> perform GSEA analysis of curated gene sets based on the DEG results
 
 **Tool Invocation:**
 ```json
 {
   "tool": "gsea",
   "parameters": {
-    "deg_res": "/tmp/tmp5v7ucdhf/DEG_plus_minus.csv",
-    "pathways": "/tmp/tmpp8044iss/human_C4_pathway.txt"
+    "deg_res": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/DEG_treatment_control.csv",
+    "pathways": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/Homosapiens_C2_pathway.txt",
+    "rank_col": "stat",
+    "pvalue": 0.01
   }
 }
 ```
@@ -210,11 +254,13 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "gsea": {
+    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpdmj2kh_w/gsea_ranked.csv",
     "basename": "gsea_ranked.csv",
-    "size": 260077
+    "size": 1172842,
+    "checksum": "sha1$03076954c5d61cda5b2af688e3b88b8454183797"
   },
   "tool_name": "gsea",
-  "tool_version": "hubentu/gsea"
+  "tool_version": "hubentu/fgsea:1.32.2"
 }
 ```
 
@@ -222,36 +268,48 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 > The GSEA analysis completed successfully.
 >
 > **GSEA Analysis Output:**
-> - File: `gsea_ranked.csv`
-> - Size: 260,077 bytes (~260 KB)
+> - File: `gsea_canonical_pathways.csv`
+> - Size: 1,172,842 bytes (~1.1 MB)
 >
-> **Analysis Details:**
-> - **DEG Input**: DEG results from plus vs minus comparison
-> - **Pathway Database**: MSigDB C4 collection (computational gene sets)
-> - **Method**: Gene Set Enrichment Analysis using ranked gene list
+> **Analysis Summary:**
+> - **Total significant pathways (padj < 0.01):** 1,081 pathways
+> - **Canonical pathways (KEGG/Reactome/BioCarta/PID):** 281 pathways
+>   - **Enriched in treatment (MUC1-C silenced):** 182 pathways
+>   - **Enriched in control (MUC1-C active):** 99 pathways
 >
-> **Output Contains:**
-> - Pathway names
-> - Enrichment scores
-> - Normalized enrichment scores (NES)
-> - P-values and adjusted p-values
-> - Leading edge genes
+> **Top Canonical Pathways Enriched in Treatment:**
+> 1. REACTOME_METABOLISM_OF_RNA (NES: 2.229)
+> 2. REACTOME_TRANSLATION (NES: 2.593)
+> 3. REACTOME_RRNA_PROCESSING (NES: 2.603)
+> 4. KEGG_RIBOSOME (NES: 2.576)
+> 5. KEGG_OXIDATIVE_PHOSPHORYLATION (NES: 2.507)
 >
-> The results identify which computational gene sets (cancer modules, gene neighborhoods) are significantly enriched in genes that are differentially expressed between the plus and minus groups.
+> **Top Canonical Pathways Enriched in Control:**
+> 1. REACTOME_CYTOKINE_SIGNALING_IN_IMMUNE_SYSTEM (NES: -1.889)
+> 2. REACTOME_INTERFERON_SIGNALING (NES: -2.048)
+> 3. REACTOME_INTERFERON_ALPHA_BETA_SIGNALING (NES: -2.265)
+> 4. REACTOME_INTERFERON_GAMMA_SIGNALING (NES: -2.147)
+> 5. REACTOME_INNATE_IMMUNE_SYSTEM (NES: -1.489)
+>
+> **Biological Interpretation:**
+> - **MUC1-C silencing** enhances canonical metabolic and cell cycle pathways (translation, RNA processing, oxidative phosphorylation)
+> - **MUC1-C activity** maintains canonical immune pathways (interferon signaling, cytokine signaling, innate immunity)
+> - These findings support the hypothesis that MUC1-C suppresses immune responses in TNBC cells
 
 ### Step 5: Generate Enrichment Plot
 
 **User Query:**
-> create enrichment plot for "MORF_BUB3" pathway
+> plot the REACTOME_INTERFERON_SIGNALING pathway's enrichment result
 
 **Tool Invocation:**
 ```json
 {
   "tool": "plotGSEA",
   "parameters": {
-    "deg_res": "/tmp/tmp5v7ucdhf/DEG_plus_minus.csv",
-    "pathways": "/tmp/tmpp8044iss/human_C4_pathway.txt",
-    "pathway_plot": "MORF_BUB3"
+    "pathway_plot": "REACTOME_INTERFERON_SIGNALING",
+    "pathways": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/Homosapiens_C2_pathway.txt",
+    "deg_res": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/DEG_treatment_control.csv",
+    "rank_col": "stat"
   }
 }
 ```
@@ -260,8 +318,10 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "gsea_plot": {
-    "basename": "MORF_BUB3.pdf",
-    "size": 9271
+    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmp1_1cx7bk/REACTOME_INTERFERON_SIGNALING.pdf",
+    "basename": "REACTOME_INTERFERON_SIGNALING.pdf",
+    "size": 9141,
+    "checksum": "sha1$38a0808a458d7cc8a222c9c17879f53333abd0b8"
   },
   "tool_name": "plotGSEA",
   "tool_version": "hubentu/gsea"
@@ -269,25 +329,34 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```
 
 **Chat Response:**
-> Successfully created the enrichment plot for the MORF_BUB3 pathway.
+> Successfully created the enrichment plot for the REACTOME_INTERFERON_SIGNALING pathway.
 >
 > **GSEA Enrichment Plot Output:**
-> - File: `MORF_BUB3.pdf`
-> - Size: 9,271 bytes (~9 KB)
+> - File: `REACTOME_INTERFERON_SIGNALING.pdf`
+> - Size: 9,141 bytes (~9 KB)
 >
-> **Plot Contents:**
-> The enrichment plot shows:
-> - **Enrichment Score (ES) curve**: Running enrichment score across the ranked gene list
-> - **Gene hits**: Vertical bars indicating where genes in the MORF_BUB3 pathway appear in the ranked list
-> - **Ranking metric**: The distribution of gene ranking values (based on log2 fold change or test statistic)
+> **Pathway Details:**
+> - **Normalized Enrichment Score (NES):** -2.048
+> - **Enrichment Score (ES):** -0.692
+> - **Adjusted p-value (padj):** 1.50e-12
+> - **Number of genes:** 256 genes
 >
-> This visualization helps assess whether genes in the MORF_BUB3 pathway are concentrated at the top (upregulated) or bottom (downregulated) of the ranked gene list.
+> **Interpretation:**
+> - Negative NES (-2.048) indicates this pathway is enriched in the **control group (MUC1-C active)**
+> - Interferon signaling genes are **downregulated when MUC1-C is silenced**
+> - The enrichment plot shows:
+>   - **X-axis:** Genes ranked by differential expression statistic (from most downregulated on the left to most upregulated on the right)
+>   - **Y-axis:** Running enrichment score
+>   - **Vertical lines:** Positions of genes in this pathway along the ranked list
+>   - The enrichment curve peaks on the left (downregulated side), indicating pathway genes are concentrated among downregulated genes
+>
+> This visualization supports the finding that MUC1-C suppresses interferon signaling in TNBC cells, consistent with immune evasion mechanisms.
 
 **Generated Enrichment Plot:**
 
-![MORF_BUB3 GSEA Enrichment Plot](./MORF_BUB3.png)
+![REACTOME_INTERFERON_SIGNALING GSEA Enrichment Plot](./REACTOME_INTERFERON_SIGNALING.png)
 
-*Figure: GSEA enrichment plot for the MORF_BUB3 pathway showing the running enrichment score, gene hits, and ranking metric distribution.*
+*Figure: GSEA enrichment plot for the REACTOME_INTERFERON_SIGNALING pathway showing the running enrichment score, gene hits, and ranking metric distribution. The negative NES indicates enrichment in the control group (MUC1-C active), meaning interferon signaling is suppressed when MUC1-C is silenced.*
 
 ## Key Benefits
 
@@ -310,21 +379,22 @@ All tools execute in Docker containers as specified in their CWL definitions:
 
 ### Data Flow
 
-1. GEO dataset is downloaded with metadata and count matrix
-2. Count matrix is normalized and analyzed by [DESeq2](#deseq2)
-3. Genes are ranked by test statistic for GSEA
-4. Pathway enrichment is computed and visualized
+1. GEO dataset (GSE164141) is downloaded with metadata and count matrix, and study design information is extracted from the series matrix file
+2. Count matrix is normalized and analyzed by [DESeq2](#deseq2) comparing treatment (MUC1-C silenced) vs control groups
+3. Curated gene sets (C2 collection) are downloaded from MSigDB
+4. Genes are ranked by test statistic for GSEA analysis, and canonical pathways (KEGG, Reactome, BioCarta, PID) are identified and analyzed
+5. Pathway enrichment is computed and visualized for specific pathways of interest
 
 ### Output Files
 
 | Step | File | Description |
 |------|------|-------------|
-| 1 | `*_series_matrix.txt.gz` | Sample metadata |
-| 1 | `*_RawCounts_Matrix.csv.gz` | Raw count matrix |
-| 2 | `DEG_*.csv` | Differential expression results |
-| 3 | `*_pathway.txt` | Pathway gene sets |
-| 4 | `gsea_ranked.csv` | GSEA enrichment results |
-| 5 | `*.pdf` | Enrichment plot |
+| 1 | `GSE164141_series_matrix.txt.gz` | Sample metadata and experimental design |
+| 1 | `GSE164141_BT549_RawCounts_Matrix.csv.gz` | Raw count matrix |
+| 2 | `DEG_treatment_control.csv` | Differential expression results (4.4 MB) |
+| 3 | `Homosapiens_C2_pathway.txt` | Curated gene sets from MSigDB C2 collection (4.0 MB) |
+| 4 | `gsea_canonical_pathways.csv` | GSEA enrichment results for canonical pathways (1.1 MB) |
+| 5 | `REACTOME_INTERFERON_SIGNALING.pdf` | Enrichment plot for interferon signaling pathway |
 
 ## Extending the Workflow
 
