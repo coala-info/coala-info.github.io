@@ -1,8 +1,15 @@
-# Use Case: RNA-Seq Differential Expression and Pathway Analysis
+# Use Case: RNA-Seq Analysis
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform a complete RNA-Seq analysis workflow: downloading data from GEO, describing sample information, performing differential gene expression (DEG) analysis, downloading curated gene sets from MSigDB, running Gene Set Enrichment Analysis (GSEA) with canonical pathways, and generating enrichment plots. We'll use the GSE164141 dataset as an example, which contains RNA-Seq data from BT549 triple-negative breast cancer cells comparing MUC1-C silenced (treatment) vs control conditions.
+This use case demonstrates how to use Coala to perform RNA-Seq analysis: downloading data from GEO, describing study design information, performing differential gene expression (DEG) analysis, downloading curated gene sets from MSigDB, running Gene Set Enrichment Analysis (GSEA) with canonical pathways, and generating enrichment plots for specified pathways. We'll use the GSE164141 dataset as an example, which contains RNA-Seq data from BT549 triple-negative breast cancer cells comparing MUC1-C silenced (treatment) vs control conditions.
+
+## Key Benefits
+
+1. **Natural Language Interface**: End-to-end analysis from data download to visualization accessible through simple queries
+3. **Automatic Tool Chaining**: Results from one step are automatically used in subsequent steps
+3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
+4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. You can adjust p-value cutoffs for significance thresholds, specify pathways of interest for focused analysis, modify sample groupings, select different pathway collections based on biological context, and generate custom visualizations for specific pathways—all through natural language interaction without modifying code
 
 ## Setup
 
@@ -119,7 +126,6 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 > - **Mapping:** STAR (version 2.7.3a) to human genome
 > - **Gene Annotation:** GENCODE version 25
 > - **Quantification:** STAR QuantMode (GeneCounts) function
-> - **Analysis:** DESeq2 (version 1.24.0) for differential expression
 >
 > *Note: Study design information was extracted by reading the series matrix file using standard file inspection commands (e.g., `gunzip -c GSE164141_series_matrix.txt.gz | head -100`).*
 
@@ -133,7 +139,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 {
   "tool": "DEG",
   "parameters": {
-    "counts": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/GSE164141_BT549_RawCounts_Matrix.csv.gz",
+    "counts": "/coala/examples/RNASeq/GSE164141/GSE164141_BT549_RawCounts_Matrix.csv.gz",
     "group": "control,control,control,treatment,treatment,treatment"
   }
 }
@@ -143,7 +149,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "deg": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmp7g9_s3lm/DEG_treatment_control.csv",
+    "location": "/coala/examples/RNASeq/GSE164141/DEG_treatment_control.csv",
     "basename": "DEG_treatment_control.csv",
     "size": 4570091,
     "checksum": "sha1$81f4b3ca39a830731ad712734364290f9a9b29d3"
@@ -206,7 +212,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "pathway": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpteowgv18/Homosapiens_C2_pathway.txt",
+    "location": "/coala/examples/RNASeq/GSE164141/Homosapiens_C2_pathway.txt",
     "basename": "Homosapiens_C2_pathway.txt",
     "size": 4195065,
     "checksum": "sha1$2f806230683ff6c7207163bfc56015e40e11ac0b"
@@ -242,8 +248,8 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 {
   "tool": "gsea",
   "parameters": {
-    "deg_res": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/DEG_treatment_control.csv",
-    "pathways": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/Homosapiens_C2_pathway.txt",
+    "deg_res": "/coala/examples/RNASeq/GSE164141/DEG_treatment_control.csv",
+    "pathways": "/coala/examples/RNASeq/GSE164141/Homosapiens_C2_pathway.txt",
     "rank_col": "stat",
     "pvalue": 0.01
   }
@@ -254,7 +260,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "gsea": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpdmj2kh_w/gsea_ranked.csv",
+    "location": "/coala/examples/RNASeq/GSE164141/gsea_ranked.csv",
     "basename": "gsea_ranked.csv",
     "size": 1172842,
     "checksum": "sha1$03076954c5d61cda5b2af688e3b88b8454183797"
@@ -307,8 +313,8 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
   "tool": "plotGSEA",
   "parameters": {
     "pathway_plot": "REACTOME_INTERFERON_SIGNALING",
-    "pathways": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/Homosapiens_C2_pathway.txt",
-    "deg_res": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/RNASeq/DEG_treatment_control.csv",
+    "pathways": "/coala/examples/RNASeq/GSE164141/Homosapiens_C2_pathway.txt",
+    "deg_res": "/coala/examples/RNASeq/GSE164141/DEG_treatment_control.csv",
     "rank_col": "stat"
   }
 }
@@ -318,7 +324,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ```json
 {
   "gsea_plot": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmp1_1cx7bk/REACTOME_INTERFERON_SIGNALING.pdf",
+    "location": "/coala/examples/RNASeq/GSE164141/REACTOME_INTERFERON_SIGNALING.pdf",
     "basename": "REACTOME_INTERFERON_SIGNALING.pdf",
     "size": 9141,
     "checksum": "sha1$38a0808a458d7cc8a222c9c17879f53333abd0b8"
@@ -358,16 +364,6 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 
 *Figure: GSEA enrichment plot for the REACTOME_INTERFERON_SIGNALING pathway showing the running enrichment score, gene hits, and ranking metric distribution. The negative NES indicates enrichment in the control group (MUC1-C active), meaning interferon signaling is suppressed when MUC1-C is silenced.*
 
-## Key Benefits
-
-1. **Complete Workflow**: End-to-end RNA-Seq analysis from data download to visualization
-2. **Natural Language Interface**: Complex bioinformatics analysis accessible through simple queries
-3. **Automatic Tool Chaining**: Results from one step are automatically used in subsequent steps
-4. **Reproducible Analysis**: All tools run in containerized environments with specified versions
-5. **Flexible Grouping**: Sample groups can be specified dynamically for any experimental design
-6. **Multiple Pathway Collections**: Access to all MSigDB collections (H, C1-C8) for comprehensive analysis
-7. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. You can adjust p-value cutoffs for significance thresholds, specify pathways of interest for focused analysis, modify sample groupings, select different pathway collections based on biological context, and generate custom visualizations for specific pathways—all through natural language interaction without modifying code
-
 ## Technical Details
 
 ### Tool Execution
@@ -375,14 +371,14 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 All tools execute in Docker containers as specified in their CWL definitions:
 - **[GEOquery](#geoquery)**: Bioconductor package for GEO data retrieval (v2.74.0)
 - **[DESeq2](#deseq2)**: Bioconductor package for differential expression (v1.46.0)
-- **[fgsea](#fgsea)**: Fast GSEA implementation for pathway analysis
+- **[fgsea](#fgsea)**: Fast GSEA implementation for pathway analysis (v1.32.2)
 
 ### Data Flow
 
 1. GEO dataset (GSE164141) is downloaded with metadata and count matrix, and study design information is extracted from the series matrix file
 2. Count matrix is normalized and analyzed by [DESeq2](#deseq2) comparing treatment (MUC1-C silenced) vs control groups
 3. Curated gene sets (C2 collection) are downloaded from MSigDB
-4. Genes are ranked by test statistic for GSEA analysis, and canonical pathways (KEGG, Reactome, BioCarta, PID) are identified and analyzed
+4. Genes are ranked by test statistic for GSEA analysis by [fgsea](#fgsea), and canonical pathways (KEGG, Reactome, BioCarta, PID) are identified and analyzed
 5. Pathway enrichment is computed and visualized for specific pathways of interest
 
 ### Output Files
@@ -398,13 +394,14 @@ All tools execute in Docker containers as specified in their CWL definitions:
 
 ## Extending the Workflow
 
-This use case can be extended to:
-- Analyze multiple GEO datasets for meta-analysis
-- Use different pathway collections (Hallmark, KEGG, Reactome, GO)
-- Apply different DEG methods (edgeR, limma-voom)
+This use case can be extended to, including but not limited to:
+- Analyze multiple GEO datasets
+- Apply different DEG methods
 - Generate heatmaps of top differentially expressed genes
+- Use different pathway collections
 - Perform over-representation analysis (ORA) in addition to GSEA
 - Export results in formats compatible with other visualization tools
+- Integrate RNA-Seq and ATAC-Seq 
 
 All of these extensions can be implemented by adding additional CWL tools to the MCP server and querying them through natural language.
 
