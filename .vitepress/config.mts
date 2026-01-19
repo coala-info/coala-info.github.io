@@ -3,7 +3,7 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 export default withMermaid(defineConfig({
   title: 'Coala',
-  description: 'Convert any command-line tool into a Large Language Model (LLM) agent using MCP and CWL',
+  description: 'Convert any command-line tool into a Large Language Model (LLM) agent toolset using MCP and CWL',
   base: '/',
   lang: 'en-US',
   
@@ -32,10 +32,10 @@ export default withMermaid(defineConfig({
           ]
         },
         {
-          text: 'Usage',
+          text: 'Others',
           items: [
             { text: 'Coala Client', link: '/guide/usage' },
-            { text: 'MCP Server', link: '/guide/mcp-server' },
+            //{ text: 'MCP Server', link: '/guide/mcp-server' },
             { text: 'Function Call', link: '/guide/function-call' }
           ]
         }
@@ -44,9 +44,9 @@ export default withMermaid(defineConfig({
         {
           text: 'Use Cases',
           items: [
-            { text: 'Overview', link: '/use-cases/' },
-            { text: 'PDF Operations', link: '/use-cases/pdf-operations' },
-            { text: 'TP53 Gene Analysis', link: '/use-cases/tp53-gene-analysis' },
+            //{ text: 'Overview', link: '/use-cases/' },
+            //{ text: 'PDF Operations', link: '/use-cases/pdf-operations' },
+            //{ text: 'TP53 Gene Analysis', link: '/use-cases/tp53-gene-analysis' },
             { text: 'RNA-Seq Analysis', link: '/use-cases/rnaseq-analysis' },
             { text: 'ATAC-Seq Analysis', link: '/use-cases/atacseq-analysis' }
           ]
