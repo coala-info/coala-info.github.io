@@ -312,7 +312,7 @@ The following table shows a preview of the peak annotation results:
 
 **Generated Peak Visualization:**
 
-![ATAC-Seq Peak Visualization](./SRR891268_chr22_region_37193000_37252000.png)
+![ATAC-Seq Peak Visualization](./SRR891268_demo_region_37193000_37252000.png)
 
 *Figure: pyGenomeTracks output showing the chr22:37,193,000-37,252,000 region. The plot displays ATAC-Seq coverage (top track), called peaks (middle track), and gene annotations (bottom track). The peaks correspond to accessible chromatin regions identified by MACS3.*
 
