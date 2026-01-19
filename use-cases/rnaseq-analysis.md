@@ -9,7 +9,7 @@ This use case demonstrates how to use Coala to perform RNA-Seq analysis: downloa
 1. **Natural Language Interface**: End-to-end analysis from data download to visualization accessible through simple queries
 3. **Automatic Tool Chaining**: Results from one step are automatically used in subsequent steps
 3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
-4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. You can adjust p-value cutoffs for significance thresholds, specify pathways of interest for focused analysis, modify sample groupings, select different pathway collections based on biological context, and generate custom visualizations for specific pathways—all through natural language interaction without modifying code
+4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. Through natural language interaction without modifying code, you can adjust p-value cutoffs for significance thresholds, specify pathways of interest for focused analysis, modify sample groupings, select different pathway collections based on biological context, and generate custom visualizations for specific pathways
 
 ## Setup
 
@@ -127,8 +127,9 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 > - **Gene Annotation:** GENCODE version 25
 > - **Quantification:** STAR QuantMode (GeneCounts) function
 >
+<!--
 > *Note: Study design information was extracted by reading the series matrix file using standard file inspection commands (e.g., `gunzip -c GSE164141_series_matrix.txt.gz | head -100`).*
-
+-->
 ### Step 2: Differential Expression Analysis
 
 **User Query:**
@@ -241,7 +242,7 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ### Step 4: Gene Set Enrichment Analysis with Canonical Pathways
 
 **User Query:**
-> perform GSEA analysis of curated gene sets based on the DEG results
+> perform GSEA on canonical pathways
 
 **Tool Invocation:**
 ```json
@@ -400,7 +401,6 @@ This use case can be extended to, including but not limited to:
 - Generate heatmaps of top differentially expressed genes
 - Use different pathway collections
 - Perform over-representation analysis (ORA) in addition to GSEA
-- Export results in formats compatible with other visualization tools
 - Integrate RNA-Seq and ATAC-Seq 
 
 All of these extensions can be implemented by adding additional CWL tools to the MCP server and querying them through natural language.
