@@ -15,10 +15,11 @@ This use case demonstrates how to use Coala to perform RNA-Seq analysis: downloa
 
 This use case demonstrates how to use the Tool Agent framework to perform ATAC-Seq peak calling and visualization. We use MACS3 to identify open chromatin regions from ATAC-Seq data with ATAC-specific parameters (paired end mode), ChIPSeeker to annotate peaks, and pyGenomeTracks to visualize peaks alongside gene annotations. The workflow shows how to chain peak calling with genome browser visualization through natural language.
 
+<!--
 ### [PDF Page Extraction and Combination](./pdf-operations)
 
 This use case demonstrates how to use the Tool Agent framework to perform PDF manipulation operations: extracting specific pages from a PDF file and combining multiple PDF files into one. These operations are commonly needed for document management, report generation, and file organization tasks.
-<!--
+
 ## Key Benefits
 
 - **Natural Language Interface**: Complex bioinformatics workflows are accessible through simple queries
