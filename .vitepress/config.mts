@@ -31,20 +31,20 @@ export default withMermaid(defineConfig({
             { text: 'Quick Start', link: '/guide/quick-start' }
           ]
         },
-        {
-          text: 'Others',
-          items: [
-            { text: 'Coala Client', link: '/guide/usage' },
-            //{ text: 'MCP Server', link: '/guide/mcp-server' },
-            { text: 'Function Call', link: '/guide/function-call' }
-          ]
-        }
+        //{
+        //  text: 'Others',
+        //  items: [
+        //    { text: 'Coala Client', link: '/guide/usage' },
+        //    //{ text: 'MCP Server', link: '/guide/mcp-server' },
+        //    { text: 'Function Call', link: '/guide/function-call' }
+        //  ]
+        //}
       ],
       '/use-cases/': [
         {
           text: 'Use Cases',
           items: [
-            //{ text: 'Overview', link: '/use-cases/' },
+            { text: 'Overview', link: '/use-cases/' },
             //{ text: 'PDF Operations', link: '/use-cases/pdf-operations' },
             { text: 'Gene Variant Analysis', link: '/use-cases/tp53-gene-analysis' },
             { text: 'RNA-Seq Analysis', link: '/use-cases/rnaseq-analysis' },
