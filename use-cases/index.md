@@ -18,7 +18,7 @@ This use case demonstrates how to use the Tool Agent framework to perform a comp
 
 ### [ATAC-Seq Peak Calling and Visualization](./atacseq-analysis)
 
-This use case demonstrates how to use the Tool Agent framework to perform ATAC-Seq peak calling and visualization. We use MACS2 to identify open chromatin regions from ATAC-Seq data with ATAC-specific parameters (shift -100, extsize 200), and pyGenomeTracks to visualize peaks alongside gene annotations. The workflow shows how to chain peak calling with genome browser visualization through natural language.
+This use case demonstrates how to use the Tool Agent framework to perform ATAC-Seq peak calling and visualization. We use MACS3 to identify open chromatin regions from ATAC-Seq data with ATAC-specific parameters (paired end mode), ChIPSeeker to annotate peaks, and pyGenomeTracks to visualize peaks alongside gene annotations. The workflow shows how to chain peak calling with genome browser visualization through natural language.
 
 ## Key Benefits
 
