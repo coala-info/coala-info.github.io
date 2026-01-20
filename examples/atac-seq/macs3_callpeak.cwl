@@ -7,10 +7,8 @@ requirements:
 - class: DockerRequirement
   dockerPull: quay.io/biocontainers/macs3:3.0.3--py39h0699b22_0
 label: macs3 callpeak
-doc: the primary function in the MACS2/MACS3 software suite used to find significantly
-  enriched genomic regions (peaks) from ChIP-seq/ATAC-seq data, identifying protein
-  binding sites or open chromatin by modeling background noise and improving spatial
-  resolution of these regions.
+doc: the primary function in the MACS3 software suite used to find significantly
+  enriched genomic regions (peaks) from ChIP-seq/ATAC-seq data, identifying protein binding sites or open chromatin by modeling background noise and improving spatial resolution of these regions.
 inputs:
   treatment:
     label: treatment file
@@ -20,11 +18,18 @@ inputs:
       prefix: -t
       separate: true
   control:
-    label: Control file
-    doc: ATAC/ChIP-seq Control file
+    label: control file
+    doc: ATAC/ChIP-seq control file
     type: File?
     inputBinding:
       prefix: -c
+      separate: true
+  format:
+    label: File format
+    doc: format of input files. Choices are AUTO, BED, BAM, BAMPE, BEDPE, or FRAG. The default AUTO option will let MACS decide which format (except for BAMPE, BEDPE, and FRAG which should be explicitly set) the file is. Please note that if the format is set as BAMPE, BEDPE, or FRAG, MACS3 will call its special Paired-end mode to call peaks by piling up the actual ChIPed fragments defined by both aligned ends, instead of predicting the fragment size first and extending reads. The BEDPE only contains three columns. The FRAG format is for single-cell ATAC-seq fragment file which is a five columns BEDPE file with extra barcode and fragment count column. DEFAULT:AUTO
+    type: string
+    inputBinding:
+      prefix: -f
       separate: true
   gsize:
     label: Effective genome size
