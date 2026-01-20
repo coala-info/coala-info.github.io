@@ -1,8 +1,7 @@
 # Use Cases
 
 This section contains use cases demonstrating how to use Coala in various scenarios.
-
-## Available Use Cases
+//## Available Use Cases
 
 ### [Gene Variant Analysis](./tp53-gene-analysis)
 
@@ -19,7 +18,6 @@ This use case demonstrates how to use the Tool Agent framework to perform ATAC-S
 ### [PDF Page Extraction and Combination](./pdf-operations)
 
 This use case demonstrates how to use the Tool Agent framework to perform PDF manipulation operations: extracting specific pages from a PDF file and combining multiple PDF files into one. These operations are commonly needed for document management, report generation, and file organization tasks.
-
 <!--
 ## Key Benefits
 
@@ -30,4 +28,3 @@ This use case demonstrates how to use the Tool Agent framework to perform PDF ma
 - **Seamless Integration**: Multiple tools work together in a single workflow without manual intervention
 - **Human-in-the-Loop**: Review and refine tool inputs/outputs while keeping the workflow moving
 -->
-
