@@ -60,7 +60,6 @@ For demonstration purposes, we utilize human ATAC-Seq data from the GM12878 huma
 **User Query:**
 > Here is a bed file for the ATAC-seq data: SRR891268_chr22.bed. Call peaks for the bed file. To get the coverage centered on the 5’ extended 100bp each side, the extension size should be 200bp and shift size should be -100. Do not build the shifting model. Use genome size of 5e7 which is approximately the size for human chromosome 22. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Do not call subpeak summits.
 >
-Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 
 **Tool Invocation:**
 ```json
@@ -109,29 +108,26 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 }
 ```
 
-**Chat Response:** (need revision)
-> macs3 peak calling completed successfully. Here are the output files generated:
->
-> | Output | File | Size |
-> |--------|------|------|
-> | **narrowPeak** | `SRR891268_chr22_peaks.narrowPeak` | 18.2 KB |
-> | **Summits BED** | `SRR891268_chr22_summits.bed` | 12.6 KB |
-> | **Peak XLS** | `SRR891268_chr22_peaks.xls` | 20.8 KB |
-> | **Treatment bedGraph** | `SRR891268_chr22_treat_pileup.bdg` | 16.7 MB |
-> | **Control lambda bedGraph** | `SRR891268_chr22_control_lambda.bdg` | 16.7 MB |
->
-> All your specified parameters were applied:
-> - Extension size: 200bp
-> - Shift size: -100bp
-> - No model building (`--nomodel`)
-> - Keep all duplicate tags (`--keep-dup all`)
-> - bedGraph output enabled (`--bdg`)
-> - Subpeak summits detection enabled (`--call-summits`)
-> ```
-> Tool Invocation Summary:
-> tool_name: macs3_callpeak
-> tool_version: quay.io/biocontainers/macs3:3.0.3--py39h0699b22_0
-> ```
+**Chat Response:**
+
+> Peak calling completed successfully.
+> 
+> **Parameters used:**
+> - Extension size: 200 bp
+> - Shift: -100 bp
+> - No shifting model (--nomodel)
+> - Genome size: 5e7 (50,000,000 bp)
+> - Keep all duplicates (--keep-dup all)
+> - Save bedGraph files (--bdg)
+> 
+> **Output files generated:**
+> 1. `SRR891268_chr22_treat_pileup.bdg` - Treatment pileup bedGraph
+> 2. `SRR891268_chr22_control_lambda.bdg` - Control lambda bedGraph
+> 3. `SRR891268_chr22_peaks.xls` - Peak information in tabular format
+> 4. `SRR891268_chr22_peaks.narrowPeak` - Peaks in narrowPeak format
+> 5. `SRR891268_chr22_summits.bed` - Peak summits
+> 
+> The analysis processed 263,566 tags from your ATAC-seq data. The bedGraph files contain extended fragment pileup and local lambda tracks at every base pair as requested. Peak calling used a q-value cutoff of 0.05.
 
 ### Step 2: Count Peaks
 
@@ -139,7 +135,7 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 > How many peaks did we get?
 
 **Chat Response:**
-> **183 peaks** were called. The `SRR891268_chr22_peaks.narrowPeak` file contains 183 peak entries (no header). The peaks are distributed across chromosomes, with most on chromosome 22, matching the input data.
+> We got 183 peaks from the peak calling analysis. This is based on the SRR891268_chr22_peaks.narrowPeak file, which contains one peak per line. These peaks passed the q-value threshold of 0.05 and are distributed across the chromosomes in your dataset.
 
 ### Step 3: Call a more stringent peak set by tweaking q-value
 
@@ -243,34 +239,39 @@ Reference: [Galaxy ATAC-seq tutorial](#galaxy-atac-seq-tutorial).
 ```
 
 **Chat Response:**
-> Peak annotation completed successfully. Generated files:
->
-> 1. **SRR891268_chr22_peaks.narrowPeak_peakAnno.csv** (42K) - Annotation results in CSV format with:
->    - Peak coordinates (seqnames, start, end, width)
->    - Peak metadata (V4-V10 from narrowPeak)
->    - Genomic annotation (annotation column: e.g., "Distal Intergenic", "Intron")
->    - Nearest gene information (geneId, transcriptId, distanceToTSS)
->    - Gene coordinates and strand
->
-> 2. **SRR891268_chr22_peaks.narrowPeak_AnnoPie.pdf** (5.7K) - Pie chart showing the distribution of peaks across genomic features
->
-> The annotation shows peaks are annotated with their genomic context, including whether they fall in promoters, introns, exons, or intergenic regions, along with the nearest gene and distance to the transcription start site (TSS).
+> Peak annotation complete. Summary of the annotated peak set (q-value = 0.05, 183 peaks):
+> 
+> **Annotation Results:**
+> 
+> **Output Files:**
+> - `SRR891268_chr22_peaks_annotated.csv` - Detailed annotation table
+> - `SRR891268_chr22_peaks_annotation_pie.pdf` - Pie chart visualization
+> 
+> **Genomic Feature Distribution:**
+> - **Promoter regions** (≤ 3kb from TSS): 23 peaks
+>   - Promoter (≤1kb): 11 peaks
+>   - Promoter (1-2kb): 6 peaks
+>   - Promoter (2-3kb): 6 peaks
+> - **Distal Intergenic**: 62 peaks
+> - **Introns**: ~83 peaks (across various genes)
+> - **Exons**: 12 peaks
+> - **3' UTR**: 6 peaks
+> - **5' UTR**: 1 peak
+> 
+> **Distance to TSS:**
+> - Median distance: 3,824 bp
+> - Mean distance: 13,714 bp
+> - Range: -333,139 to 333,787 bp
+> 
+> The annotated CSV includes:
+> - Peak coordinates and scores
+> - Genomic annotation (promoter, intron, exon, etc.)
+> - Nearest gene information (Gene ID, Symbol, Name)
+> - Distance to transcription start site (TSS)
+> - Ensembl IDs
+> 
+> About 13% (23/183) of peaks are in promoter regions (≤3kb from TSS), suggesting many are > associated with regulatory elements near gene transcription start sites.
 
-**Peak Annotation Results Preview:**
-
-The following table shows a preview of the peak annotation results:
-
-| Peak ID | Chromosome | Start | End | Width | Annotation | Gene ID | Transcript ID | Distance to TSS |
-|---------|------------|-------|-----|-------|------------|---------|---------------|-----------------|
-| SRR891268_chr22_peak_1 | chr1 | 629839 | 630055 | 217 | Distal Intergenic | 729759 | uc010nxv.2 | -7805 |
-| SRR891268_chr22_peak_2 | chr1 | 633891 | 634174 | 284 | Distal Intergenic | 729759 | uc010nxv.2 | -11857 |
-| SRR891268_chr22_peak_3 | chr10 | 99659162 | 99659391 | 230 | Intron (uc001kot.2/55118, intron 6 of 11) | 55118 | uc001kot.2 | 36732 |
-| SRR891268_chr22_peak_4 | chr11 | 4393681 | 4393880 | 200 | Distal Intergenic | 143496 | uc010qye.2 | -4065 |
-| SRR891268_chr22_peak_5 | chr12 | 88142166 | 88142365 | 200 | Distal Intergenic | 400058 | uc021rbq.1 | 36123 |
-| SRR891268_chr22_peak_6 | chr13 | 100674844 | 100675043 | 200 | Distal Intergenic | 7546 | uc001von.3 | 40818 |
-| SRR891268_chr22_peak_7 | chr17 | 22521277 | 22521506 | 230 | Distal Intergenic | 100462977 | uc002gzb.2 | 498840 |
-| SRR891268_chr22_peak_8 | chr20 | 63009184 | 63009383 | 200 | Distal Intergenic | 140849 | uc002yio.1 | 87446 |
-| SRR891268_chr22_peak_9 | chr22 | 17084749 | 17085091 | 343 | Promoter (1-2kb) | 387590 | uc002zls.1 | 1948 |
 
 **Peak Annotation Visualization:**
 ![ATAC-Seq Peak Annotation](./SRR891268_chr22_peaks.narrowPeak_AnnoPie.png)
@@ -321,40 +322,9 @@ The following table shows a preview of the peak annotation results:
 >
 > The plot uses the configuration from `peak.ini` and shows the genomic tracks for the specified region.
 
-
 **Generated Peak Visualization:**
 
-![ATAC-Seq Peak Visualization](./chr22_37193000_37252000_tracks_q0001.png)
-
-**User Query:**
-> Let's also visualize the peak set from the default q-value cutoff 0.05.
-
-**Tool Response:**
-
-**Chat Response:**
-
-> ## Visualization summary
-> 
-> **Output file:** `chr22_37193000_37252000_tracks_q005.png` (149 KB)
-> 
-> **Region visualized:** chr22:37,193,000-37,252,000 (59 kb)
-> 
-> **Peaks in this region (q-value ≤ 0.05):**
-> 1. Peak 98: chr22:37,199,304-37,199,646
-> 2. Peak 99: chr22:37,218,815-37,219,147
-> 3. Peak 100: chr22:37,242,510-37,242,798
-> 4. Peak 101: chr22:37,244,205-37,244,412 (new peak compared to q-value 0.001)
-> 
-> **Comparison:**
-> - **q-value 0.001 (stringent):** 3 peaks
-> - **q-value 0.05 (default):** 4 peaks
-> 
-> The visualization shows ATAC-seq coverage, all called peaks (including the additional peak 101), and gene annotations. The image is saved at 300 DPI and ready for viewing.
-
-**Generated Peak Visualization (q 0.05):**
-
-![ATAC-Seq Peak Visualization](./chr22_37193000_37252000_tracks_q005.png)
-
+![ATAC-Seq Peak Visualization](./SRR891268_chr22_37193000-37252000_tracks.png)
 
 *Figure: pyGenomeTracks output showing the chr22:37,193,000-37,252,000 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). The peaks correspond to accessible chromatin regions identified by MACS3.*
 
