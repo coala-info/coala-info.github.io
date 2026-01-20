@@ -4,19 +4,19 @@ baseCommand: Rscript
 requirements:
 - class: InitialWorkDirRequirement
   listing:
-  - entryname: ChiPSeeker.R
+  - entryname: ChIPSeeker.R
     entry: "suppressPackageStartupMessages(library(R.utils))\nargs
-      <- commandArgs(trailingOnly = TRUE, asValues = TRUE)\nChiPSeeker <-\nfunction(peak){\n
+      <- commandArgs(trailingOnly = TRUE, asValues = TRUE)\nChIPSeeker <-\nfunction(peak){\n
       \   library(ChIPseeker)\n    fn <- basename(peak)\n    peakAnno <- annotatePeak(peak)\n
       \   write.csv(data.frame(peakAnno), paste0(fn, \"_peakAnno.csv\"))\n    \n    pdf(paste0(fn,
-      \"_AnnoPie.pdf\"))\n    plotAnnoPie(peakAnno)\n    dev.off()\n}\ndo.call(ChiPSeeker,
+      \"_AnnoPie.pdf\"))\n    plotAnnoPie(peakAnno)\n    dev.off()\n}\ndo.call(ChIPSeeker,
       args)"
     writable: false
 - class: DockerRequirement
   dockerPull: quay.io/biocontainers/bioconductor-chipseeker:1.42.0--r44hdfd78af_0
 arguments:
-- ChiPSeeker.R
-id: ChiPSeeker
+- ChIPSeeker.R
+id: ChIPSeeker
 label: ChIP peak Annotation
 doc: 'ChIPseeker: an R package for ChIP peak Annotation, Comparison and Visualization'
 inputs:
