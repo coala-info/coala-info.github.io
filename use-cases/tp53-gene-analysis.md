@@ -1,8 +1,8 @@
-# Use Case: TP53 Gene Analysis with ClinVar Variants
+# Use Case: Gene Variant Analysis
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform a complete gene analysis workflow: first retrieving gene metadata from NCBI, then subsetting relevant variants from a large VCF file. We'll use the TP53 gene as an example, which is a critical tumor suppressor gene associated with many human cancers.
+This use case demonstrates how to use Coala to perform a complete gene variant analysis workflow: retrieving gene coordinates from NCBI, extracting variants from ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. We'll use the TP53 gene as an example, which is a critical tumor suppressor gene associated with many human cancers.
 
 ## Setup
 
@@ -44,10 +44,10 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 
 ## Use Case Workflow
 
-### Step 1: Retrieve Gene Information
+### Step 1: Retrieve Gene Coordinates and Extract Variants
 
 **User Query:**
-> give me a summary about gene "TP53"
+> I am analyzing the TP53 gene for potential pathogenic variants. Please retrieve the latest gene coordinates from NCBI and extract all known variants for this region from the ClinVar VCF file. Save the vcf file to the working directory.
 
 **Tool Invocation:**
 ```json
@@ -63,46 +63,11 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 **Tool Response:**
 ```json
 {
-  "gene_info": {
-    "gene_id": "7157",
-    "symbol": "TP53",
-    "description": "tumor protein p53",
-    "chromosome": "17",
-    "genomic_range": {
-      "begin": 7668421,
-      "end": 7687490
-    }
-  },
+  "json": "{\"reports\": [{\"gene\":{\"annotations\":[{\"annotation_name\":\"GCF_000001405.40-RS_2025_08\",\"genomic_locations\":[{\"genomic_accession_version\":\"NC_000017.11\",\"genomic_range\":{\"begin\":\"7668421\",\"end\":\"7687490\"},\"sequence_name\":\"17\"}]}],\"gene_id\":\"7157\",\"symbol\":\"TP53\",\"description\":\"tumor protein p53\"}]}",
   "tool_name": "ncbi_datasets_gene",
-  "tool_version": "ncbi/datasets-cli:latest"
+  "tool_version": "staphb/ncbi-datasets"
 }
 ```
-
-**Chat Response:**
-> Here's a summary of the **TP53** gene:
->
-> **Basic Information:**
-> - **Gene Name:** TP53 (tumor protein p53)
-> - **Gene ID:** 7157
-> - **Chromosome:** 17
-> - **Location (GRCh38.p14):** Chromosome 17: 7,668,421-7,687,490
->
-> **Function:**
-> TP53 is a tumor suppressor protein with transcriptional activation, DNA binding, and oligomerization domains. It plays critical roles in:
-> - DNA damage response
-> - Cell cycle regulation
-> - Apoptosis
-> - Cellular senescence
->
-> **Clinical Significance:**
-> Mutations in TP53 are associated with many human cancers, including Li-Fraumeni syndrome.
->
-> **Transcripts:** 26 total (25 protein-coding, 1 non-coding)
-
-### Step 2: Subset Variants from ClinVar VCF
-
-**User Query:**
-> Subset variants in the gene "TP53" from the https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
 
 **Tool Invocation:**
 ```json
@@ -111,7 +76,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
   "parameters": {
     "vcf": "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz",
     "region": "17:7668421-7687490",
-    "fout": "tp53_variants.vcf.gz",
+    "fout": "tp53_clinvar_variants.vcf.gz",
     "otype": "z"
   }
 }
@@ -120,9 +85,9 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 **Tool Response:**
 ```json
 {
-  "vcf_out": {
-    "basename": "tp53_variants.vcf.gz",
-    "size": 281600
+  "Fout": {
+    "basename": "tp53_clinvar_variants.vcf.gz",
+    "size": 280748
   },
   "tool_name": "bcftools_view",
   "tool_version": "quay.io/biocontainers/bcftools:1.13--h3a49de5_0"
@@ -130,26 +95,91 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 ```
 
 **Chat Response:**
-> Successfully extracted TP53 variants from the ClinVar VCF file.
+> I've successfully retrieved the TP53 gene coordinates and extracted all variants from the ClinVar VCF file.
 >
-> **Output Details:**
-> - **File:** `tp53_variants.vcf.gz`
-> - **Size:** ~275 KB (compressed)
-> - **Format:** Compressed VCF (gzipped)
+> **TP53 Gene Coordinates (GRCh38.p14):**
+> - **Chromosome:** 17
+> - **Genomic Range:** 7,668,421 - 7,687,490
+> - **Gene ID:** 7157
+> - **Gene Symbol:** TP53 (tumor protein p53)
 >
-> **Extraction Parameters:**
+> **Extracted Variants:**
 > - **Source:** ClinVar VCF (GRCh38)
-> - **Region:** Chromosome 17: 7,668,421-7,687,490 (TP53 gene coordinates)
+> - **File:** `tp53_clinvar_variants.vcf.gz`
+> - **Location:** `/Users/lius/Desktop/coala-master/tp53_clinvar_variants.vcf.gz`
+> - **File Size:** 274 KB (compressed)
+> - **Number of Variants:** 3,763 variants
 >
-> **Content:**
-> The output file contains all ClinVar variants overlapping the TP53 gene region. These variants include pathogenic, likely pathogenic, benign, likely benign, and variants of uncertain significance associated with TP53.
->
-> You can further filter these variants by clinical significance or perform additional analysis on the extracted subset.
+> The VCF file contains all ClinVar variants overlapping the TP53 gene region, including pathogenic, likely pathogenic, benign, likely benign, and variants of uncertain significance. The file is saved in compressed VCF format (gzipped) in your working directory.
 
-### Step 3: Query Variant Information
+### Step 2: Filter Pathogenic Variants
 
 **User Query:**
-> check the variant: 17 7673542 G A
+> Please find all Pathogenic variants in the TP53 gene from that file.
+
+**Tool Invocation:**
+```json
+{
+  "tool": "bcftools_view",
+  "parameters": {
+    "vcf": "/Users/lius/Desktop/coala-master/tp53_clinvar_variants.vcf.gz",
+    "include": "CLNSIG~\"Pathogenic\"",
+    "fout": "tp53_pathogenic_variants.vcf.gz",
+    "otype": "z"
+  }
+}
+```
+
+**Tool Response:**
+```json
+{
+  "Fout": {
+    "basename": "tp53_pathogenic_variants.vcf.gz",
+    "size": 82178
+  },
+  "tool_name": "bcftools_view",
+  "tool_version": "quay.io/biocontainers/bcftools:1.13--h3a49de5_0"
+}
+```
+
+**Chat Response:**
+> Successfully filtered pathogenic variants from the TP53 ClinVar VCF file.
+>
+> **Pathogenic Variants Summary:**
+> - **File:** `tp53_pathogenic_variants.vcf.gz`
+> - **Location:** `/Users/lius/Desktop/coala-master/tp53_pathogenic_variants.vcf.gz`
+> - **File Size:** ~80 KB (compressed)
+> - **Total Pathogenic Variants:** 901
+>
+> **Additional Information:**
+> - **Likely Pathogenic Variants:** 377 (saved as `tp53_likely_pathogenic_variants.vcf.gz`)
+>
+> **Variant Types Found:**
+> - Single nucleotide variants (SNVs)
+> - Deletions
+> - Insertions
+> - Indels
+> - Large deletions
+>
+> **Associated Conditions:**
+> The pathogenic variants are associated with various hereditary cancer syndromes including:
+> - Li-Fraumeni syndrome
+> - Various hereditary cancers (breast, colorectal, stomach, hepatocellular carcinoma)
+> - Adrenocortical carcinoma
+> - Bone marrow failure syndrome
+> - Other cancer-predisposing syndromes
+>
+> **Example Variants:**
+> 1. Position 7669691 (C>T): Splice acceptor variant associated with Li-Fraumeni syndrome and multiple cancer types
+> 2. Position 7669665 (AC>A): Frameshift deletion
+> 3. Position 7670658 (T>A): Nonsense variant associated with Li-Fraumeni syndrome and lung adenocarcinoma
+>
+> The filtered VCF file contains all 901 pathogenic variants with ClinVar annotations, including clinical significance, disease associations, HGVS nomenclature, molecular consequences, and review status.
+
+### Step 3: Detailed Variant Analysis
+
+**User Query:**
+> let's look into Position 7669691 (C>T)
 
 **Tool Invocation:**
 ```json
@@ -157,7 +187,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
   "tool": "biothings_query",
   "parameters": {
     "client": "variant",
-    "get": "chr17:g.7673542G>A",
+    "get": "chr17:g.7669691C>T",
     "fields": "all",
     "assembly": "hg38",
     "pretty": true
@@ -165,45 +195,78 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 }
 ```
 
+**Tool Response:**
+```json
+{
+  "result": "{...comprehensive variant annotation data...}",
+  "tool_name": "biothings_query",
+  "tool_version": "hubentu/biothings:0.4.1"
+}
+```
+
 **Chat Response:**
 
-> **Variant Report: chr17:7673542 G>A**
+> **Detailed Analysis: chr17:g.7669691C>T (rs876658982)**
 >
-> | Property | Value |
-> |----------|-------|
-> | **Variant ID** | chr17:g.7673542G>A |
-> | **rsID** | rs969930693 |
-> | **Gene** | TP53 |
-> | **Cytogenetic Location** | 17p13.1 |
-> | **Variant Type** | Single Nucleotide Variant (SNV) |
+> **Basic Variant Information:**
+> - **Genomic Coordinates:** Chromosome 17, Position 7,669,691 (GRCh38)
+> - **Cytogenetic Location:** 17p13.1
+> - **Reference Allele:** C
+> - **Alternate Allele:** T
+> - **dbSNP ID:** rs876658982
+> - **ClinVar Variant ID:** 231146
+> - **ClinGen CAID:** CA10580902
+>
+> **Variant Type and Molecular Consequence:**
+> - **Type:** Single nucleotide variant (SNV)
+> - **Molecular Consequence:** Splice acceptor variant (SO:0001574)
+> - **Impact:** HIGH - affects 100% of TP53 transcripts
 >
 > **HGVS Nomenclature:**
-> - Genomic: NC_000017.11:g.7673542G>A
-> - Coding (canonical): NM_000546.6:c.986C>T
-> - Protein: p.Thr329Ile (T329I)
+> - **Genomic (GRCh38):** `NC_000017.11:g.7669691C>T`
+> - **Genomic (GRCh37):** `NC_000017.10:g.7573009C>T`
+> - **Coding (canonical):** `NM_000546.6:c.1101-1G>A`
 >
-> **Protein Domain:** Located in the p53 tetramerization domain
+> **Clinical Significance:**
+> - **ClinVar Classification:** Pathogenic/Likely pathogenic
+> - **Review Status:** Criteria provided, multiple submitters, no conflicts
+> - **Multiple ClinVar records** confirming pathogenic classification
 >
-> **ClinVar Clinical Significance:**
-> | Condition | Significance |
-> |-----------|--------------|
-> | Li-Fraumeni syndrome (LFS) | Uncertain significance |
-> | Hereditary cancer-predisposing syndrome | Conflicting interpretations |
->
-> **Population Frequency (gnomAD Exomes):**
-> - Global: 3.98 × 10⁻⁶ (1 allele / 251,390)
-> - Extremely rare variant
+> **Associated Conditions:**
+> This variant is associated with multiple hereditary cancer syndromes including:
+> - Li-Fraumeni syndrome 1 (LFS) - OMIM:151623
+> - Hereditary cancer-predisposing syndrome
+> - Adrenocortical carcinoma, hereditary
+> - Familial cancer of breast
+> - Bone osteosarcoma
+> - Glioma susceptibility 1
+> - Nasopharyngeal carcinoma
+> - Choroid plexus papilloma
+> - Basal cell carcinoma, susceptibility to, 7
+> - Familial pancreatic carcinoma
+> - Hepatocellular carcinoma
+> - Colorectal cancer
+> - Bone marrow failure syndrome 5
 >
 > **Pathogenicity Predictions:**
 > | Tool | Prediction | Score |
 > |------|------------|-------|
-> | AlphaMissense | Benign | 0.165 |
-> | REVEL | - | 0.758 |
-> | CADD | - | 22.5 (Phred) |
-> | MetaSVM | Damaging | 1.15 |
-> | MutationTaster | Disease-causing | 0.91 |
+> | CADD Phred | Highly deleterious | 29.1 |
+> | BayesDel (with AF) | Deleterious | 0.625 (rank: 99.4%) |
+> | MutationTaster | Disease-causing | 1.0 |
+> | DANN | Deleterious | 0.995 (rank: 68.1%) |
+> | Eigen | Deleterious | 13.77 Phred (rank: 95.6%) |
+> | FATHMM-MKL | Deleterious | 0.897 |
 >
-> **Summary:** This is a rare missense variant (p.Thr329Ile) in the TP53 tetramerization domain. Clinical significance is currently classified as uncertain or conflicting, primarily associated with Li-Fraumeni syndrome. Computational predictions are mixed.
+> **Conservation Scores:**
+> - **PhastCons (100-way vertebrate):** 1.0 (highly conserved)
+> - **PhyloP (100-way vertebrate):** 3.383 (highly conserved)
+> - **GERP++:** 5.31 (highly conserved)
+>
+> **Functional Impact:**
+> This variant is located at the -1 position of a splice acceptor site, affecting splicing of multiple TP53 transcripts. It is predicted to cause aberrant splicing, potentially leading to exon skipping, intron retention, or altered protein structure/function.
+>
+> **Summary:** This is a well-documented pathogenic splice site mutation in TP53. The variant significantly increases cancer risk when present in the germline and is strongly associated with Li-Fraumeni syndrome and multiple cancer types. The variant should be considered pathogenic based on strong computational predictions, multiple ClinVar submissions with consistent classification, high conservation at this position, and known functional impact on splicing.
 
 ## Key Benefits
 
@@ -226,11 +289,12 @@ All tools execute in Docker containers as specified in their CWL definitions:
 
 ### Data Flow
 
-1. Gene metadata is retrieved as JSON from NCBI
-2. Genomic coordinates are parsed from the metadata
-3. These coordinates are used to subset the VCF file
-4. The subsetted VCF is saved as a compressed file
-5. Individual variants can be queried for detailed annotations including clinical significance, population frequencies, and pathogenicity predictions
+1. Gene metadata is retrieved as JSON from NCBI using `ncbi_datasets_gene`
+2. Genomic coordinates are parsed from the metadata (chromosome 17: 7,668,421-7,687,490)
+3. These coordinates are used to subset the ClinVar VCF file using `bcftools_view`
+4. The subsetted VCF containing all variants (3,763 variants) is saved as a compressed file
+5. Variants are filtered by clinical significance (e.g., Pathogenic) using `bcftools_view` with inclusion filters
+6. Individual variants can be queried for detailed annotations using `biothings_query`, including clinical significance, population frequencies, pathogenicity predictions, and functional impact
 
 ### Output Files
 
