@@ -190,21 +190,21 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 **User Query:**
 > Next, we want to visualize the peak in the chr22:37,193,000-37,252,000 region in a genome browser view. Use the chr22_gene.bed file as the gene annotation. Use the treatment bedGraph as the ATAC-seq coverage track. Use the peak.ini file as the configuration file.
 
-**Chat Response:** (need update)
-> Visualization generated successfully. The track plot for the region chr22:37,193,000-37,252,000 has been created and saved as:
->
-> **SRR891268_chr22_region_37193000_37252000.png** (27K)
->
-> The visualization includes:
-> - **Coverage track**: Treatment bedGraph coverage from the peak calling results
-> - **Peaks track**: Narrow peaks from MACS3 in box format
-> - **Gene annotation track**: Gene annotations from chr22_gene.bed
->
-> The plot uses the configuration from `peak.ini` and shows the genomic tracks for the specified region.
+**Chat Response:**
+> Updated `peak.ini` to point at the BT549 bedgraph and q=0.001 peaks (absolute paths), then generated the genome browser view for chr22 (lines 37193000-37252000) using the local `pyGenomeTracks` CLI since the tool wrapper failed.
+> 
+> Output:
+> 
+>  * BT549_Doxminus_chr22_region_track.png
+> 
+> If you want, I can:
+> 
+>  * export a PDF/SVG version for publication, or
+>  * add the control lambda track or adjust the y-axis scaling.
 
 **Generated Peak Visualization:**
 
-![ATAC-Seq Peak Visualization](./SRR891268_chr22_37193000-37252000_tracks.png)
+![ATAC-Seq Peak Visualization](./BT549_Doxminus_chr22_region_track.png)
 
 *Figure: pyGenomeTracks output showing the chr22:37,193,000-37,252,000 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). The peaks correspond to accessible chromatin regions identified by MACS3.*
 
