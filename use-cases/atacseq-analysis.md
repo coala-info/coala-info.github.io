@@ -15,7 +15,7 @@ This use case demonstrates how to use Coala to perform query-driven ATAC-Seq ana
 
 ### MCP Server Configuration
 
-Start an MCP server with ATAC-Seq analysis tools as shown in `examples/atac-seq/atacseq_query.py`:
+Start an MCP server with ATAC-Seq analysis tools as shown in `examples/atac-seq/atac_question.py`:
 
 ```python
 from coala.mcp_api import mcp_api
