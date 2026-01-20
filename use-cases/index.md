@@ -20,6 +20,7 @@ This use case demonstrates how to use the Tool Agent framework to perform ATAC-S
 
 This use case demonstrates how to use the Tool Agent framework to perform PDF manipulation operations: extracting specific pages from a PDF file and combining multiple PDF files into one. These operations are commonly needed for document management, report generation, and file organization tasks.
 
+<!--
 ## Key Benefits
 
 - **Natural Language Interface**: Complex bioinformatics workflows are accessible through simple queries
@@ -28,4 +29,5 @@ This use case demonstrates how to use the Tool Agent framework to perform PDF ma
 - **Containerized Execution**: Tools run in isolated containers, ensuring reproducibility and avoiding dependency conflicts
 - **Seamless Integration**: Multiple tools work together in a single workflow without manual intervention
 - **Human-in-the-Loop**: Review and refine tool inputs/outputs while keeping the workflow moving
+-->
 
