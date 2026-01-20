@@ -1,7 +1,7 @@
 # Use Cases
 
 This section contains use cases demonstrating how to use Coala in various scenarios.
-//## Available Use Cases
+<!--//## Available Use Cases-->
 
 ### [Gene Variant Analysis](./tp53-gene-analysis)
 
