@@ -2,7 +2,7 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform a complete gene variant analysis workflow: retrieving gene coordinates from NCBI, extracting variants from ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. We'll use the TP53 gene as an example, which is a critical tumor suppressor gene associated with many human cancers.
+This use case demonstrates how to use Coala to perform gene variant analysis: retrieving gene coordinates from NCBI, extracting variants from ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. We'll use the TP53 gene as an example, which is a critical tumor suppressor gene associated with many human cancers.
 
 ## Setup
 
@@ -22,7 +22,7 @@ mcp.serve()
 
 This server exposes three tools:
 - **`ncbi_datasets_gene`**: Retrieves comprehensive gene metadata from [NCBI Datasets](#ncbi-datasets)
-- **`bcftools_view`**: Subsets and filters VCF/BCF files by genomic regions
+- **`bcftools_view`**: Subsets and filters VCF/BCF files by genomic regions, via [BCFtools](#bcftools)
 - **`biothings_query`**: Queries biological databases (genes, variants, chemicals, diseases) via [BioThings](#biothings) APIs
 
 ### MCP Client Configuration
@@ -47,7 +47,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 ### Step 1: Retrieve Gene Coordinates and Extract Variants
 
 **User Query:**
-> I am analyzing the TP53 gene for potential pathogenic variants. Please retrieve the latest gene coordinates from NCBI and extract all known variants for this region from the ClinVar VCF file. Save the vcf file to the working directory.
+> I am analyzing the TP53 gene for potential pathogenic variants. Please retrieve the latest gene coordinates from NCBI and extract all known variants for this region from the ClinVar VCF file.
 
 **Tool Invocation:**
 ```json
@@ -270,13 +270,10 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 
 ## Key Benefits
 
-1. **Natural Language Interface**: Complex bioinformatics workflows are accessible through simple queries
+1. **Natural Language Interface**: Hybrid workflows involving website data extraction, command-line tool execution, and API calls are accessible through simple queries
 2. **Automatic Tool Discovery**: The LLM automatically selects the appropriate tools based on the task
-3. **Parameter Extraction**: Genomic coordinates are automatically extracted from gene metadata for downstream analysis
-4. **Containerized Execution**: Tools run in isolated containers, ensuring reproducibility and avoiding dependency conflicts
-5. **Seamless Integration**: Multiple tools work together in a single workflow without manual intervention
-6. **Remote Data Access**: Direct access to remote VCF files without manual download
-7. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. You can specify different genes, adjust genomic regions, filter variants by clinical significance, change output formats, and query different VCF sources—all through natural language interaction without modifying code
+3. **Containerized Execution**: Tools run in isolated containers, ensuring reproducibility and avoiding dependency conflicts
+4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. You can specify different genes, adjust genomic regions, filter variants by clinical significance, change output formats, and query different VCF sources. All through natural language interaction without modifying code
 
 ## Technical Details
 
