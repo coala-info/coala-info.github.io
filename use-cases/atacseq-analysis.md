@@ -210,7 +210,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 
 ## Key Benefits
 
-1. **ATAC-Seq Optimized Parameters**: The workflow uses ATAC-Seq-specific parameters (shift -100, extsize 200) as recommended by standard tutorials
+1. **ATAC-Seq Optimized Parameters**: The workflow uses ATAC-Seq-specific parameters (paired-end mode)
 2. **Complete Output Files**: Generates all essential outputs including peaks, summits, and bedGraph files for downstream analysis
 3. **Quality Control**: Easy filtering of peaks by q-value thresholds for downstream analysis
 4. **Peak Annotation**: Automatic annotation of peaks with genomic features and nearest genes
@@ -218,7 +218,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 6. **Natural Language Interface**: Complex peak calling accessible through simple queries
 7. **Automatic Tool Chaining**: Results from peak calling are automatically used for visualization and annotation
 8. **Reproducible Analysis**: All tools run in containerized environments with specified versions
-9. **Human-in-the-Loop Analysis**: Users can adjust parameters like extension size, shift, duplicate handling, q-value thresholds, and visualization regions through natural language
+9. **Human-in-the-Loop Analysis**: Users can adjust parameters like q-value thresholds, fix issues during analysis, and visualization regions through natural language
 
 ## Technical Details
 
@@ -233,8 +233,6 @@ All tools execute in Docker containers as specified in their CWL definitions:
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `extsize` | 200 | Extends reads to 200bp fragments |
-| `shift` | -100 | Shifts reads by -100bp (centers on Tn5 cut site) |
 | `nomodel` | true | Skips fragment size estimation |
 | `gsize` | 5e7 | The effective size of human chromosome 22 |
 | `keepdup` | all | Retains all duplicate reads |
