@@ -7,13 +7,15 @@ requirements:
   - entryname: ChIPSeeker.R
     entry: "suppressPackageStartupMessages(library(R.utils))\nargs
       <- commandArgs(trailingOnly = TRUE, asValues = TRUE)\nChIPSeeker <-\nfunction(peak){\n
-      \   library(ChIPseeker)\n    library(TxDb.Hsapiens.UCSC.hg38.knownGene)\n    fn <- basename(peak)\n    peakAnno <- annotatePeak(peak)\n
+      \   library(ChIPseeker)\n    library(TxDb.Hsapiens.UCSC.hg38.knownGene)\n
+      \ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene \n
+      \ fn <- basename(peak)\n    peakAnno <- annotatePeak(peak, TxDb = txdb)\n
       \   write.csv(data.frame(peakAnno), paste0(fn, \"_peakAnno.csv\"))\n    \n    pdf(paste0(fn,
       \"_AnnoPie.pdf\"))\n    plotAnnoPie(peakAnno)\n    dev.off()\n}\ndo.call(ChIPSeeker,
       args)"
     writable: false
 - class: DockerRequirement
-  dockerPull: quay.io/biocontainers/bioconductor-chipseeker:1.42.0--r44hdfd78af_0
+  dockerPull: hubentu/bioconductor-chipseeker:1.42.0
 arguments:
 - ChIPSeeker.R
 id: ChIPSeeker
