@@ -188,10 +188,10 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 ### Step 5: Visualize Peaks with pyGenomeTracks
 
 **User Query:**
-> Next, we want to visualize the peak in the chr22:37,193,000-37,252,000 region in a genome browser view. Use the chr22_gene.bed file as the gene annotation. Use the treatment bedGraph as the ATAC-seq coverage track. Use the peak.ini file as the configuration file.
+> Next, we want to visualize the peak in the chr22:23,161,760-23,359,701 region in a genome browser view. Use the chr22_gene.bed file as the gene annotation. Use the treatment bedGraph as the ATAC-seq coverage track. Use the peak.ini file as the configuration file.
 
 **Chat Response:**
-> Updated `peak.ini` to point at the BT549 bedgraph and q=0.001 peaks (absolute paths), then generated the genome browser view for chr22 (lines 37193000-37252000) using the local `pyGenomeTracks` CLI since the tool wrapper failed.
+> Updated `peak.ini` to point at the BT549 bedgraph and q=0.001 peaks (absolute paths), then generated the genome browser view for chr22 (lines 23161760-23359701) using the local `pyGenomeTracks` CLI since the tool wrapper failed.
 > 
 > Output:
 > 
