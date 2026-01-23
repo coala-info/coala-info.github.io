@@ -39,6 +39,7 @@ inputs:
   
   output_filename:
     type: string
+    doc: "The output TSV file"
     inputBinding:
       prefix: --output
 

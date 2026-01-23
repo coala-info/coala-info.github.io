@@ -13,7 +13,11 @@ This use case demonstrates how to use Coala to perform RNA-Seq analysis: downloa
 
 ### [ATAC-Seq Peak Calling and Visualization](./atacseq-analysis)
 
-This use case demonstrates how to use the Tool Agent framework to perform ATAC-Seq peak calling and visualization. We use MACS3 to identify open chromatin regions from ATAC-Seq data with ATAC-specific parameters (paired end mode), ChIPSeeker to annotate peaks, and pyGenomeTracks to visualize peaks alongside gene annotations. The workflow shows how to chain peak calling with genome browser visualization through natural language.
+This use case demonstrates how to use the Tool Agent framework to perform ATAC-Seq peak calling and visualization. We use [`MACS3`](https://github.com/macs3-project/macs) to identify open chromatin regions from ATAC-Seq data with ATAC-specific parameters (paired end mode), ChIPSeeker to annotate peaks, and pyGenomeTracks to visualize peaks alongside gene annotations. The workflow shows how to chain peak calling with genome browser visualization through natural language.
+
+### [Hi-C Analysis](./hi-c-analysis.md)
+
+This use case demonstrates how to use Coala to perform Hi-C analysis and visualization. We use [`cooler`](https://open2c.github.io/cooler/) and [`cooltools`](https://cooltools.readthedocs.io/en/latest/) to visualize chromatin contact maps, compartmentalize chromosome into active (A) and inactive (B) regions, and indentify boundaries between topologically associating domains (TADs).  
 
 <!--
 ### [PDF Page Extraction and Combination](./pdf-operations)
