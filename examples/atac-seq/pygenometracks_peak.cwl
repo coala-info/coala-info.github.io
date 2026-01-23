@@ -1,6 +1,9 @@
-cwlVersion: v1.0
+cwlVersion: v1.2
 class: CommandLineTool
 baseCommand: pyGenomeTracks
+arguments:
+- --tracks
+- peak.ini
 requirements:
 - class: InitialWorkDirRequirement
   listing:
@@ -10,6 +13,29 @@ requirements:
     entryname: treat_pileup.bdg
   - entry: $(inputs.gene)
     entryname: gene.bed
+  - entryname: peak.ini
+    entry: |-
+      [bedgraph]
+      file = treat_pileup.bdg
+      title = Coverage
+      height = 1.5
+      file_type = bedgraph
+      show_data_range = true
+      [narrow_peak]
+      file = peaks.narrowPeak
+      title = Peaks from MACS3
+      type = box
+      height = 1.5
+      line_width = 1.0
+      file_type = narrow_peak
+      show_labels = false
+      [genes]
+      file = gene.bed
+      file_type = bed
+      title = Gene
+      height = 5.0
+      [x-axis]
+      where = bottom
 - class: DockerRequirement
   dockerPull: quay.io/biocontainers/pygenometracks:3.9--pyhdfd78af_0
 label: pyGenomeTracks
@@ -27,14 +53,6 @@ inputs:
     label: gene
     doc: gene annotation file in bed format
     type: File
-  tracks:
-    label: tracks
-    doc: The configure file is used to define the type of track. E.g. .bw for bigwig,
-      .bed for bed etc
-    type: File
-    inputBinding:
-      prefix: --tracks
-      separate: true
   region:
     label: region
     doc: Region to plot, the format is chr:start-end
