@@ -2,7 +2,7 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We will start with a small ATAC-seq alignment file (GSM5465773 chr22 data); run MACS3 to call peaks using default parameters; adjust q-value cutoff to call a more stringent peak set; call ChIPSeeker in R to annotate peaks on genome features and associate peaks to the nearest genes; visualize peaks and genes by generating genome browser views.
+This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We will start with a BAM file from BT-549 cell line (chr22 data); run MACS3 to call peaks using paired-end mode; adjust q-value cutoff to call a more stringent peak set; annotate peaks with genomic features using ChIPSeeker; and visualize peaks in a specific genomic region using pyGenomeTracks.
 
 <!-- 
 This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, We'll use macs3 to identify open chromatin regions from ATAC-Seq data ([MACS3](#macs3)), ChIPseeker to annotate peaks with genomic features ([ChIPseeker](#chipseeker)), and pyGenomeTracks to visualize the peaks alongside gene annotations ([pyGenomeTracks](#pygenometracks)).
@@ -55,158 +55,144 @@ Note: Replace `/path/to/examples/atac-seq/atac_question.py` with the actual path
 
 For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human triple negative breast cancer cell line ([Bhattacharya and et al.](https://doi.org/10.1158/1541-7786.MCR-21-0672)), using only the reads mapped to chromosome 22. The alignment file is in BAM format for the paired-end ATAC-seq library.
 
-### Step 1: Call Peaks with macs3
+### Step 1: Call Peaks with macs3 and Summarize Results
 
 **User Query:**
-> Here is a BAM file for the ATAC-seq data: BT549_Doxminus_chr22.bam. Call peaks for the BAM file using paired end mode. Use genome size of 5e7 which is approximately the size for human chromosome 22. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Do not call subpeak summits.
+> Here is a BAM file for the ATAC-seq data: BT549_Doxminus_chr22.bam. Call peaks for the BAM file using paired end mode, and summarize the number of peaks. Use genome size of 5e7 which is approximately the size for human chromosome 22. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Do not call subpeak summits.
 
 **Chat Response:**
 
-> Peak calling completed. Created files:
+> Peak calling completed successfully. Summary:
 > 
-> 1. **`BT549_Doxminus_chr22_treat_pileup.bdg`** (17 MB) — Extended fragment pileup at base-pair resolution
-> 2. **`BT549_Doxminus_chr22_control_lambda.bdg`** (25 MB) — Local lambda tracks at base-pair resolution
+> **Parameters used:**
+> - **Input file**: BT549_Doxminus_chr22.bam
+> - **Mode**: Paired-end (BAMPE)
+> - **Genome size**: 5e7 (50,000,000 bp)
+> - **Duplicate handling**: Keep all duplicates
+> - **BedGraph output**: Enabled (extended fragment pileup and local lambda tracks)
+> - **Subpeak summits**: Disabled
 > 
-> Both bedGraph files include tracklines for UCSC Genome Browser compatibility and contain data at every base pair.
+> **Results:**
+> - **Total number of peaks**: **815 peaks**
 > 
-> **Summary of the run:**
-> - Paired-end mode (BAMPE format)
-> - Genome size: 5e7 (50 million bp)
-> - All duplicate tags kept (`--keep-dup all`)
-> - Extended fragment pileup and local lambda tracks saved as bedGraph files
-> - Mean fragment size determined: 193.6 bp
-> - Total fragments processed: 304,015
->
-> **Note:** MACS3 also created `BT549_Doxminus_chr22_summits.bed` by default (standard output). You can ignore it if you don't need summit information.
+> The output files include:
+> - `BT549_Doxminus_chr22_peaks.narrowPeak` - Peak locations in BED6+4 format (815 peaks)
+> - `BT549_Doxminus_chr22_treat_pileup.bdg` - Treatment bedGraph file with extended fragment pileup
+> - `BT549_Doxminus_chr22_control_lambda.bdg` - Control bedGraph file with local lambda tracks
+> - `BT549_Doxminus_chr22_peaks.xls` - Detailed peak information in tabular format
 > 
-> Peak files:
-> - `BT549_Doxminus_chr22_peaks.narrowPeak` — Peaks in narrowPeak format
-> - `BT549_Doxminus_chr22_peaks.xls` — Detailed peak information
-> 
-> The bedGraph files are ready for visualization or further analysis.
+> All peaks are on chromosome 22, as expected from the input BAM file.
 
-### Step 2: Count Peaks
-
-**User Query:**
-> How many peaks did we get?
-
-**Chat Response:**
-> **815 peaks** were called.
-> 
-> The last peak in the file is `BT549_Doxminus_chr22_peak_815`, and there are 815 data lines (starting with "chr22") in the peaks.xls file. The narrowPeak file has 816 lines, likely due to a trailing blank line or formatting difference, but the actual peak count is **815**.
-
-### Step 3: Call a more stringent peak set by tweaking q-value
+### Step 2: Call Peaks with Stringent Q-value Cutoff
 
 **User Query:**
 > Set a more stringent q value cutoff 0.001 and rerun peak calling, summarize the number of peaks.
 
 **Chat Response:**
-> ### Rerun with \(q = 0.001\) (more stringent)
-> 
-> - **Command used**: `macs3 callpeak -t BT549_Doxminus_chr22.bam -f BAMPE -g 5e7 -q 0.001 --keep-dup all --bdg --trackline -n BT549_Doxminus_chr22_q0p001`
-> - **Number of peaks**: **559** (counted from `BT549_Doxminus_chr22_q0p001_peaks.xls` as lines starting with `chr22`)
 
-### Step 4: Annotate Peaks with ChIPSeeker
+> Peak calling with q-value cutoff 0.001 completed. Summary:
+> 
+> **Parameters used:**
+> - **Input file**: BT549_Doxminus_chr22.bam
+> - **Mode**: Paired-end (BAMPE)
+> - **Genome size**: 5e7 (50,000,000 bp)
+> - **Duplicate handling**: Keep all duplicates
+> - **Q-value cutoff**: 0.001 (more stringent)
+> - **BedGraph output**: Enabled
+> - **Subpeak summits**: Disabled
+> 
+> **Results:**
+> - **Total number of peaks**: **559 peaks**
+> 
+> ## Comparison
+> 
+> - **Default q-value (0.05)**: 815 peaks
+> - **Stringent q-value (0.001)**: 559 peaks
+> - **Reduction**: 256 fewer peaks (31.4% reduction)
+> 
+> The more stringent cutoff (0.001) retains only peaks with higher statistical significance, reducing the count from 815 to 559.
+
+### Step 3: Annotate Peaks with ChIPSeeker
 
 **User Query:**
-> Annotate the peak set from new q-value cutoff 0.001.
+> Annotate the peak set from q-value cutoff 0.001.
 
 **Chat Response:**
-> ## Annotation Summary
-> 
-> **Total peaks annotated: 559**
-> 
-> ### Genomic Feature Distribution:
-> - **Intron**: 238 peaks (42.6%)
-> - **Distal Intergenic**: 190 peaks (34.0%)
-> - **Promoter** (within 3kb of TSS): 83 peaks (14.8%)
-> - **Exon**: 33 peaks (5.9%)
-> - **3' UTR**: 11 peaks (2.0%)
-> - **5' UTR**: 4 peaks (0.7%)
-> 
-> ### Distance to TSS Statistics:
-> - **Median distance**: 2,392 bp
-> - **Mean distance**: -2,041 bp
-> - **Range**: -4,801,085 bp to 385,595 bp
-> 
-> ### Output Files Created:
-> 1. **`BT549_Doxminus_chr22_q0p001_peaks_annotated.csv`** — Annotated peaks with > gene information, genomic features, and distances to TSS
-> 2. **`BT549_Doxminus_chr22_q0p001_peaks_annotation_pie.pdf`** — Pie chart visualization of annotation distribution
-> 
-> Most peaks are in intronic (42.6%) and distal intergenic (34.0%) regions, consistent with ATAC-seq detecting open chromatin regions. About 15% are in promoter regions, indicating accessible regulatory elements near transcription start sites.
 
-*Note: The result is definitely suspicious, because ATAC-seq peaks should be close to gene start sites. We figure out the reason is that, by default hg19 is used while the agent constructed the R script for ChIPSeeker and our ATAC-seq was aligned to hg38. We will ask the agent to fix this issue and try again.*
-
-**User Query**
-> Please use the human genome annotation TxDb.Hsapiens.UCSC.hg38.knownGene to analyze again. You used the wrong annotation TxDb.Hsapiens.UCSC.hg19.knownGene.
-
-**Chat Response:**
-> Updating the annotation script to use hg38 instead of hg19, then rerunning the annotation.
+> Peak annotation completed. Summary:
 > 
-> Peak annotation completed using **hg38** annotation. Summary:
+> **Input:** 559 peaks from BT549_Doxminus_chr22_q001_peaks.narrowPeak
 > 
-> ## Peak Annotation Summary (q-value cutoff: 0.001, hg38)
+> ### Annotation Summary by Genomic Feature:
 > 
-> **Total peaks annotated: 559**
+> | Genomic Feature | Number of Peaks | Percentage |
+> |----------------|-----------------|------------|
+> | **Promoter regions** | **376** | **67.3%** |
+> | - Promoter (≤1kb) | 332 | 59.4% |
+> | - Promoter (1-2kb) | 25 | 4.5% |
+> | - Promoter (2-3kb) | 19 | 3.4% |
+> | **Distal Intergenic** | **85** | **15.2%** |
+> | **Intron** | **73** | **13.1%** |
+> | **Exon** | **13** | **2.3%** |
+> | **3' UTR** | **10** | **1.8%** |
+> | **5' UTR** | **1** | **0.2%** |
+> | **Downstream (≤300bp)** | **1** | **0.2%** |
+> | **Total** | **559** | **100%** |
 > 
-> ### Genomic Feature Distribution:
-> - **Promoter** (within 3kb of TSS): **391 peaks (69.9%)**
->   - Promoter (≤1kb): 343 peaks
->   - Promoter (1-2kb): 26 peaks
->   - Promoter (2-3kb): 22 peaks
-> - **Intron**: **80 peaks (14.3%)**
-> - **Distal Intergenic**: **47 peaks (8.4%)**
-> - **Exon**: **30 peaks (5.4%)**
-> - **3' UTR**: **9 peaks (1.6%)**
-> - **5' UTR**: **1 peak (0.2%)**
-> - **Downstream** (≤300bp): **1 peak (0.2%)**
-> 
-> ### Distance to TSS Statistics:
-> - **Median distance**: 0 bp (many peaks at TSS)
-> - **Mean distance**: 135.8 bp
-> - **Range**: -346,166 bp to 119,714 bp
-> 
-> ### Comparison with hg19:
-> Using hg38 shows:
-> - More promoter peaks (391 vs 83) — improved gene annotation coverage
-> - Fewer intron peaks (80 vs 238) — better promoter assignment
-> - Fewer distal intergenic peaks (47 vs 190) — improved gene boundary definitions
+> ### Key Findings:
+> - Most peaks (67.3%) are in promoter regions, which is consistent with ATAC-seq detecting open chromatin near transcription start sites.
+> - 15.2% are in distal intergenic regions, likely representing enhancers or other regulatory elements.
+> - 13.1% are in introns, possibly representing intronic enhancers.
+> - A small fraction (2.3%) are in exons.
 > 
 > ### Output Files:
-> 1. **`BT549_Doxminus_chr22_q0p001_peaks_annotated.csv`** — Annotated peaks with hg38 gene information
-> 2. **`BT549_Doxminus_chr22_q0p001_peaks_annotation_pie.pdf`** — Pie chart visualization
-> 
-> The hg38 annotation shows that ~70% of peaks are in promoter regions, consistent with ATAC-seq detecting accessible chromatin near transcription start sites.
-
-*Note: By keeping human-in-the-loop, we can fix issues during data analysis easily by prompting again with more detailed instruction.*
+> - **Annotation CSV**: `BT549_Doxminus_chr22_q001_peaks.narrowPeak_peakAnno.csv` - Detailed annotation with gene IDs, transcript IDs, and distances to TSS
+> - **Pie chart**: `BT549_Doxminus_chr22_q001_peaks.narrowPeak_AnnoPie.pdf` - Visual summary of peak distribution
 
 **Peak Annotation Visualization:**
 ![ATAC-Seq Peak Annotation](./BT549_Doxminus_chr22_q0p001_peaks_annotation_pie_fixed.png)
 
 *Figure: ChIPseeker pie chart showing the distribution of ATAC-Seq peaks across various genomic features. The chart displays the percentage of peaks falling into different genomic regions such as promoters, introns, exons, 5' UTR, 3' UTR, and intergenic regions, providing insight into where accessible chromatin regions are located relative to gene structures.*
 
-### Step 5: Visualize Peaks with pyGenomeTracks
+### Step 4: Visualize Peaks with pyGenomeTracks
 
 **User Query:**
-> Next, we want to visualize the peak in the chr22:23,161,760-23,359,701 region in a genome browser view. Use the chr22_gene.bed file as the gene annotation. Use the treatment bedGraph as the ATAC-seq coverage track. Use the peak.ini file as the configuration file.
+> let's visualize the peak in the chr22:23,161,760-23,359,701 region in a genome browser view.
 
 **Chat Response:**
-> Updated `peak.ini` to point at the BT549 bedgraph and q=0.001 peaks (absolute paths), then generated the genome browser view for chr22 (lines 23161760-23359701) using the local `pyGenomeTracks` CLI since the tool wrapper failed.
+
+> Genome browser visualization created successfully. Summary:
 > 
-> Output:
+> **Region visualized:** chr22:23,161,760-23,359,701  
+> **Output file:** `BT549_Doxminus_chr22_region_visualization.pdf` (55 KB)
 > 
->  * BT549_Doxminus_chr22_region_track.png
+> ### Visualization Tracks:
+> 1. **Coverage track** - ATAC-seq signal (bedGraph) showing chromatin accessibility
+> 2. **Peaks track** - MACS3-called peaks (narrowPeak format) from q-value 0.001
+> 3. **Gene annotation track** - Gene annotations from chr22_gene.bed
 > 
-> If you want, I can:
+> ### Peaks in this Region:
+> 4 peaks found in the visualized region:
 > 
->  * export a PDF/SVG version for publication, or
->  * add the control lambda track or adjust the y-axis scaling.
+> | Peak ID | Start | End | Score | Signal Value | -log10(qvalue) |
+> |---------|-------|-----|-------|--------------|----------------|
+> | Peak 95 | 23,178,580 | 23,178,856 | 86 | 4.80 | 8.60 |
+> | Peak 96 | 23,180,202 | 23,180,785 | 113 | 5.55 | 11.31 |
+> | Peak 97 | 23,281,795 | 23,282,045 | 145 | 7.37 | 14.59 |
+> | Peak 98 | 23,315,515 | 23,316,031 | 240 | 11.87 | 24.06 |
+> 
+> The visualization shows:
+> - ATAC-seq coverage across the region
+> - The 4 called peaks as boxes
+> - Gene annotations for context
+> 
+> The PDF file is saved and ready for viewing.
 
 **Generated Peak Visualization:**
 
 ![ATAC-Seq Peak Visualization](./BT549_Doxminus_chr22_region_track.png)
 
-*Figure: pyGenomeTracks output showing the chr22:37,193,000-37,252,000 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). The peaks correspond to accessible chromatin regions identified by MACS3.*
+*Figure: pyGenomeTracks output showing the chr22:23,161,760-23,359,701 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). Four peaks are visible in this region, corresponding to accessible chromatin regions identified by MACS3 with q-value cutoff of 0.001.*
 
 ## Key Benefits
 
@@ -233,36 +219,36 @@ All tools execute in Docker containers as specified in their CWL definitions:
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `nomodel` | true | Skips fragment size estimation |
+| `format` | BAMPE | Paired-end mode for ATAC-seq data |
 | `gsize` | 5e7 | The effective size of human chromosome 22 |
 | `keepdup` | all | Retains all duplicate reads |
 | `bdg` | true | Outputs bedGraph files for visualization |
-| `summits` | true | Identifies subpeak summits |
+| `summits` | false | Do not call subpeak summits |
 | `qvalue` | 0.001 | Minimum FDR threshold for peak calling (default: 0.05) |
 
 ### Data Flow
 
-1. ATAC-Seq reads (BED format) are processed by macs3
+1. ATAC-Seq reads (BAM format) are processed by macs3 in paired-end mode
 2. macs3 identifies enriched regions (peaks) representing open chromatin
-3. Peak summits are identified for precise accessibility positions
-4. bedGraph coverage tracks are generated for visualization
-5. q-value tweaking is demonstrated during peak calling to control false discovery rate
-6. ChIPseeker annotates peaks with genomic features (promoters, introns, exons, intergenic) and nearest genes
-7. pyGenomeTracks combines peaks, coverage, and gene annotations into a single plot
+3. bedGraph coverage tracks are generated for visualization
+4. q-value tweaking is demonstrated during peak calling to control false discovery rate
+5. ChIPseeker annotates peaks with genomic features (promoters, introns, exons, intergenic) and nearest genes
+6. pyGenomeTracks combines peaks, coverage, and gene annotations into a single plot
 
 ### Output Files
 
 | Step | File | Description |
 |------|------|-------------|
 | 1 | `*_peaks.narrowPeak` | Peak locations (BED6+4 format) |
-| 1 | `*_summits.bed` | Peak summit positions |
 | 1 | `*_peaks.xls` | Detailed peak statistics |
 | 1 | `*_treat_pileup.bdg` | Treatment coverage (bedGraph) |
 | 1 | `*_control_lambda.bdg` | Local background estimate |
-| 3 | `*_peaks.narrowPeak` | Peaks filtered by q-value threshold during calling |
-| 4 | `*_peakAnno.csv` | Peak annotation with genomic features |
-| 4 | `*_AnnoPie.pdf` | Pie chart of peak distribution by feature |
-| 5 | `*.png` | Genome browser visualization |
+| 2 | `*_q001_peaks.narrowPeak` | Peaks filtered by q-value threshold (0.001) during calling |
+| 2 | `*_q001_treat_pileup.bdg` | Treatment coverage for stringent peak set |
+| 2 | `*_q001_control_lambda.bdg` | Control lambda tracks for stringent peak set |
+| 3 | `*_peakAnno.csv` | Peak annotation with genomic features |
+| 3 | `*_AnnoPie.pdf` | Pie chart of peak distribution by feature |
+| 4 | `*.pdf` | Genome browser visualization |
 
 ## Extending the Workflow
 
