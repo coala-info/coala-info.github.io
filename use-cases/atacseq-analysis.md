@@ -82,6 +82,12 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > - `BT549_Doxminus_chr22_peaks.xls` - Detailed peak information in tabular format
 > 
 > All peaks are on chromosome 22, as expected from the input BAM file.
+>
+> ```
+> Tool Invocation Summary:
+> tool_name: macs3_callpeak
+> tool_version: quay.io/biocontainers/macs3:3.0.3--py39h0699b22_0
+> ```
 
 ### Step 2: Call Peaks with Stringent Q-value Cutoff
 
@@ -111,6 +117,12 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > - **Reduction**: 256 fewer peaks (31.4% reduction)
 > 
 > The more stringent cutoff (0.001) retains only peaks with higher statistical significance, reducing the count from 815 to 559.
+>
+> ```
+> Tool Invocation Summary:
+> tool_name: macs3_callpeak
+> tool_version: quay.io/biocontainers/macs3:3.0.3--py39h0699b22_0
+> ```
 
 ### Step 3: Annotate Peaks with ChIPSeeker
 
@@ -148,6 +160,12 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > ### Output Files:
 > - **Annotation CSV**: `BT549_Doxminus_chr22_q001_peaks.narrowPeak_peakAnno.csv` - Detailed annotation with gene IDs, transcript IDs, and distances to TSS
 > - **Pie chart**: `BT549_Doxminus_chr22_q001_peaks.narrowPeak_AnnoPie.pdf` - Visual summary of peak distribution
+>
+> ```
+> Tool Invocation Summary:
+> tool_name: ChIPSeeker
+> tool_version: hubentu/bioconductor-chipseeker:1.42.0
+> ```
 
 **Peak Annotation Visualization:**
 ![ATAC-Seq Peak Annotation](./BT549_Doxminus_chr22_q0p001_peaks_annotation_pie_fixed.png)
@@ -187,6 +205,12 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > - Gene annotations for context
 > 
 > The PDF file is saved and ready for viewing.
+>
+> ```
+> Tool Invocation Summary:
+> tool_name: pygenometracks_peak
+> tool_version: quay.io/biocontainers/pygenometracks:3.9--pyhdfd78af_0
+> ```
 
 **Generated Peak Visualization:**
 
