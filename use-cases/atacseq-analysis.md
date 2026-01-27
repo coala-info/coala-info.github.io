@@ -280,7 +280,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 
 **Peak Annotation Visualization:**
 
-![ATAC-Seq Peak Annotation](../examples/atac-seq/BT549_Doxminus_chr22_q001_peaks_AnnoPie.png)
+![ATAC-Seq Peak Annotation](./BT549_Doxminus_chr22_q001_peaks_AnnoPie.png)
 
 *Figure: ChIPseeker pie chart showing the distribution of ATAC-Seq peaks across various genomic features. The chart displays the percentage of peaks falling into different genomic regions such as promoters, introns, exons, 5' UTR, 3' UTR, and intergenic regions, providing insight into where accessible chromatin regions are located relative to gene structures.*
 
@@ -348,21 +348,16 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 
 **Generated Peak Visualization:**
 
-![ATAC-Seq Peak Visualization](../examples/atac-seq/BT549_Doxminus_chr22_region_visualization.png)
+![ATAC-Seq Peak Visualization](./BT549_Doxminus_chr22_region_visualization.png)
 
 *Figure: pyGenomeTracks output showing the chr22:23,161,760-23,359,701 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). The peaks correspond to accessible chromatin regions identified by MACS3 with q-value ≤ 0.001.*
 
 ## Key Benefits
 
 1. **Natural Language Interface**: End-to-end ATAC-Seq analysis from peak calling to visualization accessible through simple queries
-2. **ATAC-Seq Optimized Parameters**: The workflow uses ATAC-Seq-specific parameters (paired-end mode)
-3. **Complete Output Files**: Generates all essential outputs including peaks, summits, and bedGraph files for downstream analysis
-4. **Quality Control**: Easy filtering of peaks by q-value thresholds for downstream analysis
-5. **Peak Annotation**: Automatic annotation of peaks with genomic features and nearest genes
-6. **Integrated Visualization**: Seamlessly visualizes peaks with coverage and gene annotations
-7. **Automatic Tool Chaining**: Results from peak calling are automatically used for visualization and annotation
-8. **Reproducible Analysis**: All tools run in containerized environments with specified versions
-9. **Human-in-the-Loop Analysis**: Users can adjust parameters like q-value thresholds, fix issues during analysis, and visualization regions through natural language
+2. **Automatic Tool Chaining**: Results from peak calling are automatically used for visualization and annotation
+3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
+4. **Human-in-the-Loop Analysis**: Users can adjust parameters like q-value thresholds, fix issues during analysis, and visualization regions through natural language
 
 ## Technical Details
 
