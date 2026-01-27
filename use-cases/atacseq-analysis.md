@@ -2,9 +2,12 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We will start with a BAM file for ATAC-seq data (BT549_Doxminus_chr22.bam); run MACS3 to call peaks using paired-end mode and summarize the results; adjust q-value cutoff to call a more stringent peak set; annotate peaks using ChIPSeeker to associate peaks with genomic features and nearest genes; and visualize peaks in a specific genomic region using pyGenomeTracks.
+This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We'll use the GSE180599 dataset as an example, which contains ATAC-Seq data from BT549 triple-negative breast cancer cells in the presence and absence of MUC1-C protein.
 
-<!-- 
+
+<--
+We will start with a BAM file for ATAC-seq data (BT549_Doxminus_chr22.bam); run MACS3 to call peaks using paired-end mode and summarize the results; adjust q-value cutoff to call a more stringent peak set; annotate peaks using ChIPSeeker to associate peaks with genomic features and nearest genes; and visualize peaks in a specific genomic region using pyGenomeTracks.
+
 This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, We'll use macs3 to identify open chromatin regions from ATAC-Seq data ([MACS3](#macs3)), ChIPseeker to annotate peaks with genomic features ([ChIPseeker](#chipseeker)), and pyGenomeTracks to visualize the peaks alongside gene annotations ([pyGenomeTracks](#pygenometracks)).
 
 ### About the Dataset
@@ -30,9 +33,9 @@ mcp.serve()
 ```
 
 This server exposes three tools:
-- **`macs3_callpeak`**: Calls peaks from ATAC-Seq data using macs3
-- **`ChIPSeeker`**: Annotates peaks with genomic features using ChIPseeker
-- **`pygenometracks_peak`**: Visualizes peaks and coverage tracks alongside gene annotations using pyGenomeTracks
+- **`macs3_callpeak`**: Calls peaks from ATAC-Seq data using ([MACS3](#macs3))
+- **`ChIPSeeker`**: Annotates peaks with genomic features using [ChIPseeker](#chipseeker))
+- **`pygenometracks_peak`**: Visualizes peaks and coverage tracks alongside gene annotations using ([pyGenomeTracks](#pygenometracks))
 
 ### MCP Client Configuration
 
@@ -53,7 +56,7 @@ Note: Replace `/path/to/examples/atac-seq/atac_question.py` with the actual path
 
 ## Use Case Workflow
 
-For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human triple negative breast cancer cell line ([Bhattacharya and et al.](https://doi.org/10.1158/1541-7786.MCR-21-0672)), using only the reads mapped to chromosome 22. The alignment file is in BAM format for the paired-end ATAC-seq library.
+For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple negative breast cancer cell line ([Bhattacharya and et al.](https://doi.org/10.1158/1541-7786.MCR-21-0672)), using only the reads mapped to chromosome 22. The alignment file is in BAM format for the paired-end ATAC-seq library.
 
 ### Step 1: Call Peaks with macs3 and Summarize
 
@@ -65,7 +68,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 {
   "tool": "macs3_callpeak",
   "parameters": {
-    "treatment": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/atac-seq/BT549_Doxminus_chr22.bam",
+    "treatment": "./examples/atac-seq/BT549_Doxminus_chr22.bam",
     "format": "BAMPE",
     "gsize": "5e7",
     "keepdup": "all",
@@ -80,22 +83,22 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 ```json
 {
   "narrowPeak": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_peaks.narrowPeak",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_peaks.narrowPeak",
     "basename": "BT549_Doxminus_chr22_peaks.narrowPeak",
     "size": 70916
   },
   "xlsPeak": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_peaks.xls",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_peaks.xls",
     "basename": "BT549_Doxminus_chr22_peaks.xls",
     "size": 77367
   },
   "teatBdg": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_treat_pileup.bdg",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_treat_pileup.bdg",
     "basename": "BT549_Doxminus_chr22_treat_pileup.bdg",
     "size": 17502010
   },
   "controlBdg": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_control_lambda.bdg",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_control_lambda.bdg",
     "basename": "BT549_Doxminus_chr22_control_lambda.bdg",
     "size": 25986774
   },
@@ -138,7 +141,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 {
   "tool": "macs3_callpeak",
   "parameters": {
-    "treatment": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/atac-seq/BT549_Doxminus_chr22.bam",
+    "treatment": "./examples/atac-seq/BT549_Doxminus_chr22.bam",
     "format": "BAMPE",
     "gsize": "5e7",
     "keepdup": "all",
@@ -154,22 +157,22 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 ```json
 {
   "narrowPeak": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_peaks.narrowPeak",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_q001_peaks.narrowPeak",
     "basename": "BT549_Doxminus_chr22_q001_peaks.narrowPeak",
     "size": 51543
   },
   "xlsPeak": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_peaks.xls",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_q001_peaks.xls",
     "basename": "BT549_Doxminus_chr22_q001_peaks.xls",
     "size": 56210
   },
   "teatBdg": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_treat_pileup.bdg",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_q001_treat_pileup.bdg",
     "basename": "BT549_Doxminus_chr22_q001_treat_pileup.bdg",
     "size": 17502010
   },
   "controlBdg": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_control_lambda.bdg",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_q001_control_lambda.bdg",
     "basename": "BT549_Doxminus_chr22_q001_control_lambda.bdg",
     "size": 25986774
   },
@@ -218,7 +221,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 {
   "tool": "ChIPSeeker",
   "parameters": {
-    "peak": "/var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_peaks.narrowPeak"
+    "peak": "./examples/atac-seq/BT549_Doxminus_chr22_q001_peaks.narrowPeak"
   }
 }
 ```
@@ -227,12 +230,12 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 ```json
 {
   "ann": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmp422j8r17/BT549_Doxminus_chr22_q001_peaks.narrowPeak_peakAnno.csv",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_q001_peaks.narrowPeak_peakAnno.csv",
     "basename": "BT549_Doxminus_chr22_q001_peaks.narrowPeak_peakAnno.csv",
     "size": 110270
   },
   "pie": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmp422j8r17/BT549_Doxminus_chr22_q001_peaks.narrowPeak_AnnoPie.pdf",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_q001_peaks.narrowPeak_AnnoPie.pdf",
     "basename": "BT549_Doxminus_chr22_q001_peaks.narrowPeak_AnnoPie.pdf",
     "size": 5885
   },
@@ -296,9 +299,9 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 {
   "tool": "pygenometracks_peak",
   "parameters": {
-    "peak": "/var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_peaks.narrowPeak",
-    "bedgraph": "/var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpriysp7se/BT549_Doxminus_chr22_q001_treat_pileup.bdg",
-    "gene": "/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/atac-seq/chr22_gene.bed",
+    "peak": "./examples/atac-seq/BT549_Doxminus_chr22_q001_peaks.narrowPeak",
+    "bedgraph": "./examples/atac-seq/BT549_Doxminus_chr22_q001_treat_pileup.bdg",
+    "gene": "./examples/atac-seq/chr22_gene.bed",
     "region": "chr22:23,161,760-23,359,701",
     "outname": "BT549_Doxminus_chr22_region_visualization.png"
   }
@@ -309,7 +312,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 ```json
 {
   "trackplot": {
-    "location": "file:///var/folders/42/kcs2dll17qgd_zl1p4vf7zc40000gs/T/tmpihy5lj5d/BT549_Doxminus_chr22_region_visualization.png",
+    "location": "./examples/atac-seq/BT549_Doxminus_chr22_region_visualization.png",
     "basename": "BT549_Doxminus_chr22_region_visualization.png",
     "size": 30587
   },
@@ -354,7 +357,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 
 ## Key Benefits
 
-1. **Natural Language Interface**: End-to-end ATAC-Seq analysis from peak calling to visualization accessible through simple queries
+1. **Natural Language Interface**: ATAC-Seq analysis from peak calling to visualization accessible through simple queries
 2. **Automatic Tool Chaining**: Results from peak calling are automatically used for visualization and annotation
 3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
 4. **Human-in-the-Loop Analysis**: Users can adjust parameters like q-value thresholds, fix issues during analysis, and visualization regions through natural language
@@ -418,10 +421,6 @@ This use case can be extended to:
 All of these extensions can be implemented by adding additional CWL tools to the MCP server and querying them through natural language.
 
 ## Reference
-
-<a id="galaxy-atac-seq-tutorial"></a>
-Galaxy ATAC-seq tutorial
-https://galaxyproject.github.io/training-material/topics/epigenetics/tutorials/atac-seq/tutorial.html
 
 <a id="macs3"></a>
 MACS3
