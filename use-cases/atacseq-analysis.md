@@ -2,10 +2,10 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We will start with a BAM file from BT-549 cell line (chr22 data); run MACS3 to call peaks using paired-end mode; adjust q-value cutoff to call a more stringent peak set; annotate peaks with genomic features using ChIPSeeker; and visualize peaks in a specific genomic region using pyGenomeTracks.
+This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We'll use the GSE180599 dataset as an example, which contains ATAC-Seq data from BT549 triple-negative breast cancer cells in the presence of MUC1 protein.
 
 <!-- 
-This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, We'll use macs3 to identify open chromatin regions from ATAC-Seq data ([MACS3](#macs3)), ChIPseeker to annotate peaks with genomic features ([ChIPseeker](#chipseeker)), and pyGenomeTracks to visualize the peaks alongside gene annotations ([pyGenomeTracks](#pygenometracks)).
+We will start with a BAM file from BT-549 cell line (chr22 data); run MACS3 to call peaks using paired-end mode; adjust q-value cutoff to call a more stringent peak set; annotate peaks with genomic features using ChIPSeeker; and visualize peaks in a specific genomic region using pyGenomeTracks.
 
 ### About the Dataset
 -->
@@ -30,9 +30,9 @@ mcp.serve()
 ```
 
 This server exposes three tools:
-- **`macs3_callpeak`**: Calls peaks from ATAC-Seq data using macs3
-- **`ChIPSeeker`**: Annotates peaks with genomic features using ChIPseeker
-- **`pygenometracks_peak`**: Visualizes peaks and coverage tracks alongside gene annotations using pyGenomeTracks
+- **`macs3_callpeak`**: Calls peaks from ATAC-Seq data using ([MACS3](#macs3))
+- **`ChIPSeeker`**: Annotates peaks with genomic features using ([ChIPseeker](#chipseeker))
+- **`pygenometracks_peak`**: Visualizes peaks and coverage tracks alongside gene annotations using ([pyGenomeTracks](#pygenometracks))
 
 ### MCP Client Configuration
 
@@ -53,9 +53,9 @@ Note: Replace `/path/to/examples/atac-seq/atac_question.py` with the actual path
 
 ## Use Case Workflow
 
-For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human triple negative breast cancer cell line ([Bhattacharya and et al.](https://doi.org/10.1158/1541-7786.MCR-21-0672)), using only the reads mapped to chromosome 22. The alignment file is in BAM format for the paired-end ATAC-seq library.
+For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple negative breast cancer cell line ([Bhattacharya and et al.](https://doi.org/10.1158/1541-7786.MCR-21-0672)), using only the reads mapped to chromosome 22. The alignment file is in BAM format for the paired-end ATAC-seq library.
 
-### Step 1: Call Peaks with macs3 and Summarize Results
+### Step 1: Peak Calling
 
 **User Query:**
 > Here is a BAM file for the ATAC-seq data: BT549_Doxminus_chr22.bam. Call peaks for the BAM file using paired end mode, and summarize the number of peaks. Use genome size of 5e7 which is approximately the size for human chromosome 22. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Do not call subpeak summits.
@@ -124,7 +124,7 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > tool_version: quay.io/biocontainers/macs3:3.0.3--py39h0699b22_0
 > ```
 
-### Step 3: Annotate Peaks with ChIPSeeker
+### Step 3: Annotate Peaks
 
 **User Query:**
 > Annotate the peak set from q-value cutoff 0.001.
@@ -168,11 +168,11 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > ```
 
 **Peak Annotation Visualization:**
-![ATAC-Seq Peak Annotation](./BT549_Doxminus_chr22_q0p001_peaks_annotation_pie_fixed.png)
+![ATAC-Seq Peak Annotation](./BT549_Doxminus_chr22_q001_peaks.narrowPeak_AnnoPie.pdf)
 
 *Figure: ChIPseeker pie chart showing the distribution of ATAC-Seq peaks across various genomic features. The chart displays the percentage of peaks falling into different genomic regions such as promoters, introns, exons, 5' UTR, 3' UTR, and intergenic regions, providing insight into where accessible chromatin regions are located relative to gene structures.*
 
-### Step 4: Visualize Peaks with pyGenomeTracks
+### Step 4: Visualize Peaks
 
 **User Query:**
 > let's visualize the peak in the chr22:23,161,760-23,359,701 region in a genome browser view.
@@ -214,21 +214,16 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 
 **Generated Peak Visualization:**
 
-![ATAC-Seq Peak Visualization](./BT549_Doxminus_chr22_region_track.png)
+![ATAC-Seq Peak Visualization](./BT549_Doxminus_chr22_region_visualization.pdf)
 
 *Figure: pyGenomeTracks output showing the chr22:23,161,760-23,359,701 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). Four peaks are visible in this region, corresponding to accessible chromatin regions identified by MACS3 with q-value cutoff of 0.001.*
 
 ## Key Benefits
 
-1. **ATAC-Seq Optimized Parameters**: The workflow uses ATAC-Seq-specific parameters (paired-end mode)
-2. **Complete Output Files**: Generates all essential outputs including peaks, summits, and bedGraph files for downstream analysis
-3. **Quality Control**: Easy filtering of peaks by q-value thresholds for downstream analysis
-4. **Peak Annotation**: Automatic annotation of peaks with genomic features and nearest genes
-5. **Integrated Visualization**: Seamlessly visualizes peaks with coverage and gene annotations
-6. **Natural Language Interface**: Complex peak calling accessible through simple queries
-7. **Automatic Tool Chaining**: Results from peak calling are automatically used for visualization and annotation
-8. **Reproducible Analysis**: All tools run in containerized environments with specified versions
-9. **Human-in-the-Loop Analysis**: Users can adjust parameters like q-value thresholds, fix issues during analysis, and visualization regions through natural language
+1. **Natural Language Interface**: Complex peak calling accessible through simple queries
+2. **Automatic Tool Chaining**: Results from peak calling are automatically used for annotation and visualization
+3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
+4. **Human-in-the-Loop Analysis**: Users can adjust parameters like q-value thresholds and visualization regions through natural language
 
 ## Technical Details
 
@@ -239,7 +234,7 @@ All tools execute in Docker containers as specified in their CWL definitions:
 - **ChIPseeker**: ChIP peak annotation (v1.42.0)
 - **pyGenomeTracks**: Genome browser track visualization (v3.9)
 
-### macs3 Parameters Explained
+### MACS3 Parameters Explained
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
@@ -253,7 +248,7 @@ All tools execute in Docker containers as specified in their CWL definitions:
 ### Data Flow
 
 1. ATAC-Seq reads (BAM format) are processed by macs3 in paired-end mode
-2. macs3 identifies enriched regions (peaks) representing open chromatin
+2. MACS3 identifies enriched regions (peaks) representing open chromatin
 3. bedGraph coverage tracks are generated for visualization
 4. q-value tweaking is demonstrated during peak calling to control false discovery rate
 5. ChIPseeker annotates peaks with genomic features (promoters, introns, exons, intergenic) and nearest genes
@@ -272,7 +267,7 @@ All tools execute in Docker containers as specified in their CWL definitions:
 | 2 | `*_q001_control_lambda.bdg` | Control lambda tracks for stringent peak set |
 | 3 | `*_peakAnno.csv` | Peak annotation with genomic features |
 | 3 | `*_AnnoPie.pdf` | Pie chart of peak distribution by feature |
-| 4 | `*.pdf` | Genome browser visualization |
+| 4 | `*_region_visualization.pdf` | Genome browser visualization |
 
 ## Extending the Workflow
 
@@ -289,11 +284,7 @@ All of these extensions can be implemented by adding additional CWL tools to the
 
 ## Reference
 
-<a id="galaxy-atac-seq-tutorial"></a>
-Galaxy ATAC-seq tutorial
-https://galaxyproject.github.io/training-material/topics/epigenetics/tutorials/atac-seq/tutorial.html
-
-<a id="macs3"></a>
+<a id="MACS3"></a>
 MACS3
 https://github.com/macs3-project/MACS
 
