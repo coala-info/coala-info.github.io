@@ -150,6 +150,14 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > 
 > The annotation file includes gene IDs, transcript IDs, distances to TSS, and other genomic information for each peak.
 
+**Peak Annotation Visualization:**
+
+![ATAC-Seq Peak Annotation](./BT549_Doxminus_chr22_q001_peaks_AnnoPie.png)
+
+*Figure: ChIPseeker pie chart showing the distribution of ATAC-Seq peaks across various genomic features. The chart displays the percentage of peaks falling into different genomic regions such as promoters, introns, exons, 5' UTR, 3' UTR, and intergenic regions, providing insight into where accessible chromatin regions are located relative to gene structures.*
+
+
+
 ### Step 4: Visualize Peaks with pyGenomeTracks
 
 **User Query:**
@@ -172,13 +180,13 @@ For demonstration purposes, we utilize human ATAC-Seq data from the BT-549 human
 > 3. **Gene annotation track** — Gene annotations from chr22_gene.bed
 > 
 > The image has been saved to:
-> - `/Users/lius/Desktop/coala-master/coala-info.github.io-main/examples/atac-seq/chr22_23161760_23359701_visualization.png`
+> `./BT549_Doxminus_chr22_region_visualization.png`
 > 
 > You can open this PNG file to view the genome browser tracks for the specified region, showing the ATAC-seq coverage, called peaks, and gene annotations.
 
 **Generated Peak Visualization:**
 
-![ATAC-Seq Peak Visualization](../examples/atac-seq/chr22_23161760_23359701_visualization.png)
+![ATAC-Seq Peak Visualization](./BT549_Doxminus_chr22_region_visualization.png)
 
 *Figure: pyGenomeTracks output showing the chr22:23,161,760-23,359,701 region. The plot displays ATAC-Seq read coverage (top track), called peaks (middle track), and the gene annotations (bottom track). The peaks correspond to accessible chromatin regions identified by MACS3 with q-value ≤ 0.001.*
 
