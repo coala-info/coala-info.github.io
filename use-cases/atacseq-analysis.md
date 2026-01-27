@@ -5,7 +5,7 @@
 This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using ([MACS3](#macs3)), peak annotation using ([ChIPseeker](#chipseeker)), and peak visualization using ([pyGenomeTracks](#pygenometracks)). We'll use the GSE180599 dataset as an example, which contains ATAC-Seq data from BT549 triple-negative breast cancer cells in the presence and absence of MUC1-C protein.
 
 
-<--
+<!--
 We will start with a BAM file for ATAC-seq data (BT549_Doxminus_chr22.bam); run MACS3 to call peaks using paired-end mode and summarize the results; adjust q-value cutoff to call a more stringent peak set; annotate peaks using ChIPSeeker to associate peaks with genomic features and nearest genes; and visualize peaks in a specific genomic region using pyGenomeTracks.
 
 This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, We'll use macs3 to identify open chromatin regions from ATAC-Seq data ([MACS3](#macs3)), ChIPseeker to annotate peaks with genomic features ([ChIPseeker](#chipseeker)), and pyGenomeTracks to visualize the peaks alongside gene annotations ([pyGenomeTracks](#pygenometracks)).
