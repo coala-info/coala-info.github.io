@@ -84,10 +84,10 @@ For demonstration purposes, we follow the same workflow in `cooltools` command l
 ### Step 2: Calculate expected cis-contacts 
 
 **User Query:**
-> Now, let's calculate the expected contacts in the regions defined in `view_hg38.tsv` file.
+> Now, let's calculate the expected contacts in 100kbps resolution in the regions defined in `view_hg38.tsv` file.
 
 **Chat Response:**
-> Calculated expected contacts for the regions in `view_hg38.tsv` and saved the result to `expected_view_hg38_1Mb.tsv` in the project directory.
+> Expected contacts computed at 100 kb resolution for the `view_hg38.tsv` regions and saved to `expected_100kb.tsv`.
 > 
 > Tool Invocation Summary:
 >  * tool_name: `cooltools_expected_cis`
@@ -97,51 +97,54 @@ For demonstration purposes, we follow the same workflow in `cooltools` command l
 > Please show me the first 10 rows of the calculated expected contacts result.
 
 **Chat Response:**
-> Here are the first 10 rows from `expected_view_hg38_1Mb.tsv`:
+> Here are the first 10 rows from `expected_100kb.tsv`:
 > 
 > ```
-> region1	region2	dist	dist_bp	contact_frequency	n_total	n_valid	count.sum	balanced.sum	count.avg	balanced.avg
-> chr2_p	chr2_p	0	0	nan	94	88	nan	nan	nan	nan
-> chr2_p	chr2_p	1	1000000	nan	93	86	nan	nan	nan	nan
-> chr2_p	chr2_p	2	2000000	0.07736550497047255	92	86	1141747.0	6.65343342746064	12410.29347826087	0.07736550497047255
-> chr2_p	chr2_p	3	3000000	0.040104649890807864	91	85	615920.0	3.4088952407186683	6768.351648351649	0.040104649890807864
-> chr2_p	chr2_p	4	4000000	0.02776806252695501	90	84	422238.0	2.332517252264221	4691.533333333334	0.02776806252695501
-> chr2_p	chr2_p	5	5000000	0.021942962487346826	89	83	324539.0	1.8212658864497866	3646.505617977528	0.021942962487346826
-> chr2_p	chr2_p	6	6000000	0.019103988065201645	88	82	275690.0	1.5665270213465348	3132.840909090909	0.019103988065201645
-> chr2_p	chr2_p	7	7000000	0.017505098733041995	87	81	248706.0	1.4179129973764018	2858.689655172414	0.017505098733041995
-> chr2_p	chr2_p	8	8000000	0.016540938934592762	86	80	235603.0	1.323275114767421	2739.5697674418607	0.016540938934592762
+> region1 region2 dist dist_bp contact_frequency n_total n_valid count.sum balanced.sum count.avg balanced.avg
+> chr2_p chr2_p 0 0 nan 939 878 nan nan nan nan
+> chr2_p chr2_p 1 100000 nan 938 876 nan nan nan nan
+> chr2_p chr2_p 2 200000 0.07469948657766837 937 874 2738583.0 65.28735126888215 2922.7139807897547 0.07469948657766837
+> chr2_p chr2_p 3 300000 0.04703173774706632 936 872 1739972.0 41.011675315441835 1858.9444444444443 0.04703173774706632
+> chr2_p chr2_p 4 400000 0.03272830629835224 935 870 1184707.0 28.473626479566445 1267.0663101604277 0.03272830629835224
+> chr2_p chr2_p 5 500000 0.024411855848251056 934 868 868701.0 21.189490876281916 930.0867237687366 0.024411855848251056
+> chr2_p chr2_p 6 600000 0.01906776140099621 933 866 669908.0 16.51268137326272 718.0150053590568 0.01906776140099621
+> chr2_p chr2_p 7 700000 0.015385992791660403 932 864 528838.0 13.293497771994588 567.4227467811158 0.015385992791660403
+> chr2_p chr2_p 8 800000 0.012684366438721234 931 862 430768.0 10.933923870177704 462.6938775510204 0.012684366438721234
 > ```
 
 
 ### Step 3: Generate compartment profiles
 
 **User Query:**
-> Next, we want to obtain the compartment profiles using eigendecomposation. We will use GC profile for phasing the eigenvectors. Let's use the GC content in `gc.100000.tsv`.
+> Next, we want to obtain the compartment profiles in 100kbps resolution using eigendecomposation. We will use GC profile for phasing the eigenvectors. Let's use the GC content in `gc.100000.tsv`.
 
 **Chat Response:**
-> Computed cis eigenvectors at 100 kb with GC-based phasing and wrote the outputs to `compartments_100kb.cis.vecs.tsv` and `compartments_100kb.cis.lam.txt` in the project directory.
+> Computed 100 kb compartment profiles with GC phasing and saved outputs in the project directory:
 > 
+>  * `compartments_100kb.cis.vecs.tsv`
+>  * `compartments_100kb.cis.lam.txt`
+>  * `compartments_100kb.cis.bw`
 > Tool Invocation Summary:
->  * tool_name: `cooltools_eigs_cis`
->  * tool_version: `hubentu/cooltools_bedwig:0.7.1_2.10`
+>  * tool_name: cooltools_eigs_cis
+>  * tool_version: hubentu/cooltools_bedwig:0.7.1_2.10
 
 **User Query**
-> Please show me the first 10 rows of the output file containing eigenvectors.
+> Please show me the first 10 rows of the output file containing eigenvectors. Please only show the first eigenvector.
 
 **Chat Response:**
-> Here are the first 10 rows from `compartments_100kb.cis.vecs.tsv`:
+> Here are the first 10 rows from `compartments_100kb.cis.vecs.tsv` for E1:
 > 
 > ```
-> chrom	start	end	weight	E1
-> chr2	0	100000	0.006753896776031722	-0.7208763866619383
-> chr2	100000	200000	0.006767247672675303	-0.7509687852724986
-> chr2	200000	300000	0.004637635342840809	0.29459214704882253
-> chr2	300000	400000	0.006033848904868106	-0.6756503683058006
-> chr2	400000	500000	0.006152651351662496	-0.8203464505092607
-> chr2	500000	600000	0.005040530071650813	-0.42987920022604925
-> chr2	600000	700000	0.0037670242720060556	0.1713526511056065
-> chr2	700000	800000	0.0048030720191339854	-0.1530690703056947
-> chr2	800000	900000	0.0058058067994520655	-0.46568371473713405
+> chrom start end E1
+> chr2 0 100000 -0.7208763866619379
+> chr2 100000 200000 -0.750968785272498
+> chr2 200000 300000 0.294592147048823
+> chr2 300000 400000 -0.6756503683057999
+> chr2 400000 500000 -0.8203464505092593
+> chr2 500000 600000 -0.4298792002260485
+> chr2 600000 700000 0.17135265110560666
+> chr2 700000 800000 -0.15306907030569428
+> chr2 800000 900000 -0.4656837147371341
 > ```
 
 *Note: The fifth column of the `*.cis.vecs.tsv` file (E1) shows the first eigenvector. The sign of it can be used to determine the active (A, positive) and inactive (B, negative) domains.*
@@ -171,11 +174,14 @@ For demonstration purposes, we follow the same workflow in `cooltools` command l
 > Lastly, let's find the boundaries between TADs. Let's use higher resolution data in 10000bps, to define boundaries in window size 100000bps and 200000bps, using Li method for insulation scores.
 
 **Chat Response:**
-> Generated TAD boundary insulation scores at 10kb with 100kb/200kb windows (Li method), and saved the result to `insulation_10kb.tsv`.
+> Computed insulation scores (Li threshold) at 10 kb resolution with 100 kb and 200 kb windows. Outputs saved:
 > 
+>  * `insulation_10kb.tsv`
+>  * `insulation_10kb.tsv.100000.bw`
+>  * `insulation_10kb.tsv.200000.bw`
 > Tool Invocation Summary:
->  * tool_name: `cooltools_insulation`
->  * tool_version: `hubentu/cooltools_bedwig:0.7.1_2.10`
+>  * tool_name: cooltools_insulation
+>  * tool_version: hubentu/cooltools_bedwig:0.7.1_2.10
 
 **User Query**
 > Please show me the first 10 rows of the output file of insulation site analysis.
@@ -183,16 +189,16 @@ For demonstration purposes, we follow the same workflow in `cooltools` command l
 **Chat Response:**
 > Here are the first 10 rows of the insulation output (insulation_10kb):
 > ```
-> chrom	start	end	region	is_bad_bin	log2_insulation_score_100000	n_valid_pixels_100000	log2_insulation_score_200000	n_valid_pixels_200000	boundary_strength_100000	boundary_strength_200000	is_boundary_100000	is_boundary_200000
-> chr2	0	10000	chr2_p	True	nan	0.0	nan	0.0	nan	nan	False	False
-> chr2	10000	20000	chr2_p	False	0.6920511045925822	8.0	1.123244773139978	18.0	nan	nan	False	False
-> chr2	20000	30000	chr2_p	False	0.7605614976174994	17.0	1.1966433846772861	37.0	nan	nan	False	False
-> chr2	30000	40000	chr2_p	False	0.766697670784129	27.0	1.2117481215333632	57.0	nan	nan	False	False
-> chr2	40000	50000	chr2_p	False	0.6749057177273853	37.0	1.135036666242489	77.0	nan	nan	False	False
-> chr2	50000	60000	chr2_p	False	0.5959103148287388	47.0	1.0617552436740376	97.0	nan	nan	False	False
-> chr2	60000	70000	chr2_p	False	0.5575385844294153	57.0	1.0061780459304999	117.0	nan	nan	False	False
-> chr2	70000	80000	chr2_p	False	0.4888584164949332	67.0	0.9194922005805989	137.0	nan	nan	False	False
-> chr2	80000	90000	chr2_p	False	0.4373482061511735	77.0	0.8509420575105128	157.0	nan	nan	False	False
+> chrom start end region is_bad_bin log2_insulation_score_100000 n_valid_pixels_100000 log2_insulation_score_200000 n_valid_pixels_200000 boundary_strength_100000 boundary_strength_200000 is_boundary_100000 is_boundary_200000
+> chr2 0 10000 chr2 True nan 0.0 nan 0.0 nan nan False False
+> chr2 10000 20000 chr2 False 0.6822448698143393 8.0 1.1129586531819595 18.0 nan nan False False
+> chr2 20000 30000 chr2 False 0.7507552628392568 17.0 1.186357264719268 37.0 nan nan False False
+> chr2 30000 40000 chr2 False 0.7568914360058863 27.0 1.2014620015753452 57.0 nan nan False False
+> chr2 40000 50000 chr2 False 0.6650994829491425 37.0 1.1247505462844705 77.0 nan nan False False
+> chr2 50000 60000 chr2 False 0.5861040800504962 47.0 1.0514691237160196 97.0 nan nan False False
+> chr2 60000 70000 chr2 False 0.5477323496511725 57.0 0.9958919259724817 117.0 nan nan False False
+> chr2 70000 80000 chr2 False 0.47905218171669045 67.0 0.9092060806225807 137.0 nan nan False False
+> chr2 80000 90000 chr2 False 0.4275419713729308 77.0 0.8406559375524948 157.0 nan nan False False
 > ```
 
 *Note the last two columns indicate whether this bin is considered as a boundary in 100kbps windows or 200kbps windows.*
