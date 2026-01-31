@@ -4,13 +4,6 @@
 
 This use case demonstrates how to use Coala to perform RNA-Seq analysis: downloading data from GEO, describing study design information, performing differential gene expression (DEG) analysis, downloading curated gene sets from MSigDB, running Gene Set Enrichment Analysis (GSEA) with canonical pathways, and generating enrichment plots for specified pathways. We'll use the GSE164141 dataset as an example, which contains RNA-Seq data from BT549 triple-negative breast cancer cells comparing MUC1-C silenced (treatment) vs control conditions.
 
-## Key Benefits
-
-1. **Natural Language Interface**: End-to-end analysis from data download to visualization accessible through simple queries
-3. **Automatic Tool Chaining**: Results from one step are automatically used in subsequent steps
-3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
-4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. Through natural language interaction without modifying code, you can adjust p-value cutoffs for significance thresholds, specify pathways of interest for focused analysis, modify sample groupings, select different pathway collections based on biological context, and generate custom visualizations for specific pathways
-
 ## Setup
 
 ### MCP Server Configuration
@@ -32,10 +25,10 @@ mcp.serve()
 ```
 
 This server exposes five tools:
-- **`getGEOs`**: Downloads sample metadata and expression matrices from GEO database
+- **`getGEOs`**: Downloads sample metadata and expression matrices from GEO using [GEOquery](#geoquery)
 - **`DEG`**: Performs differential expression analysis using [DESeq2](#deseq2)
 - **`pathdb`**: Downloads pathway gene sets from MSigDB
-- **`gsea`**: Runs Gene Set Enrichment Analysis
+- **`gsea`**: Runs Gene Set Enrichment Analysis using [fgsea](#fgsea)
 - **`plotGSEA`**: Creates enrichment plots for specific pathways
 
 ### MCP Client Configuration
@@ -364,6 +357,13 @@ Note: Replace `/path/to/examples/RNASeq/rnaseq_question.py` with the actual path
 ![REACTOME_INTERFERON_SIGNALING GSEA Enrichment Plot](./REACTOME_INTERFERON_SIGNALING.png)
 
 *Figure: GSEA enrichment plot for the REACTOME_INTERFERON_SIGNALING pathway showing the running enrichment score, gene hits, and ranking metric distribution. The negative NES indicates enrichment in the control group (MUC1-C active), meaning interferon signaling is suppressed when MUC1-C is silenced.*
+
+## Key Benefits
+
+1. **Natural Language Interface**: End-to-end analysis from data download to visualization accessible through simple queries
+3. **Automatic Tool Chaining**: Results from one step are automatically used in subsequent steps
+3. **Reproducible Analysis**: All tools run in containerized environments with specified versions
+4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. Through natural language interaction without modifying code, you can adjust p-value cutoffs for significance thresholds, specify pathways of interest for focused analysis, modify sample groupings, select different pathway collections based on biological context, and generate custom visualizations for specific pathways
 
 ## Technical Details
 
