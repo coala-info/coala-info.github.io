@@ -99,6 +99,8 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 >
 > The image is a 242×242 contact matrix for chr2 (0–242,193,529 bp), showing Hi-C contact frequency. The MCP tool wrote the figure to a temp path; it was then copied to the working directory.
 
+![chromosome 2 contact map](./chr2_1Mb_contact_map.png)
+
 **User Query:**
 > How about chr17?
 
@@ -135,8 +137,6 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 
 **Chat Response:**
 > The chromosome 17 contact map at 1 Mb resolution has been generated and saved as **`contact_map_chr17_1mb.png`**. Chr17 is shorter than chr2, so the matrix is smaller (~83×83 bins).
-
-![chromosome 2 contact map](./chr2_1Mb_contact_map.png)
 
 ![chromosome 17 contact map](./chr17_1Mb_contact_map.png)
 
@@ -455,11 +455,11 @@ Tools run in Docker as defined in their CWL:
 
 ### Data Flow
 
-1. **Contact maps**: mcool + uri + range → cooler show → PNG matrix.
-2. **Expected**: mcool + uri + view_bed → cooltools expected-cis → TSV (region pair, distance, contact_frequency).
-3. **Compartments**: mcool + uri + GC track + view → cooltools eigs-cis → eigenvectors TSV + eigenvalues; E1 phased by GC.
-4. **Saddle**: mcool + expected TSV + eigenvector TSV + view → cooltools saddle → PNG + NPZ + digitized TSV.
-5. **TADs**: mcool at 10 kb + view + windows + Li threshold → cooltools insulation → TSV with insulation scores and is_boundary_*.
+1. **Contact maps**: The multi-resolution Hi-C file (mcool) is read at a chosen resolution and genomic range; cooler show renders the contact matrix as a heatmap image for the requested chromosome(s).
+2. **Expected contacts**: cooltools expected-cis computes the average contact frequency as a function of genomic distance within the regions defined in the view file, producing a decay curve used later for normalization and saddle plots.
+3. **Compartments**: cooltools eigs-cis performs eigenvalue decomposition on the observed/expected contact matrix; the first eigenvector (E1) is the compartment signal, and a GC content track is used to phase it so that positive E1 corresponds to GC-rich (active) and negative to GC-poor (inactive) regions.
+4. **Saddle plot**: cooltools saddle bins genomic bins by their E1 value and plots observed/expected contact enrichment between bin pairs; the resulting image shows whether A–A and B–B interactions are enriched (compartmentalization) and A–B depleted.
+5. **TAD boundaries**: cooltools insulation computes a diamond insulation score at each bin; low scores mark boundaries between domains. The Li method is used to choose a threshold and flag bins as boundaries, yielding a table of insulation scores and boundary calls for each window size.
 
 ### Output Files
 
