@@ -2,7 +2,9 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform query-driven Hi-C analysis, including visualizing chromatin contact maps ([cooler](https://open2c.github.io/cooler/)), calculating expected cis-contacts and compartment profiles ([cooltools](https://cooltools.readthedocs.io/en/latest/)), visualizing compartmentalization with saddle plots, and identifying boundaries between topologically associating domains (TADs). We use a multi-resolution mcool file (`test.mcool`) containing Micro-C data for chromosomes 2 and 17, together with a view BED (`view_hg38.tsv`) and GC content track (`gc.100000.tsv`).
+
+This use case demonstrates how to use Coala to perform query-driven Hi-C analysis, including visualizing chromatin contact maps ([cooler](https://open2c.github.io/cooler/)), calculating expected cis-contacts and compartment profiles, visualizing compartmentalization with saddle plots, and identifying boundaries between topologically associating domains ([cooltools](https://cooltools.readthedocs.io/en/latest/)). We use a multi-resolution mcool file (`test.mcool`) containing Micro-C data for chromosomes 2 and 17 of HFF cell line , together with a view BED (`view_hg38.tsv`) and GC content track (`gc.100000.tsv`).
+
 
 ## Setup
 
@@ -31,7 +33,7 @@ This server exposes tools from **cooler** and **cooltools**:
 - **`cooltools_expected_cis`**: Calculate expected Hi-C signal for cis regions (decay curve)
 - **`cooltools_eigs_cis`**: Compute compartment profiles via eigenvalue decomposition with optional GC phasing
 - **`cooltools_saddle`**: Generate saddle plots from eigenvectors and expected contacts
-- **`cooltools_insulation`**: Calculate diamond insulation scores and call TAD boundaries
+- **`cooltools_insulation`**: Calculate diamond insulation scores and call topologically associating domains (TAD) boundaries
 
 ### MCP Client Configuration
 
@@ -52,16 +54,16 @@ Note: Replace `/path/to/examples/hi-c/hi-c.py` with the actual path to the `hi-c
 
 ### Data Sets
 
-The data file (`test.mcool`) is from the Micro-C study on HFF cell line (see [cooltools external test files](https://github.com/open2c/cooltools/blob/master/datasets/external_test_files.tsv)). Place `view_hg38.tsv`, `gc.100000.tsv`, and (optionally) `bins.100000.tsv` from the [examples/hi-c](https://github.com/coala-info/coala-info.github.io/tree/main/examples/hi-c) directory in the same working directory as `test.mcool` for the full workflow.
+The data file (`test.mcool`) is from the Micro-C study on HFF cell line (see [cooltools external test files](https://github.com/open2c/cooltools/blob/master/datasets/external_test_files.tsv)). Place `view_hg38.tsv`, `gc.100000.tsv`, and `bins.100000.tsv` from the [examples/hi-c](https://github.com/coala-info/coala-info.github.io/tree/main/examples/hi-c) directory in the same working directory as `test.mcool` for the full workflow.
 
 ## Use Case Workflow
 
 The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and the view file `view_hg38.tsv` defining chr2_p, chr2_q, chr17_p, and chr17_q.
 
-### Step 1: Show Contact Map of Chromosome 2
+### Step 1: Show Contact Map
 
 **User Query:**
-> Here is a mcool file for the Hi-C data: test.mcool. Show the contact map on chromosome 2 with 1000000 bps resolution. use MCP tools. save the output to working directory.
+> Here is a mcool file for the Hi-C data: test.mcool. Show the contact map on chromosome 2 with 1Mb resolution. Save the output to working directory.
 
 **Tool Invocation:**
 ```json
@@ -147,7 +149,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 2: Calculate Expected Cis-Contacts
 
 **User Query:**
-> Now, let's calculate the expected contacts in 100kbps resolution in the regions defined in view_hg38.tsv file.
+> Now, let's calculate the expected contacts in 100k bp resolution in the regions defined in view_hg38.tsv file.
 
 **Tool Invocation:**
 ```json
@@ -208,10 +210,10 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 
 ---
 
-### Step 3: Generate Compartment Profiles (Eigendecomposition)
+### Step 3: Generate Compartment Profiles
 
 **User Query:**
-> Next, we want to obtain the compartment profiles in 100kbps resolution using eigendecomposation. We will use GC profile for phasing the eigenvectors. Let's use the GC content in gc.100000.tsv.
+> Next, we want to obtain the compartment profiles in 100k bp resolution. Let's use the GC content profile in gc.100000.tsv.
 
 **Tool Invocation:**
 ```json
@@ -285,7 +287,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 4: Visualize Compartmentalization with Saddle Plot
 
 **User Query:**
-> Next, we want to visualize the effect of compartmentalization using saddleplot, using our previously computed eigenvectors and expected cis-contacts.
+> Next, we want to visualize the effect of compartmentalization using saddleplot, using our previously computed compartment profiles and expected cis-contacts.
 
 **Tool Invocation:**
 ```json
@@ -349,10 +351,10 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 
 ---
 
-### Step 5: Call TAD Boundaries (Insulation)
+### Step 5: Call topologically associating domains (TAD) boundaries
 
 **User Query:**
-> Lastly, let's find the boundaries between TADs. Let's use higher resolution data in 10000bps, to define boundaries in window size 100000bps and 200000bps, using Li method for insulation scores.
+> Lastly, let's find the boundaries between TADs. Let's use higher resolution data in 10kb, to define boundaries in window size 1000 kb and 200 kb, using Li method for insulation scores.
 
 **Tool Invocation:**
 ```json
@@ -418,14 +420,10 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 
 ## Key Benefits
 
-1. **Natural language interface**: End-to-end Hi-C analysis from contact maps to TAD boundaries via simple queries.
-2. **Multi-resolution workflow**: Same mcool used at 10 kb, 100 kb, and 1 Mb for visualization, compartments, and insulation.
-3. **Reproducible tool chain**: Expected contacts → eigenvectors (with GC phasing) → saddle plot; insulation uses the same view and resolution choices.
-4. **Compartment and TAD analysis**: Compartment profiles (E1) with GC phasing, saddle plots for compartmentalization, and insulation-based TAD boundaries with Li threshold.
-5. **Complete outputs**: Contact maps (PNG), expected TSV, eigenvectors and eigenvalues, saddle plot (PNG + NPZ + TSV), and insulation TSV with boundary flags.
-6. **View-based regions**: view_hg38.tsv restricts analysis to chr2_p, chr2_q, chr17_p, chr17_q for consistent results across tools.
-7. **Containerized execution**: All tools run in specified Docker images (cooltools/cooltools_bedwig) with fixed versions.
-8. **Human-in-the-loop**: Users can ask for different chromosomes, resolutions, window sizes, or inspect output rows via natural language.
+1. **Natural language interface**: Hi-C analysis from contact maps to TAD boundaries via simple queries.
+2. **Tool chain**: Expected contacts → Compartment Profiles (with GC phasing) → Saddle plot; Insulation-based TAD boundaries uses the same view and resolution choices.
+3. **Containerized execution**: All tools run in specified Docker images (cooltools/cooltools_bedwig) with fixed versions.
+4. **Human-in-the-loop**: Users can ask for different chromosomes, resolutions, window sizes, or inspect output rows via natural language.
 
 ## Technical Details
 
