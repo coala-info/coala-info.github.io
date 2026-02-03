@@ -354,7 +354,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 5: Call topologically associating domains (TAD) boundaries
 
 **User Query:**
-> Lastly, let's find the boundaries between TADs. Let's use higher resolution data in 10kb, to define boundaries in window size 1000 kb and 200 kb, using Li method for insulation scores.
+> Lastly, let's find the boundaries between TADs. Let's use higher resolution data in 10kb, to define boundaries in window size 100 kb and 200 kb, using Li method for insulation scores.
 
 **Tool Invocation:**
 ```json
