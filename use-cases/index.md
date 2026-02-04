@@ -3,7 +3,7 @@
 This section contains use cases demonstrating how to use Coala in various scenarios.
 <!--//## Available Use Cases-->
 
-### [Gene Variant Analysis](./tp53-gene-analysis)
+### [Gene Variant Analysis](./Gene-Variant)
 
 This use case demonstrates how to use Coala to perform query-dirven gene-variant analysis: retrieving gene coordinates from NCBI, extracting variants from ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. 
 
