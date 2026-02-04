@@ -2,13 +2,13 @@
 
 ## Overview
 
-This use case demonstrates how to use Coala to perform gene variant analysis: retrieving gene coordinates from NCBI, extracting variants from ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. We'll use the TP53 gene as an example, which is a critical tumor suppressor gene associated with many human cancers.
+This use case demonstrates how to use Coala to perform query-driven gene variant analysis: retrieving gene metadata from NCBI, extracting variants from its ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. We'll use the TP53 gene as an example, which is a critical tumor suppressor gene associated with many human cancers.
 
 ## Setup
 
 ### MCP Server Configuration
 
-Create an MCP server with bioinformatics tools as shown in `examples/vcf_question.py`:
+Create an MCP server with cwl tools as shown in `examples/Gene-Variant/gene-variant_mcp.py`:
 
 ```python
 from coala.mcp_api import mcp_api
@@ -21,7 +21,7 @@ mcp.serve()
 ```
 
 This server exposes three tools:
-- **`ncbi_datasets_gene`**: Retrieves comprehensive gene metadata from [NCBI Datasets](#ncbi-datasets)
+- **`ncbi_datasets_gene`**: Retrieves gene metadata from [NCBI Datasets](#ncbi-datasets)
 - **`bcftools_view`**: Subsets and filters VCF/BCF files by genomic regions, via [BCFtools](#bcftools)
 - **`biothings_query`**: Queries biological databases (genes, variants, chemicals, diseases) via [BioThings](#biothings) APIs
 
@@ -32,15 +32,15 @@ Configure your MCP client (e.g., in Cursor) to connect to the server:
 ```json
 {
     "mcpServers": {
-        "vcf": {
+        "gene2variant": {
             "command": "python",
-            "args": ["/path/to/examples/vcf/vcf_question.py"]
+            "args": ["/path/to/examples/Gene-Variant/gene-variant_mcp.py"]
         }
     }
 }
 ```
 
-Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to the `vcf_question.py` file in your workspace.
+Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actual path to the `gene-variant_mcp.py` file in your workspace.
 
 ## Use Case Workflow
 
@@ -106,7 +106,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 > **Extracted Variants:**
 > - **Source:** ClinVar VCF (GRCh38)
 > - **File:** `tp53_clinvar_variants.vcf.gz`
-> - **Location:** `/Users/lius/Desktop/coala-master/tp53_clinvar_variants.vcf.gz`
+> - **Location:** `/path/to/examples/Gene-Variant/tp53_clinvar_variants.vcf.gz`
 > - **File Size:** 274 KB (compressed)
 > - **Number of Variants:** 3,763 variants
 >
@@ -122,7 +122,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 {
   "tool": "bcftools_view",
   "parameters": {
-    "vcf": "/Users/lius/Desktop/coala-master/tp53_clinvar_variants.vcf.gz",
+    "vcf": "/path/to/examples/Gene-Variant/tp53_clinvar_variants.vcf.gz",
     "include": "CLNSIG~\"Pathogenic\"",
     "fout": "tp53_pathogenic_variants.vcf.gz",
     "otype": "z"
@@ -147,7 +147,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 >
 > **Pathogenic Variants Summary:**
 > - **File:** `tp53_pathogenic_variants.vcf.gz`
-> - **Location:** `/Users/lius/Desktop/coala-master/tp53_pathogenic_variants.vcf.gz`
+> - **Location:** `/path/to/examples/Gene-Variant/tp53_pathogenic_variants.vcf.gz`
 > - **File Size:** ~80 KB (compressed)
 > - **Total Pathogenic Variants:** 901
 >
@@ -273,7 +273,7 @@ Note: Replace `/path/to/examples/vcf/vcf_question.py` with the actual path to th
 1. **Natural Language Interface**: Hybrid workflows involving website data extraction, command-line tool execution, and API calls are accessible through simple queries
 2. **Automatic Tool Discovery**: The LLM automatically selects the appropriate tools based on the task
 3. **Containerized Execution**: Tools run in isolated containers, ensuring reproducibility and avoiding dependency conflicts
-4. **Human-in-the-Loop Analysis**: Users maintain full control throughout the analysis process. You can specify different genes, adjust genomic regions, filter variants by clinical significance, change output formats, and query different VCF sources. All through natural language interaction without modifying code
+4. **Human-in-the-Loop Analysis**: Users maintain control throughout the analysis process. You can specify different genes, adjust genomic regions, filter variants by clinical significance, change output formats, and query different VCF sources. All through natural language interaction without modifying code
 
 ## Technical Details
 
