@@ -38,7 +38,7 @@ Configure your MCP client (e.g., in Cursor) to connect to the server:
 ```json
 {
     "mcpServers": {
-        "rnaseq": {
+        "rna-seq": {
             "command": "python",
             "args": ["/path/to/examples/RNA-Seq/RNA-Seq_mcp.py"]
         }
@@ -120,9 +120,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 > - **Gene Annotation:** GENCODE version 25
 > - **Quantification:** STAR QuantMode (GeneCounts) function
 >
-<!--
-> *Note: Study design information was extracted by reading the series matrix file using standard file inspection commands (e.g., `gunzip -c GSE164141_series_matrix.txt.gz | head -100`).*
--->
+
 ### Step 2: Differential Expression Analysis
 
 **User Query:**
