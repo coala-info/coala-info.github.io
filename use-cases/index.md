@@ -7,7 +7,7 @@ This section contains use cases demonstrating how to use Coala in various scenar
 
 This use case demonstrates how to use Coala to perform query-dirven gene-variant analysis: retrieving gene coordinates from NCBI, extracting variants from ClinVar VCF files, filtering by clinical significance, and performing detailed variant annotation. 
 
-### [RNA-Seq Analysis](./rnaseq-analysis)
+### [RNA-Seq Analysis](./RNA-Seq)
 
 This use case demonstrates how to use Coala to perform query-driven RNA-Seq analysis: downloading data from GEO, describing study design information, performing differential gene expression (DEG) analysis, downloading curated gene sets from MSigDB, running Gene Set Enrichment Analysis (GSEA) with canonical pathways, and generating enrichment plots for specified pathways.
 
