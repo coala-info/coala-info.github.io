@@ -47,7 +47,7 @@ export default withMermaid(defineConfig({
             { text: 'Overview', link: '/use-cases/' },
             //{ text: 'PDF Operations', link: '/use-cases/pdf-operations' },
             { text: 'Gene Variant Analysis', link: '/use-cases/Gene-Variant' },
-            { text: 'RNA-Seq Analysis', link: '/use-cases/rnaseq-analysis' },
+            { text: 'RNA-Seq Analysis', link: '/use-cases/RNA-Seq' },
             { text: 'ATAC-Seq Analysis', link: '/use-cases/atacseq-analysis' },
             { text: 'HI-C Analysis', link: '/use-cases/hi-c-analysis'}
           ]
