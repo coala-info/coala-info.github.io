@@ -11,7 +11,7 @@ This use case demonstrates how to use Coala to perform query-dirven gene-variant
 
 This use case demonstrates how to use Coala to perform query-driven RNA-Seq analysis: downloading data from GEO, describing study design information, performing differential gene expression (DEG) analysis, downloading curated gene sets from MSigDB, running Gene Set Enrichment Analysis (GSEA) with canonical pathways, and generating enrichment plots for specified pathways.
 
-### [ATAC-Seq Analysis](./atacseq-analysis)
+### [ATAC-Seq Analysis](./ATAC-Seq)
 
 This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using [`MACS3`](https://github.com/macs3-project/macs), peak annotation using [`ChIPseeker`](https://github.com/YuLab-SMU/ChIPseeker), and peak visualization using [`pyGenomeTracks`](https://github.com/deeptools/pyGenomeTracks).
 
