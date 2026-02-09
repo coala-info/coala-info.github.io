@@ -15,7 +15,7 @@ This use case demonstrates how to use Coala to perform query-driven RNA-Seq anal
 
 This use case demonstrates how to use Coala to perform query-driven ATAC-Seq analysis, including peak calling using [`MACS3`](https://github.com/macs3-project/macs), peak annotation using [`ChIPseeker`](https://github.com/YuLab-SMU/ChIPseeker), and peak visualization using [`pyGenomeTracks`](https://github.com/deeptools/pyGenomeTracks).
 
-### [Hi-C Analysis](./hi-c-analysis.md)
+### [Hi-C Analysis](./Hi-C.md)
 
 This use case demonstrates how to use Coala to perform query-driven Hi-C analysis and visualization. We use [`cooler`](https://open2c.github.io/cooler/) and [`cooltools`](https://cooltools.readthedocs.io/en/latest/) to visualize chromatin contact maps, compartmentalize chromosome into active (A) and inactive (B) regions, and indentify boundaries between topologically associating domains (TADs).  
 
