@@ -10,7 +10,7 @@ This use case demonstrates how to use Coala to perform query-driven Hi-C analysi
 
 ### MCP Server Configuration
 
-Start an MCP server with Hi-C analysis tools as shown in `examples/hi-c/hi-c.py`:
+Start an MCP server with Hi-C analysis tools as shown in `examples/Hi-C/hi-c.py`:
 
 ```python
 from coala.mcp_api import mcp_api
@@ -44,17 +44,17 @@ Configure your MCP client (e.g., Claude Desktop, Cursor) to connect to the MCP s
     "mcpServers": {
         "user-hi_c": {
             "command": "python",
-            "args": ["/path/to/examples/hi-c/hi-c.py"]
+            "args": ["/path/to/examples/Hi-C/hi-c.py"]
         }
     }
 }
 ```
 
-Note: Replace `/path/to/examples/hi-c/hi-c.py` with the actual path to the `hi-c.py` file in your workspace.
+Note: Replace `/path/to/examples/Hi-C/hi-c.py` with the actual path to the `hi-c.py` file in your workspace.
 
 ### Data Sets
 
-The data file (`test.mcool`) is from the Micro-C study on HFF cell line (see [cooltools external test files](https://github.com/open2c/cooltools/blob/master/datasets/external_test_files.tsv)). Place `view_hg38.tsv`, `gc.100000.tsv`, and `bins.100000.tsv` from the [examples/hi-c](https://github.com/coala-info/coala-info.github.io/tree/main/examples/hi-c) directory in the same working directory as `test.mcool` for the full workflow.
+The data file (`test.mcool`) is from the Micro-C study on HFF cell line (see [cooltools external test files](https://github.com/open2c/cooltools/blob/master/datasets/external_test_files.tsv)). Place `view_hg38.tsv`, `gc.100000.tsv`, and `bins.100000.tsv` from the [examples/Hi-C](https://github.com/coala-info/coala-info.github.io/tree/main/examples/Hi-C) directory in the same working directory as `test.mcool` for the full workflow.
 
 ## Use Case Workflow
 
@@ -72,7 +72,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
   "parameters": {
     "data": [
       {
-        "fcool": "/path/to/examples/hi-c/test.mcool",
+        "fcool": "/path/to/examples/Hi-C/test.mcool",
         "uri": "resolutions/1000000",
         "range": "chr2:0-242193529",
         "output": "/path/to/working_dir/contact_map_chr2_1mb.png"
@@ -113,7 +113,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
   "parameters": {
     "data": [
       {
-        "fcool": "/path/to/examples/hi-c/test.mcool",
+        "fcool": "/path/to/examples/Hi-C/test.mcool",
         "uri": "resolutions/1000000",
         "range": "chr17:0-83257441",
         "output": "/path/to/working_dir/contact_map_chr17_1mb.png"
@@ -158,10 +158,10 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
   "parameters": {
     "data": [
       {
-        "cool_file": "/path/to/examples/hi-c/test.mcool",
+        "cool_file": "/path/to/examples/Hi-C/test.mcool",
         "uri": "resolutions/100000",
         "output_filename": "/path/to/working_dir/expected_100kb.tsv",
-        "view_bed": "/path/to/examples/hi-c/view_hg38.tsv"
+        "view_bed": "/path/to/examples/Hi-C/view_hg38.tsv"
       }
     ]
   }
@@ -222,12 +222,12 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
   "parameters": {
     "data": [
       {
-        "cool_file": "/path/to/examples/hi-c/test.mcool",
+        "cool_file": "/path/to/examples/Hi-C/test.mcool",
         "uri": "resolutions/100000",
         "out_prefix": "/path/to/working_dir/compartment_100kb",
-        "phasing_track_file": "/path/to/examples/hi-c/gc.100000.tsv",
+        "phasing_track_file": "/path/to/examples/Hi-C/gc.100000.tsv",
         "phasing_track_col": "GC",
-        "view": "/path/to/examples/hi-c/view_hg38.tsv"
+        "view": "/path/to/examples/Hi-C/view_hg38.tsv"
       }
     ]
   }
@@ -296,7 +296,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
   "parameters": {
     "data": [
       {
-        "cool_file": "/path/to/examples/hi-c/test.mcool",
+        "cool_file": "/path/to/examples/Hi-C/test.mcool",
         "uri": "resolutions/100000",
         "expected_file": "/path/to/working_dir/expected_100kb.tsv",
         "expected_col": "balanced.avg",
@@ -305,7 +305,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
         "out_prefix": "/path/to/working_dir/saddle_100kb",
         "qrange": [0.02, 0.98],
         "fig_format": "png",
-        "view": "/path/to/examples/hi-c/view_hg38.tsv"
+        "view": "/path/to/examples/Hi-C/view_hg38.tsv"
       }
     ]
   }
@@ -363,12 +363,12 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
   "parameters": {
     "data": [
       {
-        "cool_file": "/path/to/examples/hi-c/test.mcool",
+        "cool_file": "/path/to/examples/Hi-C/test.mcool",
         "uri": "resolutions/10000",
         "window": [100000, 200000],
         "output_filename": "/path/to/working_dir/insulation_10kb.tsv",
         "threshold": "Li",
-        "view": "/path/to/examples/hi-c/view_hg38.tsv"
+        "view": "/path/to/examples/Hi-C/view_hg38.tsv"
       }
     ]
   }
