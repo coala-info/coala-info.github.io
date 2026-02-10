@@ -11,16 +11,24 @@
 The framework allows you to set up MCP servers with domain-specific tools described in CWL. The following example demonstrates how to create a server for PDF processing:
 
 ```python
+
 from coala.mcp_api import mcp_api
+import os
+base_dir = os.path.dirname(__file__)
+
 mcp = mcp_api(host='0.0.0.0', port=8000)
-mcp.add_tool('examples/PDF/pdftk_cat.cwl', 'pdftk_cat', read_outs=False)
+mcp.add_tool(os.path.join(base_dir, 'pdftk_cat.cwl'))
+mcp.add_tool(os.path.join(base_dir, 'pdf2docx.cwl'))
 mcp.serve()
+
 ```
 
-This creates an MCP server that exposes one command-line tool:
+This creates an MCP server that exposes two command-line tools for PDF processing operations:
 - `pdftk_cat`: The core command in the command-line tool [PDFtk](https://www.pdflabs.com/docs/pdftk-man-page/)
+- `pdf2docx`: The core command in the command-line tool [pdf2docx](https://pypi.org/project/pdf2docx/)
 
-You can configure your MCP client (e.g., Cursor, Claude Desktop) to connect to the MCP server using one of two methods:
+
+You can configure your MCP client (e.g., Cursor, Claude Code, Codex, Gemini CLI) to connect to the MCP server using one of two methods:
 
 ### Option 1: Automatic Execution (Recommended)
 
@@ -29,7 +37,7 @@ In this mode, the MCP client launches the server automatically when it starts. T
 ```json
 {
     "mcpServers": {
-        "coala": {
+        "PDF Processing": {
             "command": "python",
             "args": ["/path/to/examples/PDF/PDF-operation_mcp.py"]
         }
@@ -50,7 +58,7 @@ Once the server is running, you can connect your client through the following co
 ```json
 {
     "mcpServers": {
-        "coala": {
+        "PDF Processing": {
             "url": "http://localhost:8000/mcp",
             "transport": "streamable-http"
         }
@@ -60,11 +68,12 @@ Once the server is running, you can connect your client through the following co
 
 ## Start Using
 
-With this setup, you can send natural language queries to the MCP Client (e.g., Claude Desktop, Cursor):
+With this setup, you can send natural language queries to the MCP Client (e.g., Cursor, Claude Code, Codex, Gemini CLI):
 
-- "extract page xxx and xxx from xxx.pdf to xxx.pdf"
-- "Combine all the uploaded files into a single PDF document"
+- "extract specified pages from xxx.pdf"
+- "combine all the uploaded files into a single PDF document"
 - "split the document at page xxx and save them as separate files"
+- "convert all/specified pages of xxx.pdf into docx file"
 
 The Client retrieves the tool list from the MCP server. The LLM selects the appropriate tool and sends a structured request for the analysis. Coala translates this selection into a CWL job and executes it within a container. The execution logs and results are returned to the LLM, which interprets them and presents the final answer to you.
 
