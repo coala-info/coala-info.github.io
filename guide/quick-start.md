@@ -13,7 +13,7 @@ The framework allows you to set up MCP servers with domain-specific tools descri
 ```python
 from coala.mcp_api import mcp_api
 mcp = mcp_api(host='0.0.0.0', port=8000)
-mcp.add_tool('examples/pdftk_cat.cwl', 'pdftk_cat', read_outs=False)
+mcp.add_tool('examples/PDF/pdftk_cat.cwl', 'pdftk_cat', read_outs=False)
 mcp.serve()
 ```
 
@@ -31,7 +31,7 @@ In this mode, the MCP client launches the server automatically when it starts. T
     "mcpServers": {
         "coala": {
             "command": "python",
-            "args": ["/path/to/pdf_question.py"]
+            "args": ["/path/to/examples/PDF/PDF-operation_mcp.py"]
         }
     }
 }
@@ -42,7 +42,7 @@ In this mode, the MCP client launches the server automatically when it starts. T
 Start the server by running the following command in your terminal:
 
 ```bash
-python examples/pdf_question.py
+python examples/PDF/PDF-operation_mcp.py
 ```
 
 Once the server is running, you can connect your client through the following configuration:
