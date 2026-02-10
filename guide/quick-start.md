@@ -28,7 +28,7 @@ This creates an MCP server that exposes two command-line tools for PDF processin
 - `pdf2docx`: The core command in the command-line tool [pdf2docx](https://pypi.org/project/pdf2docx/)
 
 
-You can configure your MCP client (e.g., Cursor, Claude Desk, Codex, Gemini CLI) to connect to the MCP server using one of two methods:
+You can configure your MCP client (e.g., Cursor, Claude Code, Codex, Gemini CLI) to connect to the MCP server using one of two methods:
 
 ### Option 1: Automatic Execution (Recommended)
 
