@@ -63,6 +63,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 1: Show Contact Map
 
 **User Query:**
+
 > Here is a mcool file for the Hi-C data: test.mcool. Show the contact map on chromosome 2 with 1Mb resolution. Save the output to working directory.
 
 **Tool Invocation:**
@@ -97,6 +98,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ```
 
 **Chat Response:**
+
 > The chromosome 2 contact map at 1 Mb resolution has been generated and saved to your working directory as **`contact_map_chr2_1mb.png`**.
 >
 > The image is a 242×242 contact matrix for chr2 (0–242,193,529 bp), showing Hi-C contact frequency. The MCP tool wrote the figure to a temp path; it was then copied to the working directory.
@@ -104,6 +106,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ![chromosome 2 contact map](./outputs/chr2_1Mb_contact_map.png)
 
 **User Query:**
+
 > How about chr17?
 
 **Tool Invocation:**
@@ -138,6 +141,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ```
 
 **Chat Response:**
+
 > The chromosome 17 contact map at 1 Mb resolution has been generated and saved as **`contact_map_chr17_1mb.png`**. Chr17 is shorter than chr2, so the matrix is smaller (~83×83 bins).
 
 ![chromosome 17 contact map](./outputs/chr17_1Mb_contact_map.png)
@@ -149,6 +153,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 2: Calculate Expected Cis-Contacts
 
 **User Query:**
+
 > Now, let's calculate the expected contacts in 100k bp resolution in the regions defined in view_hg38.tsv file.
 
 **Tool Invocation:**
@@ -183,14 +188,17 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ```
 
 **Chat Response:**
+
 > Expected cis contacts were computed at 100 kb resolution for the regions in `view_hg38.tsv` (chr2_p, chr2_q, chr17_p, chr17_q) and saved to **`expected_100kb.tsv`**.
 >
 > The TSV contains columns: region1, region2, dist, dist_bp, contact_frequency, n_total, n_valid, count.sum, balanced.sum, count.avg, balanced.avg. Each row is a region pair and genomic distance bin; contact_frequency is the expected (balanced) contact value used for normalization and saddle plots.
 
 **User Query:**
+
 > Please show me the first 10 rows of the calculated expected contacts result.
 
 **Chat Response:**
+
 > First 10 data rows of `expected_100kb.tsv` (header + 10 rows):
 >
 > | region1 | region2 | dist | dist_bp | contact_frequency | n_total | n_valid | count.sum | balanced.sum | count.avg | balanced.avg |
@@ -213,6 +221,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 3: Generate Compartment Profiles
 
 **User Query:**
+
 > Next, we want to obtain the compartment profiles in 100k bp resolution. Let's use the GC content profile in gc.100000.tsv.
 
 **Tool Invocation:**
@@ -256,6 +265,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ```
 
 **Chat Response:**
+
 > Compartment profiles were computed with **cooltools eigs-cis** using GC from `gc.100000.tsv` for phasing. Outputs in the working directory:
 >
 > 1. **`compartment_100kb.cis.vecs.tsv`** — Eigenvectors per 100 kb bin: chrom, start, end, weight, E1. E1 is the first principal component (compartment signal), phased so positive E1 aligns with GC-rich (B/active) and negative with GC-poor (A/inactive).
@@ -287,6 +297,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 4: Visualize Compartmentalization with Saddle Plot
 
 **User Query:**
+
 > Next, we want to visualize the effect of compartmentalization using saddleplot, using our previously computed compartment profiles and expected cis-contacts.
 
 **Tool Invocation:**
@@ -339,6 +350,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ```
 
 **Chat Response:**
+
 > The saddle plot was generated with **cooltools saddle** using the existing eigenvectors (E1) and expected contacts (balanced.avg), with view_hg38.tsv for regions. Outputs saved:
 >
 > 1. **`saddle_100kb.png`** — Saddle plot: contact enrichment (observed/expected) binned by E1 on both axes. A/A and B/B corners show enrichment; A/B and B/A show depletion.
@@ -354,6 +366,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ### Step 5: Call topologically associating domains (TAD) boundaries
 
 **User Query:**
+
 > Lastly, let's find the boundaries between TADs. Let's use higher resolution data in 10kb, to define boundaries in window size 100 kb and 200 kb, using Li method for insulation scores.
 
 **Tool Invocation:**
@@ -391,14 +404,17 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 ```
 
 **Chat Response:**
+
 > TAD boundaries were computed with **cooltools insulation** at 10 kb resolution, windows 100 kb and 200 kb, and Li threshold. Output:
 >
 > **`insulation_10kb.tsv`** — One row per 10 kb bin. Columns include chrom, start, end, region, is_bad_bin; log2_insulation_score_100000/200000; n_valid_pixels; boundary_strength_100000/200000; **is_boundary_100000** and **is_boundary_200000** (True = TAD boundary at that window). Boundaries are called using the Li method on the insulation score distribution.
 
 **User Query:**
+
 > Please show me the first 10 rows of the output file of insulation site analysis.
 
 **Chat Response:**
+
 > First 10 rows of `insulation_10kb.tsv`:
 >
 > | chrom | start | end | region | is_bad_bin | log2_insulation_score_100000 | n_valid_pixels_100000 | log2_insulation_score_200000 | n_valid_pixels_200000 | boundary_strength_100000 | boundary_strength_200000 | is_boundary_100000 | is_boundary_200000 |

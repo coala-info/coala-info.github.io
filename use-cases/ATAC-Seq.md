@@ -52,6 +52,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ### Step 1: Call Peaks with macs3 and Summarize
 
 **User Query:**
+
 > Here is a BAM file for the ATAC-seq data: BT549_Doxminus_chr22.bam. Call peaks for the BAM file using paired end mode, and summarize the number of peaks. Use genome size of 5e7 which is approximately the size for human chromosome 22. Keep all duplicate tags. Save extended fragment pileup and local lambda tracks at every bp into a bedGraph file. Do not call subpeak summits.
 
 **Tool Invocation:**
@@ -99,6 +100,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ```
 
 **Chat Response:**
+
 > Peak calling completed. Summary:
 > 
 > ## Peak Calling Results
@@ -125,6 +127,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ### Step 2: Rerun with More Stringent q-value Cutoff
 
 **User Query:**
+
 > Use a more stringent q value cutoff 0.001 and rerun peak calling, summarize the number of peaks.
 
 **Tool Invocation:**
@@ -173,6 +176,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ```
 
 **Chat Response:**
+
 > Peak calling with the stricter q-value cutoff completed. Summary:
 > 
 > ## Peak Calling Results with q-value = 0.001
@@ -205,6 +209,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ### Step 3: Annotate Peaks with ChIPSeeker
 
 **User Query:**
+
 > Annotate the peak set from q-value cutoff 0.001.
 
 **Tool Invocation:**
@@ -236,6 +241,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ```
 
 **Chat Response:**
+
 > Peak annotation completed. Summary:
 > 
 > ## Peak Annotation Results
@@ -283,6 +289,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ### Step 4: Visualize Peaks with pyGenomeTracks
 
 **User Query:**
+
 > let's visualize the peak in the chr22:23,161,760-23,359,701 region in a genome browser view.
 
 **Tool Invocation:**
@@ -313,6 +320,7 @@ For demo purposes, we utilize human ATAC-Seq data from the BT-549 human triple n
 ```
 
 **Chat Response:**
+
 > Genome browser visualization created. Summary:
 > 
 > ## Genome Browser Visualization

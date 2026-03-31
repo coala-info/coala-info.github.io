@@ -47,7 +47,8 @@ Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actu
 ### Step 1: Retrieve Gene Coordinates and Extract Variants
 
 **User Query:**
-> I am analyzing the TP53 gene for potential pathogenic variants. Please retrieve the latest gene coordinates from NCBI and extract all known variants for this region from the ClinVar VCF file.
+
+> I am analyzing the TP53 gene for potential pathogenic variants. Please retrieve the latest gene coordinates from NCBI and extract all known variants for this region from the ClinVar VCF file: https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
 
 **Tool Invocation:**
 ```json
@@ -95,6 +96,7 @@ Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actu
 ```
 
 **Chat Response:**
+
 > I've successfully retrieved the TP53 gene coordinates and extracted all variants from the ClinVar VCF file.
 >
 > **TP53 Gene Coordinates (GRCh38.p14):**
@@ -115,6 +117,7 @@ Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actu
 ### Step 2: Filter Pathogenic Variants
 
 **User Query:**
+
 > Please find all Pathogenic variants in the TP53 gene from that file.
 
 **Tool Invocation:**
@@ -143,6 +146,7 @@ Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actu
 ```
 
 **Chat Response:**
+
 > Successfully filtered pathogenic variants from the TP53 ClinVar VCF file.
 >
 > **Pathogenic Variants Summary:**
@@ -179,7 +183,8 @@ Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actu
 ### Step 3: Detailed Variant Analysis
 
 **User Query:**
-> let's look into Position 7669691 (C>T)
+
+> Detailed annotation for the position 7669691 (C>T)
 
 **Tool Invocation:**
 ```json

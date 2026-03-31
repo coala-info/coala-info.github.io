@@ -53,7 +53,9 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ### Step 1: Download GEO Dataset and Describe Study Design
 
 **User Query:**
+
 > download GSE164141 dataset and describe the study design
+
 
 **Tool Invocation:**
 ```json
@@ -82,6 +84,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ```
 
 **Chat Response:**
+
 > Successfully downloaded the data for **GSE164141** and extracted study design information. Here are the files retrieved:
 >
 > **1. Series Matrix File (Sample Information):**
@@ -124,6 +127,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ### Step 2: Differential Expression Analysis
 
 **User Query:**
+
 > perform differential expression analysis between treatment and control groups
 
 **Tool Invocation:**
@@ -152,6 +156,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ```
 
 **Chat Response:**
+
 > The differential expression analysis completed successfully.
 >
 > **DEG Analysis Output:**
@@ -187,6 +192,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ### Step 3: Download Curated Gene Sets from MSigDB
 
 **User Query:**
+
 > download curated gene sets from Molecular Signatures Database
 
 **Tool Invocation:**
@@ -215,6 +221,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ```
 
 **Chat Response:**
+
 > Successfully downloaded curated gene sets from MSigDB.
 >
 > **Pathway Database Output:**
@@ -233,6 +240,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ### Step 4: Gene Set Enrichment Analysis with Canonical Pathways
 
 **User Query:**
+
 > perform GSEA on canonical pathways
 
 **Tool Invocation:**
@@ -263,6 +271,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ```
 
 **Chat Response:**
+
 > The GSEA analysis completed successfully.
 >
 > **GSEA Analysis Output:**
@@ -297,6 +306,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ### Step 5: Generate Enrichment Plot
 
 **User Query:**
+
 > plot the REACTOME_INTERFERON_SIGNALING pathway's enrichment result
 
 **Tool Invocation:**
@@ -327,6 +337,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 ```
 
 **Chat Response:**
+
 > Successfully created the enrichment plot for the REACTOME_INTERFERON_SIGNALING pathway.
 >
 > **GSEA Enrichment Plot Output:**
