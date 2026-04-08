@@ -184,7 +184,7 @@ Note: Replace `/path/to/examples/Gene-Variant/gene-variant_mcp.py` with the actu
 
 **User Query:**
 
-> Detailed annotation for the position 7669691 (C>T)
+> Query detailed annotation for the position 7669691 (C>T)
 
 **Tool Invocation:**
 ```json

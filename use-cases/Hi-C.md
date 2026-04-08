@@ -64,7 +64,7 @@ The workflow uses `test.mcool` at multiple resolutions (10 kb, 100 kb, 1 Mb) and
 
 **User Query:**
 
-> Here is a mcool file for the Hi-C data: test.mcool. Show the contact map on chromosome 2 with 1Mb resolution. Save the output to working directory.
+> Here is a mcool file for the Hi-C data: test.mcool. Investigate the chr sizes then show the contact map on chromosome 2 with 1Mb resolution. Save the output to working directory.
 
 **Tool Invocation:**
 ```json

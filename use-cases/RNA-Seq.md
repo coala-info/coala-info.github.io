@@ -193,7 +193,7 @@ Note: Replace `/path/to/examples/RNA-Seq/RNA-Seq_mcp.py` with the actual path to
 
 **User Query:**
 
-> download curated gene sets from Molecular Signatures Database
+> download curated gene sets C2 from Molecular Signatures Database
 
 **Tool Invocation:**
 ```json
