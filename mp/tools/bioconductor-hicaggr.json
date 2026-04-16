@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hicaggr",
+  "category": "bioconductor",
+  "name": "bioconductor-hicaggr",
+  "description": "bioconductor-hicaggr performs Aggregated Peak Analysis (APA) to visualize and quantify genomic 3D conformation data. Use when user asks to integrate 1D genomic features with HiC data, perform matrix balancing, extract submatrices for specific genomic coordinates, or generate APA plots to analyze interaction patterns.",
+  "overview": "HicAggR is a Bioconductor package designed to simplify the extraction of interaction signals from HiC data. It centers on Aggregated Peak Analysis (APA), allowing users to extract submatrices surrounding specific genomic coordinates (e.g., enhancer-promoter pairs, CTCF sites) and aggregate them to visualize genome-wide interaction patterns. It supports common formats like `.hic`, `.cool`, `.mcool`, and `.h5`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HicAggR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hicaggr/overview",
+  "github": "https://github.com/CuvierLab/HicAggR",
+  "conda_downloads": "374",
+  "conda_downloads_num": 374,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HicAggR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HicAggR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hicaggr/overview",
+    "github": "https://github.com/CuvierLab/HicAggR",
+    "conda_downloads": "374",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hicaggr\n\nname: bioconductor-hicaggr\ndescription: Analysis of genomic 3D conformation data (HiC) using Aggregated Peak Analysis (APA). Use this skill to integrate 1D genomics data (ChIP-seq peaks, ATAC-seq, genomic features) with 3D HiC data to visualize and quantify interactions between features of interest, perform matrix balancing, observed/expected corrections, and differential APA between conditions.\n\n## Overview\n\nHicAggR is a Bioconductor package designed to simplify the extraction of interaction signals from HiC data. It centers on Aggregated Peak Analysis (APA), allowing users to extract submatrices surrounding specific genomic coordinates (e.g., enhancer-promoter pairs, CTCF sites) and aggregate them to visualize genome-wide interaction patterns. It supports common formats like `.hic`, `.cool`, `.mcool`, and `.h5`.\n\n## Typical Workflow\n\n1.  **Import 1D Features**: Load genomic coordinates (peaks, TSS, TADs) as `GRanges`.\n2.  **Index Features**: Map features to HiC bins using `IndexFeatures`.\n3.  **Search Pairs**: Form potential interaction couples (e.g., A <-> B) using `SearchPairs`.\n4.  **Import & Process HiC**: Load 3D data with `ImportHiC`, then apply `BalanceHiC` and `OverExpectedHiC`.\n5.  **Extract Submatrices**: Extract contact values for pairs using `ExtractSubmatrix`.\n6.  **Aggregate & Plot**: Summarize interactions with `Aggregation` and visualize with `ggAPA`.\n\n## Core Functions and Usage\n\n### 1. Data Import and Processing\n\n```r\nlibrary(HicAggR)\n\n# Import HiC data (supports .hic, .cool, .mcool, .h5)\nhicLst <- ImportHiC(\n    file = \"path/to/data.hic\",\n    hicResolution = 5000,\n    chrom_1 = c(\"chr1\", \"chr2\")\n)\n\n# Normalize and correct for distance\nhicLst <- BalanceHiC(hicLst)\nhicLst <- OverExpectedHiC(hicLst, method = \"mean_non_zero\")\n```\n\n### 2. Feature Indexing and Pairing\n\nFeatures must be indexed to the same resolution as the HiC data.\n\n```r\n# Index GRanges features\nfeat_index <- IndexFeatures(\n    gRangeList = list(Peaks = my_peaks_gr),\n    chromSizes = my_chrom_sizes_df,\n    binSize = 5000\n)\n\n# Search for pairs within distance constraints (e.g., 25kb to 100kb)\npairs_gni <- SearchPairs(\n    indexAnchor = feat_index,\n    minDist = \"25KB\",\n    maxDist = \"100KB\"\n)\n```\n\n### 3. Submatrix Extraction\n\nExtraction can be \"Point Feature\" (`pf`) for specific pixels or \"Region Feature\" (`rf`) for scaled regions (like TADs).\n\n```r\n# Extract submatrices (101x101 pixels)\nmtx_lst <- ExtractSubmatrix(\n    genomicFeature = pairs_gni,\n    hicLst = hicLst,\n    referencePoint = \"rf\",\n    matriceDim = 101\n)\n```\n\n### 4. Aggregation and Visualization\n\nBefore aggregation, use `PrepareMtxList` to handle orientation (ensuring anchors are on the Y-axis and baits on the X-axis).\n\n```r\n# Prepare and Aggregate\nmtx_lst <- PrepareMtxList(mtx_lst, orientate = TRUE)\nagg_mtx <- Aggregation(mtx_lst, aggFun = \"mean\")\n\n# Plot APA Heatmap\nggAPA(\n    aggregatedMtx = agg_mtx,\n    title = \"APA: Peaks <-> Peaks\",\n    colorScale = \"density\"\n)\n```\n\n## Advanced Operations\n\n### Differential APA\nTo compare two conditions (e.g., Control vs. Treatment):\n\n```r\ndiff_agg <- Aggregation(\n    ctrlMatrices = mtx_lst_ctrl,\n    matrices = mtx_lst_treat,\n    aggFun = \"mean\",\n    diffFun = \"substraction\", # or \"log2+1\"\n    scaleCorrection = TRUE\n)\nggAPA(diff_agg, title = \"Differential APA\")\n```\n\n### Quantification\nExtract specific values (e.g., the central 3x3 pixels) from the submatrices:\n\n```r\ncenter_values <- GetQuantif(\n    matrices = mtx_lst,\n    areaFun = \"center\",\n    operationFun = \"mean\"\n)\n```\n\n## Tips for Success\n\n*   **Orientation**: Always use `OrientateMatrix()` or `PrepareMtxList(orientate = TRUE)` for heterotypic pairs (A <-> B) to ensure the heatmap isn't a mix of A-on-Y and B-on-Y orientations.\n*   **Memory Management**: HiC matrices can be large. Use the `chrom_1` and `chrom_2` arguments in `ImportHiC` to load only the chromosomes necessary for your analysis.\n*   **Filtering**: Use `FilterInteractions` to subset your pairs or submatrices based on metadata (e.g., distance, peak score) before aggregation.\n*   **Expected Values**: `OverExpectedHiC` supports multiple methods: `mean_non_zero` (default), `lieberman`, and `mean_total`.\n\n## Reference documentation\n\n- [HicAggR - Quick start](./references/HicAggR.md)\n- [HicAggR - In depth tutorial](./references/InDepth.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-hicaggr",
+    "description": "bioconductor-hicaggr performs Aggregated Peak Analysis (APA) to visualize and quantify genomic 3D conformation data. Use when user asks to integrate 1D genomic features with HiC data, perform matrix balancing, extract submatrices for specific genomic coordinates, or generate APA plots to analyze interaction patterns.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HicAggR.html"
+  }
+}

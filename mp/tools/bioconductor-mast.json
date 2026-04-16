@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mast",
+  "category": "bioconductor",
+  "name": "bioconductor-mast",
+  "description": "MAST is a Bioconductor package that performs differential expression analysis on single-cell RNA-seq data using a hurdle model to account for zero-inflation and bimodal distributions. Use when user asks to analyze single-cell expression data, fit hurdle models, perform differential expression analysis, or conduct gene set enrichment analysis.",
+  "overview": "MAST is a Bioconductor package designed to handle the unique statistical properties of single-cell expression data, specifically zero-inflation (dropout) and bimodal expression distributions. It implements a \"hurdle model\"—a two-part generalized linear model that simultaneously accounts for the discrete (presence/absence of expression) and continuous (intensity of expression) components of the data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MAST.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RGLab/MAST",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MAST"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MAST.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RGLab/MAST",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mast\n\n## Overview\n\nMAST is a Bioconductor package designed to handle the unique statistical properties of single-cell expression data, specifically zero-inflation (dropout) and bimodal expression distributions. It implements a \"hurdle model\"—a two-part generalized linear model that simultaneously accounts for the discrete (presence/absence of expression) and continuous (intensity of expression) components of the data.\n\n## Core Workflow\n\n### 1. Data Object Construction\nMAST uses the `SingleCellAssay` (SCA) class, which extends `SingleCellExperiment`.\n\n```R\nlibrary(MAST)\n\n# From a matrix (genes x cells)\n# MAST expects log-transformed data, e.g., log2(TPM + 1)\nsca <- FromMatrix(exprsArray = expression_matrix, \n                  cData = cell_metadata, \n                  fData = feature_metadata)\n\n# From a flattened data.frame\nsca <- FromFlatDF(dataframe, idvars=c(\"Subject\", \"Well\"), \n                  primerid='Gene', measurement='Et')\n\n# Coerce from SingleCellExperiment\nsca <- SceToSingleCellAssay(sce_object)\n```\n\n### 2. Quality Control and Filtering\nA critical step is calculating the Cellular Detection Rate (CDR), which is the proportion of genes detected in a cell. This is often used as a covariate to control for technical variation.\n\n```R\n# Calculate CDR (ngeneson)\ncdr2 <- colSums(assay(sca) > 0)\ncolData(sca)$cngeneson <- scale(cdr2)\n\n# Filter genes based on frequency\n# Keep genes expressed in at least 10% of cells\nsca <- sca[freq(sca) > 0.1, ]\n\n# Filter cells (e.g., based on CDR or other metrics)\nsca <- subset(sca, nGeneOn > 4000)\n```\n\n### 3. Differential Expression with the Hurdle Model\nThe `zlm` function fits the hurdle model. You can include covariates like CDR to adjust for technical effects.\n\n```R\n# Fit the model\n# ~ condition + CDR\nzlmCond <- zlm(~ condition + cngeneson, sca)\n\n# Perform Likelihood Ratio Test (LRT) for a specific coefficient\nsummaryCond <- summary(zlmCond, doLRT='conditionStim')\nsummaryDt <- summaryCond$datatable\n\n# Extract results\n# component 'H' is the Hurdle (combined) test\n# component 'logFC' provides the effect size\nfcHurdle <- merge(summaryDt[contrast=='conditionStim' & component=='H', .(primerid, `Pr(>Chisq)`)],\n                  summaryDt[contrast=='conditionStim' & component=='logFC', .(primerid, coef, ci.hi, ci.lo)], \n                  by='primerid')\n```\n\n### 4. Gene Set Enrichment Analysis (GSEA)\nMAST performs competitive GSEA using a bootstrapping approach to account for inter-gene correlation.\n\n```R\n# 1. Bootstrap to estimate variance-covariance\nboots <- bootVcov1(zlmCond, R = 50)\n\n# 2. Run GSEA\n# sets_indices is a list of gene indices for each module\ngsea <- gseaAfterBoot(zlmCond, boots, sets_indices, CoefficientHypothesis(\"conditionStim\"))\n\n# 3. Summarize results\nz_stat_comb <- summary(gsea, testType='normal')\n```\n\n## Key Functions and Tips\n\n- **`zlm()`**: The workhorse function. Supports `method='glm'` (standard), `method='glmer'` (mixed models via lme4), and Bayesian priors.\n- **`thresholdSCRNACountMatrix()`**: Used for adaptive thresholding to distinguish signal from background noise.\n- **`invlogit()`**: Useful for transforming the discrete component back to probability space.\n- **Assay Names**: MAST looks for specific assay names for log-like data: `thresh`, `et`, `Et`, `lCount`, `logTPM`, `logcounts`.\n- **Memory**: For very large datasets, MAST supports `Sparse` matrices and `HDF5Array` backends, though dense matrices are faster for the underlying linear algebra.\n\n## Reference documentation\n\n- [Using MAST with RNASeq: MAIT Analysis](./references/MAITAnalysis.md)\n- [MAST Intro](./references/MAST-Intro.md)\n- [Interoperability between MAST and SingleCellExperiment-derived packages](./references/MAST-interoperability.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mast",
+    "description": "MAST is a Bioconductor package that performs differential expression analysis on single-cell RNA-seq data using a hurdle model to account for zero-inflation and bimodal distributions. Use when user asks to analyze single-cell expression data, fit hurdle models, perform differential expression analysis, or conduct gene set enrichment analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MAST.html"
+  }
+}

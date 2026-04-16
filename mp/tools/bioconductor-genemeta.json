@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genemeta",
+  "category": "bioconductor",
+  "name": "bioconductor-genemeta",
+  "description": "This tool performs meta-analysis of microarray data to combine results from multiple studies. Use when user asks to identify consistently differentially expressed genes across experiments, calculate effect sizes, assess study homogeneity, or fit fixed and random effects models.",
+  "overview": "The `GeneMeta` package provides tools for the meta-analysis of microarray experiments. It focuses on combining data from multiple studies that address the same biological question (e.g., tumor vs. normal) to improve statistical power and inference. It supports both Fixed Effects Models (FEM), which assume a common effect across studies, and Random Effects Models (REM), which account for between-study variability.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GeneMeta.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genemeta/overview",
+  "github": "N/A",
+  "conda_downloads": "36.0K",
+  "conda_downloads_num": 36000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GeneMeta"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GeneMeta.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genemeta/overview",
+    "github": "N/A",
+    "conda_downloads": "36.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genemeta\n\nname: bioconductor-genemeta\ndescription: Meta-analysis of microarray data to combine results from multiple studies. Use when comparing two phenotypes across different experiments to identify consistently differentially expressed genes using Fixed Effects Models (FEM) or Random Effects Models (REM).\n\n# bioconductor-genemeta\n\n## Overview\n\nThe `GeneMeta` package provides tools for the meta-analysis of microarray experiments. It focuses on combining data from multiple studies that address the same biological question (e.g., tumor vs. normal) to improve statistical power and inference. It supports both Fixed Effects Models (FEM), which assume a common effect across studies, and Random Effects Models (REM), which account for between-study variability.\n\n## Core Workflow: Manual Meta-Analysis\n\nIf you need to perform the meta-analysis step-by-step to inspect intermediate statistics:\n\n1.  **Calculate Effect Sizes (d) for each study:**\n    Use `getdF` to get the initial effect size and `dstar` to adjust for bias.\n    ```r\n    # For each study (eset1, eset2...)\n    d1 <- getdF(eset1, labels1) # labels are 0/1\n    d_adj1 <- dstar(d1, length(labels1))\n    var_d1 <- sigmad(d_adj1, sum(labels1==0), sum(labels1==1))\n    ```\n\n2.  **Assess Homogeneity (Cochran's Q):**\n    Combine adjusted means and variances into matrices to calculate the Q statistic.\n    ```r\n    mymns <- cbind(d_adj1, d_adj2)\n    myvars <- cbind(var_d1, var_d2)\n    my_Q <- f.Q(mymns, myvars)\n    # Compare my_Q to a Chi-square distribution with (k-1) degrees of freedom\n    ```\n\n3.  **Fit the Model:**\n    *   **Fixed Effects Model (FEM):** Use if studies are homogeneous (Q is small).\n        ```r\n        muFEM <- mu.tau2(mymns, myvars)\n        sdFEM <- var.tau2(myvars)\n        ZFEM <- muFEM / sqrt(sdFEM)\n        ```\n    *   **Random Effects Model (REM):** Use if studies are heterogeneous.\n        ```r\n        # Estimate between-study variance (tau^2)\n        tau2 <- tau2.DL(my_Q, num_studies, my_weights = 1/myvars)\n        myvarsDL <- myvars + tau2\n        muREM <- mu.tau2(mymns, myvarsDL)\n        varREM <- var.tau2(myvarsDL)\n        ZREM <- muREM / sqrt(varREM)\n        ```\n\n## High-Level Analysis Functions\n\nFor a more automated workflow, use the wrapper functions:\n\n### zScores\nComputes the meta-analysis scores for a list of ExpressionSets.\n```r\nesets <- list(Study1, Study2)\nclasses <- list(labels1, labels2)\n# Combine specific experiments (e.g., 1 and 2)\nresults <- zScores(esets, classes, useREM = FALSE, CombineExp = 1:2)\n```\nThe output includes:\n*   `MUvals`: Overall mean effect size.\n*   `zSco`: The combined Z-score.\n*   `Qvals`: Cochran's Q statistic per gene.\n*   `Qpvalues`: P-value for the hypothesis of homogeneity.\n\n### zScoreFDR\nEstimates the False Discovery Rate (FDR) using a permutation-based (SAM-type) approach.\n```r\nscoresFDR <- zScoreFDR(esets, classes, useREM = FALSE, nperm = 50, CombineExp = 1:2)\n# Access results for positive, negative, or two-sided effects\npos_fdr <- scoresFDR$pos\n```\n\n## Visualization\n\n*   **IDR Plot:** Shows the Integration Driven Discovery Rate—the fraction of genes identified in the meta-analysis that were not found in individual studies at the same threshold.\n    ```r\n    IDRplot(results, Combine = 1:2)\n    ```\n*   **Count Plot:** Compares the number of genes below an FDR threshold across different studies and the combined analysis.\n    ```r\n    CountPlot(scoresFDR, Score = \"FDR\", kindof = \"two.sided\")\n    ```\n\n## Tips for Success\n*   **Identifier Matching:** Ensure that the row names (gene identifiers) of all ExpressionSets are matched and in the same order before combining.\n*   **Phenotype Coding:** Phenotype labels must be converted to numeric 0 and 1 for the functions to process them correctly.\n*   **Model Selection:** Always check the Q-statistic histogram. If the mean of Q is significantly higher than the degrees of freedom (number of studies - 1), prefer the Random Effects Model (REM).\n\n## Reference documentation\n- [GeneMeta](./references/GeneMeta.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genemeta",
+    "description": "This tool performs meta-analysis of microarray data to combine results from multiple studies. Use when user asks to identify consistently differentially expressed genes across experiments, calculate effect sizes, assess study homogeneity, or fit fixed and random effects models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GeneMeta.html"
+  }
+}

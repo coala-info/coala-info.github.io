@@ -1,0 +1,57 @@
+{
+  "id": "gqt",
+  "category": "CLI",
+  "name": "gqt",
+  "description": "The Genotype Query Tool (GQT) converts large genotype datasets into compressed bitmap indices to enable high-speed, sample-centric queries integrated with metadata. Use when user asks to index BCF files, create sample databases from PED files, or perform complex genotype filtering based on population phenotypes and allele frequencies.",
+  "overview": "The Genotype Query Tool (GQT) is a specialized command-line interface designed to handle massive genotype datasets by converting them into compressed bitmap indices. Unlike traditional variant-centric indexing, GQT enables interactive-speed queries by focusing on sample-level data. It integrates genotype information with sample metadata (phenotypes and pedigrees) stored in a SQLite database, allowing for complex multi-dimensional filtering that would be computationally prohibitive using standard",
+  "homepage": "https://github.com/ryanlayer/gqt",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/gqt/overview",
+  "github": "https://github.com/ryanlayer/gqt",
+  "conda_downloads": "6.5K",
+  "conda_downloads_num": 6500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gqt_convert",
+      "gqt_query",
+      "gqt_pca-shared",
+      "gqt_on",
+      "gqt_calpha",
+      "gqt_gst",
+      "gqt_fst"
+    ],
+    "description": "Convert VCF/BCF to GQT index or sample phenotype database",
+    "docker_image": "quay.io/biocontainers/gqt:1.1.3--h0263287_3",
+    "homepage": "https://github.com/ryanlayer/gqt",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/gqt/overview",
+    "github": "https://github.com/ryanlayer/gqt",
+    "conda_downloads": "6.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "gqt_calpha.cwl",
+    "gqt_convert.cwl",
+    "gqt_fst.cwl",
+    "gqt_gst.cwl",
+    "gqt_on.cwl",
+    "gqt_pca-shared.cwl",
+    "gqt_query.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# gqt\n\n## Overview\nThe Genotype Query Tool (GQT) is a specialized command-line interface designed to handle massive genotype datasets by converting them into compressed bitmap indices. Unlike traditional variant-centric indexing, GQT enables interactive-speed queries by focusing on sample-level data. It integrates genotype information with sample metadata (phenotypes and pedigrees) stored in a SQLite database, allowing for complex multi-dimensional filtering that would be computationally prohibitive using standard tools.\n\n## Core Workflow\n\n### 1. Indexing Genotype Data\nGQT requires a BCF file as input. If you have a VCF, convert it to BCF and index it with `bcftools` first.\n\n```bash\n# Create the GQT index\ngqt convert bcf -i input.bcf\n```\nThis produces three essential files:\n- `.gqt`: The compressed bitmap index.\n- `.bim`: Compressed variant metadata.\n- `.vid`: Variant order information.\n\n### 2. Creating the Sample Database\nTo query based on metadata (Population, Gender, etc.), you must create a SQLite database.\n\n```bash\n# Create database from BCF samples and a PED file\ngqt convert ped -i input.bcf -p metadata.ped\n```\n**Note:** The PED file must have a header row. Column 2 is matched to BCF sample IDs by default (change with `-c`).\n\n### 3. Querying the Index\nThe `query` command uses two primary filters:\n- `-p`: A SQL-style string to filter samples based on the database.\n- `-g`: A genotype-based filter string.\n\n#### Common Query Patterns\n- **Filter by Population and Frequency:**\n  Find variants with a Minor Allele Frequency (MAF) > 10% in the GBR population.\n  ```bash\n  gqt query -i input.bcf.gqt -d metadata.db -p \"Population = 'GBR'\" -g \"maf()>0.1\"\n  ```\n\n- **Filter by Specific Individuals and Zygosity:**\n  Find variants where at least two out of three specific individuals are heterozygous.\n  ```bash\n  gqt query -i input.bcf.gqt -p \"BCF_Sample in ('ID1','ID2','ID3')\" -g \"count(HET)>1\"\n  ```\n\n## Expert Tips and Best Practices\n\n### Genotype Filter Functions (`-g`)\nGQT supports several built-in functions for genotype filtering:\n- `maf()`: Calculates the minor allele frequency within the sample set defined by `-p`.\n- `count(TYPE)`: Counts occurrences of a genotype. Valid types: `HET`, `HOM_REF`, `HOM_ALT`, `UNKNOWN`, `ANY`.\n- `pct(TYPE)`: Calculates the percentage of a genotype type.\n- `is_het()`, `is_hom_ref()`, `is_hom_alt()`: Boolean checks for individual-level queries.\n\n### Metadata Handling\n- **Sanitization:** GQT automatically converts spaces in PED header fields to underscores and strips special characters (%, $, :).\n- **Default Database:** If no PED file is provided during conversion, GQT creates a basic database (`.db`) containing only the sample names from the BCF.\n\n### Performance Optimization\n- **Pre-indexing:** Always ensure your BCF has a corresponding `.csi` index (via `bcftools index`) before running `gqt convert bcf` to allow GQT to automatically detect row and column counts.\n- **Output Redirection:** GQT outputs VCF records to stdout. Always redirect to a file or pipe to `bgzip` for large result sets.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| gqt | gqt, v1.1.3 |\n| gqt calpha | Calculates alpha diversity statistics between subpopulations. |\n| gqt convert | Convert VCF/BCF to GQT index or sample phenotype database |\n| gqt fst | Calculate Fst between populations. |\n| gqt gst | Calculates GST and FST statistics for subpopulations. NOTE: gst and fst assume that variants are biallelic. If your data contains multiallelic sites, we recommend decomposing your VCF (see A. Tan, Bioinformatics 2015) prior to indexing. |\n| gqt pca-shared | Performs Principal Component Analysis (PCA) on shared genotypes between populations. |\n| gqt query | A GQT query returns a set of variants that meet some number of population and genotype conditions. Conditions are specified by a population query and genotype query pair, where the population query defines the set of individuals to consider and the genotype query defines a filter on that population. The result is the set of variants within that sub-population that meet the given conditions. |\n\n## Reference documentation\n- [GQT GitHub Repository](./references/github_com_ryanlayer_gqt.md)",
+  "skill_front_matter": {
+    "name": "gqt",
+    "description": "The Genotype Query Tool (GQT) converts large genotype datasets into compressed bitmap indices to enable high-speed, sample-centric queries integrated with metadata. Use when user asks to index BCF files, create sample databases from PED files, or perform complex genotype filtering based on population phenotypes and allele frequencies.",
+    "homepage": "https://github.com/ryanlayer/gqt"
+  }
+}

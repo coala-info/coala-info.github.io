@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-regionalst",
+  "category": "bioconductor",
+  "name": "bioconductor-regionalst",
+  "description": "RegionalST identifies biologically relevant regions of interest in spatial transcriptomics data based on cell type composition and tissue heterogeneity. Use when user asks to identify regions of interest, perform cross-regional differential expression analysis, or conduct pathway enrichment analysis on spatial transcriptomics data.",
+  "overview": "RegionalST is a Bioconductor package designed to address tissue heterogeneity in spatial transcriptomics (ST) data. It provides a workflow for identifying biologically relevant Regions of Interest (ROIs) based on cell type composition and performing comparative analysis between these regions. Key capabilities include:\n- Integration with `BayesSpace` for data preprocessing.\n- ROI identification using automated entropy-based ranking or manual selection.\n- Cross-regional differential expression (DE",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RegionalST.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RegionalST"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RegionalST.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-regionalst\n\n## Overview\n\nRegionalST is a Bioconductor package designed to address tissue heterogeneity in spatial transcriptomics (ST) data. It provides a workflow for identifying biologically relevant Regions of Interest (ROIs) based on cell type composition and performing comparative analysis between these regions. Key capabilities include:\n- Integration with `BayesSpace` for data preprocessing.\n- ROI identification using automated entropy-based ranking or manual selection.\n- Cross-regional differential expression (DE) analysis that accounts for cell type proportions.\n- Pathway enrichment analysis (GSEA) specifically tailored for regional comparisons.\n\n## Workflow and Key Functions\n\n### 1. Data Preparation\nRegionalST utilizes the `SingleCellExperiment` (SCE) object format. It is highly compatible with `BayesSpace` for initial loading and preprocessing.\n\n```r\nlibrary(RegionalST)\nlibrary(BayesSpace)\n\n# Load Visium data\nsce <- readVisium(\"path/to/spaceranger/outs/\")\nsce <- spatialPreprocess(sce, platform=\"Visium\", log.normalize=TRUE)\n\n# Add cell type proportions (from deconvolution tools like CARD or RCTD)\n# Proportions should be stored in metadata(sce)$Proportions\nS4Vectors::metadata(sce)$Proportions <- my_deconvolution_results\n```\n\n### 2. Identifying Regions of Interest (ROIs)\nROIs are identified by calculating entropy across the tissue. You can assign weights to specific cell types (e.g., giving higher weight to Cancer Epithelial cells) to bias ROI selection toward specific biological features.\n\n**Weighted Entropy Calculation:**\n```r\nweight <- data.frame(celltype = c(\"Cancer Epithelial\", \"CAFs\", \"T-cells\"),\n                     weight = c(0.25, 0.05, 0.25))\n\n# Calculate entropy for a specific radius\nOneRad <- GetOneRadiusEntropy_withProp(sce, radius = 5, weight = weight, doPlot = TRUE)\n```\n\n**Automatic ROI Selection:**\nRanks centers by entropy and ensures a minimum distance (`min_radius`) between selected regions.\n```r\nsce <- RankCenterByEntropy_withProp(sce, weight, topN = 3, min_radius = 10, radius_vec = c(5, 10))\n```\n\n**Manual ROI Selection:**\nLaunches a Shiny app for interactive selection.\n```r\nsce <- ManualSelectCenter(sce)\n```\n\n### 3. Cross-Regional Differential Analysis\nOnce ROIs are defined, compare gene expression between them.\n\n**With Cell Type Proportions:**\n```r\n# Compare Region 1 and Region 2\nCR_DE <- GetCrossRegionalDE_withProp(sce, twoCenter = c(1, 2), label = \"celltype\", padj_filter = 0.05, doHeatmap = TRUE)\n```\n\n**With Discrete Cell Type Labels:**\nIf deconvolution is unavailable, use major cell type labels per spot.\n```r\nCR_DE_raw <- GetCrossRegionalDE_raw(sce, twoCenter = c(1, 2), label = \"celltype\")\n```\n\n### 4. Pathway Analysis (GSEA)\nPerform GSEA on the results of the cross-regional DE analysis. Supported databases include \"hallmark\", \"kegg\", and \"reactome\".\n\n```r\n# Perform GSEA\nres_list <- list(CR_DE)\ngsea_res <- DoGSEA(res_list, whichDB = \"hallmark\", withProp = TRUE)\n\n# Visualize results for a specific cell type (e.g., index 1)\nDrawDotplot(gsea_res, CT = 1, chooseP = \"padj\")\n```\n\n## Tips for Success\n- **Radius Selection:** The `radius` parameter in entropy functions determines the local neighborhood size. Smaller radii capture fine-grained heterogeneity, while larger radii capture broader tissue patterns.\n- **Weighting:** If you are looking for regions where specific rare cell types interact, increase the `weight` for those cell types in the weight data frame.\n- **Memory Management:** For large datasets, use the `selectN` argument in `GetOneRadiusEntropy` to calculate entropy on a subset of spots to speed up visualization.\n- **ROI Storage:** Selected centers are stored in `metadata(sce)$selectCenters`. Save this object to ensure reproducibility of regional analyses.\n\n## Reference documentation\n- [Understanding Intrasample Heterogeneity from ST data with RegionalST](./references/RegionalST.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-regionalst",
+    "description": "RegionalST identifies biologically relevant regions of interest in spatial transcriptomics data based on cell type composition and tissue heterogeneity. Use when user asks to identify regions of interest, perform cross-regional differential expression analysis, or conduct pathway enrichment analysis on spatial transcriptomics data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RegionalST.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sarc",
+  "category": "bioconductor",
+  "name": "bioconductor-sarc",
+  "description": "SARC performs statistical ratification and confidence flagging of Copy Number Variations (CNVs) detected from NGS pipelines. Use when user asks to evaluate CNV calls, filter false positive variants, or perform statistical analysis of read depth coverage across genomic regions.",
+  "overview": "SARC is a downstream ratification tool for Copy Number Variation (CNV) analysis. It is not a detection tool; rather, it evaluates existing CNV calls by comparing normalized read depth coverage across a cohort. By using statistical distributions and ANOVA, it flags CNVs as high or low confidence, helping to filter out false positives common in WES and WGS pipelines.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SARC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Krutik6/SARC",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SARC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SARC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Krutik6/SARC",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sarc\n\nname: bioconductor-sarc\ndescription: Statistical Analysis of Regions with CNVs (SARC). Use this skill to flag the confidence of Copy Number Variations (CNVs) detected from NGS pipelines (WES/WGS). It provides downstream ratification using statistical tests (Mean, Quantiles, ANOVA) and visualization of coverage across genes and exons to distinguish true variants from false positives.\n\n# bioconductor-sarc\n\n## Overview\n\nSARC is a downstream ratification tool for Copy Number Variation (CNV) analysis. It is not a detection tool; rather, it evaluates existing CNV calls by comparing normalized read depth coverage across a cohort. By using statistical distributions and ANOVA, it flags CNVs as high or low confidence, helping to filter out false positives common in WES and WGS pipelines.\n\n## Data Requirements\n\nSARC requires two primary inputs as data frames:\n\n1.  **CNV File**: Contains detected CNVs. Required columns: `SAMPLE`, `CHROM`, `START`, `END`, `TYPE` (Deletion/Duplication), and `VALUE`.\n2.  **Coverage (COV) File**: Normalized read depth. First four columns must be `ID`, `Chromosome`, `Start`, and `End`. Subsequent columns are sample names matching the CNV file.\n\n**Note**: Coverage should be normalized by library size (e.g., Reads Per Million) before processing.\n\n## Workflow\n\n### 1. Initialization\nLoad the data into a `RaggedExperiment` object and prepare the regions.\n\n```r\nlibrary(SARC)\nlibrary(RaggedExperiment)\n\n# Initialize the SARC object\nSARC_obj <- regionSet(cnv = my_cnv_df, cov = my_cov_df)\n\n# Split coverage into CNV-specific regions\nSARC_obj <- regionSplit(RE = SARC_obj, \n                        cnv = metadata(SARC_obj)[['CNVlist']][[1]], \n                        startlist = metadata(SARC_obj)[[2]], \n                        endlist = metadata(SARC_obj)[[3]])\n```\n\n### 2. Statistical Analysis\nSARC uses a multi-step statistical approach to evaluate confidence.\n\n```r\n# Calculate mean coverage for regions\nSARC_obj <- regionMean(RE = SARC_obj, cnv = my_cnv_df, splitcov = metadata(SARC_obj)[[4]])\n\n# Calculate quantile distributions (flagging outliers)\nSARC_obj <- regionQuantiles(RE = SARC_obj, \n                            cnv = metadata(SARC_obj)[['CNVlist']][[2]], \n                            meancov = metadata(SARC_obj)[[5]], \n                            q1 = 0.1, q2 = 0.9)\n\n# Perform ANOVA to identify rare read depths relative to the cohort\nSARC_obj <- prepAnova(RE = SARC_obj, \n                      start = metadata(SARC_obj)[[2]], \n                      end = metadata(SARC_obj)[[3]], \n                      cnv = metadata(SARC_obj)[['CNVlist']][[3]])\n\nSARC_obj <- anovaOnCNV(RE = SARC_obj, \n                       cnv = metadata(SARC_obj)[['CNVlist']][[3]], \n                       anovacov = metadata(SARC_obj)[[8]])\n```\n\n### 3. Flagging Confidence\nFinalize the analysis by assigning confidence flags.\n\n```r\nSARC_obj <- cnvConfidence(RE = SARC_obj, cnv = metadata(SARC_obj)[['CNVlist']][[4]])\n# Results are stored in the latest CNVlist entry\nfinal_results <- metadata(SARC_obj)[['CNVlist']][[5]]\n```\n\n## Visualization\n\nSARC provides tools to visualize coverage across specific genes and exons, which is useful for clinical validation.\n\n```r\n# Requires genome-specific TxDb (e.g., hg38)\nlibrary(TxDb.Hsapiens.UCSC.hg38.knownGene)\nlibrary(Homo.sapiens)\n\n# Prepare plotting objects\nSARC_obj <- plotCovPrep(RE = SARC_obj, cnv = metadata(SARC_obj)[['CNVlist']][[4]], \n                        startlist = metadata(SARC_obj)[[2]], endlist = metadata(SARC_obj)[[3]])\nSARC_obj <- regionGrangeMake(RE = SARC_obj, covprepped = metadata(SARC_obj)[[9]])\nSARC_obj <- addExonsGenes(RE = SARC_obj, covgranges = metadata(SARC_obj)[[10]], \n                          txdb = TxDb.Hsapiens.UCSC.hg38.knownGene, txgene = txgene)\nSARC_obj <- setupCNVplot(RE = SARC_obj, namedgranges = metadata(SARC_obj)[[11]], \n                         covprepped = metadata(SARC_obj)[[9]])\n\n# Plot a specific CNV (e.g., the first one in the list)\nplotCNV(cnv = metadata(SARC_obj)[['CNVlist']][[4]], \n        setup = metadata(SARC_obj)[[12]], \n        FilteredCNV = 1)\n```\n\n## Tips and Best Practices\n\n*   **Cohort Size**: ANOVA and Quantile tests become more powerful as the number of samples in the coverage file increases.\n*   **Metadata Navigation**: The `SARC` object (RaggedExperiment) stores successive versions of the CNV data frame in `metadata(SARC)[['CNVlist']]`. Always use the most recent index for the next function.\n*   **Dunnet Test**: For cohorts smaller than 100 samples, consider using `phDunnetonCNV` for a more rigorous (though slower) comparison between the \"suspected\" sample and the rest of the cohort.\n*   **Species Support**: While defaults often target human (hg38), you can swap `TxDb` and `Org` packages to support other species like Mouse (mm10).\n\n## Reference documentation\n- [Tutorial of the SARC R Package](./references/SARC_guide.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-sarc",
+    "description": "SARC performs statistical ratification and confidence flagging of Copy Number Variations (CNVs) detected from NGS pipelines. Use when user asks to evaluate CNV calls, filter false positive variants, or perform statistical analysis of read depth coverage across genomic regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SARC.html"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "hmmratac",
+  "category": "CLI",
+  "name": "hmmratac",
+  "description": "HMMRATAC is a specialized peak caller that uses a Hidden Markov Model to identify open chromatin regions from paired-end ATAC-seq data. Use when user asks to call peaks from ATAC-seq fragments, identify nucleosomal states, or analyze chromatin accessibility without a control sample.",
+  "overview": "HMMRATAC (Hidden Markov ModeleR for ATAC-seq) is a specialized peak caller that leverages the unique fragment distribution of ATAC-seq data. Unlike standard peak callers, it uses a Hidden Markov Model to integrate various signal tracks—representing different nucleosomal states—to identify open chromatin regions with high sensitivity. It is particularly effective for identifying both broad and narrow peaks without requiring a separate control sample.",
+  "homepage": "https://github.com/LiuLabUB/HMMRATAC",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hmmratac/overview",
+  "github": "https://github.com/LiuLabUB/HMMRATAC",
+  "conda_downloads": "23.8K",
+  "conda_downloads_num": 23800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hmmratac_java",
+      "hmmratac_awk"
+    ],
+    "description": "Java application launcher",
+    "docker_image": "quay.io/biocontainers/hmmratac:1.2.10--hdfd78af_1",
+    "homepage": "https://github.com/LiuLabUB/HMMRATAC",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hmmratac/overview",
+    "github": "https://github.com/LiuLabUB/HMMRATAC",
+    "conda_downloads": "23.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "hmmratac_awk.cwl",
+    "hmmratac_java.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hmmratac\n\n## Overview\nHMMRATAC (Hidden Markov ModeleR for ATAC-seq) is a specialized peak caller that leverages the unique fragment distribution of ATAC-seq data. Unlike standard peak callers, it uses a Hidden Markov Model to integrate various signal tracks—representing different nucleosomal states—to identify open chromatin regions with high sensitivity. It is particularly effective for identifying both broad and narrow peaks without requiring a separate control sample.\n\n## Prerequisites and Input Preparation\nHMMRATAC requires three primary inputs. Ensure your data meets these criteria before execution:\n1. **Paired-End BAM**: The data must be paired-end. Single-end data is not supported.\n2. **Sorted and Indexed**: The BAM file must be coordinate-sorted and have a corresponding `.bai` index.\n3. **Genome Information**: A tab-delimited file containing chromosome names and their respective sizes (no header).\n\n### Standard Preparation Workflow\n```bash\n# 1. Sort the BAM\nsamtools sort input.bam -o input.sorted.bam\n\n# 2. Index the BAM\nsamtools index input.sorted.bam\n\n# 3. Generate genome.info from the BAM header\nsamtools view -H input.sorted.bam | perl -ne 'if(/^@SQ.*?SN:(\\w+)\\s+LN:(\\d+)/){print $1,\"\\t\",$2,\"\\n\"}' > genome.info\n```\n\n## Command Line Usage\nThe basic execution pattern for the Java-based version is:\n```bash\njava -jar HMMRATAC_V1.2.10_exe.jar -b input.sorted.bam -i input.sorted.bam.bai -g genome.info [options]\n```\n\n### Key Parameters and Best Practices\n- **Fragment Distribution (-m, -s)**: The default means (`50,200,400,600`) are optimized for human data. For non-human species with different nucleosome spacing, adjust these values.\n- **Read Length Adjustment**: If your read length is under 100bp, it is recommended to set the first value of the `-m` parameter to your actual read length.\n- **Mapping Quality (-q)**: The default is `30`. Lowering this is generally discouraged as it introduces noise from poorly mapped reads.\n- **Training Stringency (-u, -l)**: Use the `--upper` and `--lower` options to set the fold-change range for choosing training regions. Higher ranges result in a more stringent model (higher precision), while lower ranges increase sensitivity (higher recall).\n- **EM Training (-f)**: Keep this as `true` (default) for the most accurate model. Only set to `false` if you are re-running a dataset using parameters previously optimized and recorded in a log file.\n\n## Post-Processing and Filtering\nHMMRATAC reports all peaks matching the model structure, including weak ones. Filtering by the score (column 13 in gappedPeak, column 5 in summits) is essential for high-quality results.\n\n### Filtering Examples\n```bash\n# Filter peaks by a score threshold of 10\nawk -v OFS=\"\\t\" '$13>=10 {print}' output_peaks.gappedPeak > output.filtered.peaks.gappedPeak\n\n# Filter summits by the same threshold\nawk -v OFS=\"\\t\" '$5>=10 {print}' output_summits.bed > output.filtered.summits.bed\n```\n\n## Expert Tips\n- **Memory Management**: For large genomes or high-coverage datasets, ensure you allocate sufficient heap space to the JVM (e.g., `java -Xmx16G -jar ...`).\n- **MACS3 Integration**: Note that the Java version is no longer actively maintained. For modern pipelines, consider using the `hmmratac` subcommand within the `macs3` suite, which implements the same logic in a more performant environment.\n- **Size Selection**: HMMRATAC is designed for \"natural\" ATAC-seq. If your data was physically or in silico size-selected, use the `--trim` option to account for the missing fragment distributions.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| awk | Pattern scanning and processing language |\n| java | Java application launcher |\n\n## Reference documentation\n- [HMMRATAC Guide](./references/github_com_LiuLabUB_HMMRATAC_blob_master_HMMRATAC_Guide.md)\n- [HMMRATAC README](./references/github_com_LiuLabUB_HMMRATAC_blob_master_README.md)\n- [Input Preparation Script](./references/github_com_LiuLabUB_HMMRATAC_blob_master_Make_HMMRATAC_Files.sh.md)",
+  "skill_front_matter": {
+    "name": "hmmratac",
+    "description": "HMMRATAC is a specialized peak caller that uses a Hidden Markov Model to identify open chromatin regions from paired-end ATAC-seq data. Use when user asks to call peaks from ATAC-seq fragments, identify nucleosomal states, or analyze chromatin accessibility without a control sample.",
+    "homepage": "https://github.com/LiuLabUB/HMMRATAC"
+  }
+}

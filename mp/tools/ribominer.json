@@ -1,0 +1,55 @@
+{
+  "id": "ribominer",
+  "category": "CLI",
+  "name": "ribominer",
+  "description": "RiboMiner is a bioinformatics suite designed to analyze ribosome footprinting data to identify ribosome stalling sites and correlate them with sequence-based properties. Use when user asks to extract translatome features, calculate codon occupancy, analyze biochemical properties of stalling sites, or generate metagene profiles from Ribo-seq experiments.",
+  "overview": "RiboMiner is a specialized bioinformatics suite designed to extract biological insights from ribosome footprinting (Ribo-seq) experiments. It transforms raw mapping data into high-level translatome features, allowing researchers to identify ribosome stalling sites and correlate them with sequence-based properties like codon usage, charge, and hydrophobicity. It relies on the longest protein-coding transcripts for its calculations to ensure consistency across genomic analyses.",
+  "homepage": "https://github.com/xryanglab/RiboMiner",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ribominer/overview",
+  "github": "https://github.com/xryanglab/RiboMiner",
+  "conda_downloads": "5.7K",
+  "conda_downloads_num": 5700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ribominer_prepare_transcripts",
+      "ribominer_OutputTranscriptInfo",
+      "ribominer_GetProteinCodingSequence",
+      "ribominer_metaplots",
+      "ribominer_Periodicity",
+      "ribominer_GetUTRSequences"
+    ],
+    "description": "This script is designed for preparing transcripts annotation files.",
+    "docker_image": "quay.io/biocontainers/ribominer:0.2.3.2--pyh5e36f6f_0",
+    "homepage": "https://github.com/xryanglab/RiboMiner",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ribominer/overview",
+    "github": "https://github.com/xryanglab/RiboMiner",
+    "conda_downloads": "5.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ribominer_GetProteinCodingSequence.cwl",
+    "ribominer_GetUTRSequences.cwl",
+    "ribominer_OutputTranscriptInfo.cwl",
+    "ribominer_Periodicity.cwl",
+    "ribominer_metaplots.cwl",
+    "ribominer_prepare_transcripts.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ribominer\n\n## Overview\n\nRiboMiner is a specialized bioinformatics suite designed to extract biological insights from ribosome footprinting (Ribo-seq) experiments. It transforms raw mapping data into high-level translatome features, allowing researchers to identify ribosome stalling sites and correlate them with sequence-based properties like codon usage, charge, and hydrophobicity. It relies on the longest protein-coding transcripts for its calculations to ensure consistency across genomic analyses.\n\n## Data Preparation (DP)\n\nBefore analysis, you must generate transcriptome-level annotations and extract sequences.\n\n1.  **Generate RiboCode Annotations**:\n    ```bash\n    prepare_transcripts -g <annotation.gtf> -f <genome.fa> -o RiboCode_annot\n    ```\n2.  **Identify Longest Transcripts**:\n    ```bash\n    OutputTranscriptInfo -c RiboCode_annot/transcripts_cds.txt -g <annotation.gtf> -f RiboCode_annot/transcripts_sequence.fa -o longest.transcripts.info.txt -O all.transcripts.info.txt\n    ```\n3.  **Extract Sequences**:\n    ```bash\n    GetProteinCodingSequence -i RiboCode_annot/transcripts_sequence.fa -c longest.transcripts.info.txt -o <prefix> --mode whole --table 1\n    ```\n\n## Quality Control (QC)\n\nAssess the 3-nt periodicity and read length distribution of your BAM files.\n\n*   **Periodicity Check**: Use `metaplots` (from the RiboCode dependency) to determine the P-site offset for specific read lengths.\n*   **Attributes File**: Create a tab-separated `attributes.txt` to define your samples:\n    ```text\n    bamFiles    readLengths    Offsets    bamLegends\n    ./sample1.bam    27,28,29    12,12,13    Control\n    ```\n*   **Length Distribution**:\n    ```bash\n    PlotLengthDist -i attributes.txt -o length_dist_output\n    ```\n\n## Metagene Analysis (MA)\n\nIdentify stalling events by calculating read densities across transcripts.\n\n*   **Calculate Density**:\n    ```bash\n    # Generates a .h5 file containing density information\n    GetDensitySum -i attributes.txt -o density_output\n    ```\n*   **Metagene Plotting**:\n    ```bash\n    PlotMetagene -i density_output.h5 -o metagene_plot --norm yes\n    ```\n\n## Feature Analysis (FA)\n\nCorrelate stalling with biochemical and sequence properties.\n\n*   **Codon/AA Usage**: Calculate the occupancy of specific codons or amino acids.\n    ```bash\n    # Example for A-site occupancy\n    PlotOccupancy -i density_output.h5 -s <sequence.fa> -o occupancy_results\n    ```\n*   **Biochemical Properties**: Analyze hydrophobicity or charge distribution around stalling sites.\n    ```bash\n    # Calculate hydrophobicity index\n    PlotHydrophobicity -i density_output.h5 -a <amino_acid_sequence.fa> -o hydro_results\n    ```\n\n## Expert Tips\n\n*   **BAM Requirements**: All input BAM files must be sorted and indexed (`samtools index`).\n*   **GTF Formatting**: Ensure your GTF file contains `transcript_type` or `transcript_biotype` attributes in the 9th column.\n*   **P-site Offsets**: The accuracy of all downstream analyses (MA, FA, EA) depends entirely on the correct Offsets defined in your `attributes.txt`. Always verify these via `metaplots` first.\n*   **Memory Management**: For large genomes or many samples, `GetDensitySum` can be resource-intensive; ensure sufficient RAM is available for HDF5 file creation.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| metaplots | This script create aggregate plots of distances from the 5'end of reads to start or stop codons, which help determine the length range of the PRF reads that are most likely originated from the translating ribosomes and identify the P-site locations for each reads lengths. |\n| prepare_transcripts | This script is designed for preparing transcripts annotation files. |\n| python GetProteinCodingSequence | Extracts protein-coding sequences based on specified coordinates. |\n| python GetUTRSequences | Get UTR sequences from transcript and coordinate files. |\n| python OutputTranscriptInfo | Output transcript information. |\n| python Periodicity | Calculates periodicity of Ribo-seq reads. |\n\n## Reference documentation\n\n- [RiboMiner Implementation Guide](./references/github_com_xryanglab_RiboMiner_blob_master_Implementation.md)\n- [RiboMiner README](./references/github_com_xryanglab_RiboMiner_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "ribominer",
+    "description": "RiboMiner is a bioinformatics suite designed to analyze ribosome footprinting data to identify ribosome stalling sites and correlate them with sequence-based properties. Use when user asks to extract translatome features, calculate codon occupancy, analyze biochemical properties of stalling sites, or generate metagene profiles from Ribo-seq experiments.",
+    "homepage": "https://github.com/xryanglab/RiboMiner"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cctutorial",
+  "category": "bioconductor",
+  "name": "bioconductor-cctutorial",
+  "description": "This package provides documented workflows and data for the primary statistical analysis of ChIP-chip tiling array experiments. Use when user asks to import NimbleGen pair data, normalize intensities, smooth signals, identify ChIP-enriched regions, or relate peaks to genomic annotations.",
+  "overview": "The `ccTutorial` package provides the data and documented workflows for analyzing ChIP-chip experiments (specifically H3K4me3 modifications in mouse tissues) using Bioconductor. It serves as a template for processing tiling array data, moving from raw intensity files to biological insights.",
+  "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/ccTutorial.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cctutorial/overview",
+  "github": "N/A",
+  "conda_downloads": "23.4K",
+  "conda_downloads_num": 23400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ccTutorial"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/ccTutorial.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cctutorial/overview",
+    "github": "N/A",
+    "conda_downloads": "23.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cctutorial\n\nname: bioconductor-cctutorial\ndescription: Analysis of ChIP-chip data using Bioconductor. Use this skill to perform primary statistical analysis of ChIP-chip data, including data import (NimbleGen pair format), quality assessment, normalization, smoothing, and identification of ChIP-enriched regions (peaks). It also supports integrative analysis with genome annotation (biomaRt) and gene set enrichment (topGO).\n\n# bioconductor-cctutorial\n\n## Overview\nThe `ccTutorial` package provides the data and documented workflows for analyzing ChIP-chip experiments (specifically H3K4me3 modifications in mouse tissues) using Bioconductor. It serves as a template for processing tiling array data, moving from raw intensity files to biological insights.\n\n## Core Workflow\n\n### 1. Data Import\nThe package handles NimbleGen `.pair` files. Data is typically organized by array type.\n\n```R\nlibrary(ccTutorial)\nlibrary(Ringo)\n\n# Locate raw data in the package\npairDir <- system.file(\"PairData\", package=\"ccTutorial\")\n\n# Read raw intensities into RGList objects\n# Requires a 'spottypes.txt' file and a targets file (e.g., 'files_array1.txt')\nRGs <- lapply(sprintf(\"files_array%d.txt\", 1:4), \n              readNimblegen, \"spottypes.txt\", path=pairDir)\n```\n\n### 2. Mapping and Annotation\nReporters must be mapped to genomic coordinates. The package includes a pre-built `probeAnno` object for the mm9 assembly.\n\n```R\ndata(\"probeAnno\")\ndata(\"mm9genes\") # Ensembl-based gene annotation\n```\n\n### 3. Preprocessing and Normalization\nStandard preprocessing involves calculating log2 ratios (Cy5/Cy3) and applying Tukey's biweight scaling.\n\n```R\n# Preprocess and convert to ExpressionSet\nMAs <- lapply(RGs, function(thisRG) \n  preprocess(thisRG[thisRG$genes$Status==\"Probe\",], \n             method=\"nimblegen\", returnMAList=TRUE))\nMA <- do.call(rbind, MAs)\nX <- asExprSet(MA)\n```\n\n### 4. Smoothing\nTo reduce noise and account for DNA fragment size, apply a sliding window median (e.g., 900bp).\n\n```R\nsmoothX <- computeRunningMedians(X, probeAnno=probeAnno, \n                                 modColumn=\"Tissue\", \n                                 winHalfSize=450, min.probes=5)\n```\n\n### 5. Finding ChIP-enriched Regions (Peaks)\nEnrichment thresholds are determined using a mixture modeling approach on the null distribution of smoothed reporter levels.\n\n```R\n# Calculate threshold (e.g., 99% quantile of the null distribution)\ny0 <- apply(exprs(smoothX), 2, upperBoundNull, prob=0.99)\n\n# Identify regions (chers)\nchersX <- findChersOnSmoothed(smoothX, probeAnno=probeAnno, \n                              thresholds=y0, allChr=chromosomeNames(probeAnno), \n                              distCutOff=450, minProbesInRow=5)\n\n# Relate regions to genes\nchersX <- relateChers(chersX, mm9genes, upstream=5000)\nchersXD <- as.data.frame(chersX)\n```\n\n### 6. Visualization\nVisualize intensities and smoothed signals along genomic coordinates.\n\n```R\n# Plot specific region\nplot(X, probeAnno, chrom=\"2\", xlim=c(113.87e6, 113.88e6), \n     ylim=c(-3,5), gff=mm9genes)\n```\n\n## Integrative Analysis\n- **Gene Ontology**: Use `topGO` with the `sigGOTable` function to find over-represented terms among genes associated with ChIP-enriched regions.\n- **Expression Integration**: Compare ChIP enrichment status with mRNA abundance data (e.g., `barreraExpressionX`) using boxplots and Wilcoxon rank sum tests.\n\n## Reference documentation\n- [Analyzing ChIP-chip Data Using Bioconductor](./references/ccTutorial.md)\n- [Supplement: Analyzing ChIP-chip data using Bioconductor](./references/ccTutorialSupplement.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cctutorial",
+    "description": "This package provides documented workflows and data for the primary statistical analysis of ChIP-chip tiling array experiments. Use when user asks to import NimbleGen pair data, normalize intensities, smooth signals, identify ChIP-enriched regions, or relate peaks to genomic annotations.",
+    "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/ccTutorial.html"
+  }
+}

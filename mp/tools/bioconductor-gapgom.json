@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gapgom",
+  "category": "bioconductor",
+  "name": "bioconductor-gapgom",
+  "description": "This tool performs functional annotation prediction and semantic similarity analysis for genes using expression correlation and Gene Ontology topology. Use when user asks to predict GO annotations for unannotated genes, calculate semantic similarity between genes or gene sets, or process FANTOM5 expression data for functional genomics.",
+  "overview": "GAPGOM (novel Gene Annotation Prediction and other GO Metrics) provides tools for functional genomics, specifically focusing on predicting the function of unannotated genes like long non-coding RNAs (lncRNAs). It implements two primary algorithms: **lncRNA2GOA** for expression-based \"guilt-by-association\" annotation and **TopoICSim** for topology-based semantic similarity measurements within the Gene Ontology (GO) Directed Acyclic Graph (DAG).",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/GAPGOM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gapgom/overview",
+  "github": "https://github.com/Berghopper/GAPGOM",
+  "conda_downloads": "16.9K",
+  "conda_downloads_num": 16900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GAPGOM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/GAPGOM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gapgom/overview",
+    "github": "https://github.com/Berghopper/GAPGOM",
+    "conda_downloads": "16.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gapgom\n\nname: bioconductor-gapgom\ndescription: Functional annotation prediction and semantic similarity analysis for genes (especially lncRNAs) using the GAPGOM Bioconductor package. Use this skill to: (1) Predict GO annotations for novel genes using expression correlation (lncRNA2GOA), (2) Calculate topological semantic similarity between GO terms or gene sets (TopoICSim), (3) Process FANTOM5 expression data or custom ExpressionSets for functional genomics.\n\n# bioconductor-gapgom\n\n## Overview\nGAPGOM (novel Gene Annotation Prediction and other GO Metrics) provides tools for functional genomics, specifically focusing on predicting the function of unannotated genes like long non-coding RNAs (lncRNAs). It implements two primary algorithms: **lncRNA2GOA** for expression-based \"guilt-by-association\" annotation and **TopoICSim** for topology-based semantic similarity measurements within the Gene Ontology (GO) Directed Acyclic Graph (DAG).\n\n## Core Workflows\n\n### 1. Expression Data Preparation\nGAPGOM works with `ExpressionSet` objects. It provides specific helpers for FANTOM5 data but supports any `AnnotationDbi` compatible IDs (Entrez IDs recommended).\n\n```r\nlibrary(GAPGOM)\nlibrary(Biobase)\n\n# Option A: Load FANTOM5 data\nfantom_file <- fantom_download(\"./\", organism = \"human\")\nft5 <- fantom_load_raw(fantom_file)\nexpset <- fantom_to_expset(ft5)\n\n# Option B: Manual ExpressionSet creation\n# Ensure rownames are unique IDs and featureData contains mapping\nexpression_matrix <- as.matrix(my_data[, 2:ncol(my_data)])\nrownames(expression_matrix) <- my_data$ENTREZID\nexpset <- ExpressionSet(assayData = expression_matrix)\n```\n\n### 2. Functional Prediction (lncRNA2GOA)\nPredict GO terms for a query gene by correlating its expression against a library of annotated genes.\n\n```r\n# Predict BP terms for a specific Ensembl ID\nresult <- expression_prediction(\n  gid = \"ENSG00000228630\",\n  expset = expset,\n  organism = \"human\",\n  ontology = \"BP\",\n  method = \"combine\", # Options: pearson, spearman, kendall, sobolev, fisher, combine\n  filter_pvals = TRUE\n)\n\n# View significant GO terms and FDR\nhead(result)\n```\n\n### 3. Semantic Similarity (TopoICSim)\nCalculate similarity between genes or gene sets based on GO DAG topology and Information Content (IC).\n\n```r\n# Compare two genes (Entrez IDs)\ngene_sim <- topo_ic_sim_genes(\n  organism = \"human\",\n  ontology = \"MF\",\n  genes1 = \"218\",\n  genes2 = \"501\"\n)\n\n# Access results\ngene_sim$GeneSim    # Similarity score\ngene_sim$AllGoPairs # Underlying GO term similarity matrix\n\n# Compare gene sets (Intraset similarity)\ngeneset <- c(\"126133\", \"221\", \"218\")\nset_sim <- topo_ic_sim_genes(\"human\", \"BP\", geneset, geneset)\nmean(set_sim$GeneSim)\n```\n\n### 4. Custom Gene Definitions\nDefine \"custom genes\" using a list of GO terms to compare hypothetical or predicted annotations against known genes.\n\n```r\ncustom <- list(my_pred = c(\"GO:0016787\", \"GO:0042802\"))\nres <- topo_ic_sim_genes(\n  organism = \"human\", \n  ontology = \"MF\", \n  genes1 = c(), # Empty if only using custom\n  genes2 = \"501\",\n  custom_genes1 = custom\n)\n```\n\n## Usage Tips\n- **ID Types**: While multiple IDs are supported, Entrez IDs are the most stable across Bioconductor dependencies.\n- **Performance**: TopoICSim is computationally intensive. For large gene sets, pre-calculate the `AllGoPairs` matrix and pass it to subsequent calls to save time.\n- **Memory**: The package may experience memory leaks during large iterative `apply` operations; restarting the R session is recommended for very large batches.\n- **Ontology Choice**: Results vary by ontology (MF, BP, or CC). CC often shows higher similarity scores due to lower DAG complexity compared to BP.\n\n## Reference documentation\n- [An Introduction to GAPGOM](./references/GAPGOM.md)\n- [Benchmarks and other GO similarity methods](./references/benchmarks.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gapgom",
+    "description": "This tool performs functional annotation prediction and semantic similarity analysis for genes using expression correlation and Gene Ontology topology. Use when user asks to predict GO annotations for unannotated genes, calculate semantic similarity between genes or gene sets, or process FANTOM5 expression data for functional genomics.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/GAPGOM.html"
+  }
+}

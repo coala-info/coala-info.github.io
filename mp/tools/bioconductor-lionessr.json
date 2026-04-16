@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-lionessr",
+  "category": "bioconductor",
+  "name": "bioconductor-lionessr",
+  "description": "This tool reconstructs single-sample networks from aggregate data using the Linear Interpolation to Obtain Network Estimates for Single Samples algorithm. Use when user asks to perform single-sample co-expression analysis, identify individual-specific network edges, or conduct differential co-expression analysis between patient groups in R.",
+  "overview": "The `lionessR` package implements the LIONESS equation to estimate the network structure of individual samples within a population. While traditional network reconstruction (like Pearson correlation) requires a group of samples to produce a single aggregate network, LIONESS uses a \"leave-one-out\" approach to interpolate the specific contribution of each sample. This allows for downstream statistical analysis (e.g., LIMMA) on network edges just as one would perform on gene expression data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/lionessR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-lionessr/overview",
+  "github": "https://github.com/mararie/lionessR",
+  "conda_downloads": "17.1K",
+  "conda_downloads_num": 17100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lionessR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/lionessR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-lionessr/overview",
+    "github": "https://github.com/mararie/lionessR",
+    "conda_downloads": "17.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-lionessr\n\nname: bioconductor-lionessr\ndescription: Reconstruct single-sample networks from aggregate data using the LIONESS (Linear Interpolation to Obtain Network Estimates for Single Samples) algorithm. Use this skill when you need to perform single-sample co-expression analysis, identify individual-specific network edges, or conduct differential co-expression analysis between patient groups in R.\n\n# bioconductor-lionessr\n\n## Overview\n\nThe `lionessR` package implements the LIONESS equation to estimate the network structure of individual samples within a population. While traditional network reconstruction (like Pearson correlation) requires a group of samples to produce a single aggregate network, LIONESS uses a \"leave-one-out\" approach to interpolate the specific contribution of each sample. This allows for downstream statistical analysis (e.g., LIMMA) on network edges just as one would perform on gene expression data.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe input should be a gene expression matrix or a `SummarizedExperiment` object. To reduce computational load and noise, it is standard practice to subset the data to the most variably expressed genes.\n\n```r\nlibrary(lionessR)\nlibrary(SummarizedExperiment)\n\n# Assuming 'exp' is your expression matrix\nnsel <- 500\ncvar <- apply(exp, 1, sd)\ndat <- exp[tail(order(cvar), nsel), ]\n```\n\n### 2. Single-Sample Network Reconstruction\nThe primary function is `lioness()`. By default, it uses Pearson correlation (`netFun`), but it can be adapted for any algorithm that returns a complete weighted adjacency matrix.\n\n```r\n# Returns a data frame where rows are edges and columns are samples\ncormat <- lioness(dat, netFun)\n\n# The output format is typically: [Gene1, Gene2, Sample1_Weight, Sample2_Weight, ...]\n# It is helpful to create unique edge IDs\nrow.names(cormat) <- paste(cormat[,1], cormat[,2], sep=\"_\")\nedge_values <- as.matrix(cormat[, 3:ncol(cormat)])\n```\n\n### 3. Differential Co-expression Analysis\nOnce single-sample edge weights are calculated, you can use standard linear modeling (like `limma`) to find edges that differ significantly between conditions.\n\n```r\nlibrary(limma)\n\n# Define groups based on sample metadata\ngroup <- factor(targets$condition)\ndesign <- model.matrix(~0+group)\ncont.matrix <- makeContrasts(GroupAvsB = (groupA - groupB), levels = design)\n\n# Fit model to the edge weights\nfit <- lmFit(edge_values, design)\nfit2 <- contrasts.fit(fit, cont.matrix)\nfit2e <- eBayes(fit2)\ntoptable <- topTable(fit2e, number=nrow(edge_values), adjust=\"fdr\")\n```\n\n### 4. Visualization\nSignificant edges can be converted into `igraph` objects. A common pattern is to color edges by the sign of the log fold change (logFC) and nodes by the t-statistic of differential expression.\n\n```r\nlibrary(igraph)\n\n# Extract top 50 edges\ntop_edges <- t(matrix(unlist(strsplit(row.names(toptable)[1:50], \"_\")), 2))\ng <- graph_from_data_frame(data.frame(top_edges, weight=toptable$logFC[1:50]), directed=FALSE)\n\n# Plotting\nplot(g, vertex.size=10, edge.width=abs(E(g)$weight)*5)\n```\n\n## Tips and Best Practices\n- **Computational Cost**: LIONESS runs the network reconstruction algorithm $N+1$ times (where $N$ is the number of samples). For large gene sets, this is memory and time-intensive. Always filter genes (e.g., top 500-1000 by SD) before running.\n- **Edge Selection**: Before running LIONESS, you can pre-filter edges by calculating a \"global\" difference between condition-specific networks to focus only on edges likely to show high variance.\n- **Bipartite Networks**: The package supports bipartite networks (e.g., Transcription Factor to Target Gene) if the reconstruction function provided to `lioness()` handles them.\n\n## Reference documentation\n- [lionessR.Rmd](./references/lionessR.Rmd)\n- [lionessR.md](./references/lionessR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-lionessr",
+    "description": "This tool reconstructs single-sample networks from aggregate data using the Linear Interpolation to Obtain Network Estimates for Single Samples algorithm. Use when user asks to perform single-sample co-expression analysis, identify individual-specific network edges, or conduct differential co-expression analysis between patient groups in R.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/lionessR.html"
+  }
+}

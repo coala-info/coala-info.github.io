@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-iloreg",
+  "category": "bioconductor",
+  "name": "bioconductor-iloreg",
+  "description": "ILoReg identifies cell populations from single-cell RNA-seq data using a self-supervised learning algorithm called Iterative Clustering Projection. Use when user asks to perform high-resolution clustering, identify rare cell populations, extract probabilistic features via ICP, or conduct differential expression analysis in scRNA-seq workflows.",
+  "overview": "ILoReg is a Bioconductor package designed for high-resolution cell population identification. Unlike standard pipelines that rely on feature selection (e.g., selecting highly variable genes), ILoReg uses a self-supervised learning algorithm called Iterative Clustering Projection (ICP). ICP performs probabilistic feature extraction to create a consensus matrix, which is then used for hierarchical clustering and visualization. This approach is particularly effective at identifying rare cell popula",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ILoReg.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iloreg/overview",
+  "github": "https://github.com/elolab/ILoReg",
+  "conda_downloads": "12.4K",
+  "conda_downloads_num": 12400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ILoReg"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ILoReg.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iloreg/overview",
+    "github": "https://github.com/elolab/ILoReg",
+    "conda_downloads": "12.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-iloreg\n\nname: bioconductor-iloreg\ndescription: Identification of cell populations from single-cell RNA-seq (scRNA-seq) data using the ILoReg package. Use this skill for high-resolution clustering, probabilistic feature extraction via Iterative Clustering Projection (ICP), and differential expression analysis in scRNA-seq workflows.\n\n# bioconductor-iloreg\n\n## Overview\n\nILoReg is a Bioconductor package designed for high-resolution cell population identification. Unlike standard pipelines that rely on feature selection (e.g., selecting highly variable genes), ILoReg uses a self-supervised learning algorithm called Iterative Clustering Projection (ICP). ICP performs probabilistic feature extraction to create a consensus matrix, which is then used for hierarchical clustering and visualization. This approach is particularly effective at identifying rare cell populations that might be missed by traditional PCA-based methods.\n\n## Core Workflow\n\n### 1. Data Preparation\nILoReg requires a log-transformed, normalized gene expression matrix. It is optimized for sparse data (`dgCMatrix`).\n\n```R\nlibrary(ILoReg)\nlibrary(SingleCellExperiment)\n\n# Create SCE object from normalized counts\nsce <- SingleCellExperiment(assays = list(logcounts = normalized_matrix))\n\n# Filter zero-expression genes and prepare for ILoReg\nsce <- PrepareILoReg(sce)\n```\n\n### 2. Iterative Clustering Projection (ICP)\nThis is the most computationally intensive step. It runs ICP $L$ times to generate a joint probability matrix.\n\n```R\nset.seed(1)\nsce <- RunParallelICP(\n  object = sce, \n  k = 15,          # Initial clusters (increase for higher resolution)\n  d = 0.3,         # Downsampling rate (0.2 to 0.3 recommended)\n  L = 200,         # Number of ICP runs (default 200)\n  C = 0.3,         # L1 regularization trade-off\n  reg.type = \"L1\", # Lasso regression\n  threads = 0      # 0 uses all available cores minus one\n)\n```\n\n### 3. Consensus Matrix and Dimensionality Reduction\nThe probability matrices are merged and reduced via PCA, followed by t-SNE or UMAP for visualization.\n\n```R\n# PCA transformation\nsce <- RunPCA(sce, p = 50, scale = FALSE)\n\n# Optional: Check elbow plot to select p\nPCAElbowPlot(sce)\n\n# Nonlinear reduction\nsce <- RunUMAP(sce)\nsce <- RunTSNE(sce, perplexity = 30)\n```\n\n### 4. Clustering and Annotation\nILoReg uses Ward's hierarchical clustering on the consensus matrix.\n\n```R\n# Perform hierarchical clustering\nsce <- HierarchicalClustering(sce)\n\n# Extract K clusters (this overwrites previous manual clustering)\nsce <- SelectKClusters(sce, K = 13)\n\n# Rename clusters for biological interpretation\nsce <- RenameAllClusters(sce, new.cluster.names = c(\"T-cells\", \"B-cells\", ...))\n```\n\n### 5. Differential Expression (DE) Analysis\nIdentify marker genes for the identified clusters using the Wilcoxon rank-sum test.\n\n```R\n# Find markers for all clusters\ngene_markers <- FindAllGeneMarkers(\n  sce,\n  log2fc.threshold = 0.25,\n  min.pct = 0.25,\n  only.pos = TRUE\n)\n\n# Select top markers\ntop10_markers <- SelectTopGenes(gene_markers, top.N = 10, criterion.type = \"log2FC\")\n\n# DE between two specific groups\nspecific_markers <- FindGeneMarkers(\n  sce,\n  clusters.1 = \"Cluster A\",\n  clusters.2 = \"Cluster B\"\n)\n```\n\n## Visualization Functions\n\n*   `ClusteringScatterPlot(sce, dim.reduction.type = \"umap\")`: Visualize clusters.\n*   `GeneScatterPlot(sce, genes = c(\"CD3D\"), dim.reduction.type = \"tsne\")`: Visualize specific gene expression.\n*   `GeneHeatmap(sce, gene.markers = top10_markers)`: Heatmap of cluster markers.\n*   `VlnPlot(sce, genes = c(\"CD3D\"))`: Violin plots of gene expression across clusters.\n*   `SilhouetteCurve(sce)`: Plot average silhouette values to estimate optimal $K$.\n\n## Tips for Success\n*   **Resolution Control**: To increase resolution (find more sub-populations), increase `k` in `RunParallelICP`. To decrease resolution, increase `d` (e.g., to 0.5).\n*   **Reproducibility**: Always use `set.seed()` before `RunParallelICP` as the algorithm is stochastic.\n*   **Memory**: Ensure data is in sparse format (`dgCMatrix`) to prevent excessive memory usage and long run times.\n*   **Optimal K**: Use `CalcSilhInfo(sce, K.start = 2, K.end = 50)` to help determine the natural number of clusters in the data.\n\n## Reference documentation\n- [ILoReg package manual](./references/ILoReg.md)\n- [ILoReg R Markdown Source](./references/ILoReg.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-iloreg",
+    "description": "ILoReg identifies cell populations from single-cell RNA-seq data using a self-supervised learning algorithm called Iterative Clustering Projection. Use when user asks to perform high-resolution clustering, identify rare cell populations, extract probabilistic features via ICP, or conduct differential expression analysis in scRNA-seq workflows.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ILoReg.html"
+  }
+}

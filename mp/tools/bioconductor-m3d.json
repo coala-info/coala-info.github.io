@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-m3d",
+  "category": "bioconductor",
+  "name": "bioconductor-m3d",
+  "description": "This tool performs statistical testing for DNA methylation differences in Reduced Representation Bisulfite Sequencing data using the Maximum Mean Discrepancy. Use when user asks to identify differentially methylated regions, test for changes in methylation profile distributions, or account for coverage variation in methylation analysis.",
+  "overview": "The M3D package provides a kernel-based statistical test for identifying differences in DNA methylation profiles between sample groups. Unlike site-specific tests, M3D evaluates the spatial distribution of methylation within regions (islands). It uses the Maximum Mean Discrepancy (MMD) and subtracts a coverage-only MMD to ensure that identified differences are driven by methylation levels rather than just sequencing depth fluctuations.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/M3D.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "M3D"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/M3D.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-m3d\n\nname: bioconductor-m3d\ndescription: Statistical testing for Reduced Representation Bisulfite Sequencing (RRBS) data sets using the Maximum Mean Discrepancy (MMD). Use this skill to identify differentially methylated regions (DMRs) by testing for changes in the distribution of methylation profiles across pre-defined regions of interest, accounting for coverage variation.\n\n## Overview\n\nThe M3D package provides a kernel-based statistical test for identifying differences in DNA methylation profiles between sample groups. Unlike site-specific tests, M3D evaluates the spatial distribution of methylation within regions (islands). It uses the Maximum Mean Discrepancy (MMD) and subtracts a coverage-only MMD to ensure that identified differences are driven by methylation levels rather than just sequencing depth fluctuations.\n\n## Core Workflow\n\n### 1. Data Preparation\nM3D uses the `BSraw` data structure from the `BiSeq` package. You can import data from various BED file formats.\n\n```r\nlibrary(BiSeq)\nlibrary(M3D)\n\n# Define sample metadata\ngroup <- factor(c('Control', 'Control', 'Treat', 'Treat'))\nsamples <- c('C1', 'C2', 'T1', 'T2')\ncolData <- DataFrame(group, row.names = samples)\n\n# Read BED files (types: 'Encode', 'BisSNP', 'EPP', 'bismarkCov', 'bismarkCytosine')\nrrbs <- readBedFiles(files, colData, bed_type = 'Encode')\n\n# Define regions of interest (GRanges)\n# Often created using BiSeq::clusterSites and BiSeq::clusterSitesToGR\ndata(CpGsDemo) \n```\n\n### 2. Computing the M3D Statistic\nThe package offers \"lite\" functions which are faster and more memory-efficient. They automatically calculate the difference between the full MMD and the coverage MMD.\n\n```r\n# Find overlaps between regions and cytosine sites\noverlaps <- findOverlaps(CpGsDemo, rowRanges(rrbs))\n\n# Compute the M3D statistic (Lite version recommended)\n# Returns a matrix where the first column is the mean inter-group difference\nM3Dstat <- M3D_Wrapper_lite(rrbs, overlaps)\n```\n\n### 3. P-value Generation and FDR\nP-values are calculated by comparing inter-group differences against the null distribution (inter-replicate differences).\n\n```r\ngroup1 <- 'Control'\ngroup2 <- 'Treat'\n\n# Generate p-values\n# method='empirical' is default; use method='model' for small sample sizes\nPDemo <- pvals_lite(rrbs, CpGsDemo, M3Dstat, group1, group2, method='empirical')\n\n# Identify significant regions (FDR < 0.01)\nsignificant_indices <- which(PDemo$FDRmean <= 0.01)\ndmrs <- CpGsDemo[significant_indices]\n```\n\n### 4. Visualization\nVisualize the smoothed methylation profiles for specific regions to inspect the differences between groups.\n\n```r\n# Plot profile for the first significant region\nplotMethProfile(rrbs, CpGsDemo, group1, group2, significant_indices[1])\n```\n\n## Advanced Features\n\n### Outlier Detection\nTo prevent highly variable regions in the null distribution from skewing results, use the `outlier_test` parameter in the p-value functions.\n\n```r\nPDemo <- pvals(rrbs, CpGsDemo, M3Dstat, group1, group2, outlier_test = TRUE)\n# Highly variable regions will return NA in the FDRmean vector\n```\n\n### Parallel Processing\nFor large datasets, use the parallelized versions of the wrappers:\n- `M3D_Para`: Standard parallel wrapper.\n- `M3D_Para_lite`: Memory-efficient parallel wrapper.\n\n## Tips for Success\n- **Lite Functions**: Always prefer `M3D_Wrapper_lite` and `pvals_lite` for modern analysis to save memory.\n- **Coverage Requirements**: Ensure regions have sufficient coverage (e.g., >100 total reads across samples) before testing to improve statistical power.\n- **Bed Types**: Double-check your BED file format against the supported types (`BisSNP`, `EPP`, `bismarkCov`, `bismarkCytosine`, `Encode`) when using `readBedFiles`.\n\n## Reference documentation\n- [M3D: Statistical Testing for RRBS Data Sets](./references/M3D_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-m3d",
+    "description": "This tool performs statistical testing for DNA methylation differences in Reduced Representation Bisulfite Sequencing data using the Maximum Mean Discrepancy. Use when user asks to identify differentially methylated regions, test for changes in methylation profile distributions, or account for coverage variation in methylation analysis.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/M3D.html"
+  }
+}

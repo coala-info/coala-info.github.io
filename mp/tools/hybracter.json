@@ -1,0 +1,60 @@
+{
+  "id": "hybracter",
+  "category": "CLI",
+  "name": "hybracter",
+  "description": "hybracter is a Snakemake-based pipeline for the automated long-read and hybrid assembly of bacterial genomes. Use when user asks to perform long-read only assembly, conduct hybrid assembly using Nanopore and Illumina data, or automate bacterial genome polishing and reorientation.",
+  "overview": "hybracter is a specialized bioinformatic pipeline designed for the \"long-read first\" assembly of bacterial genomes. Built on Snakemake, it automates the complex workflow of quality control, assembly (using Flye), polishing (using Medaka and Polypolish), and genomic reorientation (using dnaapler). It is specifically optimized to handle the high-throughput requirements of modern genomic labs, providing a scalable way to move from raw FASTQ files to finished, high-quality reference genomes.",
+  "homepage": "https://github.com/gbouras13/hybracter",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hybracter/overview",
+  "github": "https://github.com/gbouras13/hybracter",
+  "conda_downloads": "18.9K",
+  "conda_downloads_num": 18900,
+  "last_updated": "2026-01-07",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hybracter_install",
+      "hybracter_hybrid",
+      "hybracter_hybrid-single",
+      "hybracter_long",
+      "hybracter_long-single",
+      "hybracter_test-hybrid",
+      "hybracter_test-long",
+      "hybracter_config",
+      "hybracter_citation"
+    ],
+    "description": "Snakemake is a Python based language and execution environment for GNU Make-like workflows.",
+    "docker_image": "quay.io/biocontainers/hybracter:0.12.0--pyhdfd78af_0",
+    "homepage": "https://github.com/gbouras13/hybracter",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hybracter/overview",
+    "github": "https://github.com/gbouras13/hybracter",
+    "conda_downloads": "18.9K",
+    "last_updated": "2026-01-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "hybracter_config.cwl",
+    "hybracter_hybrid-single.cwl",
+    "hybracter_hybrid.cwl",
+    "hybracter_install.cwl",
+    "hybracter_long-single.cwl",
+    "hybracter_long.cwl",
+    "hybracter_test-hybrid.cwl",
+    "hybracter_test-long.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hybracter\n\n## Overview\n\nhybracter is a specialized bioinformatic pipeline designed for the \"long-read first\" assembly of bacterial genomes. Built on Snakemake, it automates the complex workflow of quality control, assembly (using Flye), polishing (using Medaka and Polypolish), and genomic reorientation (using dnaapler). It is specifically optimized to handle the high-throughput requirements of modern genomic labs, providing a scalable way to move from raw FASTQ files to finished, high-quality reference genomes.\n\n## Installation and Setup\n\nBefore running assemblies, you must initialize the environment and download necessary databases.\n\n```bash\n# Install the tool via conda\nconda create -n hybracter -c bioconda -c conda-forge hybracter\nconda activate hybracter\n\n# Install databases and dependencies\nhybracter install -d /path/to/database_dir\n\n# Pre-download environments for offline/HPC use\nhybracter test-hybrid --threads 8\n```\n\n## Core Workflows\n\n### 1. Long-Read Only Assembly\nUse this when you only have Oxford Nanopore data.\n\n```bash\n# Single sample\nhybracter long-single -i reads.fastq.gz -s SampleName -c 5000000 -o output_dir\n\n# Batch mode using a CSV (Sample,LongReadPath,ChrSize)\nhybracter long --input samples.csv --outdir output_dir\n```\n\n### 2. Hybrid Assembly\nUse this to leverage the structural accuracy of long reads and the base-pair precision of short reads.\n\n```bash\n# Single sample\nhybracter hybrid-single -l long.fastq.gz -1 R1.fastq.gz -2 R2.fastq.gz -s SampleName -c 5000000 -o output_dir\n\n# Batch mode using a CSV (Sample,LongReadPath,R1Path,R2Path,ChrSize)\nhybracter hybrid --input samples.csv --outdir output_dir\n```\n\n## Expert Tips and Best Practices\n\n*   **Automatic Size Estimation**: Use the `--auto` flag to let hybracter estimate the chromosome size using `lrge`. This removes the need to provide a chromosome size in your input CSV or command line.\n    *   *Note*: Only use `--auto` for high-quality reads (Q15+). For older R9 or low-quality data, manually specifying the size is safer to avoid overestimation.\n*   **Path Management**: Use the `--datadir` flag to specify the directory containing your FASTQ files. This allows you to use just the filenames in your input CSV rather than absolute paths.\n    *   Example: `hybracter hybrid --input samples.csv --datadir \"/data/reads/long,/data/reads/short\"`\n*   **MacOS Compatibility**: If running on a Mac, always include the `--mac` flag. This forces the use of Medaka v1.8, as Medaka v2 is not natively supported on MacOS bioconda.\n*   **HPC Execution**: For Slurm-based clusters, hybracter includes a built-in profile. Use `--profile slurm` to manage job submissions automatically.\n*   **Medaka Models**: By default, hybracter uses the `--bacteria` option in Medaka v2 for improved methylation error correction. If you need to use a specific model for older data, use `--medakaModel <model>` in conjunction with the `--medaka_override` flag.\n*   **Contaminant Removal**: Use the `--contaminants` flag followed by a FASTA file (e.g., Lambda phage or human genome) to filter out unwanted reads during the QC stage.\n\n## Main Output Files\n\nThe results are organized in the specified output directory:\n*   `FINAL_OUTPUT/`: Contains the final polished and reoriented assemblies.\n*   `hybracter_summary.tsv`: A comprehensive report of assembly statistics, including circularity, length, and coverage for every sample.\n*   `statistics/`: Detailed QC metrics from fastp and NanoPlot.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| hybracter hybrid | Run hybracter with hybrid long and paired end short reads |\n| hybracter hybrid-single | Run hybracter hybrid on 1 isolate |\n| hybracter long | Run hybracter with only long reads |\n| hybracter long-single | Run hybracter long on 1 isolate |\n| hybracter_config | Copy the system default config file |\n| snakemake | Snakemake is a Python based language and execution environment for GNU Make-like workflows. |\n| snakemake | Snakemake is a Python based language and execution environment for GNU Make-like workflows. |\n| snakemake | Snakemake is a Python based language and execution environment for GNU Make-like workflows. |\n\n## Reference documentation\n- [Hybracter GitHub Repository](./references/github_com_gbouras13_hybracter_blob_main_README.md)\n- [Version History and Updates](./references/github_com_gbouras13_hybracter_blob_main_HISTORY.md)",
+  "skill_front_matter": {
+    "name": "hybracter",
+    "description": "hybracter is a Snakemake-based pipeline for the automated long-read and hybrid assembly of bacterial genomes. Use when user asks to perform long-read only assembly, conduct hybrid assembly using Nanopore and Illumina data, or automate bacterial genome polishing and reorientation.",
+    "homepage": "https://github.com/gbouras13/hybracter"
+  }
+}

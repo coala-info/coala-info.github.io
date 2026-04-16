@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-timirgen",
+  "category": "bioconductor",
+  "name": "bioconductor-timirgen",
+  "description": "TimiRGeN analyzes longitudinal miRNA and mRNA expression data to identify temporal patterns and gene regulatory networks. Use when user asks to integrate multi-omic time-course data, perform functional pathway enrichment, identify miRNA-mRNA interactions, or generate gene regulatory networks.",
+  "overview": "TimiRGeN (Time Incorporated miR-mRNA Generation of Networks) is a Bioconductor package designed for the integrated analysis of longitudinal miRNA and mRNA expression data. It facilitates data reduction while preserving biological signals by identifying temporal patterns, enriched pathways, and validated miRNA-mRNA interactions. The workflow typically starts with differential expression (DE) results and ends with network visualizations or export files for Cytoscape and PathVisio.",
+  "homepage": "https://bioconductor.org/packages/3.12/bioc/html/TimiRGeN.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Krutik6/TimiRGeN",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TimiRGeN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.12/bioc/html/TimiRGeN.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Krutik6/TimiRGeN",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-timirgen\n\nname: bioconductor-timirgen\ndescription: Analysis of time-series microRNA (miRNA) and mRNA expression data. Use this skill to integrate multi-omic time-course data, perform functional pathway enrichment using WikiPathways, identify miRNA-mRNA interactions via correlation and database mining (TargetScan, miRDB, miRTarBase), and generate gene regulatory networks.\n\n# bioconductor-timirgen\n\n## Overview\n\nTimiRGeN (Time Incorporated miR-mRNA Generation of Networks) is a Bioconductor package designed for the integrated analysis of longitudinal miRNA and mRNA expression data. It facilitates data reduction while preserving biological signals by identifying temporal patterns, enriched pathways, and validated miRNA-mRNA interactions. The workflow typically starts with differential expression (DE) results and ends with network visualizations or export files for Cytoscape and PathVisio.\n\n## Core Workflow\n\n### 1. Data Preparation and Object Initialization\nTimiRGeN uses the `MultiAssayExperiment` (MAE) container. Input dataframes should have column names following the convention `Timepoint.ResultType` (e.g., `D1.log2fc`, `D1.adjPVal`).\n\n```r\nlibrary(TimiRGeN)\nlibrary(org.Mm.eg.db) # Use appropriate org.db for species\n\n# Initialize MAE\nMAE <- startObject(miR_data, mRNA_data)\n\n# Retrieve Gene IDs (Entrez and Ensembl)\nMAE <- getIdsMir(MAE, assay(MAE, 1), orgDB = org.Mm.eg.db, miRPrefix = 'mmu')\nMAE <- getIdsMrna(MAE, assay(MAE, 2), mirror = 'useast', species = 'mmusculus', orgDB = org.Mm.eg.db)\n```\n\n### 2. Filtering and Enrichment\nFilter for significant genes across time points and perform overrepresentation analysis (ORA) using WikiPathways.\n\n```r\n# Combine and filter\nMAE <- combineGenes(MAE, miR_data = assay(MAE, 1), mRNA_data = assay(MAE, 2))\nMAE <- genesList(MAE, method = 'c', genetic_data = assay(MAE, 9), timeString = \"D\")\nMAE <- significantVals(MAE, method = 'c', geneList = metadata(MAE)[[1]], maxVal = 0.05, stringVal = \"adjPVal\")\n\n# Pathway Enrichment\nMAE2 <- MultiAssayExperiment()\nMAE2 <- dloadGmt(MAE2, species = \"Mus musculus\")\nMAE2 <- enrichWiki(MAE2, method = 'c', ID_list = metadata(MAE)[[4]], \n                   orgDB = org.Mm.eg.db, path_gene = assay(MAE2, 1), \n                   path_name = assay(MAE2, 2), ID = \"ENTREZID\")\n```\n\n### 3. Temporal Clustering\nUse soft clustering (Mfuzz) to identify global temporal patterns in pathways.\n\n```r\nMAE2 <- wikiList(MAE2, stringSpecies = 'Mus musculus', stringSymbol = 'L')\nMAE2 <- wikiMatrix(MAE2, ID_list = metadata(MAE)[[4]], wp_list = metadata(MAE2)[[2]])\nMAE2 <- turnPercent(MAE2, wikiMatrix = assay(MAE2, 4))\nMAE2 <- createClusters(MAE2, method = \"c\", percentMatrix = assay(MAE2, 5), noClusters = 4)\n```\n\n### 4. miRNA-mRNA Interaction Mining\nIdentify potential interactions by correlating miRNA and mRNA expression and validating against curated databases.\n\n```r\n# Create correlation matrix for a pathway of interest\nMAE3 <- mirMrnaInt(MAE = MultiAssayExperiment(), miR_express = miR_log2fc, \n                   GenesofInterest = target_mRNAs, maxInt = 5)\n\n# Download and mine databases\nMAE3 <- dloadTargetscan(MAE3, species = \"mmu\")\nMAE3 <- dloadMirdb(MAE3, species = \"mmu\", orgDB = org.Mm.eg.db)\nMAE3 <- dloadMirtarbase(MAE3, species = \"mmu\")\n\nMAE3 <- dataMiningMatrix(MAE3, corrTable = assay(MAE3, 1), \n                         targetscan = assay(MAE3, 2), \n                         mirdb = assay(MAE3, 3), \n                         mirtarbase = assay(MAE3, 4))\n\n# Filter by evidence and correlation\nMAE3 <- matrixFilter(MAE3, miningMatrix = assay(MAE3, 5), negativeOnly = TRUE, threshold = 2, maxCor = -0.5)\n```\n\n### 5. Visualization and Export\nGenerate internal R networks or export for external tools.\n\n```r\n# Internal Network\nMAE3 <- makeNet(MAE3, filt_df = assay(MAE3, 6))\nquickNet(metadata(MAE3)[[1]])\n\n# Export to Cytoscape (requires Cytoscape to be running)\ncytoMake(assay(MAE3, 6), titleString = 'My_Pathway')\n\n# Export to PathVisio\nMAE3 <- makeMapp(MAE3, filt_df = assay(MAE3, 6), miR_IDs_adj = miR_IDs, dataType = 'L')\n```\n\n## Key Functions and Parameters\n\n- `method`: Use `'c'` for combined analysis (miRNA and mRNA together) or `'s'` for separated analysis.\n- `timeString`: The prefix used in column names to denote time (e.g., \"D\" for Days, \"H\" for Hours).\n- `matrixFilter`: Crucial for reducing false positives. `threshold` sets the number of databases that must agree on an interaction.\n- `quickCrossCorr` / `quickReg`: Used for detailed pair-wise analysis of specific miRNA-mRNA interactions (best for 5+ time points).\n\n## Tips for Success\n\n1. **Naming Conventions**: Ensure column names have exactly one `.` and no `_`. miRNA names should use `-` (e.g., `hsa-miR-21-5p`).\n2. **MAE Management**: The package relies heavily on the `MultiAssayExperiment` structure. Use `assay(MAE, i)` or `metadata(MAE)[[i]]` to access specific data stages.\n3. **Species Support**: Supports vertebrate models (Human, Mouse, Rat, Zebrafish). Ensure the correct `org.db` and `miRPrefix` are used.\n4. **Missing Data**: Input dataframes should not contain `NA` values in the expression/result columns.\n\n## Reference documentation\n- [TimiRGeN Tutorial (Rmd)](./references/TimiRGeN_tutorial.Rmd)\n- [TimiRGeN Tutorial (Markdown)](./references/TimiRGeN_tutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-timirgen",
+    "description": "TimiRGeN analyzes longitudinal miRNA and mRNA expression data to identify temporal patterns and gene regulatory networks. Use when user asks to integrate multi-omic time-course data, perform functional pathway enrichment, identify miRNA-mRNA interactions, or generate gene regulatory networks.",
+    "homepage": "https://bioconductor.org/packages/3.12/bioc/html/TimiRGeN.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-omicspca",
+  "category": "bioconductor",
+  "name": "bioconductor-omicspca",
+  "description": "This tool integrates and analyzes heterogeneous omics datasets using PCA-based frameworks to identify sources of variation across biological conditions. Use when user asks to integrate multi-modal omics data, identify discriminatory factors across cell lines, perform exploratory data analysis on genomic features, or cluster samples based on consolidated epigenetic states.",
+  "overview": "`OMICsPCA` is a Bioconductor package designed for the unsupervised integration of heterogeneous omics datasets. It addresses the challenge of integrating data where samples (e.g., cell lines) may not be perfectly matched across different modalities. It uses Principal Component Analysis (PCA) to reduce dimensionality, identify discriminatory factors, and cluster genomic features (like TSSs or exons) based on their integrated multi-omics profiles.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/OMICsPCA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "OMICsPCA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/OMICsPCA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-omicspca\n\nname: bioconductor-omicspca\ndescription: Quantitative integration and analysis of multiple heterogeneous omics assays (e.g., ChIP-seq, RNA-seq) from different samples or sources using PCA-based frameworks. Use this skill when you need to identify sources of variation across cell lines/conditions, integrate multi-modal data, perform exploratory data analysis on genomic features (TSSs, genes), or cluster individuals based on consolidated epigenetic states.\n\n# bioconductor-omicspca\n\n## Overview\n`OMICsPCA` is a Bioconductor package designed for the unsupervised integration of heterogeneous omics datasets. It addresses the challenge of integrating data where samples (e.g., cell lines) may not be perfectly matched across different modalities. It uses Principal Component Analysis (PCA) to reduce dimensionality, identify discriminatory factors, and cluster genomic features (like TSSs or exons) based on their integrated multi-omics profiles.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package works with `MultiAssayExperiment` objects. You can prepare data frames from BED files using `prepare_dataset()`.\n\n```r\nlibrary(OMICsPCA)\nlibrary(MultiAssayExperiment)\n\n# Aggregate sample files (BED) for a specific assay\nassay_df <- prepare_dataset(\n  factdir = \"path/to/assay_files/\", \n  annofile = \"annotation.bed\", \n  annolist = \"feature_list.txt\"\n)\n\n# Create MultiAssayExperiment\nmae <- MultiAssayExperiment(experiments = list(\"H3k9ac\" = assay_df))\n```\n\n### 2. Grouping and EDA\nDivide features into groups (e.g., based on expression levels) to compare distributions.\n\n```r\n# Create groups based on a specific assay (e.g., CAGE expression)\ngroupinfo <- create_group(\n  name = mae, \n  group_names = c(\"High\", \"Low\", \"None\"),\n  grouping_factor = \"CAGE\",\n  comparison = c(\">=\", \"%in%\", \"==\"),\n  condition = c(\"25\", \"1:5\", \"0\")\n)\n\n# Visualize distribution of factors across groups\ndescriptor(name = mae, factors = c(\"H2az\", \"H3k9ac\"), groups = c(\"High\", \"Low\"), choice = 1, groupinfo = groupinfo)\n\n# Check correlations between cell lines within an assay\nchart_correlation(name = mae, Assay = \"H2az\", groups = \"High\", choice = \"all\", groupinfo = groupinfo)\n```\n\n### 3. Integrating Variables (Cell Lines/Conditions)\nUse PCA to integrate multiple samples of the same assay.\n\n```r\n# Integrate cell lines for specific assays\nPCAlist <- integrate_variables(\n  Assays = c(\"H2az\", \"H3k9ac\"), \n  name = mae, \n  groups = c(\"High\", \"Low\"), \n  groupinfo = groupinfo\n)\n\n# Analyze variance and loadings\nanalyse_variables(name = PCAlist, Assay = \"H2az\", choice = 1) # Variance barplot\nanalyse_variables(name = PCAlist, Assay = \"H2az\", choice = 2) # Variable loadings\n```\n\n### 4. Integrating Multiple Modalities\nCombine different types of assays into a single integrated PCA space.\n\n```r\n# Integrate multiple assays, optionally excluding outlier cell lines\n# exclude: list where each element corresponds to an assay's column indices to drop\nint_PCA <- integrate_pca(\n  Assays = c(\"H2az\", \"H3k9ac\"),\n  name = mae,\n  groupinfo = groupinfo,\n  mergetype = 2, # 1 for specific groups, 2 for all individuals\n  exclude = list(0, c(1)) \n)\n\n# Density analysis to find discriminatory patterns\nplot_integrated_density(name = int_PCA$int_PCA, PC = 1, groups = c(\"High\", \"Low\"), groupinfo = groupinfo)\n```\n\n### 5. Cluster Analysis\nIdentify similar genomic features based on the integrated omics state.\n\n```r\n# Extract data for clustering\nclust_data <- extract(\n  name = int_PCA$int_PCA, \n  PC = 1:4, \n  groups = c(\"High\", \"Low\"), \n  integrated = TRUE, \n  groupinfo = groupinfo\n)\n\n# Determine optimal cluster number\nclusterstats <- cluster_parameters(name = clust_data, n = 2:6, comparisonAlgorithm = \"NbClust\")\n\n# Perform clustering (e.g., kmeans or density-based)\nres <- cluster(name = clust_data, n = 2, choice = \"kmeans\")\nprint(res$plot)\n```\n\n## Tips for Success\n- **Memory Management**: Functions like `cluster_parameters()` are computationally expensive. Use the `rand` argument in `extract()` to subset rows for parameter testing.\n- **Choice Arguments**: Many functions (`analyse_variables`, `cluster`, `descriptor`) use a `choice` integer or string to toggle between plot types and table outputs.\n- **Group Info**: Ensure the `groupinfo` object created by `create_group()` is passed to downstream analysis functions to maintain consistent feature labeling.\n- **Outlier Detection**: Use `analyse_variables()` choice 3 (correlation matrix) or choice 4 (squared loadings) to identify cell lines that deviate significantly from the primary variance components before final integration.\n\n## Reference documentation\n- [OMICsPCA Vignette](./references/vignettes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-omicspca",
+    "description": "This tool integrates and analyzes heterogeneous omics datasets using PCA-based frameworks to identify sources of variation across biological conditions. Use when user asks to integrate multi-modal omics data, identify discriminatory factors across cell lines, perform exploratory data analysis on genomic features, or cluster samples based on consolidated epigenetic states.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/OMICsPCA.html"
+  }
+}

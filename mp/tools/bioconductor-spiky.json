@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spiky",
+  "category": "bioconductor",
+  "name": "bioconductor-spiky",
+  "description": "The bioconductor-spiky package provides a workflow for the absolute quantification of methylated DNA in cfMeDIP-seq experiments using synthetic spike-in controls. Use when user asks to quantify methylated DNA molar amounts, correct for immunoprecipitation biases, calculate methylation specificity, or predict picomoles for genomic regions.",
+  "overview": "The `spiky` package provides a workflow for the absolute quantification of methylated DNA in cfMeDIP-seq experiments. By utilizing a set of 54 synthetic spike-in controls (varying in methylation status, length, GC content, and CpG density), it allows researchers to correct for common immunoprecipitation biases. The package transforms relative read counts into absolute molar amounts (picomoles), enabling more robust comparisons across different experiments and batches.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/spiky.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/trichelab/spiky",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spiky"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spiky.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/trichelab/spiky",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spiky\n\n## Overview\nThe `spiky` package provides a workflow for the absolute quantification of methylated DNA in cfMeDIP-seq experiments. By utilizing a set of 54 synthetic spike-in controls (varying in methylation status, length, GC content, and CpG density), it allows researchers to correct for common immunoprecipitation biases. The package transforms relative read counts into absolute molar amounts (picomoles), enabling more robust comparisons across different experiments and batches.\n\n## Core Workflow\n\n### 1. Setup and Spike-in Database\nLoad the default spike-in database or process custom sequences.\n```r\nlibrary(spiky)\n\n# Load standard spike-in data\ndata(spike)\n\n# For custom spikes, use a fasta file and a logical vector of methylation status\n# spikes_fs <- \"path/to/spikes.fa\"\n# spikemeth <- c(0, 1, 0, ...) \n# custom_spike <- process_spikes(spikes_fs, spikemeth)\n```\n\n### 2. Processing Input Files (BAM or BEDPE)\n`spiky` requires scanning both the genomic data and the spike-in contigs.\n```r\n# BAM Input\ngenomic_cov <- scan_genomic_contigs(\"sample.bam\", spike=spike)\nspike_cov <- scan_spike_contigs(\"sample.spike.bam\", spike=spike)\n\n# BEDPE Input (requires indexed .bed.gz)\n# genomic_cov <- scan_genomic_bedpe(\"sample.bed.gz\", genome=\"hg38\")\n# spike_cov <- scan_spike_bedpe(\"sample_spike.bed.gz\", spike=spike)\n```\n\n### 3. Quality Control: Methylation Specificity\nAssess the non-specific binding of the antibody. A mean/median specificity < 0.98 suggests the cfMeDIP experiment may have performed inadequately.\n```r\nmethyl_spec <- methylation_specificity(spike_cov, spike=spike)\nprint(methyl_spec$mean)\n```\n\n### 4. Modeling and Prediction\nBuild a Gaussian GLM using the methylated spike-ins to predict molar amounts for genomic regions.\n```r\n# Fit the model\ngaussian_glm <- model_glm_pmol(spike_cov, spike=spike)\n\n# Predict picomoles for genomic bins\n# Requires the appropriate BSgenome package installed\nsample_pmol <- predict_pmol(gaussian_glm, genomic_cov, \n                            bsgenome=\"BSgenome.Hsapiens.UCSC.hg38\", \n                            ret=\"df\")\n```\n\n### 5. Genomic Binning\nAdjust the predicted molar amounts into standard non-overlapping genomic windows (default 300bp).\n```r\nbinned_data <- bin_pmol(sample_pmol)\n```\n\n## Key Functions\n- `process_spikes()`: Creates a database of spike-in properties (GC content, CpG fraction, etc.).\n- `scan_genomic_contigs()` / `scan_spike_contigs()`: Extracts coverage from BAM files.\n- `methylation_specificity()`: Calculates the ratio of methylated reads to total spike-in reads.\n- `model_glm_pmol()`: Generates the calibration curve for absolute quantification.\n- `predict_pmol()`: Applies the GLM to genomic data to estimate DNA concentration.\n- `bin_pmol()`: Maps fragment-level predictions to fixed genomic windows.\n\n## Tips for Success\n- **Index Files**: Ensure BAM files have `.bai` indexes and BEDPE files are sorted, bgzipped, and indexed with `tabix`.\n- **Genome Versions**: When using `predict_pmol`, ensure the `bsgenome` string matches an installed Bioconductor BSgenome object (e.g., `\"BSgenome.Hsapiens.UCSC.hg19\"`).\n- **Batch Effects**: Always build a new GLM for each batch of samples using `model_glm_pmol` to account for batch-specific immunoprecipitation efficiency.\n\n## Reference documentation\n- [Spiky: Analysing cfMeDIP-seq data with spike-in controls](./references/spiky_vignette.md)\n- [Spiky: Analysing cfMeDIP-seq data with spike-in controls (Rmd)](./references/spiky_vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-spiky",
+    "description": "The bioconductor-spiky package provides a workflow for the absolute quantification of methylated DNA in cfMeDIP-seq experiments using synthetic spike-in controls. Use when user asks to quantify methylated DNA molar amounts, correct for immunoprecipitation biases, calculate methylation specificity, or predict picomoles for genomic regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spiky.html"
+  }
+}

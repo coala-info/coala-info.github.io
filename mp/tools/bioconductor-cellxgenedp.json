@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cellxgenedp",
+  "category": "bioconductor",
+  "name": "bioconductor-cellxgenedp",
+  "description": "This tool provides an R-based interface to discover, filter, and retrieve single-cell RNA sequencing data from the CELLxGENE portal. Use when user asks to browse collections, filter datasets by ontology terms, download H5AD files, or integrate CELLxGENE data into Bioconductor workflows.",
+  "overview": "The `cellxgenedp` package provides an R interface to the CELLxGENE data portal. It allows users to programmatically navigate the hierarchy of \"collections\" (studies), \"datasets\" (specific data matrices), and \"files\" (downloadable assets). It is particularly useful for filtering large-scale single-cell data based on ontology terms (assay, disease, ethnicity, etc.) and integrating these datasets into Bioconductor workflows.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cellxgenedp.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellxgenedp/overview",
+  "github": "https://github.com/mtmorgan/cellxgenedp",
+  "conda_downloads": "5.3K",
+  "conda_downloads_num": 5300,
+  "last_updated": "2026-02-04",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cellxgenedp"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cellxgenedp.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellxgenedp/overview",
+    "github": "https://github.com/mtmorgan/cellxgenedp",
+    "conda_downloads": "5.3K",
+    "last_updated": "2026-02-04",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cellxgenedp\n\nname: bioconductor-cellxgenedp\ndescription: Specialized R-based interface for the CELLxGENE data portal. Use this skill to discover, filter, and retrieve single-cell RNA sequencing datasets and metadata. It supports programmatic access to collections, datasets, and files, as well as downloading H5AD files for conversion into Bioconductor objects like SingleCellExperiment.\n\n# bioconductor-cellxgenedp\n\n## Overview\nThe `cellxgenedp` package provides an R interface to the CELLxGENE data portal. It allows users to programmatically navigate the hierarchy of \"collections\" (studies), \"datasets\" (specific data matrices), and \"files\" (downloadable assets). It is particularly useful for filtering large-scale single-cell data based on ontology terms (assay, disease, ethnicity, etc.) and integrating these datasets into Bioconductor workflows.\n\n## Core Workflow\n\n### 1. Database Initialization\nRetrieve the latest metadata from the portal to start your session.\n```r\nlibrary(cellxgenedp)\nlibrary(dplyr)\n\ndb <- db()\ndb # Displays summary of collections, datasets, and files\n```\n\n### 2. Data Discovery\nNavigate the three main tables using `collections()`, `datasets()`, and `files()`. Use `dplyr` joins to link them.\n\n```r\n# Find the collection with the most datasets\ntop_collection <- datasets(db) |>\n    count(collection_id, sort = TRUE) |>\n    slice(1)\n\n# Get details for that collection\nleft_join(top_collection, collections(db), by = \"collection_id\")\n```\n\n### 3. Filtering with Facets\nCELLxGENE uses controlled ontologies. Use `facets()` to see available levels and `facets_filter()` to subset datasets.\n\n```r\n# Explore available assays\nfacets(db, \"assay\")\n\n# Filter for specific criteria (e.g., 10x 3' v3, Female, African American)\nselected_datasets <- datasets(db) |>\n    filter(\n        facets_filter(assay, \"ontology_term_id\", \"EFO:0009922\"),\n        facets_filter(sex, \"label\", \"female\"),\n        facets_filter(self_reported_ethnicity, \"label\", \"African American\")\n    )\n```\n\n### 4. Visualization and Download\nYou can open the CELLxGENE explorer in a browser or download files (typically H5AD) for local analysis.\n\n```r\n# Visualize a specific dataset in the browser\nselected_datasets |> slice(1) |> datasets_visualize()\n\n# Download H5AD file\nlocal_path <- selected_datasets |>\n    slice(1) |>\n    left_join(files(db), by = \"dataset_id\") |>\n    filter(filetype == \"H5AD\") |>\n    files_download(dry.run = FALSE)\n```\n\n### 5. Integration with Bioconductor\nUse `zellkonverter` to read the downloaded H5AD file into a `SingleCellExperiment` object.\n\n```r\nlibrary(zellkonverter)\nsce <- readH5AD(local_path, use_hdf5 = TRUE)\nsce\n```\n\n## Advanced Queries\n\n### Author-based Search\nSince authors are linked to collections, join `authors()` with `datasets()` to find data by specific researchers.\n\n```r\nauthor_data <- left_join(authors(db), datasets(db), by = \"collection_id\")\nauthor_data |> filter(family == \"Teichmann\")\n```\n\n### External Metadata\nAccess DOIs, publisher info, and external links (e.g., to raw FASTQ files on GEO/SRA).\n\n```r\npublisher_metadata(db)\nlinks(db) |> filter(link_type == \"RAW_DATA\")\n```\n\n## Tips and Best Practices\n- **Caching**: Files are downloaded to a local cache. Use `cellxgenedp:::.cellxgenedb_cache_path()` to find the location.\n- **H5AD vs RDS**: Prefer H5AD files. RDS files (Seurat) often have version compatibility issues across different R environments.\n- **Interactive App**: Use `cxg()` to launch a Shiny gadget for a GUI-based discovery and download experience.\n- **Deduplication**: When working with `authors()`, use `distinct()` as some author names may be duplicated in the source metadata.\n\n## Reference documentation\n- [Discovery and retrieval](./references/a_using_cellxgenedp.md)\n- [Case studies](./references/b_case_studies.md)\n- [Discover and download datasets and files from the cellxgene data portal](./references/using_cellxgenedp.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cellxgenedp",
+    "description": "This tool provides an R-based interface to discover, filter, and retrieve single-cell RNA sequencing data from the CELLxGENE portal. Use when user asks to browse collections, filter datasets by ontology terms, download H5AD files, or integrate CELLxGENE data into Bioconductor workflows.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cellxgenedp.html"
+  }
+}

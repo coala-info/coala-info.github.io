@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methylmnm",
+  "category": "bioconductor",
+  "name": "bioconductor-methylmnm",
+  "description": "The methylMnM package provides a statistical framework for the joint analysis of MeDIP-seq and MRE-seq data to detect differentially methylated regions. Use when user asks to detect differentially methylated regions, integrate MeDIP-seq and MRE-seq data, or perform the M&M statistical test.",
+  "overview": "The `methylMnM` package implements the M&M (Methylation and Mutation) method for the joint analysis of MeDIP-seq (methylated DNA immunoprecipitation) and MRE-seq (methyl-sensitive restriction enzyme) data. It provides a robust statistical framework to detect differentially methylated regions (DMRs) by integrating information from both enrichment-based and restriction-based sequencing technologies.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/methylMnM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "methylMnM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylMnM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methylmnm\n\n## Overview\n\nThe `methylMnM` package implements the M&M (Methylation and Mutation) method for the joint analysis of MeDIP-seq (methylated DNA immunoprecipitation) and MRE-seq (methyl-sensitive restriction enzyme) data. It provides a robust statistical framework to detect differentially methylated regions (DMRs) by integrating information from both enrichment-based and restriction-based sequencing technologies.\n\nThe workflow typically follows four stages:\n1. **Pre-processing**: Binning the genome and counting CpG sites, MRE-specific sites, and sequencing tags.\n2. **Statistical Testing**: Calculating p-values using the M&M test.\n3. **FDR Control**: Estimating q-values from the p-values.\n4. **DMR Selection**: Filtering results based on significance and fold-change thresholds.\n\n## Core Workflow\n\n### 1. Data Pre-processing\nThe package works with `.bed` format files. You must first calculate the CpG and MRE-CpG density for genomic bins (windows).\n\n```R\nlibrary(methylMnM)\n\n# Define bin length (default 500bp)\nbin_len <- 500\n\n# 1.1 Count total CpG sites per bin\ncountcpgbin(file.cpgsite = \"all_CpGsite.txt\", \n            writefile = \"numallcpg.bed\", \n            reportfile = \"report_cpg.txt\", \n            binlength = bin_len)\n\n# 1.2 Count MRE-specific CpG sites per bin\n# Note: mrecpg.site should be a data frame of specific sites (e.g., CCGG, GCGC)\ncountMREcpgbin(mrecpg.site = mre_sites_df, \n               file.allcpgsite = \"all_CpGsite.txt\", \n               file.bin = \"numallcpg.bed\", \n               writefile = \"three_mre_cpg.bed\", \n               binlength = bin_len)\n\n# 1.3 Count MeDIP-seq and MRE-seq tags per bin\ncountMeDIPbin(file.Medipsite = \"sample1_MeDIP.txt\", \n              file.bin = \"numallcpg.bed\", \n              writefile = \"s1_MeDIP_bins.bed\", \n              binlength = bin_len)\n\ncountMREbin(file.MREsite = \"sample1_MRE.txt\", \n            file.bin = \"numallcpg.bed\", \n            cutoff = 0.05, # PCR cutoff\n            writefile = \"s1_MRE_bins.bed\", \n            binlength = bin_len)\n```\n\n### 2. M&M Statistical Test\nCalculate p-values by comparing two conditions. The `file.dataset` argument requires a vector of four file paths: `c(MeDIP_cond1, MeDIP_cond2, MRE_cond1, MRE_cond2)`.\n\n```R\ndata_files <- c(\"s1_MeDIP_bins.bed\", \"s2_MeDIP_bins.bed\", \n                \"s1_MRE_bins.bed\", \"s2_MRE_bins.bed\")\n\nMnM.test(file.dataset = data_files, \n         file.cpgbin = \"numallcpg.bed\", \n         file.mrecpgbin = \"three_mre_cpg.bed\", \n         writefile = \"results_pval.bed\", \n         mreratio = 3/7, \n         method = \"XXYY\", \n         psd = 2, mkadded = 1)\n```\n\n### 3. FDR Control and Selection\nConvert p-values to q-values and filter for significant DMRs.\n\n```R\n# Calculate q-values\nMnM.qvalue(datafile = \"results_pval.bed\", \n           writefile = \"results_qval.bed\")\n\n# Select significant DMRs\nresults <- read.table(\"results_qval.bed\", header = TRUE)\nDMRs <- MnM.selectDMR(frames = results, \n                      up = 1.45, \n                      down = 1/1.45, \n                      q.value = 0.01, \n                      cutoff = \"q-value\", \n                      quant = 0.6)\n```\n\n## Key Parameters and Tips\n\n- **mreratio**: The ratio of total unmethylation level to total methylation level. The default is `3/7`.\n- **method**: Use `\"XXYY\"` to calculate p-values based on the M&M test logic.\n- **psd & mkadded**: Pseudo-counts added to sequencing tags and CpG counts respectively to ensure statistical robustness in low-count regions.\n- **Memory Management**: Processing the full genome at once during the binning phase can be memory-intensive. Ensure 4GB+ RAM is available for human-sized genomes.\n- **Strand Information**: For MRE-seq data, ensure your input BED files contain strand information (usually in the 6th column) as restriction sites are strand-specific.\n\n## Reference documentation\n- [methylMnM](./references/methylMnM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-methylmnm",
+    "description": "The methylMnM package provides a statistical framework for the joint analysis of MeDIP-seq and MRE-seq data to detect differentially methylated regions. Use when user asks to detect differentially methylated regions, integrate MeDIP-seq and MRE-seq data, or perform the M&M statistical test.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylMnM.html"
+  }
+}

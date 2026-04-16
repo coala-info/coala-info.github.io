@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spatialfeatureexperiment",
+  "category": "bioconductor",
+  "name": "bioconductor-spatialfeatureexperiment",
+  "description": "This tool provides an S4 class that integrates spatial transcriptomics data with vector geometries and spatial neighborhood graphs for advanced spatial analysis. Use when user asks to create or manipulate SpatialFeatureExperiment objects, manage cell and tissue geometries, construct spatial neighborhood graphs, or perform geometric operations on Visium, MERFISH, Xenium, and CosMX datasets.",
+  "overview": "`SpatialFeatureExperiment` (SFE) is an S4 class that extends `SpatialExperiment` (SPE) by integrating vector geometries via the `sf` package. It allows for the storage and manipulation of:\n- **Geometries**: Polygons (cells, nuclei, tissue boundaries) and points (transcript spots).\n- **Spatial Graphs**: Neighborhood relationships stored as `listw` objects for spatial statistics.\n- **Local Results**: Storage for univariate/bivariate local spatial analysis (e.g., Local Moran's I).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialFeatureExperiment.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/pachterlab/SpatialFeatureExperiment",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SpatialFeatureExperiment"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialFeatureExperiment.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/pachterlab/SpatialFeatureExperiment",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spatialfeatureexperiment\n\nname: bioconductor-spatialfeatureexperiment\ndescription: Expert guidance for the SpatialFeatureExperiment (SFE) R package. Use this skill to create, manipulate, and analyze SFE objects which integrate spatial transcriptomics data with geometric features (sf) and spatial neighborhood graphs (spdep). Use for tasks involving Visium, MERFISH, Xenium, or CosMX data, including geometry operations (cropping, transforming), spatial graph construction, and managing multi-sample spatial datasets.\n\n# bioconductor-spatialfeatureexperiment\n\n## Overview\n\n`SpatialFeatureExperiment` (SFE) is an S4 class that extends `SpatialExperiment` (SPE) by integrating vector geometries via the `sf` package. It allows for the storage and manipulation of:\n- **Geometries**: Polygons (cells, nuclei, tissue boundaries) and points (transcript spots).\n- **Spatial Graphs**: Neighborhood relationships stored as `listw` objects for spatial statistics.\n- **Local Results**: Storage for univariate/bivariate local spatial analysis (e.g., Local Moran's I).\n\n## Core Workflows\n\n### 1. Object Construction\nSFE provides specialized readers for major spatial platforms that automatically handle geometry creation.\n\n```r\nlibrary(SpatialFeatureExperiment)\n\n# 10X Visium\nsfe <- read10xVisiumSFE(dirs = \"path/to/outs\", sample_id = \"sample01\", type = \"sparse\", unit = \"micron\")\n\n# Vizgen MERFISH\nsfe_mer <- readVizgen(dir_use, z = 3L, add_molecules = TRUE)\n\n# 10X Xenium\nsfe_xen <- readXenium(dir_use, add_molecules = TRUE)\n\n# Coercion from SpatialExperiment\nsfe <- toSpatialFeatureExperiment(spe_object)\n```\n\n### 2. Managing Geometries\nGeometries are categorized by their relationship to the count matrix.\n\n- **colGeometries**: Associated with columns (cells/spots). Access with `colGeometry(sfe, \"name\")`.\n- **rowGeometries**: Associated with rows (genes, e.g., transcript spots). Access with `rowGeometry(sfe, \"name\")`.\n- **annotGeometries**: Independent geometries (tissue boundaries, histological regions). Access with `annotGeometry(sfe, \"name\")`.\n\nCommon shorthands: `spotPoly(sfe)`, `txSpots(sfe)`, `tissueBoundary(sfe)`, `cellSeg(sfe)`, `nucSeg(sfe)`.\n\n### 3. Spatial Neighborhood Graphs\nSFE uses `spdep` style `listw` objects.\n\n```r\n# Find neighbors using triangulation\ncolGraph(sfe, \"tri\") <- findSpatialNeighbors(sfe, MARGIN = 2, method = \"tri2nb\")\n\n# Visium specific hexagonal graph\ncolGraph(sfe, \"visium\") <- findVisiumGraph(sfe)\n\n# Accessing graphs\ng <- colGraph(sfe, \"visium\")\n```\n\n### 4. Geometric Operations\nSFE supports spatial subsetting and transformations that keep images and geometries synchronized.\n\n```r\n# Crop SFE object to a tissue boundary or bounding box\nsfe_subset <- crop(sfe, y = tissueBoundary(sfe))\n\n# Geometric predicates (e.g., which spots are in tissue?)\ncolData(sfe)$in_tissue <- annotPred(sfe, colGeometryName = \"spotPoly\", annotGeometryName = \"tissueBoundary\")\n\n# Global transformations\nsfe_mirrored <- mirror(sfe, direction = \"vertical\")\nsfe_transposed <- transpose(sfe)\n```\n\n### 5. Multi-sample Handling\nWhen an SFE object contains multiple samples (via `cbind`), the `sample_id` argument becomes mandatory for most geometry and graph functions.\n\n```r\n# Get geometries for a specific sample\nspots <- colGeometry(sfe_combined, \"spotPoly\", sample_id = \"sample02\")\n\n# Change sample IDs across all internal structures\nsfe_combined <- changeSampleIDs(sfe_combined, replacement = c(old_id = \"new_id\"))\n```\n\n## Tips for Success\n- **Units**: Use `unit(sfe)` to check coordinate units. SFE does not automatically convert units but stores the metadata string (e.g., \"micron\").\n- **Images**: SFE uses `terra::SpatRaster` for images. They are lazily loaded and downsampled during plotting to save memory.\n- **Arrow Dependency**: For Xenium and MERFISH, ensure the `arrow` R package is installed for fast Parquet processing.\n- **Spatial Statistics**: Because graphs are `listw` objects, you can pass them directly to `spdep` functions like `localmoran()`.\n\n## Reference documentation\n- [Introduction to the SpatialFeatureExperiment class](./references/SFE.md)\n- [SFE Vignette Source](./references/SFE.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-spatialfeatureexperiment",
+    "description": "This tool provides an S4 class that integrates spatial transcriptomics data with vector geometries and spatial neighborhood graphs for advanced spatial analysis. Use when user asks to create or manipulate SpatialFeatureExperiment objects, manage cell and tissue geometries, construct spatial neighborhood graphs, or perform geometric operations on Visium, MERFISH, Xenium, and CosMX datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialFeatureExperiment.html"
+  }
+}

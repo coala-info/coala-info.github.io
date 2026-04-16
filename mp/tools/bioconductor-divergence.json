@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-divergence",
+  "category": "bioconductor",
+  "name": "bioconductor-divergence",
+  "description": "This package transforms high-dimensional omics data into a digital format by measuring the divergence of samples from a defined normal baseline. Use when user asks to digitize continuous omics data into ternary or binary forms, identify features deviating from a reference profile, or perform differential divergence analysis between phenotypes.",
+  "overview": "The `divergence` package implements a framework for analyzing high-dimensional omics data by simulating a clinical test for deviation from a \"normal\" profile. It transforms continuous data into a simplified digital form:\n- **Univariate:** Features are coded as -1 (below baseline), 0 (within baseline), or 1 (above baseline).\n- **Multivariate:** Sets of features (e.g., gene sets) are coded as 0 (no deviation) or 1 (deviant).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/divergence.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-divergence/overview",
+  "github": "N/A",
+  "conda_downloads": "22.5K",
+  "conda_downloads_num": 22500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "divergence"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/divergence.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-divergence/overview",
+    "github": "N/A",
+    "conda_downloads": "22.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-divergence\n\n## Overview\n\nThe `divergence` package implements a framework for analyzing high-dimensional omics data by simulating a clinical test for deviation from a \"normal\" profile. It transforms continuous data into a simplified digital form:\n- **Univariate:** Features are coded as -1 (below baseline), 0 (within baseline), or 1 (above baseline).\n- **Multivariate:** Sets of features (e.g., gene sets) are coded as 0 (no deviation) or 1 (deviant).\n\nThis approach is robust to normalization differences and focuses on the stability of a reference population to define \"normal\" ranges.\n\n## Data Preparation\n\nThe package works best with `SummarizedExperiment` objects. You must define a **baseline cohort** (e.g., normal samples) and an **experimental cohort** (e.g., tumor samples).\n\n```r\nlibrary(divergence)\nlibrary(SummarizedExperiment)\n\n# Create SummarizedExperiment objects\n# Assumes mat.base and mat.data are matrices with features as rows\nse.base <- SummarizedExperiment(assays = list(data = mat.base))\nse.data <- SummarizedExperiment(assays = list(data = mat.data))\n```\n\n## Univariate Divergence Workflow\n\n### 1. Quantile Transformation\nDivergence analysis requires a sample-specific quantile transformation.\n\n```r\nassays(se.base)$quantile <- computeQuantileMatrix(se.base)\nassays(se.data)$quantile <- computeQuantileMatrix(se.data)\n```\n\n### 2. Baseline Support Computation\nYou can either provide fixed parameters ($\\gamma$ and $\\beta$) or search for an optimal $\\gamma$ that keeps the expected divergence in the baseline below a threshold $\\alpha$.\n\n```r\n# Search for optimal gamma\nbaseline <- findUnivariateGammaWithSupport(\n  seMat = se.base,\n  gamma = 1:9/10, # Candidate gamma values\n  beta = 0.9,     # Proportion of reference samples to include\n  alpha = 0.01    # Max allowed divergence proportion in baseline\n)\n```\n\n### 3. Digitization\nConvert the experimental data into ternary form (-1, 0, 1).\n\n```r\nassays(se.data)$div <- computeUnivariateTernaryMatrix(\n  seMat = se.data,\n  Baseline = baseline\n)\n```\n\n### All-in-One Wrapper\nUse `computeUnivariateDigitization` to perform all steps (quantiles, gamma search, and digitization) in one call.\n\n```r\nres <- computeUnivariateDigitization(\n  seMat = se.data,\n  seMat.base = se.base,\n  gamma = 1:9/10,\n  alpha = 0.01\n)\n# Results available in res$Mat.div\n```\n\n## Multivariate Divergence Workflow\n\nMultivariate analysis operates on feature sets (e.g., MSigDB Hallmarks).\n\n```r\n# FeatureSets should be a list of character vectors\nbaseline_multi <- findMultivariateGammaWithSupport(\n  seMat = se.base,\n  FeatureSets = my_gene_sets,\n  gamma = 1:9/10,\n  alpha = 0.01\n)\n\n# Digitize to binary matrix (0 or 1)\nmat.div.multi <- computeMultivariateBinaryMatrix(\n  seMat = se.data,\n  Baseline = baseline_multi\n)\n```\n\n## Differential Divergence Analysis\n\nTo find features that are significantly more divergent in one phenotype versus another, use the Chi-squared test on the digitized data.\n\n```r\n# groups: factor indicating sample classes (e.g., \"ER+\" vs \"ER-\")\nchi_results <- computeChiSquaredTest(\n  Mat = assays(se.data)$div,\n  Groups = groups,\n  classes = c(\"Positive\", \"Negative\")\n)\n\n# Returns a data frame with statistics and p-values sorted by significance\nhead(chi_results)\n```\n\n## Key Parameters\n- `gamma` ($\\gamma$): Controls the radius around baseline samples. Larger values result in wider baseline ranges (less divergence).\n- `beta` ($\\beta$): The probability mass of the baseline population to be captured within the support.\n- `alpha` ($\\alpha$): The threshold for the expected proportion of divergent features per sample in the baseline cohort.\n\n## Reference documentation\n- [divergence](./references/divergence.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-divergence",
+    "description": "This package transforms high-dimensional omics data into a digital format by measuring the divergence of samples from a defined normal baseline. Use when user asks to digitize continuous omics data into ternary or binary forms, identify features deviating from a reference profile, or perform differential divergence analysis between phenotypes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/divergence.html"
+  }
+}

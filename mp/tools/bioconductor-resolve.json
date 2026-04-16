@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-resolve",
+  "category": "bioconductor",
+  "name": "bioconductor-resolve",
+  "description": "This tool performs robust mutational signature analysis using regularized Non-Negative Matrix Factorization to extract and assign signatures. Use when user asks to perform de novo signature extraction, estimate signature exposures, cluster patients based on mutational processes, or analyze associations between signatures and clinical outcomes.",
+  "overview": "RESOLVE (Robust EStimation Of mutationaL signatures Via rEgularization) is a framework for the efficient extraction and assignment of mutational signatures. It implements a regularized Non-Negative Matrix Factorization (NMF) procedure that incorporates background signatures and employs elastic net regression to reduce overfitting. It supports various signature types, including Single Base Substitutions (SBS), Multi-Nucleotide Variants (MNV), Chromosomal Instability (CX), and Copy Number (CN) sig",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RESOLVE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/danro9685/RESOLVE",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RESOLVE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RESOLVE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/danro9685/RESOLVE",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-resolve\n\nname: bioconductor-resolve\ndescription: Robust mutational signature analysis using the RESOLVE R package. Use when Claude needs to perform de novo signature extraction, estimate signature exposures, cluster patients based on mutational processes, or analyze associations between signatures and clinical outcomes/driver mutations.\n\n## Overview\n\nRESOLVE (Robust EStimation Of mutationaL signatures Via rEgularization) is a framework for the efficient extraction and assignment of mutational signatures. It implements a regularized Non-Negative Matrix Factorization (NMF) procedure that incorporates background signatures and employs elastic net regression to reduce overfitting. It supports various signature types, including Single Base Substitutions (SBS), Multi-Nucleotide Variants (MNV), Chromosomal Instability (CX), and Copy Number (CN) signatures.\n\n## Installation\n\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"RESOLVE\")\n```\n\n## Data Preparation\n\nTo perform signature discovery, input data must be converted into a count matrix. For SBS signatures, use a reference genome (BSgenome object).\n\n```R\nlibrary(RESOLVE)\nlibrary(BSgenome.Hsapiens.1000genomes.hs37d5)\n\n# Import data into a count matrix\nimported_data = getSBSCounts(data = ssm560_reduced, \n                             reference = BSgenome.Hsapiens.1000genomes.hs37d5)\n\n# Visualize counts for specific samples\npatientsSBSPlot(trinucleotides_counts = imported_data, samples = \"PD10010a\")\n```\n\n## De Novo Signature Extraction\n\nThe extraction process involves two main steps: decomposition across a range of possible signature counts ($K$) and cross-validation to determine the optimal $K$.\n\n### 1. Signature Decomposition\n```R\n# Requires a background signature and patient count matrix\ndata(background)\ndata(patients)\n\nset.seed(12345)\nres_denovo = signaturesDecomposition(x = patients,\n                                     K = 1:15,\n                                     background_signature = background,\n                                     nmf_runs = 100,\n                                     num_processes = 4)\n```\n\n### 2. Cross-Validation\nTo determine the optimal number of signatures:\n```R\nres_cv = signaturesCV(x = patients,\n                      beta = res_denovo$beta,\n                      cross_validation_repetitions = 100,\n                      num_processes = 4)\n```\n\n## Downstream Analysis\n\n### Patient Clustering\nGroup patients with similar active mutational processes using k-medoids. It is recommended to use normalized exposures (alpha).\n```R\n# Normalize exposures\nnorm_alpha = (sbs_assignments$alpha / rowSums(sbs_assignments$alpha))\n\n# Perform clustering\nsbs_clustering = signaturesClustering(alpha = norm_alpha, \n                                      num_clusters = 1:5, \n                                      num_processes = 1)\n```\n\n### Association with Driver Mutations\nInvestigate links between signatures and somatic mutations in driver genes.\n*   **Mutations as predictors**: `associationAlterations`\n*   **Signatures as predictors**: `associationSignatures`\n\n```R\n# Mutations predicting signature exposures\nassoc_alt = associationAlterations(alterations = alterations_df, \n                                   signatures = normalized_alpha)\n\n# Signatures predicting mutation status (logistic regression)\nassoc_sig = associationSignatures(alterations = alterations_df, \n                                  signatures = normalized_alpha)\n```\n\n### Survival Analysis (Prognosis)\nAssociate signature exposures with clinical outcomes using regularized Cox regression.\n```R\n# Positive coefficients = higher risk; Negative = better prognosis\nprognosis_res = associationPrognosis(clinical_data = clinical_df, \n                                     signatures = normalized_alpha)\n```\n\n## Tips and Best Practices\n*   **Reproducibility**: Always use `set.seed()` before running decomposition or cross-validation, as NMF is a stochastic process.\n*   **Parallelization**: Use the `num_processes` argument in `signaturesDecomposition` and `signaturesCV` to speed up computation on multi-core systems.\n*   **Normalization**: Ensure signature exposures (`alpha`) are normalized (sum to 1 per patient) before performing clustering or association studies to ensure comparability.\n*   **Signature Types**: While SBS is common, the same functions support MNV, CX, and CN signatures by providing the appropriate count matrices.\n\n## Reference documentation\n- [RESOLVE](./references/RESOLVE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-resolve",
+    "description": "This tool performs robust mutational signature analysis using regularized Non-Negative Matrix Factorization to extract and assign signatures. Use when user asks to perform de novo signature extraction, estimate signature exposures, cluster patients based on mutational processes, or analyze associations between signatures and clinical outcomes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RESOLVE.html"
+  }
+}

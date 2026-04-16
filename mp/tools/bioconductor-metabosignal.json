@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metabosignal",
+  "category": "bioconductor",
+  "name": "bioconductor-metabosignal",
+  "description": "MetaboSignal integrates metabolic and signaling pathways to perform topological analysis of gene-metabolite relationships within directed networks. Use when user asks to build organism-specific networks from KEGG or OmniPath, calculate shortest path distances between genes and metabolites, or identify mechanistic links in mQTL studies.",
+  "overview": "MetaboSignal is an R package that overlays metabolic and signaling pathways to explore the topological relationships between genes and metabolites. It allows for the construction of organism-specific (and tissue-specific for humans) directed networks. Users can calculate shortest path distances between genes and metabolites and generate subnetworks for visualization in tools like Cytoscape or via igraph in R.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaboSignal.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MetaboSignal"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaboSignal.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metabosignal\n\nname: bioconductor-metabosignal\ndescription: A network-based approach for topological analysis of metabotype regulation. Use this skill to integrate metabolic and signaling pathways from KEGG, OmniPath, and TRRUST. It is ideal for identifying candidate genes in mQTL studies, exploring trans-acting associations, and finding mechanistic links between genes and metabolites.\n\n## Overview\nMetaboSignal is an R package that overlays metabolic and signaling pathways to explore the topological relationships between genes and metabolites. It allows for the construction of organism-specific (and tissue-specific for humans) directed networks. Users can calculate shortest path distances between genes and metabolites and generate subnetworks for visualization in tools like Cytoscape or via igraph in R.\n\n## Core Workflow\n\n### 1. Finding KEGG IDs\nUse `MS_keggFinder()` to locate organism codes and pathway IDs.\n```r\n# Find organism code for rat\nMS_keggFinder(KEGG_database = \"organism\", match = \"rattus\")\n\n# Find specific pathway IDs\nMS_keggFinder(KEGG_database = \"pathway\", match = c(\"glycol\", \"insulin signal\"), organism_code = \"rno\")\n```\n\n### 2. Building the Network\nConstruct the base network by merging metabolic and signaling pathways.\n```r\n# Define pathways\nmetabo_paths <- c(\"rno00010\", \"rno00562\")\nsignaling_paths <- c(\"rno04910\", \"rno04151\")\n\n# Build network table\nMetaboSignal_table <- MS_keggNetwork(metabo_paths = metabo_paths, \n                                     signaling_paths = signaling_paths,\n                                     expand_genes = TRUE)\n```\n\n### 3. Network Customization\nRefine the network by grouping isomers or removing irrelevant interaction types.\n```r\n# Group glucose isomers into a single node\nMetaboSignal_table <- MS_replaceNode(node1 = c(\"cpd:C00267\", \"cpd:C00221\"), \n                                     node2 = \"cpd:C00031\", \n                                     MetaboSignal_table)\n\n# Filter for specific interaction types (e.g., removing 'unknown' or 'binding')\nwanted_types <- \"activation|phosphorylation|inhibition|compound\"\nkeggNet_clean <- MetaboSignal_table[grep(wanted_types, MetaboSignal_table[, 3]), ]\n```\n\n### 4. Integrating Regulatory Resources (Human Only)\nFor human data, you can merge KEGG with OmniPath (signaling) and TRRUST (transcription factors).\n```r\n# Build regulatory network\nppiNet <- MS2_ppiNetwork(datasets = \"all\") # options: \"omnipath\", \"trrust\", \"all\"\n\n# Merge with KEGG network\nmergedNet <- MS2_mergeNetworks(keggNet_clean, ppiNet)\n```\n\n### 5. Topological Analysis\nCalculate distances and generate subnetworks to identify biological links.\n```r\n# Convert Entrez IDs to KEGG IDs if necessary\ngenes <- MS_convertGene(genes = c(\"303565\", \"65038\"), organism_code = \"rno\")\n\n# Calculate shortest path distances\ndistances <- MS_distances(MetaboSignal_table, \n                          organism_code = \"rno\",\n                          source_genes = genes$KEGG_ID,\n                          target_metabolites = \"cpd:C00031\")\n\n# Build and export a shortest-path subnetwork for Cytoscape\nMS_shortestPathsNetwork(MetaboSignal_table, \n                        organism_code = \"rno\",\n                        source_nodes = genes$KEGG_ID,\n                        target_nodes = \"cpd:C00031\", \n                        type = \"bw\", \n                        file_name = \"MySubnetwork\")\n```\n\n## Tips and Best Practices\n- **Gene IDs**: By default, `MS_keggNetwork` uses Orthology IDs to reduce dimensionality. Set `expand_genes = TRUE` to use specific gene IDs (e.g., Entrez).\n- **Distance Mode**: The default `mode = \"SP\"` in `MS_distances` treats the network as directed except for edges linked to the target metabolite, which are treated as undirected to ensure reachability of substrates in irreversible reactions.\n- **Tissue Specificity**: For human networks, use the `hpar` package integration (via `MS_keggNetwork` parameters) to filter for genes expressed in specific tissues.\n- **Visualization**: The package exports `.txt` files (Network, NodesType, TargetNodes) specifically formatted for easy import into Cytoscape.\n\n## Reference documentation\n- [MetaboSignal: Network-based analysis of metabolic and signaling pathways](./references/MetaboSignal.md)\n- [MetaboSignal 2: Merging KEGG with OmniPath and TRRUST](./references/MetaboSignal2.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metabosignal",
+    "description": "MetaboSignal integrates metabolic and signaling pathways to perform topological analysis of gene-metabolite relationships within directed networks. Use when user asks to build organism-specific networks from KEGG or OmniPath, calculate shortest path distances between genes and metabolites, or identify mechanistic links in mQTL studies.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaboSignal.html"
+  }
+}

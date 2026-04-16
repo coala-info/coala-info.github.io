@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-micsqtl",
+  "category": "bioconductor",
+  "name": "bioconductor-micsqtl",
+  "description": "bioconductor-micsqtl performs integrative analysis of matched bulk transcriptome and proteome data to estimate cell-type proportions and map cell-type-specific QTLs. Use when user asks to perform cross-source deconvolution using JNMF, integrate multi-omic data via AJIVE, or conduct cell-type-specific QTL mapping.",
+  "overview": "MICSQTL is a Bioconductor package designed for the integrative analysis of matched bulk transcriptome and proteome data. Its primary strengths lie in \"cross-source\" deconvolution—using RNA information to improve protein cell-type proportion estimates—and performing cell-type-specific QTL (csQTL) mapping. It utilizes Joint Non-negative Matrix Factorization (JNMF) for deconvolution, Angle-based Joint and Individual Variation Explained (AJIVE) for multi-omic integration, and the TOAST framework for",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MICSQTL.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/YuePan027/MICSQTL",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MICSQTL"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MICSQTL.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/YuePan027/MICSQTL",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-micsqtl\n\n## Overview\nMICSQTL is a Bioconductor package designed for the integrative analysis of matched bulk transcriptome and proteome data. Its primary strengths lie in \"cross-source\" deconvolution—using RNA information to improve protein cell-type proportion estimates—and performing cell-type-specific QTL (csQTL) mapping. It utilizes Joint Non-negative Matrix Factorization (JNMF) for deconvolution, Angle-based Joint and Individual Variation Explained (AJIVE) for multi-omic integration, and the TOAST framework for csQTL analysis.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package centers around the `SummarizedExperiment` object.\n- **Assays**: Bulk protein expression (log or MinMax scaled).\n- **rowData**: Protein annotations (Chr, Start, End, Symbol).\n- **Metadata**: Must include `gene_data` (matched bulk RNA), and optionally `SNP_data`, `anno_SNP`, and signature matrices (`ref_gene`, `ref_protein`).\n\n```r\nlibrary(MICSQTL)\nlibrary(SummarizedExperiment)\n\n# Initialize object\nse <- SummarizedExperiment(\n    assays = list(protein = protein_matrix),\n    rowData = protein_annotation_df\n)\nmetadata(se)$gene_data <- gene_expression_matrix\n```\n\n### 2. Cross-Source Deconvolution\nTo estimate cell-type proportions in the proteome by leveraging the transcriptome:\n1. Use `ajive_decomp` with `refactor_loading = TRUE` for feature selection.\n2. Use `deconv` with `method = \"JNMF\"`.\n\n```r\n# Identify markers and joint variation\nse <- ajive_decomp(se, use_marker = FALSE, refactor_loading = TRUE)\n\n# Perform joint deconvolution\nse <- deconv(se, \n             source = \"cross\", \n             method = \"JNMF\", \n             pinit = initial_proportions, # e.g., from CIBERSORT on RNA\n             ref_pnl = reference_signature_matrix)\n```\n\n### 3. Integrative Visualization (AJIVE)\nDecompose variation into joint (shared across omics) and individual (specific to one omic) components.\n\n```r\nse <- ajive_decomp(se, plot = TRUE, group_var = \"condition_column\")\n# Access common normalized scores plot\nmetadata(se)$cns_plot\n```\n\n### 4. Feature Filtering for QTL\nBefore csQTL mapping, filter SNPs based on distance (cis-QTL) and allele frequency.\n\n```r\n# Define target proteins (e.g., those on a specific chromosome)\ntargets <- rowData(se)[rowData(se)$Chr == \"1\", \"Symbol\"]\n\nse <- feature_filter(se,\n    target_protein = targets,\n    filter_method = c(\"allele\", \"distance\"),\n    filter_allele = 0.15,\n    filter_geno = 0.05,\n    ref_position = \"TSS\" # Transcription Start Site\n)\n```\n\n### 5. Cell-Type-Specific QTL (csQTL) Analysis\nRun the `csQTL` function to test for associations between genotypes and expression within specific cell types using the TOAST algorithm.\n\n```r\nse <- csQTL(se)\n\n# Results are stored in metadata\nresults_list <- metadata(se)$TOAST_output\n# Each element contains p-values per cell type for a protein-SNP pair\nhead(results_list[[1]])\n```\n\n## Tips and Best Practices\n- **Scaling**: Ensure both protein and gene data use the same transformation (e.g., both log-transformed) and are non-negative for JNMF.\n- **Sample Matching**: Column names (samples) in `protein_data`, `gene_data`, and `SNP_data` must match exactly.\n- **Marker Genes**: For deconvolution, using a subset of known marker genes rather than the whole transcriptome typically yields more accurate proportions.\n- **Step Size**: If `deconv` returns non-finite values, try decreasing the `Step` parameter (e.g., `Step = c(1e-10, 1e-8)`).\n\n## Reference documentation\n- [MICSQTL: Multi-omic deconvolution, Integration and Cell-type-specific Quantitative Trait Loci](./references/MICSQTL.md)\n- [MICSQTL Vignette Source](./references/MICSQTL.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-micsqtl",
+    "description": "bioconductor-micsqtl performs integrative analysis of matched bulk transcriptome and proteome data to estimate cell-type proportions and map cell-type-specific QTLs. Use when user asks to perform cross-source deconvolution using JNMF, integrate multi-omic data via AJIVE, or conduct cell-type-specific QTL mapping.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MICSQTL.html"
+  }
+}

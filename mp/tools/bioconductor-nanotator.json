@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nanotator",
+  "category": "bioconductor",
+  "name": "bioconductor-nanotator",
+  "description": "\"bioconductor-nanotator annotates and classifies structural variants from Bionano Genomics optical mapping data. Use when user asks to calculate structural variant population frequencies, perform cohort analysis, identify gene overlaps, or prioritize variants based on phenotypic keywords.\"",
+  "overview": "`nanotatoR` is an R package designed to bridge the diagnostic gap in structural variant (SV) analysis. While primarily built to handle Bionano Genomics optical mapping data, it provides a comprehensive framework for annotating large genomic variations (insertions, deletions, duplications, inversions, and translocations) with population frequencies, gene overlaps, and phenotype-driven prioritization.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/nanotatoR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/VilainLab/Nanotator",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nanotatoR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/nanotatoR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/VilainLab/Nanotator",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nanotator\n\nname: bioconductor-nanotator\ndescription: Structural variant (SV) annotation and classification for genomic data, specifically optimized for Bionano Genomics optical mapping outputs (.smap files). Use this skill to calculate SV population frequencies (DGV, DECIPHER), perform cohort analysis, identify gene overlaps, and prioritize variants based on phenotypic keywords.\n\n# bioconductor-nanotator\n\n## Overview\n`nanotatoR` is an R package designed to bridge the diagnostic gap in structural variant (SV) analysis. While primarily built to handle Bionano Genomics optical mapping data, it provides a comprehensive framework for annotating large genomic variations (insertions, deletions, duplications, inversions, and translocations) with population frequencies, gene overlaps, and phenotype-driven prioritization.\n\n## Core Workflow\n\n### 1. Data Loading and Frequency Estimation\nThe package uses `.smap` files as the primary input for SV data. It compares these against external databases to estimate rarity.\n\n```r\nlibrary(nanotatoR)\n\n# Estimate frequency using DECIPHER\ndecipherpath <- system.file(\"extdata\", \"population_cnv.txt\", package = \"nanotatoR\")\nsmappath <- system.file(\"extdata\", package = \"nanotatoR\")\n\ndecipherext <- Decipher_extraction(\n    decipherpath = decipherpath, \n    input_fmt = \"Text\", \n    smappath = smappath,\n    smap = \"sample.smap\",\n    win_indel = 10000, \n    perc_similarity = 0.5, \n    returnMethod = \"dataFrame\"\n)\n```\n\n### 2. Cohort and Internal Frequency\nTo identify de novo variants or calculate internal cohort frequencies, use `internalFrequency`. This helps distinguish rare familial variants from common technical artifacts.\n\n```r\nintFreq <- internalFrequency(\n    mergedFiles = \"path/to/merged_internal_db.txt\", \n    smappath = \"path/to/smaps/\",\n    smap = \"sample.smap\", \n    buildSVInternalDB = FALSE,\n    win_indel = 10000,\n    win_inv_trans = 50000,\n    returnMethod = \"dataFrame\"\n)\n```\n\n### 3. Gene Overlap Annotation\nAnnotate SVs with overlapping genes and calculate distances to the nearest non-overlapping upstream/downstream genes.\n\n```r\nbedFile <- system.file(\"extdata\", \"Homo_sapiens.Hg19_BN_bed.txt\", package=\"nanotatoR\")\n\ndatcomp <- compSmapbed(\n    smap = \"path/to/sample.smap\", \n    bed = bedFile, \n    inputfmtBed = \"BNBED\", # Use BNBED for Bionano-style chromosome naming (23, 24)\n    n = 3, \n    returnMethod_bedcomp = \"dataFrame\"\n)\n```\n\n### 4. Phenotype-Based Prioritization\nGenerate gene lists based on clinical terms (using ClinVar, OMIM, GTR) to filter SVs affecting relevant biological pathways.\n\n```r\n# Generate gene list from phenotype\nterms <- \"Muscle Weakness\"\npheno_genes <- gene_list_generation(method = \"Single\", term = terms, returnMethod = \"dataFrame\")\n\n# Filter SVs based on the generated list\nrun_bionano_filter(\n    input_fmt_geneList = \"dataframe\",\n    input_fmt_svMap = \"Text\",\n    SVFile = \"path/to/sample.smap\", \n    dat_geneList = pheno_genes,\n    outpath = \"output/\", \n    outputFilename = \"prioritized_variants\"\n)\n```\n\n### 5. Automated Pipeline (Main)\nThe `nanotatoR_main` function wraps all sub-functions into a single execution path, producing a final annotated Excel/text file.\n\n```r\nnanotatoR_main(\n    smap = smappath, \n    bed = bedFile,\n    inputfmtBed = \"BNBED\",\n    buildSVInternalDB = TRUE,\n    dat_geneList = pheno_genes,\n    outpath = \"output/\",\n    outputFilename = \"final_annotation\"\n)\n```\n\n## Key Parameters & Tips\n- **Similarity Thresholds**: By default, SVs are considered the \"same\" if they share the same category, have >50% size similarity, and breakpoints are within 10kb (indels) or 50kb (inversions/translocations).\n- **Chromosome Naming**: Use `inputfmtBed = \"BNBED\"` if your reference uses 23/24 for X/Y chromosomes, common in Bionano workflows.\n- **Confidence Scores**: Default thresholds are 0.5 for indels, 0.01 for inversions, and 0.1 for translocations. Adjust these based on the specific sensitivity requirements of your study.\n\n## Reference documentation\n- [nanotatoR: structural variant annotation and classification](./references/nanotatoR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nanotator",
+    "description": "bioconductor-nanotator annotates and classifies structural variants from Bionano Genomics optical mapping data. Use when user asks to calculate structural variant population frequencies, perform cohort analysis, identify gene overlaps, or prioritize variants based on phenotypic keywords.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/nanotatoR.html"
+  }
+}

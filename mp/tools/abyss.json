@@ -1,0 +1,49 @@
+{
+  "id": "abyss",
+  "category": "CLI",
+  "name": "abyss",
+  "description": "ABySS is a de novo sequence assembler designed for reconstructing large genomes from short-read sequencing data using a de Bruijn graph approach. Use when user asks to assemble genomes from short reads, perform parallel assembly using MPI, or use Bloom filters to reduce memory usage during assembly.",
+  "overview": "ABySS is a specialized tool for reconstructing genomes from short-read sequencing data. It utilizes a de Bruijn graph approach to identify unambiguous paths that represent contigs. It is highly scalable, offering a single-processor mode for smaller genomes (<100 Mbp) and an MPI-based parallel version (ABYSS-P) for large-scale eukaryotic genomes. Modern versions also include a Bloom filter mode (ABySS 2.0+) which significantly reduces memory overhead, making large genome assembly possible on stan",
+  "homepage": "https://www.bcgsc.ca/platform/bioinfo/software/abyss",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/abyss/overview",
+  "github": "https://github.com/bcgsc/abyss",
+  "conda_downloads": "665.8K",
+  "conda_downloads_num": 665800,
+  "last_updated": "2025-09-18",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "abyss_abyss-pe",
+      "abyss_abyss-sealer",
+      "abyss_abyss-fatoagp"
+    ],
+    "description": "A tool to control the generation of executables and other non-source files of a program from the program's source files.",
+    "docker_image": "quay.io/biocontainers/abyss:2.3.10--hf316886_2",
+    "homepage": "https://www.bcgsc.ca/platform/bioinfo/software/abyss",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/abyss/overview",
+    "github": "https://github.com/bcgsc/abyss",
+    "conda_downloads": "665.8K",
+    "last_updated": "2025-09-18",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "abyss_abyss-fatoagp.cwl",
+    "abyss_abyss-pe.cwl",
+    "abyss_abyss-sealer.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# abyss\n\n## Overview\nABySS is a specialized tool for reconstructing genomes from short-read sequencing data. It utilizes a de Bruijn graph approach to identify unambiguous paths that represent contigs. It is highly scalable, offering a single-processor mode for smaller genomes (<100 Mbp) and an MPI-based parallel version (ABYSS-P) for large-scale eukaryotic genomes. Modern versions also include a Bloom filter mode (ABySS 2.0+) which significantly reduces memory overhead, making large genome assembly possible on standard workstations.\n\n## Common CLI Patterns\n\n### Basic Assembly with abyss-pe\nThe primary driver script is `abyss-pe`. It manages the multi-stage pipeline from k-mer counting to scaffolding.\n\n```bash\n# Basic paired-end assembly\nabyss-pe k=64 name=my_assembly in='reads1.fastq reads2.fastq'\n\n# Assembly using Bloom filter mode (ABySS 2.0+) to save memory\n# B = Bloom filter size (e.g., 32G, 40G), H = number of hash functions\nabyss-pe k=96 B=32G H=3 name=human_asm in='lib1_R1.fq lib1_R2.fq'\n```\n\n### Parallel Assembly (MPI)\nTo run ABySS across multiple processors or nodes, use `mpirun` with `abyss-pe`.\n\n```bash\n# Run with 16 MPI processes\nmpirun -np 16 abyss-pe k=64 name=large_genome in='reads1.fq reads2.fq'\n```\n\n### Handling Multiple Libraries\nABySS can incorporate multiple paired-end (`lib`) and mate-pair (`mp`) libraries.\n\n```bash\nabyss-pe k=64 name=multi_lib \\\n    lib='pe1 pe2' \\\n    pe1='pe1_1.fq pe1_2.fq' \\\n    pe2='pe2_1.fq pe2_2.fq' \\\n    mp='mp1' \\\n    mp1='mp1_1.fq mp1_2.fq'\n```\n\n## Expert Tips and Troubleshooting\n\n### K-mer Length Limits\nIf you encounter the error `Assertion length <= 64 failed`, the k-mer size exceeds the compile-time limit.\n- **Default**: Usually 128 in version 2.0+.\n- **Solution**: Recompile from source using `./configure --enable-maxk=192` (must be a multiple of 32).\n\n### Memory Optimization\n- **MPI Overhead**: For very large runs (>1000 cores), Open MPI buffers can consume excessive RAM. Use `--mca btl_openib_receive_queues` to tune communication buffers.\n- **Estimation**: Memory usage for the hash table is roughly `(8 + maxk/4) * n` bytes, where `n` is the number of distinct k-mers. Use `ntCard` to find the `F0` value (distinct k-mers) before starting.\n\n### Avoiding Deadlocks at High K\nWhen `k` is high (e.g., >200), message sizes may exceed the MPI \"eager send limit,\" causing the job to hang.\n- **Fix**: Set the eager limit in the `mpirun` environment variable:\n  `export mpirun='mpirun --mca btl_sm_eager_limit 16000 --mca btl_openib_eager_limit 16000'`\n\n### Read ID Requirements\nABySS requires paired reads to have matching IDs.\n- **Format**: IDs must be identical or end in `/1` and `/2`.\n- **Error**: `abyss-fixmate: error: All reads are mateless` indicates a mismatch in the FASTQ headers.\n\n### Performance Tuning\n- **Parallel Loading**: Split large input BAM/FASTQ files into smaller chunks (up to the number of MPI ranks). This allows parallel I/O and can shave hours off large assemblies.\n- **Caveat**: Do not split a single library into more than ~50 files, as `abyss-map` may hit open-file limits.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| abyss-fatoagp | Convert FASTA files to AGP format using ABySS |\n| abyss-sealer-b | Close gaps by using left and right flanking sequences of gaps as 'reads' for Konnector and performing multiple runs with each of the supplied K values. |\n| make | A tool to control the generation of executables and other non-source files of a program from the program's source files. |\n\n## Reference documentation\n- [ABySS Users FAQ](./references/github_com_BirolLab_abyss_wiki_ABySS-Users-FAQ.md)\n- [ABySS File Formats](./references/github_com_BirolLab_abyss_wiki_ABySS-File-Formats.md)\n- [ABySS Performance Tips](./references/github_com_BirolLab_abyss_wiki_ABySS-Performance-Tips.md)\n- [ABYSS-P Source Code Overview](./references/github_com_BirolLab_abyss_wiki_ABYSS-P-Source-Code-Overview.md)",
+  "skill_front_matter": {
+    "name": "abyss",
+    "description": "ABySS is a de novo sequence assembler designed for reconstructing large genomes from short-read sequencing data using a de Bruijn graph approach. Use when user asks to assemble genomes from short reads, perform parallel assembly using MPI, or use Bloom filters to reduce memory usage during assembly.",
+    "homepage": "https://www.bcgsc.ca/platform/bioinfo/software/abyss"
+  }
+}

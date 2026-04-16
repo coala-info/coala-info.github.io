@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-treeclimbr",
+  "category": "bioconductor",
+  "name": "bioconductor-treeclimbr",
+  "description": "treeclimbR is a framework for analyzing hierarchical data at an optimal resolution by evaluating signal aggregation across tree nodes. Use when user asks to perform differential abundance or differential state analysis on hierarchical data, find the optimal resolution for tree-based signals, or aggregate data across phylogenetic or clustering trees.",
+  "overview": "`treeclimbR` is a framework for analyzing hierarchical data (like microbial phylogenies or cell-type clustering trees) at an optimal level of resolution. Instead of testing only at the leaves (e.g., species) or at a fixed taxonomic level (e.g., genus), it evaluates multiple aggregation candidates to find branches where signals are most concordant. This approach balances the increased power of aggregation with the precision of high-resolution analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/treeclimbR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/csoneson/treeclimbR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "treeclimbR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/treeclimbR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/csoneson/treeclimbR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-treeclimbr\n\n## Overview\n\n`treeclimbR` is a framework for analyzing hierarchical data (like microbial phylogenies or cell-type clustering trees) at an optimal level of resolution. Instead of testing only at the leaves (e.g., species) or at a fixed taxonomic level (e.g., genus), it evaluates multiple aggregation candidates to find branches where signals are most concordant. This approach balances the increased power of aggregation with the precision of high-resolution analysis.\n\n## Core Workflow\n\nThe typical `treeclimbR` workflow involves four main stages: aggregation, differential testing, candidate generation, and evaluation.\n\n### 1. Data Preparation and Aggregation\nData should be stored in a `TreeSummarizedExperiment` (TSE) object containing a `rowTree` (for DA) or `colTree` (for DS).\n\n```r\nlibrary(treeclimbR)\nlibrary(TreeSummarizedExperiment)\n\n# For Differential Abundance (DA) - aggregate leaf counts to internal nodes\nall_node <- showNode(tree = rowTree(tse), only.leaf = FALSE)\ntse_agg <- aggTSE(x = tse, rowLevel = all_node, rowFun = sum)\n```\n\n### 2. Differential Analysis\nPerform testing on all nodes (leaves + internal nodes). While any method works, `treeclimbR` provides wrappers for `edgeR`.\n\n```r\n# DA Analysis\nda_res <- runDA(tse_agg, assay = \"counts\", option = \"glmQL\",\n                design = model.matrix(~ group, data = colData(tse_agg)),\n                contrast = c(0, 1))\n\n# Extract results table\nda_tbl <- nodeResult(da_res, n = Inf, type = \"DA\")\n```\n\n### 3. Finding Candidates\nGenerate a set of aggregation candidates based on a threshold parameter $t$.\n\n```r\nda_cand <- getCand(tree = rowTree(tse_agg), \n                   score_data = da_tbl,\n                   node_column = \"node\", \n                   p_column = \"PValue\",\n                   sign_column = \"logFC\")\n```\n\n### 4. Selecting the Optimal Resolution\nEvaluate the candidates to find the best aggregation level that controls the False Discovery Rate (FDR).\n\n```r\nda_best <- evalCand(tree = rowTree(tse_agg), \n                    levels = da_cand$candidate_list,\n                    score_data = da_tbl, \n                    node_column = \"node\",\n                    p_column = \"PValue\", \n                    sign_column = \"logFC\")\n\n# Extract significant nodes at the optimal level\nda_out <- topNodes(object = da_best, n = Inf, p_value = 0.05)\n```\n\n## Differential State (DS) Analysis\n\nFor single-cell data where you want to find genes differentially expressed within clusters or groups of clusters:\n\n1. **Aggregate**: Use `aggDS()` to create pseudobulk assays for every node in the tree.\n2. **Test**: Use `runDS()` to perform testing per gene, per node.\n3. **Candidates**: Generate candidates per gene (split the result table by feature).\n4. **Evaluate**: Use `evalCand(..., type = \"multiple\")` to find the optimal resolution for each gene.\n\n```r\n# Example DS candidate generation per gene\nds_tbl_list <- split(ds_tbl, f = ds_tbl$feature)\nds_cand_list <- lapply(ds_tbl_list, function(x) {\n    getCand(tree = colTree(ds_tse), score_data = x, ...)$candidate_list\n})\n```\n\n## Visualization and Utilities\n\n*   **TreeHeatmap()**: Visualize the tree alongside a heatmap of scaled counts.\n*   **infoCand()**: View a summary of all evaluated candidates to see which was selected as `best`.\n*   **findDescendant()**: Identify which leaves belong to a specific significant internal node.\n*   **convertNode()**: Switch between node numbers and labels.\n\n## Tips for Success\n\n*   **Sign Consistency**: `treeclimbR` aggregates nodes that show the same direction of change (sign of logFC). If a branch has mixed signals, it will likely not be aggregated.\n*   **Filtering**: Use `filter_min_total_count` in `runDA` or `runDS` to remove nodes with insufficient data before testing, as this improves the FDR adjustment.\n*   **T-values**: The `threshold` in `getCand` (often 0.01 to 1) determines the granularity of candidates. A denser sequence of $t$ values provides a more refined search for the optimal level.\n\n## Reference documentation\n\n- [Finding optimal resolution of hierarchical hypotheses with treeclimbR](./references/treeclimbR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-treeclimbr",
+    "description": "treeclimbR is a framework for analyzing hierarchical data at an optimal resolution by evaluating signal aggregation across tree nodes. Use when user asks to perform differential abundance or differential state analysis on hierarchical data, find the optimal resolution for tree-based signals, or aggregate data across phylogenetic or clustering trees.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/treeclimbR.html"
+  }
+}

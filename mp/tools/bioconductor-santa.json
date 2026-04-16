@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-santa",
+  "category": "bioconductor",
+  "name": "bioconductor-santa",
+  "description": "bioconductor-santa quantifies the functional content of molecular networks by measuring the clustering of phenotypes using an adapted Ripley's K-function. Use when user asks to measure the strength of association between a network and a phenotype, identify functional enrichment in gene sets, or prioritize genes based on their proximity to high-weight nodes.",
+  "overview": "SANTA (Spatial Analysis of NeTwork Association) applies spatial statistics—specifically Ripley’s K-function—to biological networks. It operates on the \"guilt-by-association\" principle to determine if a set of genes (hits) or a continuous phenotype (e.g., expression, essentiality) clusters more significantly on a network than would be expected by chance.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SANTA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/alexjcornish/SANTA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SANTA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SANTA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/alexjcornish/SANTA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-santa\n\nname: bioconductor-santa\ndescription: Quantify the functional content of molecular networks by measuring the clustering of phenotypes (hits or continuous weights) using Ripley's K-function adapted for networks. Use when analyzing gene sets or phenotypes on biological networks to identify functional enrichment, prioritize genes, or compare network informativeness across different conditions or data sources.\n\n## Overview\n\nSANTA (Spatial Analysis of NeTwork Association) applies spatial statistics—specifically Ripley’s K-function—to biological networks. It operates on the \"guilt-by-association\" principle to determine if a set of genes (hits) or a continuous phenotype (e.g., expression, essentiality) clusters more significantly on a network than would be expected by chance.\n\nThe package provides two primary metrics:\n1. **Knet**: Measures the strength of association between a whole network and a phenotype.\n2. **Knode**: Ranks individual nodes based on their proximity to high-weight vertices, useful for gene prioritization.\n\n## Core Workflow\n\n### 1. Prepare the Network\nSANTA uses `igraph` objects. Networks should ideally be undirected. Edge weights can be converted to distances (where smaller values indicate stronger interactions).\n\n```r\nlibrary(SANTA)\nlibrary(igraph)\n\n# Create or load an igraph object\n# Example: converting correlation to distance\nE(g)$distance <- -log10(abs(E(g)$weight))\n```\n\n### 2. Define Vertex Weights\nWeights represent the phenotype. These can be binary (1 for hit, 0 for non-hit) or continuous (e.g., -log10 p-values). Use `NA` for vertices with missing data to exclude them from permutation testing.\n\n```r\n# Binary hits\nV(g)$phenotype <- as.numeric(V(g)$name %in% hit_list)\n\n# Continuous weights\nV(g)$phenotype <- rnai_scores\n```\n\n### 3. Pre-compute Distances (Optional but Recommended)\nFor large networks or multiple runs, pre-compute the distance matrix and bins to save time.\n\n```r\n# Compute distance matrix (shortest.paths, diffusion, or mfpt)\nD <- DistGraph(g, dist.method=\"shortest.paths\")\n\n# Discretize distances into bins\nB <- BinGraph(D)\n```\n\n### 4. Run Knet Analysis\n`Knet` calculates the clustering significance via permutations.\n\n```r\n# Run with pre-computed bins B\nres <- Knet(g, nperm=1000, vertex.attr=\"phenotype\", edge.attr=\"distance\", B=B)\n\n# Access p-value and observed Area Under the K-curve (AUK)\nprint(res$pval)\nprint(res$obs)\n```\n\n### 5. Prioritize Genes with Knode\n`Knode` identifies genes that are \"close\" to the functional cluster, even if they weren't initial hits.\n\n```r\nnode_scores <- Knode(g, vertex.attr=\"phenotype\", dist.method=\"shortest.paths\")\n# Higher scores indicate closer proximity to high-weight clusters\nhead(sort(node_scores, decreasing=TRUE))\n```\n\n## Key Functions and Parameters\n\n- **Distance Methods**:\n  - `\"shortest.paths\"`: Standard graph distance (default).\n  - `\"diffusion\"`: Incorporates multiple paths via a diffusion kernel.\n  - `\"mfpt\"`: Mean First-Passage Time; based on random walks.\n- **`Knet()` Parameters**:\n  - `nperm`: Number of permutations for p-value calculation (use $\\ge 1000$ for publication).\n  - `vertex.attr`: Name of the vertex attribute containing weights.\n  - `edge.attr`: Name of the edge attribute containing distances.\n- **`Compactness()`**: A simpler alternative to `Knet` that measures the mean distance between hits. Unlike `Knet`, it does not handle continuous weights or account for vertex degree distributions.\n\n## Tips for Success\n\n- **Vertex Degree**: `Knet` is superior to simple compactness because it accounts for the global distribution of vertices and node degrees, preventing high-degree hubs from biasing the clustering significance.\n- **Missing Data**: Always set missing phenotypes to `NA`. SANTA will exclude these nodes from the permutation process, ensuring they don't dilute the significance.\n- **Edge Distances**: If your network has \"strengths\" (like confidence scores), convert them to distances (e.g., $1/score$ or $-log(score)$) before running `Knet`.\n- **Visualization**: Use `plot(res)` on a `Knet` result object to visualize the observed K-curve against the null distribution of permuted curves.\n\n## Reference documentation\n\n- [Introduction to SANTA](./references/SANTA-vignette.md)\n- [Introduction to SANTA (RMarkdown)](./references/SANTA-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-santa",
+    "description": "bioconductor-santa quantifies the functional content of molecular networks by measuring the clustering of phenotypes using an adapted Ripley's K-function. Use when user asks to measure the strength of association between a network and a phenotype, identify functional enrichment in gene sets, or prioritize genes based on their proximity to high-weight nodes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SANTA.html"
+  }
+}

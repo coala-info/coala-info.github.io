@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-qmtools",
+  "category": "bioconductor",
+  "name": "bioconductor-qmtools",
+  "description": "The qmtools package provides a suite of tools for the post-processing and quality control of quantitative metabolomics data. Use when user asks to filter features, impute missing values, normalize intensities, or perform dimension reduction on metabolomics datasets.",
+  "overview": "The `qmtools` package provides a suite of tools for the post-processing of quantitative metabolomics data. It is built upon the `SummarizedExperiment` class, ensuring compatibility with the broader Bioconductor ecosystem. The package streamlines the transition from raw feature tables to statistically analyzed results by providing standardized methods for data cleaning, imputation, normalization, and feature grouping.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/qmtools.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/HimesGroup/qmtools",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "qmtools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qmtools.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/HimesGroup/qmtools",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-qmtools\n\n## Overview\n\nThe `qmtools` package provides a suite of tools for the post-processing of quantitative metabolomics data. It is built upon the `SummarizedExperiment` class, ensuring compatibility with the broader Bioconductor ecosystem. The package streamlines the transition from raw feature tables to statistically analyzed results by providing standardized methods for data cleaning, imputation, normalization, and feature grouping.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad your data into a `SummarizedExperiment` object. Assays should contain feature intensities, `rowData` should contain feature metadata (like retention time), and `colData` should contain sample metadata.\n\n```r\nlibrary(qmtools)\nlibrary(SummarizedExperiment)\ndata(faahko_se)\n```\n\n### 2. Feature Filtering\nUse `removeFeatures` to eliminate uninformative features. This is critical for reducing noise and the multiple testing burden.\n\n*   **Missing Values:** Filter based on the proportion of non-missing values per group.\n*   **QC Metrics:** Filter using Relative Standard Deviation (RSD) or Intraclass Correlation Coefficient (ICC) if QC samples are available.\n\n```r\n# Retain features with >= 80% non-missing values in at least one group\nse_filtered <- removeFeatures(faahko_se, i = \"raw\", \n                              group = colData(faahko_se)$sample_group, \n                              cut = 0.80)\n```\n\n### 3. Imputation and Visualization\nHandle missing values using `imputeIntensity`. Use `plotMiss` to diagnose whether missingness is random or related to experimental conditions.\n\n*   **Methods:** `knn` (default, uses Gower distance), `rf` (Random Forest), `bpca` (Bayesian PCA).\n*   **Note:** `knn` in `qmtools` works on original scales due to the Gower distance, but scaling is generally recommended for other distance-based methods.\n\n```r\n# Visualize missingness\nplotMiss(se_filtered, i = \"raw\", group = colData(se_filtered)$sample_group)\n\n# Perform kNN imputation\nse_imputed <- imputeIntensity(se_filtered, i = \"raw\", name = \"knn\", method = \"knn\")\n```\n\n### 4. Normalization\nReduce non-biological variance using `normalizeIntensity`.\n\n*   **Methods:** `vsn` (Variance-Stabilizing Normalization), `pqn` (Probabilistic Quotient Normalization), `cyclicloess`.\n*   **Visualization:** Use `plotBox` to compare distributions before and after.\n\n```r\nse_norm <- normalizeIntensity(se_imputed, i = \"knn\", name = \"vsn\", method = \"vsn\")\nplotBox(se_norm, i = \"vsn\", group = colData(se_norm)$sample_group)\n```\n\n### 5. Dimension Reduction\nExplore data structure and group separation using `reduceFeatures`.\n\n*   **Unsupervised:** `method = \"pca\"` or `method = \"tsne\"`.\n*   **Supervised:** `method = \"plsda\"` (requires group labels `y`).\n*   **Visualization:** Use `plotReduced` to plot the results.\n\n```r\npca_res <- reduceFeatures(se_norm, i = \"vsn\", method = \"pca\", ncomp = 2)\nplotReduced(pca_res, group = colData(se_norm)$sample_group)\n```\n\n### 6. Feature Clustering\nIdentify features likely derived from the same parent compound (e.g., adducts, isotopes) using `clusterFeatures`.\n\n1.  **Retention Time Grouping:** Groups features with similar RTs.\n2.  **Correlation Grouping:** Sub-clusters RT groups based on intensity correlation across samples.\n\n```r\nse_clustered <- clusterFeatures(se_norm, i = \"vsn\", rtime_var = \"rtmed\", \n                                rt_cut = 10, cor_cut = 0.7)\n\n# Visualize a specific feature group\nplotRTgroup(se_clustered, i = \"vsn\", group = \"FG.01\")\n```\n\n### 7. Statistical Comparison\nPerform differential abundance analysis using `compareSamples`, which provides a wrapper for `limma`.\n\n```r\n# Contrast: KO - WT\nstats <- compareSamples(se_clustered, i = \"vsn\", group = \"sample_group\", \n                        class1 = \"WT\", class2 = \"KO\")\nhead(stats)\n```\n\n## Reference documentation\n\n- [Processing quantitative metabolomics data with the qmtools package](./references/qmtools.Rmd)\n- [Processing quantitative metabolomics data with the qmtools package](./references/qmtools.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-qmtools",
+    "description": "The qmtools package provides a suite of tools for the post-processing and quality control of quantitative metabolomics data. Use when user asks to filter features, impute missing values, normalize intensities, or perform dimension reduction on metabolomics datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qmtools.html"
+  }
+}

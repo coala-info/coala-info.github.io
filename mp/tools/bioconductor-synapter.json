@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-synapter",
+  "category": "bioconductor",
+  "name": "bioconductor-synapter",
+  "description": "This tool analyzes label-free proteomics data from Synapt G2 mass spectrometers through identification transfer and quantification. Use when user asks to perform identification transfer, model retention times, quantify peptide intensities, or create master peptide files from multiple runs.",
+  "overview": "The `synapter` package provides a pipeline for re-analysing label-free proteomics data. Its primary strength is \"identification transfer,\" where high-confidence peptide identifications from one run (identification run) are mapped to features in another run (quantitation run) based on Exact Mass and Retention Time (EMRT). This is particularly useful for increasing the number of quantified peptides across multiple samples.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/synapter.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "synapter"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/synapter.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-synapter\n\nname: bioconductor-synapter\ndescription: Analysis of label-free proteomics data acquired on Synapt G2 mass spectrometers. Use this skill to perform identification transfer, retention time modeling, and intensity quantification using the synapter R package. It supports combining multiple runs, ion mobility separation (HDMSE), and fragment matching to maximize identification accuracy.\n\n## Overview\n\nThe `synapter` package provides a pipeline for re-analysing label-free proteomics data. Its primary strength is \"identification transfer,\" where high-confidence peptide identifications from one run (identification run) are mapped to features in another run (quantitation run) based on Exact Mass and Retention Time (EMRT). This is particularly useful for increasing the number of quantified peptides across multiple samples.\n\n## Core Workflows\n\n### 1. The High-Level Pipeline (Synergise)\nFor most users, the `synergise` or `synergise2` functions provide a complete, automated analysis.\n\n```r\nlibrary(synapter)\n\n# Define input files\nfilenames <- list(\n  identpeptide = \"path/to/ident_final_peptide.csv\",\n  quantpeptide = \"path/to/quant_final_peptide.csv\",\n  quantpep3d = \"path/to/quant_Pep3D.csv\",\n  fasta = \"path/to/database.fasta\"\n)\n\n# Run the complete pipeline\n# synergise2 is recommended for HDMSE (Ion Mobility) data\nres <- synergise2(filenames = filenames, outputdir = \"results_folder\")\n```\n\n### 2. Step-by-Step Analysis (The Synapter Class)\nFor granular control, use the `Synapter` reference class.\n\n**Initialization and Filtering:**\n```r\n# Create object\nobj <- Synapter(filenames)\n\n# Filter by peptide score/FDR\nfilterUniqueDbPeptides(obj)\nsetPepScoreFdr(obj, fdr = 0.01)\nfilterIdentPepScore(obj)\nfilterQuantPepScore(obj)\n\n# Filter by mass accuracy (ppm)\nfilterIdentPpmError(obj, ppm = 20)\nfilterQuantPpmError(obj, ppm = 20)\n```\n\n**Modeling and Matching:**\n```r\n# Merge common peptides for RT modeling\nmergePeptides(obj)\n\n# Model retention time differences\nmodelRt(obj, span = 0.05)\n\n# Grid search to optimize matching parameters (ppm and nsd)\nsearchGrid(obj, ppms = seq(5, 20, 2), nsds = seq(0.5, 5, 0.5))\nsetBestGridParams(obj, what = \"auto\")\n\n# Perform identification transfer\nfindEMRTs(obj)\n```\n\n### 3. Creating Master Peptide Files\nTo combine multiple identification runs into a single \"Master\" set to increase coverage:\n\n```r\n# Estimate FDR for combinations\npepfiles <- c(\"file1.csv\", \"file2.csv\", \"file3.csv\")\nmaster_fdr <- estimateMasterFdr(pepfiles, fastafile = \"db.fasta\")\n\n# Create the master file\nmaster_obj <- makeMaster(pepfiles)\nsaveRDS(master_obj, \"master_peptides.rds\")\n\n# Use the master in a Synapter run\nfilenames$identpeptide <- \"master_peptides.rds\"\nobj <- Synapter(filenames, master = TRUE)\n```\n\n## Key Functions and Methods\n\n- `Synapter()`: Constructor for the main analysis object.\n- `synergise()` / `synergise2()`: One-stop-shop functions for the entire pipeline.\n- `createUniquePeptideDbRds()`: Pre-processes a FASTA file into a faster RDS format for peptide uniqueness filtering.\n- `modelRt()`: Fits a LOESS model to align retention times between runs.\n- `findEMRTs()`: The core matching algorithm that transfers identifications to EMRTs.\n- `requantify()`: Methods to handle detector saturation and improve quantitation accuracy.\n- `writeMatchedEMRTs()`: Exports the final results to a CSV file.\n\n## Tips for Success\n\n- **Input Files**: Ensure you use the \"Final Peptide\" and \"Pep3D\" CSV exports from Waters PLGS software.\n- **Ion Mobility**: If using HDMSE data, use `synergise2` or ensure `imdiff` parameters are set in `findEMRTs`.\n- **Visualization**: Use `plotRt(obj, what=\"model\")` and `plotFeatures(obj)` to verify that the retention time alignment and feature matching are performing correctly.\n- **Memory**: For large datasets, use the `subset` or `n` arguments in `searchGrid` to speed up parameter optimization.\n\n## Reference documentation\n\n- [synapter Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-synapter",
+    "description": "This tool analyzes label-free proteomics data from Synapt G2 mass spectrometers through identification transfer and quantification. Use when user asks to perform identification transfer, model retention times, quantify peptide intensities, or create master peptide files from multiple runs.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/synapter.html"
+  }
+}

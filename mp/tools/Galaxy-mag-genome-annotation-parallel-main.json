@@ -1,0 +1,43 @@
+{
+  "id": "Galaxy-mag-genome-annotation-parallel-main",
+  "category": "galaxy",
+  "name": "mag-genome-annotation-parallel",
+  "description": "\"This workflow performs parallel annotation of bacterial metagenome-assembled genomes using Bakta, Integron Finder, PlasmidFinder, and ISEScan to generate standardized genomic features and merged summary tables. Use this skill when you need to simultaneously characterize gene functions, mobile genetic elements, plasmids, and insertion sequences across a large collection of prokaryotic assemblies to compare genomic content and horizontal gene transfer potential.\"",
+  "overview": "This workflow provides an automated, parallelized pipeline for the comprehensive annotation of Metagenome-Assembled Genomes (MAGs). It is designed to process multiple prokaryotic genome assemblies simultaneously, utilizing a suite of specialized tools to identify genomic features, mobile genetic elements, and functional sequences.",
+  "homepage": "https://iwc.galaxyproject.org/",
+  "validation": "N/A",
+  "conda_home": "N/A",
+  "github": "N/A",
+  "conda_downloads": "66",
+  "conda_downloads_num": 66,
+  "last_updated": "2026-03-24",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Description"
+    ],
+    "description": "",
+    "docker_image": "N/A",
+    "homepage": "https://iwc.galaxyproject.org/",
+    "validation": "N/A",
+    "conda_home": "N/A",
+    "github": "N/A",
+    "conda_downloads": "66",
+    "last_updated": "2026-03-24",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# MAG Genome Annotation Parallel\n\n## Overview\n\nThis workflow provides an automated, parallelized pipeline for the comprehensive annotation of Metagenome-Assembled Genomes (MAGs). It is designed to process multiple prokaryotic genome assemblies simultaneously, utilizing a suite of specialized tools to identify genomic features, mobile genetic elements, and functional sequences.\n\nThe core annotation engine leverages [Bakta](https://github.com/oschwengers/bakta) for general feature prediction (CDS, tRNA, rRNA, and CRISPR arrays), [Integron Finder](https://github.com/gem-pasteur/Integron_Finder) for detecting integrons and gene cassettes, [PlasmidFinder](https://bitbucket.org/genomicepidemiology/plasmidfinder/src/master/) for identifying plasmid replicon sequences, and [ISEScan](https://github.com/xiezhq/ISEScan) for the detection of insertion sequences.\n\nFollowing the parallel annotation steps, the workflow reformats and normalizes the data to produce unified result files. It collapses individual genome outputs into merged summary tables for plasmid content, integrons, and IS elements, facilitating comparative analysis across the entire dataset.\n\nThe final output includes standardized annotation matrices and an integrated [MultiQC](https://multiqc.info/) report. This report provides a global overview of annotation completeness, gene content, and processing metrics across all input genomes, ensuring a streamlined quality control and discovery process.\n\n## Inputs and data preparation\n\n| Step | Label | Type | Notes |\n| --- | --- | --- | --- |\n| 0 | Bacterial Genomes | data_collection_input | Input a collection with bacterial genomes |\n| 1 | Plasmid detection database | parameter_input | Select a database to identify plasmids with PlasmidFinder. |\n| 2 | Bacterial genome annotation database | parameter_input | Select a database to predict CDS and small proteins (sORF) with Bakta. |\n| 3 | AMRFinderPlus database | parameter_input | Select a database to annotate AMR genes with Bakta. |\n| 4 | Run Bakta | parameter_input | Choose if you want to run bakta or not (can take a long time) |\n\n\nUpload your MAG assemblies as a single list collection of FASTA files to ensure the workflow processes all genomes in parallel. You must provide the specific database paths for PlasmidFinder, Bakta, and AMRFinderPlus as parameter inputs before execution. While Bakta is optional, using it requires selecting the appropriate bacterial genome annotation database to generate comprehensive GFF3 and GenBank outputs. For complex configurations or automated execution, you can use `planemo workflow_job_init` to generate a `job.yml` file. Please refer to the README.md for detailed instructions on database versioning and specific output formats for each annotation tool.\n\n## Steps (tools)\n\n| Step | Name | Tool ID | Notes |\n| --- | --- | --- | --- |\n| 5 | Bacterial Genome Annotation - IWC | (subworkflow) |  |\n| 6 | Text reformatting | toolshed.g2.bx.psu.edu/repos/bgruening/text_processing/tp_awk_tool/9.5+galaxy3 |  |\n| 7 | Text reformatting | toolshed.g2.bx.psu.edu/repos/bgruening/text_processing/tp_awk_tool/9.5+galaxy3 |  |\n| 8 | Collapse Collection | toolshed.g2.bx.psu.edu/repos/nml/collapse_collections/collapse_dataset/5.1.0 |  |\n| 9 | Text reformatting | toolshed.g2.bx.psu.edu/repos/bgruening/text_processing/tp_awk_tool/9.5+galaxy3 |  |\n| 10 | Convert | Convert characters1 |  |\n| 11 | Column join | toolshed.g2.bx.psu.edu/repos/iuc/collection_column_join/collection_column_join/0.0.3 |  |\n| 12 | Convert | Convert characters1 |  |\n| 13 | Collapse Collection | toolshed.g2.bx.psu.edu/repos/nml/collapse_collections/collapse_dataset/5.1.0 |  |\n| 14 | Collapse Collection | toolshed.g2.bx.psu.edu/repos/nml/collapse_collections/collapse_dataset/5.1.0 |  |\n| 15 | MultiQC | toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.33+galaxy0 |  |\n\n\n## Workflow outputs (marked in Galaxy)\n\n| Step | Label | Output name |\n| --- | --- | --- |\n| 8 | PlasmidFinder Merged Summary | output |\n| 11 | bakta cut annotation summary | tabular_output |\n| 13 | Integron Finder Merged Output | output |\n| 14 | ISEScan Merged Output | output |\n| 15 | multiqc html report | html_report |\n\n\n## How to run (Planemo)\n\n### Local Galaxy (default engine)\n\n```bash\nplanemo run MAG-Genome-Annotation-Parallel.ga job.yml --download_outputs --output_directory . --output_json output.json\n```\n\nOptional: `--galaxy_root /path/to/galaxy` speeds up spinning up a local Galaxy.\n\n### Docker Galaxy\n\nAppend e.g. `--engine docker_galaxy --ignore_dependency_problems` (requires Docker).\n\n### External Galaxy (usegalaxy.org / EU / …)\n\n```bash\nplanemo run MAG-Genome-Annotation-Parallel.ga job.yml --engine external_galaxy --galaxy_url SERVER_URL --galaxy_user_key YOUR_API_KEY\n```\n\nCreate a reusable profile: `planemo profile_create myprofile --galaxy_url ... --galaxy_user_key ... --engine external_galaxy` then `planemo run MAG-Genome-Annotation-Parallel.ga job.yml --profile myprofile`.\n\n### Job file\n\n- Generate a template: `planemo workflow_job_init MAG-Genome-Annotation-Parallel.ga -o job.yml`\n- Lint: `planemo workflow_lint MAG-Genome-Annotation-Parallel.ga`\n\nSee **[Running Galaxy workflows](https://planemo.readthedocs.io/en/master/running.html)** in the Planemo documentation.\n\n## Invocation outputs\n\nAfter a successful run with `--download_outputs`, files appear under your chosen `--output_directory`. `--output_json` records CWL-style metadata for outputs (paths, checksums).\n\nOn an external Galaxy, use `planemo invocation_download INVOCATION_ID --profile ...` to fetch outputs, or track progress with `planemo workflow_track INVOCATION_ID`.\n\nWorkflow steps marked as **workflow outputs** in the editor are listed under **Workflow outputs**; exact filenames depend on tools and Galaxy configuration.\n\n## Files\n\n- `MAG-Genome-Annotation-Parallel.ga` — Galaxy workflow export (JSON)\n- `job.yml` — inputs/parameters for `planemo run` (create with `planemo workflow_job_init`)\n- `README.md` — project reference (inputs, data, preparation)\n- [Planemo: Running Galaxy workflows](https://planemo.readthedocs.io/en/master/running.html)\n",
+  "skill_front_matter": {
+    "name": "mag-genome-annotation-parallel",
+    "description": "This workflow performs parallel annotation of bacterial metagenome-assembled genomes using Bakta, Integron Finder, PlasmidFinder, and ISEScan to generate standardized genomic features and merged summary tables. Use this skill when you need to simultaneously characterize gene functions, mobile genetic elements, plasmids, and insertion sequences across a large collection of prokaryotic assemblies to compare genomic content and horizontal gene transfer potential.",
+    "homepage": "https://workflowhub.eu/workflows/2115"
+  }
+}

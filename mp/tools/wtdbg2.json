@@ -1,0 +1,45 @@
+{
+  "id": "wtdbg2",
+  "category": "CLI",
+  "name": "wtdbg2",
+  "description": "wtdbg2 is a high-speed assembler designed for long-read sequencing data, capable of assembling large genomes directly from raw, noisy reads. Use when user asks to assemble long-read sequencing data, generate contig layouts, produce consensus sequences, or polish an assembly.",
+  "overview": "wtdbg2 (also known as Redbean) is a specialized assembler designed for high-speed processing of long-read sequencing data. Unlike many other assemblers that require pre-assembly error correction, wtdbg2 works directly with raw, noisy reads by chopping them into 1024bp segments and building a fuzzy Bruijn graph. This makes it significantly faster than traditional OLC (Overlap-Layout-Consensus) assemblers, capable of handling large genomes (like human or even larger) in a fraction of the time.",
+  "homepage": "https://github.com/ruanjue/wtdbg2",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/wtdbg2/overview",
+  "github": "https://github.com/ruanjue/wtdbg2",
+  "conda_downloads": "N/A",
+  "conda_downloads_num": 0,
+  "last_updated": "N/A",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "wtdbg2"
+    ],
+    "description": "De novo assembler for long noisy sequences",
+    "docker_image": "quay.io/biocontainers/wtdbg2:2.0--h470a237_0",
+    "homepage": "https://github.com/ruanjue/wtdbg2",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/wtdbg2/overview",
+    "github": "https://github.com/ruanjue/wtdbg2",
+    "conda_downloads": "N/A",
+    "last_updated": "N/A",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "wtdbg2.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# wtdbg2\n\n## Overview\n\nwtdbg2 (also known as Redbean) is a specialized assembler designed for high-speed processing of long-read sequencing data. Unlike many other assemblers that require pre-assembly error correction, wtdbg2 works directly with raw, noisy reads by chopping them into 1024bp segments and building a fuzzy Bruijn graph. This makes it significantly faster than traditional OLC (Overlap-Layout-Consensus) assemblers, capable of handling large genomes (like human or even larger) in a fraction of the time.\n\nThe tool follows a two-step primary workflow:\n1. **Assembly**: `wtdbg2` generates a contig layout (`.ctg.lay.gz`).\n2. **Consensus**: `wtpoa-cns` processes the layout to produce the final FASTA sequences.\n\n## Core Usage Patterns\n\n### One-Step Execution\nFor most standard projects, use the wrapper script to run the full pipeline:\n```bash\n./wtdbg2.pl -t 16 -x ont -g 3g -o output_prefix reads.fastq.gz\n```\n\n### Manual Two-Step Assembly\nFor more control, run the assembler and consensus tools separately:\n\n1. **Generate Layout**:\n   ```bash\n   ./wtdbg2 -x ont -g 4.6m -i reads.fa.gz -t 16 -fo prefix\n   ```\n2. **Generate Consensus**:\n   ```bash\n   ./wtpoa-cns -t 16 -i prefix.ctg.lay.gz -fo prefix.ctg.fa\n   ```\n\n### Technology Presets (-x)\nAlways set the `-x` parameter first, as it overrides other defaults.\n- `rs`: PacBio RSII\n- `sq`: PacBio Sequel\n- `ccs`: PacBio CCS (HiFi) reads\n- `ont`: Oxford Nanopore\n\n## Expert Tips and Parameter Tuning\n\n### Handling Low Coverage\nIf your sequencing depth is low, adjust the k-mer sampling and edge filtering:\n- **Increase Sampling**: Decrease `-S` (default is 4, meaning 1/4 k-mers). Reducing this to 1 or 2 increases sensitivity but significantly raises memory usage.\n- **Lower Edge Threshold**: Adjust `-e` (minimum read coverage for an edge). Default is 3; for very low coverage, try 2.\n- **Enable -A**: Use the `-A` flag to improve assembly for low-coverage data at the cost of runtime.\n\n### Improving Assembly Quality\n- **PacBio Optimization**: For PacBio data, adding `-L 5000` (discarding reads shorter than 5kb) often yields better N50 and cleaner assemblies.\n- **K-mer Lengths**: Use `-k` for normal k-mers and `-p` for homopolymer-compressed (HPC) k-mers.\n- **Memory Management**: For large genomes (e.g., Human 3Gb), expect to need ~200GB+ RAM. If memory is an issue, ensure you are not over-sampling k-mers with `-S`.\n\n### Polishing the Assembly\nWhile `wtpoa-cns` provides a base consensus, further polishing is often required for high accuracy:\n1. Map raw reads back to the assembly using `minimap2`.\n2. Sort the BAM file.\n3. Run `wtpoa-cns` in polishing mode:\n   ```bash\n   samtools view -F0x900 sorted.bam | ./wtpoa-cns -t 16 -d prefix.raw.fa -i - -fo prefix.cns.fa\n   ```\n\n## Troubleshooting\n- **Input Order**: If mixing file formats, always list FASTQ files before FASTA files. Listing FASTA first can cause the parser to fail on FASTQ headers.\n- **Genome Size**: The `-g` parameter is an estimate. If the assembly is significantly smaller than expected (common with ONT), try reducing the stringency of k-mer matches.\n- **64-bit Only**: Ensure you are running on a 64-bit Linux environment; other architectures are not supported.\n\n## Reference documentation\n- [wtdbg2 Main Documentation](./references/github_com_ruanjue_wtdbg2.md)",
+  "skill_front_matter": {
+    "name": "wtdbg2",
+    "description": "wtdbg2 is a high-speed assembler designed for long-read sequencing data, capable of assembling large genomes directly from raw, noisy reads. Use when user asks to assemble long-read sequencing data, generate contig layouts, produce consensus sequences, or polish an assembly.",
+    "homepage": "https://github.com/ruanjue/wtdbg2"
+  }
+}

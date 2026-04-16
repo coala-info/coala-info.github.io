@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-psea",
+  "category": "bioconductor",
+  "name": "bioconductor-psea",
+  "description": "This tool performs Population-Specific Expression Analysis to deconvolve gene expression profiles from mixed tissue samples using marker-based linear regression. Use when user asks to estimate cell-type-specific expression changes, resolve confounding effects of tissue composition, or perform expression deconvolution without physical cell sorting.",
+  "overview": "PSEA (Population-Specific Expression Analysis) is an R package designed to resolve the confounding effects of tissue composition in differential expression studies. It uses linear regression to model the expression of a target gene as a function of \"reference signals\"—the expression levels of genes known to be specific to particular cell populations (e.g., neurons, astrocytes). This allows for the identification of cell-type-specific expression changes even when the relative abundance of those c",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PSEA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PSEA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PSEA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-psea\n\nname: bioconductor-psea\ndescription: Perform Population-Specific Expression Analysis (PSEA) to deconvolve gene expression profiles from mixed tissue samples. Use this skill when you need to estimate cell-type-specific expression changes using marker-based linear regression, especially in cases where physical cell sorting is not possible.\n\n# bioconductor-psea\n\n## Overview\n\nPSEA (Population-Specific Expression Analysis) is an R package designed to resolve the confounding effects of tissue composition in differential expression studies. It uses linear regression to model the expression of a target gene as a function of \"reference signals\"—the expression levels of genes known to be specific to particular cell populations (e.g., neurons, astrocytes). This allows for the identification of cell-type-specific expression changes even when the relative abundance of those cells varies across samples.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the package and your expression data (typically a matrix where rows are probesets/genes and columns are samples).\n\n```r\nlibrary(PSEA)\n# expression: matrix of expression values\n# groups: vector of 0s (control) and 1s (disease/condition)\n```\n\n### 2. Generating Reference Signals\nIdentify marker genes specific to each cell population. Use the `marker` function to average these signals into a single reference measure for that population.\n\n```r\n# Define list of probesets for a specific cell type\nneuron_probesets <- list(c(\"221805_at\", \"221801_x_at\"), \"201313_at\")\n# Calculate reference signal\nneuron_ref <- marker(expression, neuron_probesets)\n```\n\n### 3. Creating Interaction Regressors\nTo test for group-specific differences (e.g., Disease vs. Control), create interaction terms between the reference signals and the group indicator.\n\n```r\nneuron_diff <- groups * neuron_ref\n```\n\n### 4. Deconvolution of Individual Transcripts\nModel a specific gene's expression using linear regression (`lm`).\n\n```r\n# Model expression in control group only\nmodel_ctrl <- lm(expression[\"target_gene\",] ~ neuron_ref + astro_ref, subset=which(groups==0))\n\n# Model expression across both groups to find cell-type specific changes\nmodel_all <- lm(expression[\"target_gene\",] ~ neuron_ref + neuron_diff)\nsummary(model_all)\n```\n*   **Coefficient of `neuron_ref`**: Normalized expression in the control group.\n*   **Coefficient of `neuron_diff`**: The difference in expression in the disease group.\n*   **Fold Change**: `(coef(neuron_ref) + coef(neuron_diff)) / coef(neuron_ref)`.\n\n### 5. Automated Profile Deconvolution\nFor large-scale analysis, use `lmfitst` to fit multiple models and select the best one based on AIC.\n\n```r\n# 1. Create model matrix\nmodel_mat <- fmm(cbind(neuron_ref, astro_ref, oligo_ref), groups)\n\n# 2. Enumerate possible model subsets\nmodel_sub <- em_quantvg(c(2,3,4), tnv=3, ng=2)\n\n# 3. Fit all models and select best\nmodels <- lmfitst(t(expression), model_mat, model_sub)\n\n# 4. Extract results\ncoeffs <- coefmat(models[[2]], as.character(1:ncol(model_mat)))\npvals <- pvalmat(models[[2]], as.character(1:ncol(model_mat)))\n```\n\n## Visualization\nUse `crplot` (Component-plus-residual plot) to visualize the dependence of a gene's expression on a specific cell-type reference signal.\n\n```r\n# Simple CR plot\ncrplot(model_all, \"neuron_ref\")\n\n# CR plot highlighting group differences\ncrplot(model_all, \"neuron_ref\", g=\"neuron_diff\")\n```\n\n## Tips for Success\n*   **Marker Selection**: The accuracy of PSEA depends heavily on the specificity of the marker genes used for reference signals.\n*   **Intercept Check**: A high intercept relative to average expression may indicate that the model is missing a significant cell population or that the markers are not sufficiently specific.\n*   **Model Selection**: Use `AIC` or `Adjusted R-squared` (via `slt`) to filter for transcripts that are well-explained by the cell-population models.\n\n## Reference documentation\n- [PSEA](./references/PSEA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-psea",
+    "description": "This tool performs Population-Specific Expression Analysis to deconvolve gene expression profiles from mixed tissue samples using marker-based linear regression. Use when user asks to estimate cell-type-specific expression changes, resolve confounding effects of tissue composition, or perform expression deconvolution without physical cell sorting.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PSEA.html"
+  }
+}

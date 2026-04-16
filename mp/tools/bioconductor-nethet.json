@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nethet",
+  "category": "bioconductor",
+  "name": "bioconductor-nethet",
+  "description": "This tool analyzes biological network heterogeneity from high-dimensional data using Gaussian Graphical Models. Use when user asks to perform network-based clustering, test for differential networks between groups, conduct gene-set analysis, or perform differential regression.",
+  "overview": "The `nethet` package is designed for investigating biological network heterogeneity. It moves beyond the assumption of a single underlying network by providing tools to identify sub-populations with distinct network topologies and to statistically compare networks between known groups. It primarily uses the Graphical Lasso (glasso) for sparse inverse covariance estimation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/nethet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nethet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nethet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nethet\n\nname: bioconductor-nethet\ndescription: Analysis of network heterogeneity from high-dimensional data using Gaussian Graphical Models (GGMs). Use this skill to perform network-based clustering (mixglasso), high-dimensional two-sample testing for differential networks (diffnet), gene-set analysis (GGM-GSA), and differential regression.\n\n## Overview\n\nThe `nethet` package is designed for investigating biological network heterogeneity. It moves beyond the assumption of a single underlying network by providing tools to identify sub-populations with distinct network topologies and to statistically compare networks between known groups. It primarily uses the Graphical Lasso (glasso) for sparse inverse covariance estimation.\n\n## Core Workflows\n\n### 1. Data Simulation\nGenerate synthetic data from Gaussian mixture models to test workflows.\n\n```r\nlibrary(nethet)\n\n# Simulate mixture of networks\n# n: samples, p: variables, n.comp: groups, s: sparsity (0-1)\nsim_res <- sim_mix_networks(n=100, p=25, n.comp=3, s=0.9)\n\n# Generate two networks with specific overlap for differential testing\ngen_nets <- generate_2networks(p=20, graph='random', n.nz=rep(20,2), n.nz.common=15)\n```\n\n### 2. Network Estimation (Known Groups)\nWhen group labels are known, use `het_cv_glasso` to estimate group-specific networks with cross-validated penalty parameters.\n\n```r\n# data: matrix, grouping: vector of labels\nnetworks <- het_cv_glasso(data = my_data, grouping = my_labels)\n\n# Access results\n# networks$Sig: list of estimated covariance matrices\n# networks$Omega: list of estimated concentration matrices (networks)\n```\n\n### 3. Network-Based Clustering (Unknown Groups)\nUse `mixglasso` to simultaneously cluster samples and learn group-specific networks.\n\n```r\n# Run with a fixed number of components\nmix_res <- mixglasso(my_data, n.comp=3)\n\n# Run over a range to find optimal n.comp via BIC\nmix_search <- mixglasso(my_data, n.comp=1:5)\nbest_model <- mix_search$models[[mix_search$bic.opt]]\n\n# Check clustering accuracy if ground truth exists\nlibrary(mclust)\nadj_rand <- adjustedRandIndex(mix_res$comp, true_labels)\n```\n\n### 4. Differential Network Testing\nTest the null hypothesis that two groups share the same underlying network structure.\n\n```r\n# Uses multi-split approach for stable p-values\n# x1, x2: data matrices for the two groups\ndn_test <- diffnet_multisplit(x1, x2, b.splits=50)\n\n# Extract aggregated p-value\nprint(dn_test$medagg.pval)\nplot(dn_test) # Visualize p-value distribution\n```\n\n### 5. GGM-GSA (Gene-Set Analysis)\nPerform differential network analysis across multiple predefined gene sets.\n\n```r\n# gsets: list of character vectors (gene names)\n# gene.names: vector matching columns in x1/x2\ngsa_res <- ggmgsa_multisplit(x1, x2, gsets=my_gsets, gene.names=colnames(x1), b.splits=25)\nsummary(gsa_res)\n```\n\n### 6. Differential Regression\nTest if two high-dimensional regression models (Y ~ X) are significantly different.\n\n```r\n# y1, y2: response vectors; x1, x2: predictor matrices\ndr_test <- diffregr_multisplit(y1, y2, x1, x2, b.splits=10)\nprint(dr_test$medagg.pval)\n```\n\n## Visualization and Export\n\n### Plotting Networks\n`nethet` provides specialized plotting for its clustering objects.\n\n```r\n# Dot plot of partial correlations across groups\ndot_plot(best_model, p.corrs.thresh=0.5)\n\n# Scatter plots for specific node pairs across groups\nnode_pairs <- rbind(c(1,2), c(3,4))\nscatter_plot(best_model, data=my_data, node.pairs=node_pairs)\n```\n\n### Exporting\nExport inferred networks to CSV for use in external tools like Cytoscape.\n\n```r\n# Set quote=FALSE for easier Cytoscape import\nexport_network(best_model, file='my_network.csv', p.corrs.thresh=0.25, quote=FALSE)\n```\n\n## Tips and Best Practices\n- **Data Scaling**: Ensure data is centered and scaled before running `mixglasso` or `diffnet` if variables are on different scales.\n- **Stability**: Always use a sufficient number of splits (`b.splits >= 50`) for `diffnet` and `diffregr` to avoid the \"p-value lottery\" of a single random split.\n- **Parallelization**: On Unix systems, set `mc.flag=TRUE` in multisplit functions to use the `parallel` library for faster computation.\n- **BIC Selection**: When using `mixglasso` to find the number of components, the default adaptive penalization is generally recommended over setting `lambda=0`.\n\n## Reference documentation\n- [nethet](./references/nethet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nethet",
+    "description": "This tool analyzes biological network heterogeneity from high-dimensional data using Gaussian Graphical Models. Use when user asks to perform network-based clustering, test for differential networks between groups, conduct gene-set analysis, or perform differential regression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nethet.html"
+  }
+}

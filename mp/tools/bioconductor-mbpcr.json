@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mbpcr",
+  "category": "bioconductor",
+  "name": "bioconductor-mbpcr",
+  "description": "This tool estimates DNA copy number profiles from SNP array data using Bayesian piecewise constant regression. Use when user asks to estimate DNA copy number profiles, identify genomic breakpoints, detect copy number alterations, or perform piecewise constant regression on log2ratio data.",
+  "overview": "The `mBPCR` (modified Bayesian Piecewise Constant Regression) package provides tools for estimating the profile of DNA copy number data. It uses a Bayesian approach to model the log2ratio as a piecewise constant function, allowing for the detection of segments with different copy levels. It is particularly effective for high-density SNP array data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mBPCR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mBPCR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mBPCR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mbpcr\n\nname: bioconductor-mbpcr\ndescription: Bayesian DNA copy number profile estimation using the mBPCR package. Use this skill to perform piecewise constant regression on log2ratio data from SNP arrays (e.g., Affymetrix 10K, 250K) to identify genomic breakpoints and copy number alterations.\n\n## Overview\nThe `mBPCR` (modified Bayesian Piecewise Constant Regression) package provides tools for estimating the profile of DNA copy number data. It uses a Bayesian approach to model the log2ratio as a piecewise constant function, allowing for the detection of segments with different copy levels. It is particularly effective for high-density SNP array data.\n\n## Core Workflow\n\n### 1. Data Preparation\nData should ideally be in log2ratio format with probe names, chromosome identifiers (1-22, X, Y), and physical positions.\n\n```r\nlibrary(mBPCR)\n\n# Import from a tab-delimited file\n# NRowSkip: rows to skip before data; ifLogRatio=0 if data is not yet log-transformed\npath <- \"path/to/data.txt\"\nmy_data <- importCNData(path, NRowSkip=1)\n\n# Or load example data\ndata(rec10k)\n```\n\n### 2. Parameter Estimation\nGlobal parameters ($\\nu$, $\\rho^2$, $\\sigma^2$) should be estimated on the entire genome for better accuracy, even if only analyzing one chromosome.\n\n```r\n# Estimate global parameters from raw log2ratio values\nparams <- estGlobParam(rec10k$log2ratio)\n# params$nu, params$rhoSquare, params$sigmaSquare\n```\n\n### 3. Profile Estimation\nThe primary function is `estProfileWithMBPCR`. \n\n**Memory Management Tip:** Before running on large datasets, verify RAM for a vector of size `(maxProbeNumber+1)*(maxProbeNumber+2)/2`.\n```r\nmaxProbeNumber <- 1000 \n# Test allocation\nA <- array(1, dim=(maxProbeNumber+1)*(maxProbeNumber+2)/2)\nremove(A)\n```\n\n**Running the estimation:**\n```r\nresults <- estProfileWithMBPCR(\n  rec10k$SNPname, \n  rec10k$Chromosome, \n  rec10k$PhysicalPosition, \n  rec10k$log2ratio, \n  chrToBeAnalyzed = c(3, 5), \n  maxProbeNumber = 1000,\n  regr = 'mBPCR' # Options: 'mBPCR' or 'BRC' (Bayesian Regression Curve)\n)\n```\n\n### 4. Exporting and Visualizing Results\nUse `writeEstProfile` to generate tables of estimated values and breakpoints.\n\n```r\n# Write results to files\nwriteEstProfile(\n  path = '', \n  sampleName = 'rec10k',\n  rec10k$SNPname, \n  rec10k$Chromosome, \n  rec10k$PhysicalPosition, \n  rec10k$log2ratio, \n  chrToBeWritten = c(3, 5), \n  results$estPC, \n  results$estBoundaries\n)\n\n# Plot the profile\nplotEstProfile(\n  sampleName = 'rec10k', \n  rec10k$Chromosome, \n  rec10k$PhysicalPosition, \n  rec10k$log2ratio, \n  chrToBePlotted = 3, \n  results$estPC, \n  maxProbeNumber = 1000\n)\n```\n\n## Advanced Usage\n\n### Working with oligoSnpSet\nIf using `oligoClasses` objects:\n```r\nr <- estProfileWithMBPCRforOligoSnpSet(\n  oligoSet, \n  sampleToBeAnalyzed = 1, \n  chrToBeAnalyzed = 2, \n  maxProbeNumber = 1000, \n  ifLogRatio = 0\n)\n```\n\n### Direct Computation\nFor simulated data or specific segments without genomic metadata, use `computeMBPCR`:\n```r\n# y is a vector of log2ratios\nresults <- computeMBPCR(y, nu=-0.02, rhoSquare=0.08, sigmaSquare=0.5)\n```\n\n## Best Practices\n- **$\\rho^2$ Estimation:** For patient samples with few aberrations, estimate $\\rho^2$ (variance of segment levels) on a cell line or a highly aberrant sample first, then provide that fixed value to the patient analysis.\n- **Chromosome Names:** Ensure chromosomes are named as integers 1-22 or \"X\"/\"Y\".\n- **Whole Genome Context:** Always estimate global parameters on the full dataset to ensure the noise model ($\\sigma^2$) is robust.\n\n## Reference documentation\n- [mBPCR](./references/mBPCR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mbpcr",
+    "description": "This tool estimates DNA copy number profiles from SNP array data using Bayesian piecewise constant regression. Use when user asks to estimate DNA copy number profiles, identify genomic breakpoints, detect copy number alterations, or perform piecewise constant regression on log2ratio data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mBPCR.html"
+  }
+}

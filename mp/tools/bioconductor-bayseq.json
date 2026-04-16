@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bayseq",
+  "category": "bioconductor",
+  "name": "bioconductor-bayseq",
+  "description": "This tool performs empirical Bayesian analysis to identify patterns of differential expression in high-throughput sequencing count data. Use when user asks to perform differential expression analysis on RNA-seq or sRNA-seq data, evaluate complex experimental designs across multiple groups, or analyze paired genomic data using custom distribution models.",
+  "overview": "The `baySeq` package implements empirical Bayesian methods to estimate the posterior likelihoods of various models of differential expression. Unlike methods restricted to pairwise comparisons, `baySeq` can evaluate any pattern of expression across multiple experimental groups by defining models as partitions of samples. It is particularly robust for small RNA-seq data and can be extended to custom distributions beyond the default Negative Binomial.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/baySeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bayseq/overview",
+  "github": "https://github.com/samgg/baySeq",
+  "conda_downloads": "41.9K",
+  "conda_downloads_num": 41900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "baySeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/baySeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bayseq/overview",
+    "github": "https://github.com/samgg/baySeq",
+    "conda_downloads": "41.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bayseq\n\nname: bioconductor-bayseq\ndescription: Empirical Bayesian analysis for identifying patterns of differential expression in high-throughput sequencing count data. Use when Claude needs to perform differential expression (DE) analysis on RNA-seq, sRNA-seq, or other count-based genomic data, particularly for complex experimental designs, paired data, or when custom distribution models are required.\n\n# bioconductor-bayseq\n\n## Overview\nThe `baySeq` package implements empirical Bayesian methods to estimate the posterior likelihoods of various models of differential expression. Unlike methods restricted to pairwise comparisons, `baySeq` can evaluate any pattern of expression across multiple experimental groups by defining models as partitions of samples. It is particularly robust for small RNA-seq data and can be extended to custom distributions beyond the default Negative Binomial.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data must be a matrix or data frame of integer counts where rows are genomic features and columns are samples.\n\n```r\nlibrary(baySeq)\nlibrary(parallel)\n\n# Optional: Set up parallel processing\ncl <- makeCluster(4)\n\n# Example data\ndata(simData)\nreplicates <- c(\"A\", \"A\", \"A\", \"A\", \"A\", \"B\", \"B\", \"B\", \"B\", \"B\")\n```\n\n### 2. Defining Models (Groups)\nModels are defined as a list of vectors. Each vector assigns samples to groups. Samples with the same number in a vector are assumed to have equivalent expression under that model.\n\n```r\n# NDE: No Differential Expression (all samples in group 1)\n# DE: Differential Expression (first 5 in group 1, last 5 in group 2)\ngroups <- list(NDE = c(1,1,1,1,1,1,1,1,1,1),\n               DE  = c(1,1,1,1,1,2,2,2,2,2))\n```\n\n### 3. Creating the countData Object\nInitialize the container and estimate library scaling factors.\n\n```r\nCD <- new(\"countData\", data = simData, replicates = replicates, groups = groups)\nlibsizes(CD) <- getLibsizes(CD)\n\n# Optional: Add annotation\nCD@annotation <- data.frame(name = paste0(\"feature_\", 1:nrow(simData)))\n```\n\n### 4. Estimating Priors and Likelihoods\n`baySeq` uses a two-step process: estimating the empirical prior distribution from a sample of the data, then calculating posterior likelihoods for all features.\n\n```r\n# Negative Binomial approach\nCD <- getPriors.NB(CD, samplesize = 10000, estimation = \"QL\", cl = cl)\nCD <- getLikelihoods(CD, cl = cl)\n```\n\n### 5. Inspecting Results\nUse `topCounts` to retrieve features ranked by posterior likelihood for a specific model.\n\n```r\n# Get top 10 features for the 'DE' model\ntopCounts(CD, group = \"DE\", number = 10)\n\n# View estimated proportions of each model in the data\nCD@estProps\n```\n\n## Advanced Workflows\n\n### Paired Data Analysis\nFor paired data (e.g., before/after treatment), the data should be provided as a 3D array `[features, samples, 2]`.\n\n```r\n# data is an array where dim 3 represents the pair members\npairCD <- new(\"countData\", data = pairArray, replicates = c(1,1,2,2), \n              groups = list(NDE = c(1,1,1,1), DE = c(1,1,2,2)),\n              densityFunction = bbDensity) # Often uses Beta-Binomial\npairCD <- getPriors(pairCD, cl = cl)\npairCD <- getLikelihoods(pairCD, cl = cl)\n```\n\n### Handling Null Data\nIf many features are likely unexpressed (null), use `nullData = TRUE` in `getLikelihoods` to improve estimation.\n\n```r\nCD <- getLikelihoods(CD, nullData = TRUE, cl = cl)\n```\n\n### Custom Distributions\nYou can define a `densityFunction` object to use distributions other than Negative Binomial (e.g., Normal, Zero-Inflated).\n\n```r\nnormDensity <- new(\"densityFunction\", density = function(x, obs, pars) {\n  dnorm(x, mean = pars[[2]] * obs$libsizes, sd = pars[[1]], log = TRUE)\n}, initiatingValues = c(0.1, 1), equalOverReplicates = c(TRUE, FALSE))\n\ndensityFunction(CD) <- normDensity\nCD <- getPriors(CD, cl = cl)\nCD <- getLikelihoods(CD, cl = cl)\n```\n\n## Visualization\n*   **MA-plot**: `plotMA.CD(CD, samplesA = \"A\", samplesB = \"B\")`\n*   **Posteriors**: `plotPosteriors(CD, group = \"DE\")`\n*   **Null Priors**: `plotNullPrior(CD)` (to check for bimodality indicating unexpressed features).\n\n## Tips\n*   **Parallelization**: Always use a cluster (`makeCluster`) for large datasets as `baySeq` is computationally intensive.\n*   **Sample Size**: While `samplesize = 1000` is fast for testing, use `10000` or more for publication-quality results.\n*   **Library Sizes**: `getLibsizes` supports `estimationType = \"total\"` or `\"quantile\"`.\n\n## Reference documentation\n- [baySeq](./references/baySeq.md)\n- [baySeq_generic](./references/baySeq_generic.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bayseq",
+    "description": "This tool performs empirical Bayesian analysis to identify patterns of differential expression in high-throughput sequencing count data. Use when user asks to perform differential expression analysis on RNA-seq or sRNA-seq data, evaluate complex experimental designs across multiple groups, or analyze paired genomic data using custom distribution models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/baySeq.html"
+  }
+}

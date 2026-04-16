@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-supersigs",
+  "category": "bioconductor",
+  "name": "bioconductor-supersigs",
+  "description": "This tool performs supervised mutational signature analysis to identify trinucleotide features associated with specific phenotypes or exposures. Use when user asks to learn supervised signatures from genomic data, predict classification scores for new samples, or apply pre-trained signatures to analyze factors like age and smoking.",
+  "overview": "The `supersigs` package implements a supervised approach to mutational signature analysis. Unlike unsupervised methods (like NMF) that decompose mutation catalogs into latent signatures, `supersigs` identifies features (trinucleotide contexts) that are specifically associated with a known factor or phenotype (e.g., a specific exposure or clinical variable). It produces highly interpretable \"SuperSigs\" which are essentially trained logistic regression models that can be used for classification an",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/supersigs.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/TomasettiLab/supersigs",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "supersigs"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/supersigs.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/TomasettiLab/supersigs",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-supersigs\n\nname: bioconductor-supersigs\ndescription: Supervised mutational signature analysis using the Bioconductor package 'supersigs'. Use this skill to learn supervised signatures (SuperSigs) from cancer genomic data, predict classification scores for new samples based on specific factors (e.g., smoking, age, MSI status), and adjust mutation data by removing known signature contributions.\n\n# bioconductor-supersigs\n\n## Overview\n\nThe `supersigs` package implements a supervised approach to mutational signature analysis. Unlike unsupervised methods (like NMF) that decompose mutation catalogs into latent signatures, `supersigs` identifies features (trinucleotide contexts) that are specifically associated with a known factor or phenotype (e.g., a specific exposure or clinical variable). It produces highly interpretable \"SuperSigs\" which are essentially trained logistic regression models that can be used for classification and prediction on new datasets.\n\n## Core Workflow\n\n### 1. Data Preprocessing\n\nThe package requires a data frame where each row is a sample and columns represent trinucleotide mutation counts (96 standard contexts).\n\n**From VCF:**\nIf starting with a VCF file, use `VariantAnnotation` to load it and `process_vcf` to format it.\n```r\nlibrary(supersigs)\nlibrary(VariantAnnotation)\n\nvcf <- readVcf(\"path_to_file.vcf\", \"hg19\")\ncolData(vcf)$age <- 60 # Age is a required metadata field\ndt <- process_vcf(vcf)\n```\n\n**Generating the Mutation Matrix:**\nUse `make_matrix` to convert a list of mutations into the required count matrix. This requires a BSgenome object.\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n# example_dt should have: sample_id, age, chromosome, position, ref, alt\ninput_dt <- make_matrix(example_dt)\n```\n\n### 2. Learning a Signature\n\nTo train a signature, you need an `IndVar` (Indicator Variable) column in your data frame representing the exposure/factor.\n\n```r\n# Prepare data: add IndVar (logical or 0/1)\ninput_dt$IndVar <- as.numeric(input_dt$factor_of_interest == \"Exposed\")\n\n# Get signature\nsupersig <- get_signature(data = input_dt, factor = \"Smoking\")\n```\n\nThe resulting `supersig` object contains:\n- `Signature`: Differences in mean rates between groups.\n- `Features`: The specific trinucleotide contexts selected.\n- `AUC`: The apparent area under the curve.\n- `Model`: The trained `glm` object.\n\n### 3. Prediction and Classification\n\nApply a learned signature (either custom-made or pre-trained) to new data using `predict_signature`.\n\n```r\n# Using a custom signature\nresults <- predict_signature(supersig, newdata = test_dt, factor = \"Smoking\")\n\n# Using pre-trained TCGA signatures (available in supersig_ls)\ndata(\"supersig_ls\")\nnames(supersig_ls) # View available signatures like \"SMOKING (LUAD)\", \"AGE (BRCA)\"\nresults_tcga <- predict_signature(supersig_ls[[\"SMOKING (LUAD)\"]], newdata = test_dt, factor = \"Smoking\")\n\n# 'results' will contain a 'score' column (predicted probability)\n```\n\n### 4. Interpretation and Visualization\n\nUse `simplify_signature` to group features for easier plotting, optionally using IUPAC labels.\n\n```r\n# Simplify for plotting\nfeatures_iupac <- simplify_signature(object = supersig, iupac = TRUE)\n\n# Plotting\nlibrary(ggplot2)\ndf_plot <- data.frame(feat = names(features_iupac), val = features_iupac)\nggplot(df_plot, aes(x = feat, y = val)) + geom_col() + theme_minimal()\n```\n\n### 5. Partial Signatures (Adjustment)\n\nTo remove the effect of a known signature (e.g., aging) before looking for others, use `partial_signature`.\n\n```r\n# Adjust data by removing contribution of a specific signature\nadjusted_dt <- partial_signature(data = input_dt, object = supersig)\n```\n\n## Tips and Best Practices\n\n- **Reference Genomes:** Ensure the `BSgenome` version matches the coordinates in your mutation data (hg19 vs hg38).\n- **Pre-trained Signatures:** The `supersig_ls` object contains 67 signatures trained on TCGA data across various tissues and factors (Age, Smoking, POLE, MSI, etc.). Always check `names(supersig_ls)` to find the most relevant tissue-specific model.\n- **Interpretation:** The `Signature` slot in the S4 object represents the difference in mean rates. A positive value indicates the feature is more prevalent in the exposed group.\n- **Age Factor:** When `factor = \"age\"`, the signature represents the overall mean rate rather than a difference between groups.\n\n## Reference documentation\n\n- [Using supersigs](./references/supersigs.Rmd)\n- [Using supersigs (Markdown)](./references/supersigs.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-supersigs",
+    "description": "This tool performs supervised mutational signature analysis to identify trinucleotide features associated with specific phenotypes or exposures. Use when user asks to learn supervised signatures from genomic data, predict classification scores for new samples, or apply pre-trained signatures to analyze factors like age and smoking.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/supersigs.html"
+  }
+}

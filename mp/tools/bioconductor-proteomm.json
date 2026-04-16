@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-proteomm",
+  "category": "bioconductor",
+  "name": "bioconductor-proteomm",
+  "description": "This tool performs peptide-level differential expression analysis and normalization for single or multiple proteomic datasets. Use when user asks to normalize proteomics data with EigenMS, impute missing values using model-based approaches, or perform statistical testing for differential expression across one or more datasets.",
+  "overview": "ProteoMM is a specialized platform for peptide-level differential expression analysis. Unlike methods that \"roll up\" peptide intensities into protein-level averages, ProteoMM utilizes all available peptide observations to increase statistical power. It is particularly effective for combining multiple datasets (e.g., different species or experiments) into a single p-value and effect size estimate.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ProteoMM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ProteoMM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ProteoMM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-proteomm\n\nname: bioconductor-proteomm\ndescription: Peptide-level differential expression analysis for single or multiple proteomic datasets. Use when analyzing bottom-up MS-based proteomics data to perform EigenMS normalization, model-based imputation of missing values, and statistical testing (MBDE) across one or more datasets simultaneously.\n\n# bioconductor-proteomm\n\n## Overview\n\nProteoMM is a specialized platform for peptide-level differential expression analysis. Unlike methods that \"roll up\" peptide intensities into protein-level averages, ProteoMM utilizes all available peptide observations to increase statistical power. It is particularly effective for combining multiple datasets (e.g., different species or experiments) into a single p-value and effect size estimate.\n\nThe package follows a specific pipeline:\n1. **Data Preparation**: Log2 transformation and metadata organization.\n2. **EigenMS Normalization**: SVD-based removal of bias trends.\n3. **Model-Based Imputation**: Handling informative missingness (abundance-dependent).\n4. **Statistical Analysis**: Differential expression (MBDE) and Presence/Absence analysis.\n\n## Workflow and Key Functions\n\n### 1. Data Preparation\nProteoMM requires intensities and metadata to be separated but linked.\n\n```r\nlibrary(ProteoMM)\n\n# Extract intensities and log2 transform\n# intsCols: indices of columns containing intensity values\nm_logInts <- make_intencities(df, intsCols)\nm_logInts <- convert_log2(m_logInts)\n\n# Extract metadata\n# metaCols: indices for peptide sequences, protein IDs, etc.\nm_prot.info <- make_meta(df, metaCols)\n```\n\n### 2. EigenMS Normalization\nNormalization is performed in two steps: identifying bias trends and then removing them.\n\n```r\n# Step 1: Identify trends\n# treatment: factor level for groups\neig1 <- eig_norm1(m = m_logInts, treatment = grps, prot.info = m_prot.info)\n\n# Step 2: Remove bias trends\n# You can manually adjust eig1$h.c if visual inspection suggests more trends\nnorm_data <- eig_norm2(rv = eig1)\n```\n\n### 3. Model-Based Imputation\nProteoMM accounts for both \"Missing Completely at Random\" (MCAR) and \"Abundance-Dependent\" (left-censored) missingness.\n\n```r\n# pr_ppos: column index in prot.info containing the Protein ID\nimp_res <- MBimpute(norm_data$normalized[, intsCols], \n                    grps, \n                    prot.info = norm_data$normalized[, metaCols], \n                    pr_ppos = 3, \n                    my.pi = 0.05) # 0.05 is a standard estimate for MCAR\n```\n\n### 4. Differential Expression (DE)\n\n#### Single Dataset Analysis\nUse `peptideLevel_DE` for standard single-experiment analysis.\n\n```r\nde_results <- peptideLevel_DE(imp_res$y_imputed, \n                             grps, \n                             prot.info = imp_res$imp_prot.info, \n                             pr_ppos = 2)\n```\n\n#### Multi-Dataset Analysis\nTo combine datasets (e.g., Human and Mouse), use parallel lists and identify common proteins.\n\n```r\n# Prepare lists\nmms <- list(dataset1_ints, dataset2_ints)\ntreats <- list(grps1, grps2)\nprotinfos <- list(meta1, meta2)\n\n# Subset for common proteins\nsubset_data <- subset_proteins(mm_list = mms, prot.info = protinfos, 'ProteinID_Col')\n\n# Run Multi-Matrix DE\ncomb_MBDE <- prot_level_multi_part(mm_list = mms, \n                                   treat = treats, \n                                   prot.info = protinfos, \n                                   prot_col_name = 'ProteinID_Col', \n                                   nperm = 500) # Use 500+ for publication\n```\n\n### 5. Presence/Absence Analysis\nFor proteins with too many missing values to be imputed/normalized, use Presence/Absence testing.\n\n```r\n# Identify proteins not included in normalization\npresAbs_prots <- get_presAbs_prots(mm_list = raw_list, \n                                   prot.info = meta_list, \n                                   protnames_norm = normalized_protein_names, \n                                   prot_col_name = 2)\n\n# Test for differential presence\npa_results <- peptideLevel_PresAbsDE(presAbs_ints, grps, presAbs_meta, pr_ppos = 3)\n```\n\n## Visualization\nProteoMM provides specific functions for proteomics-style plots:\n- `plot_3_pep_trends_NOfile()`: Compares raw, normalized, and imputed peptide trends for a specific protein.\n- `plot_volcano_wLab()`: Generates volcano plots with gene labels and specific fold-change/p-value cutoffs.\n\n## Tips for Success\n- **Seed Setting**: Functions like `eig_norm1` and `MBimpute` use random number generators. Always use `set.seed()` for reproducibility.\n- **Group Order**: When performing multi-dataset analysis, ensure the treatment group order is consistent across all datasets in your lists.\n- **P-value Adjustment**: The package provides `BH_P_val` (Benjamini-Hochberg). Always check the p-value distribution histograms to ensure the adjustment is appropriate for your data.\n\n## Reference documentation\n- [ProteoMM Vignette](./references/ProteoMM_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-proteomm",
+    "description": "This tool performs peptide-level differential expression analysis and normalization for single or multiple proteomic datasets. Use when user asks to normalize proteomics data with EigenMS, impute missing values using model-based approaches, or perform statistical testing for differential expression across one or more datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ProteoMM.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-netactivity",
+  "category": "bioconductor",
+  "name": "bioconductor-netactivity",
+  "description": "\"NetActivity computes gene set activity scores from gene expression data using pre-trained sparsely-connected autoencoder models. Use when user asks to compute pathway activity levels, project gene expression into a lower-dimensional biological space, or identify differentially active gene sets using GTEx or TCGA weights.\"",
+  "overview": "NetActivity is a Bioconductor package designed to compute gene set scores (activity levels) by applying pre-trained sparsely-connected autoencoder models to gene expression data. Unlike traditional enrichment methods, it uses weights derived from large-scale datasets (GTEx or TCGA) to project gene expression into a lower-dimensional space where each \"neuron\" represents a specific biological pathway or Gene Ontology (GO) term.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NetActivity.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NetActivity"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NetActivity.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-netactivity\n\n## Overview\n\nNetActivity is a Bioconductor package designed to compute gene set scores (activity levels) by applying pre-trained sparsely-connected autoencoder models to gene expression data. Unlike traditional enrichment methods, it uses weights derived from large-scale datasets (GTEx or TCGA) to project gene expression into a lower-dimensional space where each \"neuron\" represents a specific biological pathway or Gene Ontology (GO) term.\n\n## Installation\n\n```r\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\n\nBiocManager::install(c(\"NetActivity\", \"NetActivityData\"))\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a `SummarizedExperiment` object. Input data must be normalized (e.g., VST for RNA-seq or log-transformation for microarrays).\n\n```r\nlibrary(NetActivity)\nlibrary(SummarizedExperiment)\n\n# For RNA-seq (using DESeq2 VST as an example)\n# vst_data is a SummarizedExperiment\n# \"gtex_gokegg\" is a standard pre-trained model from NetActivityData\nprepared_se <- prepareSummarizedExperiment(vst_data, \"gtex_gokegg\")\n```\n\n**Key Note on Annotation:** Models in `NetActivityData` typically use **ENSEMBL IDs**. If your data uses Gene Symbols or other IDs, you must convert them to ENSEMBL before running `prepareSummarizedExperiment`.\n\n### 2. Computing Scores\nThe `computeGeneSetScores` function applies the model weights to the standardized data.\n\n```r\nscores_se <- computeGeneSetScores(prepared_se, \"gtex_gokegg\")\n```\n\nThe resulting `scores_se` is a `SummarizedExperiment` where:\n- **Rows:** Gene sets (GO terms or KEGG pathways).\n- **Columns:** Samples.\n- **Assay:** Activity scores.\n- **rowData:** Contains the \"Weights\" and \"Term\" descriptions.\n\n### 3. Downstream Analysis\nSince the output is a standard `SummarizedExperiment`, you can use `limma` or other linear modeling tools to find differentially active pathways.\n\n```r\nlibrary(limma)\ndesign <- model.matrix(~ condition, data = colData(scores_se))\nfit <- lmFit(assay(scores_se), design)\nfit <- eBayes(fit)\nresults <- topTable(fit, coef = 2)\n```\n\n## Interpreting Results\n\nThe sign of a gene set score is arbitrary relative to the biological direction unless you inspect the weights. To understand what a \"high\" score means for a specific pathway:\n\n1.  **Check Weights:** Look at `rowData(scores_se)$Weights_SYMBOL`.\n2.  **Identify Drivers:** Genes with the largest absolute weights contribute most to the score.\n3.  **Directionality:** If the top driver genes have positive weights, a higher activity score indicates higher expression of those specific genes.\n\n## Tips and Best Practices\n\n- **Missing Genes:** If genes required by the model are missing from your dataset, `prepareSummarizedExperiment` will set their expression to 0 and issue a warning. High numbers of missing genes may reduce the reliability of specific pathway scores.\n- **Model Selection:** Common models include `\"gtex_gokegg\"` (General tissues) and `\"tcga_gokegg\"` (Cancer-specific).\n- **Standardization:** Always use `prepareSummarizedExperiment` rather than manual scaling, as it ensures the data matches the expected input distribution of the autoencoder.\n\n## Reference documentation\n\n- [Gene set scores computation with NetActivity](./references/NetActivity.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-netactivity",
+    "description": "NetActivity computes gene set activity scores from gene expression data using pre-trained sparsely-connected autoencoder models. Use when user asks to compute pathway activity levels, project gene expression into a lower-dimensional biological space, or identify differentially active gene sets using GTEx or TCGA weights.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NetActivity.html"
+  }
+}

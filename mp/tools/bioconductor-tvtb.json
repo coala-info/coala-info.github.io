@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tvtb",
+  "category": "bioconductor",
+  "name": "bioconductor-tvtb",
+  "description": "This tool filters, summarizes, and visualizes genetic variation data from VCF files pre-processed by Ensembl VEP. Use when user asks to calculate allele frequencies across phenotypes, filter VCF data using Ensembl VEP annotations, or manage genetic variants with specialized S4 classes.",
+  "overview": "The `TVTB` (VCF Tool Box) package provides a robust framework for analyzing genetic variants stored in `VCF` objects (from the `VariantAnnotation` package). It is specifically designed to work with Ensembl Variant Effect Predictor (VEP) annotations. Its core strengths are the `TVTBparam` class for centralized analysis settings and a suite of specialized `FilterRules` that simplify complex filtering across different VCF slots (fixed, info, and VEP predictions).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TVTB.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kevinrue/TVTB",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TVTB"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TVTB.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kevinrue/TVTB",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tvtb\n\nname: bioconductor-tvtb\ndescription: Filtering, summarizing, and visualizing genetic variation data from VCF files (pre-processed by Ensembl VEP). Use this skill to manage VCF data using specialized S4 classes (TVTBparam, VcfFilterRules), calculate allele frequencies across phenotypes, and generate genomic visualizations.\n\n## Overview\n\nThe `TVTB` (VCF Tool Box) package provides a robust framework for analyzing genetic variants stored in `VCF` objects (from the `VariantAnnotation` package). It is specifically designed to work with Ensembl Variant Effect Predictor (VEP) annotations. Its core strengths are the `TVTBparam` class for centralized analysis settings and a suite of specialized `FilterRules` that simplify complex filtering across different VCF slots (fixed, info, and VEP predictions).\n\n## Core Workflow\n\n### 1. Initialize Analysis Parameters\n\nUse `TVTBparam` to store recurrent settings like genotype encodings and genomic ranges. This object is used by most functions in the package.\n\n```r\nlibrary(TVTB)\n\n# Define genotype encodings and target regions\ntparam <- TVTBparam(\n    Genotypes(\n        ref = \"0|0\",\n        het = c(\"0|1\", \"1|0\", \"0|2\", \"2|0\", \"1|2\", \"2|1\"),\n        alt = c(\"1|1\", \"2|2\")\n    ),\n    ranges = GRangesList(\n        gene1 = GRanges(\"15\", IRanges(48413170, 48434757))\n    )\n)\n```\n\n### 2. Data Import and Pre-processing\n\nImport VCF data using `VariantAnnotation::readVcf`. Passing the `TVTBparam` object to `readVcf` automatically restricts the import to the specified genomic ranges.\n\n```r\n# Import with phenotypes in colData\nvcf <- readVcf(vcfFile, param = tparam, colData = phenotypes)\n\n# Expand multi-allelic records to bi-allelic records (required for many TVTB methods)\nvcf <- expand(vcf, row.names = TRUE)\n```\n\n### 3. Calculating Allele Frequencies\n\n`TVTB` can calculate and add genotype counts and allele frequencies (AAF, MAF) directly into the `info` slot of the VCF object, either globally or grouped by phenotype.\n\n```r\n# Add overall frequencies\nvcf <- addOverallFrequencies(vcf)\n\n# Add frequencies for specific phenotype levels (e.g., super_pop == \"AFR\")\nvcf <- addPhenoLevelFrequencies(vcf, pheno = \"super_pop\", level = \"AFR\")\n\n# Add frequencies for all levels of a phenotype\nvcf <- addFrequencies(vcf, phenos = \"pop\")\n```\n\n### 4. Advanced Filtering with VcfFilterRules\n\n`TVTB` provides specialized classes to filter different parts of a VCF object. These can be combined into a single `VcfFilterRules` object.\n\n*   **VcfFixedRules**: Filters the `fixed` slot (e.g., FILTER, QUAL).\n*   **VcfInfoRules**: Filters the `info` slot (e.g., MAF, AC).\n*   **VcfVepRules**: Filters VEP predictions (e.g., Consequence, SIFT).\n\n```r\n# Define rules\nfixedR <- VcfFixedRules(list(pass = expression(FILTER == \"PASS\")))\ninfoR <- VcfInfoRules(list(common = expression(MAF > 0.05)))\nvepR <- VcfVepRules(list(missense = expression(Consequence == \"missense_variant\")))\n\n# Combine and apply\nvcfRules <- VcfFilterRules(fixedR, infoR, vepR)\nvcf_filtered <- subsetByFilter(vcf, vcfRules)\n\n# Toggle rules without deleting them\nactive(vcfRules)[\"missense\"] <- FALSE\n```\n\n### 5. Visualization\n\nThe package integrates with `Gviz` and `GGally` for genomic and statistical plots.\n\n```r\n# Plot INFO data (e.g., AAF) along genomic coordinates by phenotype\nplotInfo(\n    vcf_filtered, \n    field = \"AAF\", \n    range = range(granges(vcf)),\n    reference = EnsDb.Hsapiens.v75, # Annotation object\n    pheno = \"super_pop\"\n)\n\n# Pairwise comparison of frequencies between phenotype levels\npairsInfo(vcf_filtered, \"AAF\", \"super_pop\")\n```\n\n## Tips for Success\n\n*   **ExpandedVCF**: Most `TVTB` methods expect `ExpandedVCF` objects (bi-allelic). Use `VariantAnnotation::expand()` after import.\n*   **Enclosing Environments**: When using variables from the global environment inside filter expressions (like a numeric cutoff), pass `enclos = .GlobalEnv` to `eval()` or `subsetByFilter()`.\n*   **VEP Key**: Ensure the `vep` slot in `TVTBparam` matches the INFO key in your VCF (usually \"CSQ\"). Use `parseCSQToGRanges(vcf)` to inspect available VEP fields.\n*   **Suffixes**: Be mindful of INFO key suffixes in `TVTBparam` (default: REF, HET, ALT, AAF, MAF) to avoid overwriting existing data.\n\n## Reference documentation\n\n- [Introduction to TVTB](./references/Introduction.md)\n- [VCF filter rules](./references/VcfFilterRules.md)\n- [Shiny Variant Explorer (tSVE)](./references/tSVE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tvtb",
+    "description": "This tool filters, summarizes, and visualizes genetic variation data from VCF files pre-processed by Ensembl VEP. Use when user asks to calculate allele frequencies across phenotypes, filter VCF data using Ensembl VEP annotations, or manage genetic variants with specialized S4 classes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TVTB.html"
+  }
+}

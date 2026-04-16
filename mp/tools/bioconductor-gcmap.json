@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gcmap",
+  "category": "bioconductor",
+  "name": "bioconductor-gcmap",
+  "description": "This tool performs differential expression analysis and gene set enrichment analysis to compare transcriptomic profiles across experiments. Use when user asks to compare gene expression profiles, perform connectivity mapping, create gene set collections, or run enrichment algorithms like Fisher's exact test and Wilcoxon rank-sum.",
+  "overview": "The `gCMAP` package provides a unified framework for comparing gene sets across differential expression experiments. It introduces the `CMAPCollection` class for efficient storage of large gene set libraries and the `CMAPResults` class for standardized output across different statistical methods. It is particularly useful for \"connectivity mapping,\" where a query profile is compared against a database of reference perturbations.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/gCMAP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gcmap/overview",
+  "github": "N/A",
+  "conda_downloads": "9.7K",
+  "conda_downloads_num": 9700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gCMAP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/gCMAP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gcmap/overview",
+    "github": "N/A",
+    "conda_downloads": "9.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gcmap\n\nname: bioconductor-gcmap\ndescription: Perform differential expression analysis and gene set enrichment analysis (GSEA) using the gCMAP package. Use this skill to compare gene expression profiles, perform connectivity mapping (CMap), and run various enrichment algorithms (Fisher's exact test, Wilcoxon rank-sum, limma-based camera/romer/mroast) on transcriptomic data.\n\n## Overview\n\nThe `gCMAP` package provides a unified framework for comparing gene sets across differential expression experiments. It introduces the `CMAPCollection` class for efficient storage of large gene set libraries and the `CMAPResults` class for standardized output across different statistical methods. It is particularly useful for \"connectivity mapping,\" where a query profile is compared against a database of reference perturbations.\n\n## Key Workflows\n\n### 1. Preparing Differential Expression Data\n\nUse `generate_gCMAP_NChannelSet` to process raw or normalized data into a standardized format containing z-scores, p-values, and fold changes.\n\n```r\nlibrary(gCMAP)\n# For a list of ExpressionSets (microarray) or CountDataSets (RNA-seq)\ncde <- generate_gCMAP_NChannelSet(\n  eset.list,\n  uids = 1:length(eset.list),\n  control_perturb_col = \"condition\",\n  control = \"Control\",\n  perturb = \"Treatment\",\n  platform.annotation = \"Entrez\"\n)\n# Resulting channels: \"exprs\", \"log_fc\", \"p\", \"z\"\n```\n\n### 2. Creating Gene Set Collections\n\n`CMAPCollection` objects store gene sets as sparse incidence matrices. You can create them from existing `GeneSet` objects or by thresholding expression data.\n\n```r\n# Induce gene sets from an NChannelSet based on z-score thresholds\ncmap_coll <- induceCMAPCollection(cde, element = \"z\", lower = -2, higher = 2)\n\n# Check if sets are signed (up/down regulated)\nsigned(cmap_coll) \n```\n\n### 3. Running Enrichment Queries\n\n`gCMAP` supports multiple algorithms depending on the input type (gene lists vs. full profiles).\n\n#### Comparing Gene Lists (Fisher's Exact Test)\nUse when you have a set of differentially expressed genes and want to find similar sets in a collection.\n```r\nresults <- fisher_score(query_gene_set, target_cmap_collection, universe = all_genes)\n```\n\n#### Comparing a Score Profile (Wilcoxon or JG Score)\nUse when you have a continuous vector of scores (e.g., z-scores) for all genes.\n```r\n# Wilcoxon rank-sum test\nw_res <- wilcox_score(z_vector, target_cmap_collection)\n\n# Parametric t-statistic summary (Jiang & Gentleman)\njg_res <- gsealm_jg_score(z_vector, target_cmap_collection)\n```\n\n#### Differential Expression of Gene Sets (limma wrappers)\nUse when comparing groups (Case vs. Control) directly using gene sets.\n```r\n# Competitive GSEA using limma's camera\ncam_res <- camera_score(expression_matrix, cmap_coll, predictor = group_factor)\n\n# Self-contained GSEA using limma's mroast\nmro_res <- mroast_score(expression_matrix, cmap_coll, predictor = group_factor)\n```\n\n### 4. Interpreting Results\n\nAll methods return a `CMAPResults` object.\n\n```r\n# View the summary table\ncmapTable(results)\n\n# Extract specific metrics\npval(results)\nzscores(results)\neffect(results) # Effect size (e.g., Log Odds Ratio or JG score)\n\n# Visualization\nplot(results) # Generates density plots of effect sizes and heatmaps of ranks\n```\n\n### 5. Retrieving Gene-Level Information\n\nTo see which specific genes contributed to the enrichment:\n\n```r\n# Run analysis with keep.scores = TRUE\nres <- gsealm_score(y, cmap, predictor = pred, keep.scores = TRUE)\n\n# Extract scores for a specific set\nset_scores <- geneScores(res)[[\"set_name\"]]\n```\n\n## Tips for Large Datasets\n\n*   **BigMatrix Support**: For very large collections, `generate_gCMAP_NChannelSet` can store data on disk using the `big.matrix` parameter to save memory.\n*   **Sparse Matrices**: `CMAPCollection` uses sparse matrices by default; avoid converting them to dense matrices if the gene universe is large.\n*   **Parallelization**: Many scoring functions can be computationally intensive; ensure the `parallel` package is configured if processing thousands of gene sets.\n\n## Reference documentation\n\n- [Primer: Preparing NChannelSet objects with differential expression scores](./references/diffExprAnalysis.md)\n- [Gene set analyses with the gCMAP package](./references/gCMAP.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gcmap",
+    "description": "This tool performs differential expression analysis and gene set enrichment analysis to compare transcriptomic profiles across experiments. Use when user asks to compare gene expression profiles, perform connectivity mapping, create gene set collections, or run enrichment algorithms like Fisher's exact test and Wilcoxon rank-sum.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/gCMAP.html"
+  }
+}

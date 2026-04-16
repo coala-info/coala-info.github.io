@@ -1,0 +1,43 @@
+{
+  "id": "pydmtools",
+  "category": "library",
+  "name": "pydmtools",
+  "description": "pydmtools is a high-performance Python extension that provides rapid access to DNA methylation files for reading and writing genomic data. Use when user asks to extract methylation statistics, retrieve base-level values, query genomic intervals, or create new DM files.",
+  "overview": "`pydmtools` is a high-performance Python extension written in C that provides rapid access to DNA methylation (DM) files. It serves as a wrapper for `dmtools`, supporting both local and remote file access. Use this skill when you need to integrate DM file processing into bioinformatics pipelines, specifically for tasks involving genomic range queries, methylation statistics (mean, max, weighted), or the creation of new DM files from scratch.",
+  "homepage": "https://github.com/ZhouQiangwei/pydmtools",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pydmtools/overview",
+  "github": "https://github.com/ZhouQiangwei/pydmtools",
+  "conda_downloads": "5.0K",
+  "conda_downloads_num": 5000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pydmtools"
+    ],
+    "description": "FAIL to generate CWL: pydmtools not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/pydmtools:0.1.1--py310h79000e5_1",
+    "homepage": "https://github.com/ZhouQiangwei/pydmtools",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pydmtools/overview",
+    "github": "https://github.com/ZhouQiangwei/pydmtools",
+    "conda_downloads": "5.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pydmtools\n\n## Overview\n\n`pydmtools` is a high-performance Python extension written in C that provides rapid access to DNA methylation (DM) files. It serves as a wrapper for `dmtools`, supporting both local and remote file access. Use this skill when you need to integrate DM file processing into bioinformatics pipelines, specifically for tasks involving genomic range queries, methylation statistics (mean, max, weighted), or the creation of new DM files from scratch.\n\n## Installation and Requirements\n\nThe tool requires `libcurl` and `zlib` (including headers) to be installed on the system.\n\n```bash\n# Via Conda\nconda install pydmtools -c bioconda\n\n# Via Pip\npip install pydmtools\n```\n\n## Core Usage Patterns\n\n### Opening and Closing Files\n\nFiles are opened using `pydm.openfile()`. By default, files are opened for reading.\n\n```python\nimport pydmtools as pydm\n\n# Open for reading\ndm = pydm.openfile(\"input.dm\")\n\n# Open for writing (cannot be queried for intervals/stats while writing)\ndm_write = pydm.openfile(\"output.dm\", \"w\")\n\n# Always close the file handle when finished\ndm.close()\n```\n\n### Metadata and Chromosome Information\n\nAccess genomic metadata and chromosome lengths stored within the DM file.\n\n*   **Chromosome List**: `dm.chroms()` returns a dictionary of chromosomes and their lengths.\n*   **Specific Chromosome**: `dm.chroms(\"chr1\")` returns the length of a specific chromosome.\n*   **File Header**: `dm.header()` returns a dictionary containing versioning, zoom levels, and data summaries (min, max, sum, sumSquared).\n\n### Data Retrieval Methods\n\nThere are three primary ways to extract data from a DM file:\n\n1.  **Summary Statistics (`stats`)**: Best for binned data or averages over a range.\n    *   `type`: \"mean\" (default), \"max\", or \"weighted\" (DNA methylation specific).\n    *   `nBins`: Number of evenly spaced bins to compute.\n    ```python\n    # Get mean methylation for a range\n    mean_val = dm.stats(\"chr1\", 0, 10000)\n    # Get max value in 2 bins\n    bins = dm.stats(\"chr1\", 100, 200, type=\"max\", nBins=2)\n    ```\n\n2.  **Base-Level Values (`getvalues`)**: Returns a list of values for every single base in the range.\n    *   Missing data points are returned as `nan`.\n    ```python\n    values = dm.getvalues(\"chr1\", 0, 100)\n    ```\n\n3.  **Interval Extraction (`intervals`)**: Returns a list of tuples `(start, end, value)` for entries overlapping the range.\n    ```python\n    # Get all intervals on chr1\n    all_intervals = dm.intervals(\"chr1\")\n    ```\n\n## Creating DM Files\n\nWhen writing a new DM file, you must follow a strict sequence: Open -> Add Header -> Add Entries -> Close.\n\n### 1. Adding the Header\nThe header must include all chromosomes and their sizes in the order they will appear.\n```python\n# maxZooms=0 creates a file without zoom levels (saves space, but breaks IGV compatibility)\ndm_write.addHeader([(\"chr1\", 1000000), (\"chr2\", 1500000)], maxZooms=10)\n```\n\n### 2. Adding Entries\nEntries must be added in genomic order.\n```python\n# Format: chromosome, start, end, value\ndm_write.addEntries([\"chr1\", \"chr1\"], [0, 100], [100, 120], [0.5, 0.8])\n```\n\n## Expert Tips and Best Practices\n\n*   **Coordinate System**: `pydmtools` uses **0-based, half-open** coordinates (standard for BED files). The start is inclusive, and the end is exclusive.\n*   **IGV Compatibility**: Always use the default `maxZooms` (or at least 1) when creating files intended for visualization in IGV. Setting `maxZooms=0` will cause many external tools to fail.\n*   **Remote Access**: Because it uses `libcurl`, you can pass URLs to `openfile()` to stream data from remote servers without downloading the entire file.\n*   **Write Mode Limitations**: A file opened with mode `\"w\"` is strictly for writing. You cannot perform `stats()` or `intervals()` queries on a file handle until it has been closed and re-opened in read mode.\n*   **Memory Efficiency**: For very large ranges, prefer `intervals()` over `getvalues()` if the data is sparse, as `getvalues()` will allocate memory for every single base (including `nan` values).\n\n## Reference documentation\n- [pydmtools GitHub README](./references/github_com_ZhouQiangwei_pydmtools.md)\n- [pydmtools Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_pydmtools_overview.md)",
+  "skill_front_matter": {
+    "name": "pydmtools",
+    "description": "pydmtools is a high-performance Python extension that provides rapid access to DNA methylation files for reading and writing genomic data. Use when user asks to extract methylation statistics, retrieve base-level values, query genomic intervals, or create new DM files.",
+    "homepage": "https://github.com/ZhouQiangwei/pydmtools"
+  }
+}

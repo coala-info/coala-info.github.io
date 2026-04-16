@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mlm4omics",
+  "category": "bioconductor",
+  "name": "bioconductor-mlm4omics",
+  "description": "\"bioconductor-mlm4omics provides Bayesian multilevel models for analyzing omics data with missing and left-censored values. Use when user asks to fit multilevel models for clinical proteomics, handle missing not at random data, or perform variance decomposition with censored observations.\"",
+  "overview": "The `mlm4omics` package provides specialized Bayesian multilevel models designed for omics data, particularly clinical proteomics. It addresses the common issue of Missing Not At Random (MNAR) data, where the probability of a value being missing depends on the unobserved value itself (e.g., low protein abundance falling below detection limits). The package implements selection models within a Stan framework to perform variance decomposition across data hierarchies while simultaneously modeling m",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/mlm4omics.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mlm4omics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/mlm4omics.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mlm4omics\n\n## Overview\n\nThe `mlm4omics` package provides specialized Bayesian multilevel models designed for omics data, particularly clinical proteomics. It addresses the common issue of Missing Not At Random (MNAR) data, where the probability of a value being missing depends on the unobserved value itself (e.g., low protein abundance falling below detection limits). The package implements selection models within a Stan framework to perform variance decomposition across data hierarchies while simultaneously modeling missingness and left-censoring.\n\n## Core Functions\n\nThe package relies on two primary modeling functions:\n\n- `mlmc()`: For data containing both missing values and **left-censored** values (values known to be below a specific threshold).\n- `mlmm()`: For data containing missing values but **no censored** values.\n\n## Typical Workflow\n\n### 1. Data Preparation\nEnsure your dataset contains indicators for missingness and censoring. These must be mutually exclusive.\n\n```r\nlibrary(mlm4omics)\ndata(pdata)\n\n# Check for overlap between missing (1) and censor (1) indicators\ntable(pdata$miss, pdata$censor)\n\n# If indicators overlap, ensure they are exclusive\nn <- dim(pdata)[1]\nfor (i in seq_len(n)) {\n  if (pdata$miss[i] == 1 && pdata$censor[i] == 1) pdata$miss[i] = 0\n}\n```\n\n### 2. Defining Formulas\nYou must define formulas for the completed data, the missingness mechanism, and the hierarchical structure.\n\n```r\n# Response ~ Predictors\nformula_completed <- var1 ~ var2 + treatment\n\n# Missingness indicator ~ Predictors\nformula_missing <- miss ~ var2\n\n# Censoring indicator (usually ~ 1)\nformula_censor <- censor ~ 1\n\n# Subject/Grouping level\nformula_subject <- ~ sid\n```\n\n### 3. Fitting the Model\nModels use Stan for MCMC sampling. It is recommended to use at least 1000 iterations for production runs.\n\n**Using mlmc() (with censoring):**\n```r\nmodel_fit <- mlmc(\n  formula_completed = var1 ~ var2 + treatment,\n  formula_missing = miss ~ var2,\n  formula_censor = censor ~ 1,\n  formula_subject = ~sid,\n  pdata = pdata,\n  response_censorlim = 0.002, # The detection limit\n  respond_dep_missing = TRUE,  # Missingness depends on abundance\n  pidname = \"geneid\",          # Protein/Feature ID\n  sidname = \"sid\",             # Subject ID\n  iterno = 1000,\n  chains = 2\n)\n```\n\n**Using mlmm() (no censoring):**\n```r\nmodel_fit <- mlmm(\n  formula_completed = var1 ~ var2 + treatment,\n  formula_missing = miss ~ var2,\n  formula_subject = ~sid,\n  pdata = pdata,\n  respond_dep_missing = FALSE,\n  pidname = \"geneid\",\n  sidname = \"sid\",\n  iterno = 1000,\n  chains = 2\n)\n```\n\n### 4. Providing Priors\nYou can provide informative priors for the precision matrix (`prec_prior`) and the logistic regression coefficients for missingness (`alpha_prior`).\n\n```r\n# Example precision matrix prior\nprec_mat <- matrix(c(0.01, 0.001, 0.001, 0.01), nrow=2)\n\n# Example alpha prior (intercept and predictor)\nalpha_p <- c(0, 0.001)\n\nmodel_prior <- mlmc(..., prec_prior = prec_mat, alpha_prior = alpha_p)\n```\n\n## Diagnostics and Results\n\nThe functions return Stan objects. You can evaluate convergence using Rhat (should be near 1.0) and the number of effective samples (`n_eff`).\n\n- **Summary**: Use `print(model_fit)` to see posterior means and credible intervals.\n- **Traceplots**: If `savefile = TRUE` was used, the package generates `samples_1.csv`, `samples_2.csv`, etc., which can be read to plot trajectories.\n- **Quantiles**: The `outsummary.csv` file contains the summary statistics for all chains.\n\n## Reference documentation\n\n- [Introduction of mlm4omics](./references/vigettes_mlm4omics.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mlm4omics",
+    "description": "bioconductor-mlm4omics provides Bayesian multilevel models for analyzing omics data with missing and left-censored values. Use when user asks to fit multilevel models for clinical proteomics, handle missing not at random data, or perform variance decomposition with censored observations.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/mlm4omics.html"
+  }
+}

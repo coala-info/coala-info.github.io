@@ -1,0 +1,43 @@
+{
+  "id": "perl-bio-tools-run-remoteblast",
+  "category": "perl",
+  "name": "perl-bio-tools-run-remoteblast",
+  "description": "This tool executes BLAST searches against remote NCBI servers using the BioPerl RemoteBlast module. Use when user asks to run remote sequence alignments, submit sequences to NCBI BLAST servers, or programmatically retrieve BLAST results without local infrastructure.",
+  "overview": "This skill facilitates the programmatic execution of BLAST searches against remote NCBI servers. It utilizes the `Bio::Tools::Run::RemoteBlast` module from the BioPerl project. This tool is ideal for low-to-medium throughput sequence analysis where maintaining a local BLAST infrastructure is impractical. It handles the submission of sequences, polling for job completion, and retrieval of results in various formats (typically BLAST XML or report text).",
+  "homepage": "https://metacpan.org/release/Bio-Tools-Run-RemoteBlast",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-bio-tools-run-remoteblast/overview",
+  "github": "N/A",
+  "conda_downloads": "13.9K",
+  "conda_downloads_num": 13900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perl-bio-tools-run-remoteblast"
+    ],
+    "description": "FAIL to generate CWL: perl-bio-tools-run-remoteblast not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/perl-bio-tools-run-remoteblast:1.7.3--pl5321hdfd78af_0",
+    "homepage": "https://metacpan.org/release/Bio-Tools-Run-RemoteBlast",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-bio-tools-run-remoteblast/overview",
+    "github": "N/A",
+    "conda_downloads": "13.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# perl-bio-tools-run-remoteblast\n\n## Overview\nThis skill facilitates the programmatic execution of BLAST searches against remote NCBI servers. It utilizes the `Bio::Tools::Run::RemoteBlast` module from the BioPerl project. This tool is ideal for low-to-medium throughput sequence analysis where maintaining a local BLAST infrastructure is impractical. It handles the submission of sequences, polling for job completion, and retrieval of results in various formats (typically BLAST XML or report text).\n\n## Usage Patterns\n\n### Basic Script Structure\nTo use this tool, you must initialize a factory object, set the search parameters, and implement a loop to wait for the NCBI queue to process the request.\n\n```perl\nuse Bio::Tools::Run::RemoteBlast;\nuse Bio::SearchIO;\n\n# 1. Initialize the factory\nmy $factory = Bio::Tools::Run::RemoteBlast->new(\n    -prog   => 'blastn',\n    -data   => 'nr',\n    -expect => '1e-10',\n    -readmethod => 'SearchIO' # Returns Bio::SearchIO objects\n);\n\n# 2. Submit a sequence (Bio::Seq object or file)\nmy $response = $factory->submit_blast(\"sequence.fasta\");\n\n# 3. Poll for results\nwhile (my @rids = $factory->each_rid) {\n    foreach my $rid (@rids) {\n        my $rc = $factory->retrieve_blast($rid);\n        if (!ref($rc)) {\n            if ($rc eq 'DONE') {\n                $factory->remove_rid($rid);\n            }\n            sleep 5; # Wait before polling again\n            next;\n        }\n        \n        # 4. Process results\n        my $result = $rc->next_result;\n        while (my $hit = $result->next_hit) {\n            print \"Hit: \", $hit->name, \"\\n\";\n        }\n        $factory->remove_rid($rid);\n    }\n}\n```\n\n### Best Practices\n- **Email Requirement**: While not always strictly enforced by the module, it is best practice to identify yourself to NCBI by setting the environment variable or passing parameters if the specific version supports it, to avoid IP blocking.\n- **Polling Intervals**: Do not poll NCBI more frequently than every 5 seconds. The `retrieve_blast` method returns the string 'WAIT' if the job is still in the queue.\n- **Database Selection**: Ensure the `-data` parameter matches a valid NCBI remote database (e.g., `nr`, `swissprot`, `refseq_rna`).\n- **Large Batches**: For many sequences, submit them in small batches rather than one at a time to minimize connection overhead, but be mindful of NCBI's usage policies regarding concurrent connections.\n\n## Troubleshooting\n- **Empty Results**: If a job returns 'DONE' but no hits are found, verify your `-expect` (E-value) threshold and ensure the sequence format is valid FASTA.\n- **Connection Timeouts**: Remote BLAST is subject to network stability and NCBI server load. Implement error handling for cases where `$factory->submit_blast` fails to return a Request ID (RID).\n- **Module Dependencies**: Ensure `BioPerl` is fully installed, as `RemoteBlast` relies on `Bio::Seq` and `Bio::SearchIO` for input and output processing.\n\n## Reference documentation\n- [Bio-Tools-Run-RemoteBlast Documentation](./references/metacpan_org_release_Bio-Tools-Run-RemoteBlast.md)\n- [Bioconda Package Overview](./references/anaconda_org_channels_bioconda_packages_perl-bio-tools-run-remoteblast_overview.md)",
+  "skill_front_matter": {
+    "name": "perl-bio-tools-run-remoteblast",
+    "description": "This tool executes BLAST searches against remote NCBI servers using the BioPerl RemoteBlast module. Use when user asks to run remote sequence alignments, submit sequences to NCBI BLAST servers, or programmatically retrieve BLAST results without local infrastructure.",
+    "homepage": "https://metacpan.org/release/Bio-Tools-Run-RemoteBlast"
+  }
+}

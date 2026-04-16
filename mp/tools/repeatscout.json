@@ -1,0 +1,53 @@
+{
+  "id": "repeatscout",
+  "category": "CLI",
+  "name": "repeatscout",
+  "description": "RepeatScout performs de novo discovery of repetitive element families within DNA sequences to generate consensus libraries. Use when user asks to identify repetitive elements, build a repeat library, or find de novo repeats in a genome.",
+  "overview": "RepeatScout is a specialized tool for the *de novo* discovery of repetitive element families within DNA sequences. It operates by identifying short exact matches (seeds) and extending them into consensus sequences using a \"fit-preferred\" alignment score that accounts for partial repeat instances. The tool is designed to produce a FASTA file of repeat family consensuses which can then be used as a library for RepeatMasker. The workflow typically involves generating l-mer frequency tables, running",
+  "homepage": "https://github.com/Dfam-consortium/RepeatScout",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/repeatscout/overview",
+  "github": "https://github.com/Dfam-consortium/RepeatScout",
+  "conda_downloads": "37.5K",
+  "conda_downloads_num": 37500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "repeatscout_build_lmer_table",
+      "repeatscout_RepeatScout",
+      "repeatscout_filter-stage-1.prl",
+      "repeatscout_filter-stage-2.prl",
+      "repeatscout_compare-out-to-gff.prl"
+    ],
+    "description": "Builds a table of lmers from a sequence.",
+    "docker_image": "quay.io/biocontainers/repeatscout:1.0.7--h7b50bb2_1",
+    "homepage": "https://github.com/Dfam-consortium/RepeatScout",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/repeatscout/overview",
+    "github": "https://github.com/Dfam-consortium/RepeatScout",
+    "conda_downloads": "37.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "repeatscout_RepeatScout.cwl",
+    "repeatscout_build_lmer_table.cwl",
+    "repeatscout_compare-out-to-gff.prl.cwl",
+    "repeatscout_filter-stage-1.prl.cwl",
+    "repeatscout_filter-stage-2.prl.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# repeatscout\n\n## Overview\n\nRepeatScout is a specialized tool for the *de novo* discovery of repetitive element families within DNA sequences. It operates by identifying short exact matches (seeds) and extending them into consensus sequences using a \"fit-preferred\" alignment score that accounts for partial repeat instances. The tool is designed to produce a FASTA file of repeat family consensuses which can then be used as a library for RepeatMasker. The workflow typically involves generating l-mer frequency tables, running the core discovery algorithm, and applying several filtering scripts to refine the output by removing tandem repeats, low-complexity regions, and non-mobile elements like segmental duplications.\n\n## Core Workflow and CLI Patterns\n\nThe RepeatScout process is executed in four distinct phases.\n\n### Phase 1: Build l-mer Frequency Table\nTabulate the frequency of all l-mers in the target sequence.\n\n```bash\nbuild_lmer_table -sequence genome.fa -freq genome.freq\n```\n\n*   **Note on `-l`**: By default, $l = \\lceil \\log_4(L) + 1 \\rceil$ where $L$ is the sequence length. If you manually set `-l`, you **must** use the same value in Phase 2.\n\n### Phase 2: Discover Repeat Families\nRun the primary RepeatScout algorithm using the frequency table.\n\n```bash\nRepeatScout -sequence genome.fa -freq genome.freq -output repeats.fa\n```\n\n*   **Sensitivity**: Use `-stopafter 500` to match the original paper's sensitivity (default is 100 for speed).\n*   **Tandem Distance**: Use `-tandem <dist>` (default 500) to set the minimum distance between countable instances of an l-mer, preventing consensus building for satellite repeats.\n\n### Phase 3: First Stage Filtering\nRemove low-complexity and tandem elements. This script requires `dustmasker` (NCBI BLAST+) and `trf` (Tandem Repeats Finder) to be in your PATH.\n\n```bash\nperl filter-stage-1.prl repeats.fa > repeats.filtered1.fa\n```\n\n### Phase 4: Second Stage Filtering\nFilter out repeat elements that do not appear a minimum number of times (default is 10). This requires running RepeatMasker on your sequence using the filtered library from Phase 3 first.\n\n1.  **Run RepeatMasker**:\n    ```bash\n    RepeatMasker genome.fa -lib repeats.filtered1.fa\n    ```\n2.  **Filter by occurrence**:\n    ```bash\n    perl filter-stage-2.prl --cat genome.fa.out --list repeats.filtered1.fa --thresh 10 > repeats.filtered2.fa\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Memory Management**: RepeatScout is memory-intensive. For whole genomes, it is often more practical to run it on individual chromosomes or large scaffolds rather than the entire assembly at once.\n*   **Sequence Boundaries**: The Dfam-maintained version of RepeatScout honors sequence boundaries (indicated by `>`) to prevent seeds from extending across different contigs/chromosomes.\n*   **Consensus Refinement**: The output of RepeatScout is a set of consensus sequences. If the tool discovers a family, it updates seed counts to prevent the same family from being rediscovered in the same run.\n*   **Integration with GFF**: Use `compare-out-to-gff.prl` to remove sequences that overlap with known \"uninteresting\" regions like exons or segmental duplications, ensuring your library focuses on mobile elements.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| RepeatScout | RepeatScout Version 1.0.7 |\n| build_lmer_table | Builds a table of lmers from a sequence. |\n| compare-out-to-gff.prl | Compares RepeatMasker output to a set of GFF feature files. |\n| filter-stage-1.prl | a first stage post-processing tool for RepeatScout output. |\n| filter-stage-2.prl | Filter a repeat library by number of occurrences |\n\n## Reference documentation\n- [RepeatScout README](./references/github_com_Dfam-consortium_RepeatScout_blob_main_README.md)\n- [build_lmer_table Source](./references/github_com_Dfam-consortium_RepeatScout_blob_main_build_lmer_table.c.md)",
+  "skill_front_matter": {
+    "name": "repeatscout",
+    "description": "RepeatScout performs de novo discovery of repetitive element families within DNA sequences to generate consensus libraries. Use when user asks to identify repetitive elements, build a repeat library, or find de novo repeats in a genome.",
+    "homepage": "https://github.com/Dfam-consortium/RepeatScout"
+  }
+}

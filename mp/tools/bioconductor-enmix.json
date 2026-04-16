@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-enmix",
+  "category": "bioconductor",
+  "name": "bioconductor-enmix",
+  "description": "This package provides a comprehensive toolset for the analysis and quality control of Illumina DNA methylation beadchip data. Use when user asks to perform quality control, background correction, dye-bias adjustment, probe-type bias adjustment, cell type estimation, methylation age calculation, or differentially methylated region analysis.",
+  "overview": "The ENmix package provides a robust suite of tools for the analysis of Illumina Methylation Beadchips. It excels at removing experimental noise through specialized background correction and probe-type bias adjustment (RCP). It supports large-scale data analysis with multi-processor parallel computing and is compatible with other major Bioconductor packages like minfi, ChAMP, and wateRmelon.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ENmix.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-enmix/overview",
+  "github": "https://github.com/Bioconductor/ENmix",
+  "conda_downloads": "28.0K",
+  "conda_downloads_num": 28000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ENmix"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ENmix.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-enmix/overview",
+    "github": "https://github.com/Bioconductor/ENmix",
+    "conda_downloads": "28.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-enmix\n\nname: bioconductor-enmix\ndescription: Comprehensive toolset for Illumina DNA methylation beadchip data analysis. Use when Claude needs to perform quality control, background correction (ENmix), dye-bias correction (RELIC), probe-type bias adjustment (RCP), cell type estimation, methylation age calculation, or differentially methylated region (DMR) analysis for 450k, EPIC, or EPICv2 arrays.\n\n# bioconductor-enmix\n\n## Overview\n\nThe ENmix package provides a robust suite of tools for the analysis of Illumina Methylation Beadchips. It excels at removing experimental noise through specialized background correction and probe-type bias adjustment (RCP). It supports large-scale data analysis with multi-processor parallel computing and is compatible with other major Bioconductor packages like minfi, ChAMP, and wateRmelon.\n\n## Data Acquisition and Classes\n\nENmix uses two primary data classes:\n- `rgDataSet`: Contains raw intensity data (red/green channels) and internal control probes.\n- `methDataSet`: Contains methylated and unmethylated intensity values organized by CpG.\n\n### Loading Data\nUse `readidat()` to import raw .idat files. It is recommended to provide the Illumina manifest file for newer arrays like EPICv2 or mouse Beadchips.\n\n```r\nlibrary(ENmix)\n# Read idat files from a directory\nrgSet <- readidat(path = \"path/to/idat\", recursive = TRUE)\n\n# Read with a specific manifest\nrgSet <- readidat(path = \"path/to/idat\", manifestfile = \"manifest.csv\")\n```\n\n## Quality Control Workflow\n\n1. **Internal Control Plots**: Use `plotCtrl()` to inspect experimental quality (bisulfite conversion, staining, etc.).\n2. **Extract QC Info**: Use `QCinfo()` to identify low-quality samples, probes, and outliers based on detection P-values and intensities.\n3. **Visualize Distribution**: Use `multifreqpoly()` for fast frequency polygon plots to identify outlier samples and observe probe-type differences.\n\n```r\n# Generate QC metrics\nqc <- QCinfo(rgSet, detPtype = \"negative\", detPthre = 0.000001)\n\n# View bad samples/probes\nqc$badsample\nqc$badCpG\n\n# Plot distributions\nmraw <- getmeth(rgSet)\nmultifreqpoly(assays(mraw)$Meth + assays(mraw)$Unmeth, xlab = \"Total intensity\")\n```\n\n## Preprocessing\n\n### The Pipeline Approach\nUse `mpreprocess()` for a single-command pipeline covering background correction, dye-bias adjustment, normalization, and probe-type bias correction.\n\n```r\nbeta <- mpreprocess(rgSet, nCores = 6, qc = TRUE, fqcfilter = TRUE, impute = TRUE)\n```\n\n### The Step-by-Step Approach\nFor more control, execute functions sequentially:\n\n1. **Background and Dye Correction**: `preprocessENmix()` using the \"oob\" (out-of-band) method and \"RELIC\" for dye bias.\n2. **Inter-array Normalization**: `norm.quantile()`.\n3. **Probe-type Bias Adjustment**: `rcp()` (Regression on Correlated Probes) to calibrate Type II probes using Type I referents.\n4. **Filtering and Imputation**: `qcfilter()` to remove outliers and fill missing values via k-nearest neighbors.\n\n```r\n# 1. Background/Dye correction\nmdat <- preprocessENmix(rgSet, bgParaEst = \"oob\", dyeCorr = \"RELIC\", QCinfo = qc, nCores = 6)\n\n# 2. Normalization\nmdat <- norm.quantile(mdat, method = \"quantile1\")\n\n# 3. RCP adjustment\nbeta <- rcp(mdat, qcscore = qc)\n\n# 4. Final filtering and imputation\nbeta <- qcfilter(beta, qcscore = qc, rmcr = TRUE, impute = TRUE)\n```\n\n## Downstream Analysis Tools\n\n- **Cell Type Estimation**: Use `estimateCellProp()` with reference datasets (e.g., \"FlowSorted.Blood.450k\").\n- **Methylation Age/Scores**: Use `methyAge()` for biological age or `methscore()` for 150+ predictors.\n- **Sex Prediction**: Use `predSex()` based on X and Y chromosome intensities.\n- **DMR Analysis**: Use `ipdmr()` or `combp()` to identify differentially methylated regions from EWAS P-values.\n- **Batch Effect Detection**: Use `pcrplot()` to perform principal component regression against known covariates (e.g., batch, slide).\n- **Batch Correction**: Use `ctrlsva()` to derive surrogate variables from internal control probes.\n\n```r\n# Estimate cell proportions\ncelltype <- estimateCellProp(userdata = beta, refdata = \"FlowSorted.Blood.450k\")\n\n# Calculate methylation age\nmage <- methyAge(beta)\n\n# Predict sex\nsex <- predSex(mdat)\n```\n\n## Tips for Success\n\n- **Parallelization**: Most functions support `nCores`. Set this to the number of available CPU cores to significantly speed up processing.\n- **EPIC v2 Support**: For EPIC v2 arrays, use `rm.cgsuffix()` to combine duplicated CpGs after preprocessing.\n- **Missing Values**: PCA-based functions like `pcrplot()` do not allow missing values; ensure `impute = TRUE` is used in `qcfilter()`.\n- **Detection P-values**: If using `detPtype = \"negative\"`, use a stringent threshold (e.g., 10E-6). For `detPtype = \"oob\"`, 0.01 or 0.05 is usually sufficient.\n\n## Reference documentation\n- [ENmix](./references/ENmix.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-enmix",
+    "description": "This package provides a comprehensive toolset for the analysis and quality control of Illumina DNA methylation beadchip data. Use when user asks to perform quality control, background correction, dye-bias adjustment, probe-type bias adjustment, cell type estimation, methylation age calculation, or differentially methylated region analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ENmix.html"
+  }
+}

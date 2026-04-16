@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-htsanalyzer",
+  "category": "bioconductor",
+  "name": "bioconductor-htsanalyzer",
+  "description": "This tool performs integrated gene set enrichment and network analysis for high-throughput screening data. Use when user asks to perform hypergeometric tests, conduct Gene Set Enrichment Analysis, identify enriched subnetworks from protein-protein interaction data, or generate comprehensive HTML reports for screen results.",
+  "overview": "HTSanalyzeR is an S4-based R package designed for the integrated analysis of high-throughput screens. It bridges the gap between raw phenotypic readouts and biological insights by combining:\n1. **Gene Set Analysis**: Hypergeometric tests (overrepresentation) and GSEA (enrichment).\n2. **Network Analysis**: Identification of enriched subnetworks using the BioNet algorithm.\n3. **Visualization**: Generation of enrichment maps, GSEA plots, and subnetwork diagrams.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/HTSanalyzeR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-htsanalyzer/overview",
+  "github": "N/A",
+  "conda_downloads": "8.8K",
+  "conda_downloads_num": 8800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HTSanalyzeR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/HTSanalyzeR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-htsanalyzer/overview",
+    "github": "N/A",
+    "conda_downloads": "8.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-htsanalyzer\n\nname: bioconductor-htsanalyzer\ndescription: Specialized analysis of high-throughput screens (HTS) using gene set enrichment and network analysis. Use this skill when performing functional annotation of HTS data, including hypergeometric tests, Gene Set Enrichment Analysis (GSEA), and identifying enriched subnetworks from protein-protein interaction data.\n\n## Overview\n\nHTSanalyzeR is an S4-based R package designed for the integrated analysis of high-throughput screens. It bridges the gap between raw phenotypic readouts and biological insights by combining:\n1. **Gene Set Analysis**: Hypergeometric tests (overrepresentation) and GSEA (enrichment).\n2. **Network Analysis**: Identification of enriched subnetworks using the BioNet algorithm.\n3. **Visualization**: Generation of enrichment maps, GSEA plots, and subnetwork diagrams.\n\n## Core Workflows\n\n### 1. Gene Set Collection Analysis (GSCA)\n\nThe GSCA workflow identifies biological pathways or categories enriched in your screen hits or showing concordant phenotypic trends.\n\n```r\nlibrary(HTSanalyzeR)\n\n# 1. Prepare Inputs\n# data4enrich: named numeric vector (phenotypes, e.g., z-scores)\n# hits: character vector of gene IDs considered 'hits'\n# ListGSC: named list of gene sets (e.g., from GOGeneSets or KeggGeneSets)\n\n# 2. Initialize and Preprocess\ngsca <- new(\"GSCA\", listOfGeneSetCollections=ListGSC, geneList=data4enrich, hits=hits)\ngsca <- preprocess(gsca, species=\"Dm\", initialIDs=\"FlybaseCG\", duplicateRemoverMethod=\"max\")\n\n# 3. Analyze\n# nPermutations should be higher (e.g., 1000) for publication-quality results\ngsca <- analyze(gsca, para=list(pValueCutoff=0.05, pAdjustMethod=\"BH\", \n                                nPermutations=100, minGeneSetSize=15, exponent=1))\n\n# 4. Summarize and Visualize\nsummarize(gsca)\nviewGSEA(gsca, gscName=\"PW_KEGG\", gsName=\"dme03010\")\nviewEnrichMap(gsca, resultName=\"GSEA.results\", gscs=\"PW_KEGG\")\n```\n\n### 2. Network Analysis (NWA)\n\nThe NWA workflow maps phenotypes/p-values onto an interactome to find functional modules.\n\n```r\n# 1. Initialize with p-values and interactome\n# pvalues: named numeric vector of p-values from statistical tests\n# phenotypes: named numeric vector of phenotypes (optional, for coloring)\nnwa <- new(\"NWA\", pvalues=pvalues, phenotypes=data4enrich)\n\n# 2. Preprocess and Load Interactome\nnwa <- preprocess(nwa, species=\"Dm\", initialIDs=\"FlybaseCG\", duplicateRemoverMethod=\"max\")\nnwa <- interactome(nwa, species=\"Dm\", genetic=FALSE)\n\n# 3. Analyze (fits BUM model and finds optimal subnetwork)\nnwa <- analyze(nwa, fdr=0.001)\n\n# 4. Visualize\nviewSubNet(nwa)\n```\n\n### 3. Integrated Reporting\n\nGenerate comprehensive HTML reports containing all tables and figures.\n\n```r\nreportAll(gsca=gsca, nwa=nwa, experimentName=\"MyScreen\", \n          species=\"Dm\", allSig=TRUE, reportDir=\"HTS_Report\")\n```\n\n## Key Functions and Parameters\n\n- **`GOGeneSets` / `KeggGeneSets`**: Helpers to create gene set collections for supported species (\"Hs\", \"Mm\", \"Rn\", \"Dm\").\n- **`preprocess`**: Essential step for both GSCA and NWA. Handles ID conversion (via `initialIDs`) and duplicate resolution.\n- **`analyze(GSCA, ...)`**:\n    - `minGeneSetSize`: Filters out very small/uninformative sets.\n    - `exponent`: 0 for unweighted GSEA (Kolmogorov-Smirnov), 1 for weighted GSEA.\n- **`analyze(NWA, ...)`**:\n    - `fdr`: The False Discovery Rate used to fit the Beta-Uniform Mixture (BUM) model to p-values.\n\n## Tips for Success\n\n- **ID Mapping**: HTSanalyzeR primarily uses Entrez IDs internally. Ensure your `initialIDs` argument matches your input data (e.g., \"SYMBOL\", \"FlybaseCG\", \"ENSEMBL\").\n- **Parallel Computing**: For GSEA permutations, use the `snow` package to speed up `analyze`. Set `options(cluster=makeCluster(n, \"SOCK\"))` before running.\n- **Phenotype Direction**: In GSEA, the `geneList` should be ranked. By default, `preprocess` ranks decreasingly. If your \"strongest\" phenotypes are negative (e.g., growth inhibition), ensure your ranking logic reflects this.\n- **cellHTS2 Integration**: If using `cellHTS2`, use `HTSanalyzeR4cellHTS2` for a streamlined wrapper that handles the transition from screen objects to analysis.\n\n## Reference documentation\n\n- [HTSanalyzeR-Vignette](./references/HTSanalyzeR-Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-htsanalyzer",
+    "description": "This tool performs integrated gene set enrichment and network analysis for high-throughput screening data. Use when user asks to perform hypergeometric tests, conduct Gene Set Enrichment Analysis, identify enriched subnetworks from protein-protein interaction data, or generate comprehensive HTML reports for screen results.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/HTSanalyzeR.html"
+  }
+}

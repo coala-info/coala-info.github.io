@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mbased",
+  "category": "bioconductor",
+  "name": "bioconductor-mbased",
+  "description": "This tool detects allele-specific gene expression from RNA-seq count data using the MBASED algorithm. Use when user asks to perform one-sample allele-specific expression detection, conduct two-sample differential allelic analysis, or aggregate SNV information for pseudo-phasing.",
+  "overview": "The `MBASED` (Meta-analysis-Based Allele-Specific Expression Detection) package identifies allele-specific expression by aggregating information across multiple heterozygous SNVs within a single unit (e.g., a gene). It supports both phased and unphased data. For unphased data, it employs a \"pseudo-phasing\" strategy and uses simulations to maintain accurate p-values.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MBASED.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MBASED"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MBASED.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mbased\n\nname: bioconductor-mbased\ndescription: Detect allele-specific gene expression (ASE) from RNA-seq count data using the MBASED algorithm. Use this skill to perform one-sample ASE detection (within-sample deviation from 50/50) or two-sample differential ASE analysis (comparing allelic ratios between samples). It is particularly useful when phased haplotypes are unknown, as it provides pseudo-phasing and simulation-based p-values.\n\n# bioconductor-mbased\n\n## Overview\n\nThe `MBASED` (Meta-analysis-Based Allele-Specific Expression Detection) package identifies allele-specific expression by aggregating information across multiple heterozygous SNVs within a single unit (e.g., a gene). It supports both phased and unphased data. For unphased data, it employs a \"pseudo-phasing\" strategy and uses simulations to maintain accurate p-values.\n\n## Data Preparation\n\nMBASED requires input as a `RangedSummarizedExperiment` object.\n\n1.  **Define SNVs**: Create a `GRanges` object where each row is an SNV. It must include an `aseID` column (e.g., gene name) to group SNVs.\n2.  **Counts**: Provide two matrices of counts: `lociAllele1Counts` and `lociAllele2Counts`.\n3.  **Construct Object**:\n    ```R\n    library(MBASED)\n    library(SummarizedExperiment)\n\n    mySNVs <- GRanges(\n        seqnames = c('chr1', 'chr2', 'chr2'),\n        ranges = IRanges(start = c(100, 1000, 1100), width = 1),\n        aseID = c('gene1', 'gene2', 'gene2'),\n        allele1 = c('G', 'A', 'C'),\n        allele2 = c('T', 'C', 'T')\n    )\n\n    mySample <- SummarizedExperiment(\n        assays = list(\n            lociAllele1Counts = matrix(c(25, 10, 22), ncol = 1),\n            lociAllele2Counts = matrix(c(20, 16, 15), ncol = 1)\n        ),\n        rowRanges = mySNVs\n    )\n    ```\n\n## 1-Sample Analysis\n\nUsed to detect if a gene shows significant deviation from 50/50 allelic expression.\n\n```R\nresults <- runMBASED(\n    ASESummarizedExperiment = mySample,\n    isPhased = FALSE, # Set TRUE if allele1/allele2 represent known haplotypes\n    numSim = 10^6,    # Recommended for unphased data\n    BPPARAM = SerialParam()\n)\n\n# Extract results\nassays(results)$majorAlleleFrequency\nassays(results)$pValueASE\n```\n\n## 2-Sample Analysis\n\nUsed to detect differences in allelic ratios between two samples (e.g., Tumor vs. Normal). The analysis is **not symmetric**; it detects ASE specific to Sample 1 (the first column).\n\n```R\n# Input must have 2 columns in assays\nresults_2s <- runMBASED(\n    ASESummarizedExperiment = myTumorNormalExample,\n    isPhased = FALSE,\n    numSim = 10^6\n)\n\n# Extract results\nassays(results_2s)$majorAlleleFrequencyDifference\nassays(results_2s)$pValueASE\n```\n\n## Advanced Adjustments\n\n### Pre-existing Allelic Bias\nIf your data has a known bias (e.g., reference allele preference), provide the `lociAllele1CountsNoASEProbs` assay. This represents the probability of observing allele 1 under the null hypothesis (no ASE).\n\n```R\n# Example: 60% reference bias\nassays(mySample)$lociAllele1CountsNoASEProbs <- matrix(rep(0.6, 3), ncol = 1)\n```\n\n### Overdispersion\nTo account for extra-binomial variation, provide the `lociCountsDispersions` assay.\n\n```R\n# Example: dispersion of 0.02\nassays(mySample)$lociCountsDispersions <- matrix(rep(0.02, 3), ncol = 1)\n```\n\n## Key Considerations\n\n*   **Simulations**: For unphased data (`isPhased = FALSE`), `numSim` should be at least $10^6$ to get reliable p-values. If `numSim = 0`, MBASED uses a nominal p-value that often underestimates the true p-value.\n*   **Heterogeneity**: The `pValueHeterogeneity` result indicates if SNVs within a gene show inconsistent ASE, which might suggest isoform-specific ASE.\n*   **Filtering**: Only use heterozygous SNVs. Homozygous SNVs will incorrectly appear as 100% ASE. It is recommended to require at least 10 reads per SNV.\n*   **Parallelization**: Use `BPPARAM = MulticoreParam()` to speed up calculations across genes.\n\n## Reference documentation\n\n- [MBASED Overview](./references/MBASED.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mbased",
+    "description": "This tool detects allele-specific gene expression from RNA-seq count data using the MBASED algorithm. Use when user asks to perform one-sample allele-specific expression detection, conduct two-sample differential allelic analysis, or aggregate SNV information for pseudo-phasing.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MBASED.html"
+  }
+}

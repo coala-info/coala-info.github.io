@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scdiagnostics",
+  "category": "bioconductor",
+  "name": "bioconductor-scdiagnostics",
+  "description": "This tool provides diagnostic utilities for evaluating single-cell genomics data through anomaly detection and dataset alignment. Use when user asks to detect anomalies in cell type annotations, evaluate alignment between query and reference datasets, or quantify batch effects and annotation quality.",
+  "overview": "The `scDiagnostics` package provides a suite of tools for the systematic evaluation of single-cell RNA-seq data, particularly focusing on the reliability of cell type annotations. It enables researchers to detect anomalies using isolation forests, assess the alignment between query and reference datasets through various statistical metrics (PCA/CCA subspaces, Wasserstein distances), and validate marker gene consistency.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scDiagnostics.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ccb-hms/scDiagnostics",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scDiagnostics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scDiagnostics.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ccb-hms/scDiagnostics",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scdiagnostics\n\nname: bioconductor-scdiagnostics\ndescription: Diagnostic tools for single-cell genomics data, focusing on anomaly detection in cell type annotations, evaluation of dataset alignment (query vs. reference), and marker gene consistency. Use this skill when performing quality control on single-cell annotations, comparing new datasets to established references, or identifying technical artifacts and mislabeled cells in SingleCellExperiment objects.\n\n# bioconductor-scdiagnostics\n\n## Overview\nThe `scDiagnostics` package provides a suite of tools for the systematic evaluation of single-cell RNA-seq data, particularly focusing on the reliability of cell type annotations. It enables researchers to detect anomalies using isolation forests, assess the alignment between query and reference datasets through various statistical metrics (PCA/CCA subspaces, Wasserstein distances), and validate marker gene consistency.\n\n## Core Workflows\n\n### 1. Anomaly Detection\nIdentify cells that deviate from the expected profile of a specific cell type or the global dataset.\n\n```r\nlibrary(scDiagnostics)\nlibrary(SingleCellExperiment)\n\n# Detect anomalies in query data relative to a reference\nanomaly_output <- detectAnomaly(\n    reference_data = ref_sce, \n    query_data = query_sce, \n    ref_cell_type_col = \"expert_annotation\", \n    query_cell_type_col = \"SingleR_annotation\",\n    pc_subset = 1:10,\n    n_tree = 500,\n    anomaly_threshold = 0.6\n)\n\n# Plot results for a specific cell type\nplot(anomaly_output, cell_type = \"CD4\", data_type = \"query\")\n\n# Identify top anomalous cell names\ntop_anomalies <- names(sort(anomaly_output$Combined$query_anomaly_scores, decreasing = TRUE)[1:10])\n```\n\n### 2. Dataset Alignment and Similarity\nEvaluate how well a query dataset matches a reference dataset in reduced-dimensional space.\n\n*   **Subspace Comparison**: Use `comparePCASubspace` to calculate weighted cosine similarity between PC loadings.\n*   **Distance Distributions**: Use `plotPairwiseDistancesDensity` to compare Query-Query, Ref-Ref, and Query-Ref distance distributions.\n*   **Wasserstein Distance**: Quantify the \"drift\" between datasets using optimal transport metrics.\n\n```r\n# Compare PCA subspaces\nsubspace_res <- comparePCASubspace(\n    query_data = query_sce,\n    reference_data = ref_sce,\n    pc_subset = 1:5\n)\nprint(subspace_res$weighted_cosine_similarity)\n\n# Statistical testing for distribution differences\ncramer_p <- calculateCramerPValue(\n    reference_data = ref_sce,\n    query_data = query_sce,\n    ref_cell_type_col = \"label\",\n    query_cell_type_col = \"label\",\n    pc_subset = 1:5\n)\n```\n\n### 3. Regression Analysis (Batch & Annotation Quality)\nQuantify the variance explained by cell types or batch effects using `regressPC`.\n\n```r\n# Assess if cell types are the primary driver of PC variance\nregress_res <- regressPC(\n    query_data = query_sce,\n    query_cell_type_col = \"annotation\",\n    pc_subset = 1:10\n)\nplot(regress_res, plot_type = \"variance_contribution\")\n\n# Check for batch-annotation interactions\nregress_batch <- regressPC(\n    query_data = query_sce,\n    query_cell_type_col = \"annotation\",\n    query_batch_col = \"sample_id\",\n    pc_subset = 1:10\n)\nplot(regress_batch, plot_type = \"coefficient_heatmap\")\n```\n\n### 4. Marker Gene and HVG Consistency\nVerify if the same genes drive variation across datasets.\n\n```r\n# Calculate overlap of Highly Variable Genes (HVGs)\nref_hvg <- scran::getTopHVGs(ref_sce, n = 500)\nquery_hvg <- scran::getTopHVGs(query_sce, n = 500)\nhvg_overlap <- calculateHVGOverlap(ref_hvg, query_hvg)\n\n# Compare gene importance using Random Forest\nrf_overlap <- calculateVarImpOverlap(\n    reference_data = ref_sce,\n    query_data = query_sce,\n    n_top = 50\n)\n```\n\n## Key Functions Reference\n*   `detectAnomaly()`: Main entry point for isolation forest-based outlier detection.\n*   `calculateCellDistances()`: Computes Euclidean distances between query and reference cells in PC space.\n*   `calculateCellDistancesSimilarity()`: Provides Bhattacharyya coefficients and Hellinger distances for distribution overlap.\n*   `calculateCellSimilarityPCA()`: Measures cosine similarity between specific cells and PC loadings to see which components an anomaly influences.\n*   `calculateHotellingPValue()`: Multivariate test for differences in means between datasets.\n\n## Reference documentation\n- [Detection and Analysis of Annotation Anomalies](./references/AnnotationAnomalies.md)\n- [Evaluation of Dataset and Marker Gene Alignment](./references/DatasetMarkerGeneAlignment.md)\n- [Visualization Tools for Diagnostics](./references/VisualizationTools.md)\n- [scDiagnostics Package Overview](./references/scDiagnostics.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scdiagnostics",
+    "description": "This tool provides diagnostic utilities for evaluating single-cell genomics data through anomaly detection and dataset alignment. Use when user asks to detect anomalies in cell type annotations, evaluate alignment between query and reference datasets, or quantify batch effects and annotation quality.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scDiagnostics.html"
+  }
+}

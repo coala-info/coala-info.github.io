@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-subseq",
+  "category": "bioconductor",
+  "name": "bioconductor-subseq",
+  "description": "The bioconductor-subseq package performs downsampling on RNA-Seq count matrices to simulate lower sequencing depths and evaluate experimental power. Use when user asks to subsample count data, determine if sequencing depth is sufficient, or estimate the impact of additional sequencing on differential expression results.",
+  "overview": "The `subSeq` package allows researchers to perform \"downsampling\" on RNA-Seq count matrices. By simulating lower sequencing depths from existing data, it helps answer experimental design questions: \"Do I have enough reads?\" and \"Would more lanes improve my power?\" It supports built-in differential expression (DE) handlers and allows for custom analysis methods.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/subSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/StoreyLab/subSeq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "subSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/subSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/StoreyLab/subSeq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-subseq\n\n## Overview\n\nThe `subSeq` package allows researchers to perform \"downsampling\" on RNA-Seq count matrices. By simulating lower sequencing depths from existing data, it helps answer experimental design questions: \"Do I have enough reads?\" and \"Would more lanes improve my power?\" It supports built-in differential expression (DE) handlers and allows for custom analysis methods.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe input must be a count matrix where rows are genes and columns are samples. It is recommended to filter out very low-count genes before subsampling.\n\n```r\nlibrary(subSeq)\n# hammer.counts: matrix of counts\n# hammer.design: data frame with treatment column\ncounts <- hammer.counts[rowSums(hammer.counts) >= 5, ]\n```\n\n### 2. Defining Proportions\nSelect a range of proportions (0 to 1). A logarithmic scale is often best to capture the rapid power increase at low depths.\n\n```r\nproportions <- 10^seq(-2, 0, 0.5) # e.g., 0.01, 0.03, 0.1, 0.31, 1.0\n```\n\n### 3. Running Subsampling\nUse the `subsample` function. You can specify multiple DE methods simultaneously.\n\n```r\nsubsamples <- subsample(counts, \n                        proportions, \n                        method = c(\"edgeR\", \"voomLimma\", \"DESeq2\"), \n                        treatment = hammer.design$protocol)\n```\n\n### 4. Summarizing and Plotting\nThe `subsamples` object is a large table. Use `summary()` to aggregate metrics (significant genes, correlations, MSE) by depth.\n\n```r\n# Generate summary metrics\nss_summary <- summary(subsamples)\n\n# Plot default metrics (Significance, FDP, Spearman, MSE)\nplot(ss_summary)\n\n# Custom ggplot2 visualization\nlibrary(ggplot2)\nggplot(ss_summary, aes(x = depth, y = significant, col = method)) + geom_line()\n```\n\n## Advanced Usage\n\n### Custom Handlers\nIf you use a non-standard DE method, write a handler function that takes a count matrix and returns a data frame with `coefficient` and `pvalue` columns.\n\n```r\nmy_handler <- function(count.matrix, treatment) {\n    # ... perform analysis ...\n    return(data.frame(coefficient = res$logFC, pvalue = res$p.value))\n}\n\nsubsamples <- subsample(counts, proportions, method = \"my_handler\", treatment = design$group)\n```\n\n### Reproducibility and Combining Runs\n`subSeq` stores the random seed. You can use it to add more methods to an existing run or extract the exact matrix used at a specific depth.\n\n```r\n# Get seed from previous run\nseed <- getSeed(subsamples)\n\n# Run a new method with the same seed\nsubsamples_new <- subsample(counts, proportions, method = \"DESeq2\", \n                            treatment = design$group, seed = seed)\n\n# Combine results\ncombined <- combineSubsamples(subsamples, subsamples_new)\n\n# Generate the specific matrix for a 10% subsample\nsub_mat <- generateSubsampledMatrix(counts, 0.1, seed = seed)\n```\n\n## Key Metrics\n- **significant**: Number of genes meeting the FDR threshold (default 0.05).\n- **pearson/spearman**: Correlation of fold-change estimates between the subsample and the full (\"oracle\") dataset.\n- **eFDP (Estimated False Discovery Proportion)**: The average local FDR (from the full dataset) of genes called significant at the reduced depth. This is the preferred metric for checking if lower depth introduces false positives.\n- **percent**: The fraction of genes found significant in the full dataset that are also significant at this depth.\n\n## Reference documentation\n- [subSeq Package Vignette](./references/subSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-subseq",
+    "description": "The bioconductor-subseq package performs downsampling on RNA-Seq count matrices to simulate lower sequencing depths and evaluate experimental power. Use when user asks to subsample count data, determine if sequencing depth is sufficient, or estimate the impact of additional sequencing on differential expression results.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/subSeq.html"
+  }
+}

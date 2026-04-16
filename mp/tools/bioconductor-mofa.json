@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mofa",
+  "category": "bioconductor",
+  "name": "bioconductor-mofa",
+  "description": "MOFA is a statistical framework that integrates multiple data modalities to infer latent factors representing the main sources of variation across samples. Use when user asks to integrate multi-omics data, perform multi-view factor analysis, or identify latent drivers of biological variation.",
+  "overview": "MOFA is a statistical framework for integrating multiple \"views\" (data modalities) measured on the same set of samples. It generalizes Principal Component Analysis (PCA) to multi-omics data, inferring latent factors that capture the driving sources of variation across different data types. This skill guides the workflow from data preparation and model training to downstream characterization of biological or technical factors.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/MOFA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MOFA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/MOFA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mofa\n\n## Overview\n\nMOFA is a statistical framework for integrating multiple \"views\" (data modalities) measured on the same set of samples. It generalizes Principal Component Analysis (PCA) to multi-omics data, inferring latent factors that capture the driving sources of variation across different data types. This skill guides the workflow from data preparation and model training to downstream characterization of biological or technical factors.\n\n## Core Workflow\n\n### 1. Data Preparation\nMOFA accepts data as a list of matrices (features as rows, samples as columns) or a `MultiAssayExperiment` object.\n\n```r\nlibrary(MOFA)\nlibrary(MOFAdata)\n\n# Option 1: List of matrices\ndata(\"CLL_data\")\nMOFAobject <- createMOFAobject(CLL_data)\n\n# Option 2: MultiAssayExperiment\n# mae_obj <- MultiAssayExperiment(experiments = CLL_data, colData = metadata)\n# MOFAobject <- createMOFAobject(mae_obj)\n```\n\n### 2. Model Configuration\nDefine data, model, and training options before running the model.\n\n```r\n# Get default options\nDataOptions <- getDefaultDataOptions()\nModelOptions <- getDefaultModelOptions(MOFAobject)\nTrainOptions <- getDefaultTrainOptions()\n\n# Customize options\nModelOptions$numFactors <- 25\nTrainOptions$DropFactorThreshold <- 0.02 # Remove factors explaining < 2% variance\nTrainOptions$tolerance <- 0.01           # Convergence threshold\n\n# Prepare the object\nMOFAobject <- prepareMOFA(\n  MOFAobject,\n  DataOptions = DataOptions,\n  ModelOptions = ModelOptions,\n  TrainOptions = TrainOptions\n)\n```\n\n### 3. Training the Model\nMOFA requires the `mofapy` Python package via `reticulate`.\n\n```r\n# Ensure reticulate is pointed to the correct python/conda env\n# library(reticulate); use_python(\"/path/to/python\")\n\nMOFAobject <- runMOFA(MOFAobject)\n```\n\n### 4. Downstream Analysis\n\n#### Variance Decomposition\nIdentify which factors are active in which omic views.\n```r\nplotVarianceExplained(MOFAobject)\n```\n\n#### Inspecting Loadings (Weights)\nIdentify the features (genes, CpGs, etc.) driving each factor.\n```r\n# Plot top features for a factor\nplotTopWeights(MOFAobject, view = \"mRNA\", factor = 1)\n\n# Heatmap of original data for top features\nplotDataHeatmap(MOFAobject, view = \"mRNA\", factor = 1, features = 20)\n```\n\n#### Sample Ordination\nVisualize samples in the latent factor space.\n```r\nplotFactorScatter(MOFAobject, factors = 1:2, color_by = \"Condition\")\nplotFactorBeeswarm(MOFAobject, factors = 1, color_by = \"Condition\")\n```\n\n#### Enrichment Analysis\nPerform Gene Set Enrichment Analysis (GSEA) on the factor loadings.\n```r\n# feature.sets should be a binary matrix (sets x features)\ngsea <- runEnrichmentAnalysis(MOFAobject, view = \"mRNA\", feature.sets = reactomeGS)\nplotEnrichment(MOFAobject, gsea, factor = 1)\n```\n\n#### Imputation and Prediction\n```r\n# Impute missing values in the original matrices\nMOFAobject <- impute(MOFAobject)\nimputed_data <- getImputedData(MOFAobject)\n```\n\n## Best Practices\n\n- **Normalization**: Always normalize and variance-stabilize data (e.g., log-transform RNA-seq counts) before running MOFA.\n- **Feature Selection**: Use the top N most variable features per assay (e.g., 2000-5000) to prevent the model from being overwhelmed by noise.\n- **Technical Effects**: If strong batch effects are known, use `regressCovariates` before training to ensure MOFA focuses on biological signal.\n- **Model Selection**: Since the optimization is non-convex, run the model multiple times with different seeds and use `compareModels` and `selectModel` to find the most robust solution with the highest ELBO.\n- **Likelihoods**: Use \"gaussian\" for continuous data, \"bernoulli\" for binary (e.g., mutations), and \"poisson\" for counts.\n\n## Reference documentation\n\n- [MOFA vignette](./references/MOFA.md)\n- [MOFA CLL Example](./references/MOFA_example_CLL.md)\n- [MOFA scMT Example](./references/MOFA_example_scMT.md)\n- [MOFA Simulated Data Example](./references/MOFA_example_simulated.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mofa",
+    "description": "MOFA is a statistical framework that integrates multiple data modalities to infer latent factors representing the main sources of variation across samples. Use when user asks to integrate multi-omics data, perform multi-view factor analysis, or identify latent drivers of biological variation.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/MOFA.html"
+  }
+}

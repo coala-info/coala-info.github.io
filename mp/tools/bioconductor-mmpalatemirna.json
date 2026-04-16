@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mmpalatemirna",
+  "category": "bioconductor",
+  "name": "bioconductor-mmpalatemirna",
+  "description": "This package provides specialized tools for the preprocessing, normalization, and differential expression analysis of murine palate miRNA microarray data. Use when user asks to perform quality control, normalize two-color miRNA arrays, identify differentially expressed miRNAs, or predict target genes in mouse developmental studies.",
+  "overview": "The `MmPalateMiRNA` package is a Bioconductor compendium for analyzing two-color miRNA microarray data, specifically from the Miltenyi Biotech miRXplore platform. It provides specialized methods for quality control, normalization, and downstream functional analysis (target identification and gene set enrichment) tailored to the unique characteristics of miRNA arrays, which typically have fewer probes than mRNA arrays.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MmPalateMiRNA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MmPalateMiRNA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MmPalateMiRNA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mmpalatemirna\n\nname: bioconductor-mmpalatemirna\ndescription: Analysis of murine palate miRNA microarray data using the MmPalateMiRNA package. Use this skill to perform preprocessing (outlier detection, imputation, filtering), normalization (quantile, VSN, loess), differential expression analysis with limma, clustering of miRNA profiles, and target gene identification for mouse developmental studies.\n\n# bioconductor-mmpalatemirna\n\n## Overview\nThe `MmPalateMiRNA` package is a Bioconductor compendium for analyzing two-color miRNA microarray data, specifically from the Miltenyi Biotech miRXplore platform. It provides specialized methods for quality control, normalization, and downstream functional analysis (target identification and gene set enrichment) tailored to the unique characteristics of miRNA arrays, which typically have fewer probes than mRNA arrays.\n\n## Core Workflow\n\n### 1. Data Loading and Initial QC\nThe package includes the `PalateData` dataset (an `RGList` object).\n```R\nlibrary(MmPalateMiRNA)\ndata(PalateData)\n\n# Visualize intensity densities to identify outlying arrays\nres <- densityplot(PalateData, channel=\"G\", group=\"probe.type\", \n                   subset = c(\"Other miRNAs\", \"MMU miRNAs\", \"Control\"))\nprint(res)\n\n# Check for pairwise distance between arrays\nres_level <- levelplot(PalateData, channel=\"G\", group=\"probe.type\")\nprint(res_level)\n```\n\n### 2. Preprocessing and Cleaning\nHandle outlying values and missing data before normalization.\n- `checkOutliers()` / `fixOutliers()`: Detect and replace extreme values (replicate mean).\n- `checkMVs()` / `fixMVs()`: Detect and impute missing values in background/foreground.\n- `filterArray()`: Remove low-intensity probes.\n```R\n# Fix outliers and missing values\noutliers <- checkOutliers(PalateData)\nPalateData$R <- fixOutliers(PalateData$R, outliers$Rout, PalateData$genes$Gene)\n\nmvs <- checkMVs(PalateData)\nPalateData$Rb <- fixMVs(PalateData$Rb, mvs$Rb.na, PalateData$genes$Gene)\n\n# Filter: keep probes 1.1x above background in at least 3 samples\nreducedSet <- filterArray(PalateData, keep=c(\"MIR\", \"LET\", \"POSCON\", \"CALIB\"), \n                          frac=1.1, number=3, reps=4)\n```\n\n### 3. Normalization\nEvaluate multiple methods. Quantile normalization is often most effective for this platform.\n```R\n# Quantile normalization (between arrays)\nndata <- normalizeBetweenArrays(reducedSet, method=\"quantile\")\n\n# VSN normalization\nndata.vsn <- normalizeVSN(reducedSet)\n\n# Impute remaining NAs (e.g., from negative intensities)\nndata$M <- imputeKNN(as.matrix(ndata$M), dist=\"cor\")\n```\n\n### 4. Differential Expression (limma)\nUse `limma` to find miRNAs changing across gestational days (GD12, GD13, GD14).\n```R\n# Setup design and contrasts\ndesign <- model.matrix(~ 0 + factor(c(1,1,2,2,3,3)))\ncolnames(design) <- c(\"Day12\", \"Day13\", \"Day14\")\ncontrast.matrix <- makeContrasts(Day13-Day12, Day14-Day12, Day14-Day13, levels=design)\n\n# Fit model accounting for quadruplicate spots\ncorfit <- duplicateCorrelation(ndata, design, ndups=4)\nfit <- lmFit(ndata, design, ndups=4, correlation=corfit$consensus)\nfitc <- eBayes(contrasts.fit(fit, contrast.matrix))\n\n# Get results\ntop13v12 <- topTable(fitc, coef=1, number=Inf, adjust=\"fdr\")\n```\n\n### 5. Clustering and Target Identification\nGroup miRNAs by expression profile and find biological targets.\n- `clustPlot()`: Visualize clusters.\n- Use `targetscan.Mm.eg.db` and `microRNA` packages for target mapping.\n```R\n# Plot clusters (requires cluster assignments from clValid or hclust)\n# aveExpr should be a matrix of averaged replicates\nclustPlot(clusters, aveExpr, rows=3, cols=2)\n\n# Intersection of TargetScan and miRBase targets\n# (Requires external mapping of miRNA names to Entrez/Ensembl)\n```\n\n## Tips for miRNA Analysis\n- **Probe Filtering**: miRNA arrays have many probes with intensities near background; filtering is critical to reduce the false discovery rate.\n- **Normalization Choice**: Use `MADvsMedianPlot()` and `MAplot()` to verify that normalization removed intensity-dependent bias without collapsing biological variation.\n- **Target Intersection**: To reduce false positives in target prediction, take the intersection of multiple databases (e.g., TargetScan and miRBase).\n\n## Reference documentation\n- [MmPalateMiRNA](./references/MmPalateMiRNA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mmpalatemirna",
+    "description": "This package provides specialized tools for the preprocessing, normalization, and differential expression analysis of murine palate miRNA microarray data. Use when user asks to perform quality control, normalize two-color miRNA arrays, identify differentially expressed miRNAs, or predict target genes in mouse developmental studies.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MmPalateMiRNA.html"
+  }
+}

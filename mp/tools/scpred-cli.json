@@ -1,0 +1,51 @@
+{
+  "id": "scpred-cli",
+  "category": "CLI",
+  "name": "scpred-cli",
+  "description": "scpred-cli automates cell type classification in single-cell transcriptomic data using a low-dimensional representation of the data. Use when user asks to identify cell populations in new datasets, build custom classifiers from annotated Seurat objects, or train models to predict cell types.",
+  "overview": "The `scpred-cli` toolset is a collection of R scripts designed to automate the classification of cell types in single-cell transcriptomic data. It utilizes a low-dimensional representation of the data (Principal Components) to build high-accuracy classifiers. Use this skill when you need to project new single-cell datasets onto a trained reference model to identify cell populations, or when building custom classifiers from annotated Seurat objects in a Linux/Unix environment.",
+  "homepage": "https://github.com/ebi-gene-expression-group/scPred-cli",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/scpred-cli/overview",
+  "github": "https://github.com/ebi-gene-expression-group/scPred-cli",
+  "conda_downloads": "26.4K",
+  "conda_downloads_num": 26400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scpred-cli_scpred_get_feature_space.R",
+      "scpred-cli_scpred_train_model.R",
+      "scpred-cli_scpred_predict.R",
+      "scpred-cli_scpred_get_std_output.R"
+    ],
+    "description": "Get the feature space for scPred",
+    "docker_image": "quay.io/biocontainers/scpred-cli:0.1.0--hdfd78af_2",
+    "homepage": "https://github.com/ebi-gene-expression-group/scPred-cli",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/scpred-cli/overview",
+    "github": "https://github.com/ebi-gene-expression-group/scPred-cli",
+    "conda_downloads": "26.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "scpred-cli_scpred_get_feature_space.R.cwl",
+    "scpred-cli_scpred_get_std_output.R.cwl",
+    "scpred-cli_scpred_predict.R.cwl",
+    "scpred-cli_scpred_train_model.R.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# scpred-cli\n\n## Overview\nThe `scpred-cli` toolset is a collection of R scripts designed to automate the classification of cell types in single-cell transcriptomic data. It utilizes a low-dimensional representation of the data (Principal Components) to build high-accuracy classifiers. Use this skill when you need to project new single-cell datasets onto a trained reference model to identify cell populations, or when building custom classifiers from annotated Seurat objects in a Linux/Unix environment.\n\n## Core Workflow\n\n### 1. Feature Space Selection\nBefore training, you must identify which principal components (PCs) significantly explain the variance between cell types.\n\n```bash\nscpred_get_feature_space.R \\\n    --input-object reference_data.rds \\\n    --prediction-column cell_type \\\n    --output-path feature_space.rds\n```\n*   **Tip**: Use the `--correction-method` (default: fdr) and `--significance-threshold` to fine-tune how many PCs are retained as features.\n\n### 2. Model Training\nTrain a classification model using the features identified in the previous step. `scPred` supports models available in the R `caret` package.\n\n```bash\nscpred_train_model.R \\\n    --input-object feature_space.rds \\\n    --model svmRadial \\\n    --num-cores 4 \\\n    --output-path trained_model.rds\n```\n*   **Expert Tip**: Enable `--allow-parallel TRUE` and specify `--num-cores` to significantly speed up the resampling and tuning process for large datasets.\n*   **Validation**: Use `--train-probs-plot` to generate a PNG visualization of the training probabilities to assess model confidence.\n\n### 3. Cell Type Prediction\nApply the trained model to a query (unlabeled) dataset.\n\n```bash\nscpred_predict.R \\\n    --input-object trained_model.rds \\\n    --pred-data query_data.rds \\\n    --threshold-level 0.7 \\\n    --output-path predictions.txt\n```\n*   **Critical**: If your query data is not yet processed, use `--normalise-data` and ensure the `--normalisation-method` matches exactly what was used for the reference data (e.g., `LogNormalize`).\n*   **Thresholding**: The `--threshold-level` determines the confidence required to assign a label; cells below this value will be labeled as \"unassigned\".\n\n### 4. Standardizing Output\nConvert the prediction results into a standardized table for downstream analysis.\n\n```bash\nscpred_get_std_output.R \\\n    --predictions-object predictions.rds \\\n    --classifier trained_model.rds \\\n    --get-scores TRUE \\\n    --output-table final_results.tsv\n```\n\n## Best Practices\n- **Input Format**: All input objects must be serialized Seurat or scPred objects in `.rds` format.\n- **Feature Consistency**: Ensure that the reduction method (default: `pca`) used in `scpred_get_feature_space.R` exists in the input Seurat object.\n- **Memory Management**: Single-cell objects can be large. When training models like `svmRadial` or `rf`, ensure your environment has sufficient RAM, especially when using parallel processing.\n- **Testing**: Run `get_test_data.R` to generate a small PBMC reference and query set to verify your installation and command syntax.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| /usr/local/bin/scpred_get_std_output.R | Get standard output from SCPRED predictions. |\n| scpred-cli_scpred_get_feature_space.R | Get the feature space for scPred |\n| scpred_predict.R | Predicts cell types using scPred. |\n| scpred_train_model.R | Trains a cell type classifier using scPred. |\n\n## Reference documentation\n- [scPred-cli README](./references/github_com_ebi-gene-expression-group_scpred-cli_blob_develop_README.md)\n- [Feature Space Selection Script](./references/github_com_ebi-gene-expression-group_scpred-cli_blob_develop_scpred_get_feature_space.R.md)\n- [Model Training Script](./references/github_com_ebi-gene-expression-group_scpred-cli_blob_develop_scpred_train_model.R.md)\n- [Prediction Script](./references/github_com_ebi-gene-expression-group_scpred-cli_blob_develop_scpred_predict.R.md)",
+  "skill_front_matter": {
+    "name": "scpred-cli",
+    "description": "scpred-cli automates cell type classification in single-cell transcriptomic data using a low-dimensional representation of the data. Use when user asks to identify cell populations in new datasets, build custom classifiers from annotated Seurat objects, or train models to predict cell types.",
+    "homepage": "https://github.com/ebi-gene-expression-group/scPred-cli"
+  }
+}

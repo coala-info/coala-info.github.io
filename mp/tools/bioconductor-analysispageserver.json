@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-analysispageserver",
+  "category": "bioconductor",
+  "name": "bioconductor-analysispageserver",
+  "description": "This tool creates and deploys interactive R analysis pages and web servers for sharing customizable data visualizations and reports. Use when user asks to generate interactive SVG reports, build dynamic web applications with R backends, or configure complex parameter sets for user input.",
+  "overview": "The `AnalysisPageServer` package is a modular system for sharing customizable R analyses via the web. It enables the creation of interactive plots (SVG) linked to metadata (data.frames), allowing users to perform rollovers, zooming, filtering, and tagging directly in a browser. It supports both static reports (no server required) and dynamic applications (where R code runs in response to user input).",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/AnalysisPageServer.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-analysispageserver/overview",
+  "github": "N/A",
+  "conda_downloads": "17.6K",
+  "conda_downloads_num": 17600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AnalysisPageServer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/AnalysisPageServer.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-analysispageserver/overview",
+    "github": "N/A",
+    "conda_downloads": "17.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-analysispageserver\n\nname: bioconductor-analysispageserver\ndescription: Create and deploy interactive R analysis pages and web servers. Use this skill to generate interactive reports (SVG + JSON), build dynamic web applications with R backends (Rook, RApache, FastRWeb), and configure complex parameter sets for user input.\n\n# bioconductor-analysispageserver\n\n## Overview\n\nThe `AnalysisPageServer` package is a modular system for sharing customizable R analyses via the web. It enables the creation of interactive plots (SVG) linked to metadata (data.frames), allowing users to perform rollovers, zooming, filtering, and tagging directly in a browser. It supports both static reports (no server required) and dynamic applications (where R code runs in response to user input).\n\n## Core Workflows\n\n### 1. Creating Static Interactive Reports\nUse this workflow to generate a self-contained directory of HTML/JS/SVG files that can be shared or hosted on any web server.\n\n```r\nlibrary(AnalysisPageServer)\n\n# 1. Prepare data and plot\ndf <- data.frame(x = rnorm(100), y = rnorm(100), label = letters[1:100])\nplot_file <- tempfile(fileext = \".svg\")\nsvg(plot_file, width = 9, height = 7)\nplot(df$x, df$y, pch = 19)\ndev.off()\n\n# 2. Generate static page\n# show.xy = TRUE links the SVG elements to data.frame rows by coordinates\nresult <- static.analysis.page(outdir = \"my_report\",\n                               svg.files = plot_file,\n                               dfs = df,\n                               show.xy = TRUE,\n                               title = \"My Analysis\")\n# Open result$URL in a browser\n```\n\n### 2. Building Dynamic Services\nServices are non-interactive endpoints that return data (usually JSON) or plots.\n\n```r\n# Define a handler function\nmy_handler <- function(n = 10) {\n  return(data.frame(val = runif(n)))\n}\n\n# Build the service object\nhello_service <- build.service(my_handler, name = \"get_random\")\n\n# Create a registry to hold services\nreg <- new.registry(hello_service)\n```\n\n### 3. Building Fully Interactive Applications\nInteractive pages combine a handler function with a parameter set to create a web UI.\n\n```r\n# 1. Define handler (returns a data.frame for the table/interactivity)\nvolcano_handler <- function(color1 = \"red\", color2 = \"blue\") {\n  col <- colorRampPalette(c(color1, color2))(50)\n  image(datasets::volcano, col = col)\n  return(as.data.frame(volcano)) \n}\n\n# 2. Define the page\nvolcano_page <- new.analysis.page(handler = volcano_handler,\n                                  name = \"volcano\",\n                                  description = \"Interactive Volcano Plot\")\n\n# 3. Register and start a local development server (Rook)\nreg <- new.registry(volcano_page)\nsrv <- startRookAnalysisPageServer(reg, port = 3198)\n\n# 4. Stop server when done\nkill.process(srv)\n```\n\n## Parameter Configuration\nControl how user inputs are rendered in the web UI using `AnalysisPageParam` objects.\n\n- **Simple**: `simple.param(name, label, value)` for text/numeric input.\n- **Dropdown**: `select.param(name, choices, allow.multiple = FALSE)`.\n- **Slider**: `slider.param(name, min, max, step)`.\n- **Combobox**: `combobox.param(name, uri)` for server-side search-ahead.\n- **Advanced**: Set `advanced = 1` to hide parameters behind an \"Advanced\" toggle.\n- **Conditional**: Use `show.if = list(name = \"other_param\", values = \"trigger_val\")`.\n\n## Deployment Options\n\n1.  **Static**: Use `static.analysis.page()`. Best for sharing fixed results.\n2.  **Rook**: Use `startRookAnalysisPageServer()`. Best for local prototyping and debugging.\n3.  **RApache**: Use `apache.httpd.conf()` and `rapache.app.from.registry()`. Best for stable, multi-user production environments.\n4.  **FastRWeb**: Use `new.FastRWeb.analysis.page.run()`. A stable alternative to RApache using Rserve.\n\n## Tips for Success\n- **Coordinate Matching**: When using `static.analysis.page`, ensure your data.frame contains `x` and `y` columns that match the plotting order in the SVG for rollover to work correctly.\n- **JSON Encoding**: The server automatically encodes return values to JSON. To return raw HTML or binary images, wrap the output in `new.response(body, content.type)`.\n- **Persistence**: Use the `persistent` argument in parameter constructors to share values (like a \"Study ID\") across different tools in the same application.\n\n## Reference documentation\n- [AnalysisPageServer Overview](./references/AnalysisPageServer.md)\n- [Deployment with Apache](./references/ApacheDeployment.md)\n- [Non-interactive Servers and Rook](./references/ExampleServers.md)\n- [Deployment with FastRWeb](./references/FastRWebDeployment.md)\n- [Interactive Applications](./references/InteractiveApps.md)\n- [Interactivity Guide](./references/Interactivity.md)\n- [External Licenses](./references/Licenses.md)\n- [Static Content Generation](./references/StaticContent.md)\n- [Trapping Conditions](./references/TrappingConditions.md)\n- [Embedding APS Datasets](./references/embedding.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-analysispageserver",
+    "description": "This tool creates and deploys interactive R analysis pages and web servers for sharing customizable data visualizations and reports. Use when user asks to generate interactive SVG reports, build dynamic web applications with R backends, or configure complex parameter sets for user input.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/AnalysisPageServer.html"
+  }
+}

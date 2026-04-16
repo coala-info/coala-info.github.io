@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cner",
+  "category": "bioconductor",
+  "name": "bioconductor-cner",
+  "description": "The CNEr package provides a pipeline for the large-scale identification, filtering, and visualization of Conserved Noncoding Elements from pairwise genome alignments. Use when user asks to identify conserved noncoding elements, scan axt alignment files for identity thresholds, merge reciprocal alignments, or visualize CNE density plots.",
+  "overview": "The `CNEr` package provides a comprehensive pipeline for the large-scale identification and visualization of Conserved Noncoding Elements (CNEs). It operates primarily on `axt` alignment files (typically sourced from UCSC) and uses efficient C extensions to handle genome-wide data. The workflow involves scanning alignments for specific identity thresholds, filtering against genomic annotations (exons/repeats), merging elements from reciprocal alignments, and visualizing results through CNE densi",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CNEr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ComputationalRegulatoryGenomicsICL/CNEr",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNEr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNEr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ComputationalRegulatoryGenomicsICL/CNEr",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cner\n\n## Overview\nThe `CNEr` package provides a comprehensive pipeline for the large-scale identification and visualization of Conserved Noncoding Elements (CNEs). It operates primarily on `axt` alignment files (typically sourced from UCSC) and uses efficient C extensions to handle genome-wide data. The workflow involves scanning alignments for specific identity thresholds, filtering against genomic annotations (exons/repeats), merging elements from reciprocal alignments, and visualizing results through CNE density plots.\n\n## Core Workflows\n\n### 1. Data Input and Classes\n`CNEr` uses specialized S4 classes to manage alignments:\n*   `Axt`: Stores pairwise alignments.\n*   `GRangePairs`: Holds paired `GRanges` objects of equal length.\n\n```r\nlibrary(CNEr)\n\n# Read axt files\naxtHg38DanRer10 <- readAxt(\"path/to/hg38.danRer10.net.axt\")\n\n# Visualize alignment distribution\nmatchDistribution(axtHg38DanRer10)\n\n# Read filtering regions (BED format)\nfilterRegions <- readBed(\"filter_regions.bed\")\n```\n\n### 2. CNE Identification Pipeline\nThe standard identification process follows these steps:\n\n**Step A: Initialize CNE Object**\n```r\ncneObj <- CNE(\n  assembly1Fn = \"path/to/species1.2bit\",\n  assembly2Fn = \"path/to/species2.2bit\",\n  axt12Fn = \"species1_to_species2.axt\",\n  axt21Fn = \"species2_to_species1.axt\",\n  cutoffs1 = 8L, cutoffs2 = 4L\n)\n```\n\n**Step B: Scan for Conserved Regions**\nScan using specific identity (I) over window (C) thresholds (e.g., 45/50, 48/50).\n```r\nidentities <- c(45L, 48L)\nwindows <- c(50L, 50L)\n\ncneList <- ceScan(x = cneObj, tFilter = filter1, qFilter = filter2,\n                  window = windows, identity = identities)\n```\n\n**Step C: Merge and Filter**\nMerge reciprocal alignments to remove redundancy while keeping duplicated elements distinct.\n```r\n# Merge overlapping elements\ncneMerged <- lapply(cneList, cneMerge)\n\n# Optional: Realignment with BLAT to remove unannotated repeats\n# Requires blat installed on system\ncneFinal <- lapply(cneMerged, blatCNE)\n```\n\n### 3. Storage and Querying\nBecause CNE sets can be large, `CNEr` utilizes SQLite for efficient storage and retrieval.\n```r\ndbName <- \"CNE_storage.sqlite\"\nsaveCNEToSQLite(cneFinal[[1]], dbName, \"species1_species2_45_50\")\n\n# Query specific genomic regions\nfetchedCNEs <- readCNERangesFromSQLite(dbName, \"tableName\", \n                                       chr=\"chr6\", start=24000000, end=27000000,\n                                       whichAssembly=\"first\")\n```\n\n### 4. Visualization\nCNE density is often visualized as a \"Horizon Plot\" to show clusters of conservation.\n```r\n# Calculate density\ndensity <- CNEDensity(dbName = dbName, tableName = \"tableName\",\n                      whichAssembly = \"first\", chr = \"chr6\",\n                      start = 24000000, end = 27000000,\n                      windowSize = 200L)\n\n# Plot using Gviz\nlibrary(Gviz)\ndTrack <- DataTrack(range = density, type = \"horiz\", name = \"CNE Density\")\nplotTracks(list(GenomeAxisTrack(), dTrack))\n```\n\n## Pairwise Alignment Generation\nIf pre-computed UCSC alignments are unavailable, `CNEr` provides wrappers for alignment tools (LASTZ/LAST).\n*   `lastz()`: Generates `.lav` files.\n*   `lavToPsl()`: Converts to `.psl`.\n*   `axtChain()`, `chainNetSyntenic()`, `netToAxt()`: Sequential steps to produce the final `.net.axt` files required for CNE detection.\n\n## Tips\n*   **Assembly Order**: When creating a `CNE` object, the order of assemblies must match the `axt12Fn` (assembly1 as target) and `axt21Fn` (assembly2 as target) files.\n*   **Thresholds**: Common scanning thresholds are 70% to 100% identity over 30bp or 50bp windows.\n*   **Whole Genome Duplication**: For species with extra WGD events (like zebrafish), double the `blatCutoff` relative to the other species.\n\n## Reference documentation\n- [CNE identification and visualisation](./references/CNEr.md)\n- [Pairwise whole genome alignment](./references/PairwiseWholeGenomeAlignment.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cner",
+    "description": "The CNEr package provides a pipeline for the large-scale identification, filtering, and visualization of Conserved Noncoding Elements from pairwise genome alignments. Use when user asks to identify conserved noncoding elements, scan axt alignment files for identity thresholds, merge reciprocal alignments, or visualize CNE density plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNEr.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dexma",
+  "category": "bioconductor",
+  "name": "bioconductor-dexma",
+  "description": "The DExMA package performs gene expression meta-analysis by integrating multiple datasets while addressing the missing gene problem through imputation or filtering. Use when user asks to perform effect size or p-value combination meta-analysis, handle missing genes across different expression platforms, or test for study heterogeneity.",
+  "overview": "The `DExMA` package provides a robust framework for performing gene expression meta-analysis. It is particularly effective at handling the \"missing gene\" problem—where different studies use different platforms or annotations—by either imputing missing values using the K-Nearest Neighbors (KNN) algorithm or filtering genes based on their frequency across datasets. It supports the three main types of meta-analysis: effect size combination, p-value combination, and heterogeneity analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DExMA.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dexma/overview",
+  "github": "N/A",
+  "conda_downloads": "10.3K",
+  "conda_downloads_num": 10300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DExMA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DExMA.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dexma/overview",
+    "github": "N/A",
+    "conda_downloads": "10.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dexma\n\n## Overview\nThe `DExMA` package provides a robust framework for performing gene expression meta-analysis. It is particularly effective at handling the \"missing gene\" problem—where different studies use different platforms or annotations—by either imputing missing values using the K-Nearest Neighbors (KNN) algorithm or filtering genes based on their frequency across datasets. It supports the three main types of meta-analysis: effect size combination, p-value combination, and heterogeneity analysis.\n\n## Core Workflow\n\n### 1. Data Preparation and Object Creation\nDExMA requires a specific `objectMA` (a list of nested lists). Each study must contain an expression matrix and a group vector (0 for control, 1 for case).\n\n```r\nlibrary(DExMA)\nlibrary(Biobase)\n\n# Create the meta-analysis object from lists of matrices and phenodata\n# namePheno: column name in phenodata identifying groups\n# expGroups/refGroups: labels for cases and controls\nphenoGroups <- c(\"condition\", \"condition\")\nphenoCases <- list(Study1 = \"Diseased\", Study2 = \"ill\")\nphenoControls <- list(Study1 = \"Healthy\", Study2 = \"control\")\n\nmaObject <- createObjectMA(listEX = listMatrixEX, \n                           listPheno = listPhenodatas, \n                           namePheno = phenoGroups, \n                           expGroups = phenoCases, \n                           refGroups = phenoControls)\n\n# To add a single new dataset later:\nnewElem <- elementObjectMA(expressionMatrix = ExpressionSetStudy5, \n                           groupPheno = \"condition\", \n                           expGroup = \"Diseased\", \n                           refGroup = \"Healthy\")\nmaObject[[5]] <- newElem\n```\n\n### 2. Pre-processing and Quality Control\nBefore analysis, ensure all datasets use the same gene identifiers and are on a log2 scale.\n\n```r\n# Standardize IDs (options: \"Entrez\", \"Ensembl\", \"GeneSymbol\")\nmaObject <- allSameID(maObject, finalID = \"GeneSymbol\", organism = \"Homo sapiens\")\n\n# Ensure log2 transformation\nmaObject <- dataLog(maObject)\n\n# Study heterogeneity to choose between Fixed (FEM) and Random (REM) effects\nheterogeneityTest(maObject)\n```\n\n### 3. Handling Missing Genes\nYou can either impute missing values or set a threshold for gene inclusion during the meta-analysis step.\n\n```r\n# Optional: Impute missing genes using KNN\nimputation <- missGenesImput(maObject, k = 7)\nmaObject_imputed <- imputation$objectMA\n```\n\n### 4. Performing Meta-Analysis\nThe `metaAnalysisDE()` function is the primary interface for all combination methods.\n\n```r\n# Effect Size Methods: \"FEM\" or \"REM\"\nresultsREM <- metaAnalysisDE(maObject, typeMethod = \"REM\", proportionData = 0.5)\n\n# P-value Methods: \"Fisher\", \"Stouffer\", \"maxP\", \"minP\", \"ACAT\"\nresultsFisher <- metaAnalysisDE(maObject, typeMethod = \"Fisher\", proportionData = 0.8)\n```\n\n**Key Output Columns:**\n- `Com.ES`: Combined Effect Size.\n- `Zval`: Z-score (positive = overexpressed in cases).\n- `Pval` / `FDR`: Significance and adjusted p-value.\n- `AveFC`: Weighted average log Fold-Change.\n- `Qpval`: P-value for heterogeneity (low values suggest REM is more appropriate than FEM).\n\n### 5. Visualization\nVisualize significant genes across all studies.\n\n```r\nmakeHeatmap(objectMA = maObject, \n            resMA = resultsREM, \n            scaling = \"zscor\", \n            regulation = \"all\", \n            numSig = 40, \n            fdrSig = 0.05, \n            logFCSig = 1.5)\n```\n\n## Advanced Features\n\n### Batch Effect Removal\nIf studies have internal batch effects (e.g., gender, race), correct them before creating the `objectMA`.\n\n```r\nlistMatrixEX$Study2 <- batchRemove(listMatrixEX$Study2, \n                                   listPhenodatas$Study2, \n                                   formula = ~gender + race, \n                                   mainCov = \"race\", \n                                   nameGroup = \"condition\")\n```\n\n### Downloading Public Data\nDirectly fetch datasets from NCBI GEO.\n\n```r\nGEOobjects <- c(\"GSE4588\", \"GSE10325\")\ndataGEO <- downloadGEOData(GEOobjects)\n# Returns a list of ExpressionSets ready for createObjectMA()\n```\n\n## Reference documentation\n- [Differential Expression Meta-Analysis with DExMA package](./references/DExMA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dexma",
+    "description": "The DExMA package performs gene expression meta-analysis by integrating multiple datasets while addressing the missing gene problem through imputation or filtering. Use when user asks to perform effect size or p-value combination meta-analysis, handle missing genes across different expression platforms, or test for study heterogeneity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DExMA.html"
+  }
+}

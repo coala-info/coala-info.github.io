@@ -1,0 +1,45 @@
+{
+  "id": "bazam",
+  "category": "CLI",
+  "name": "bazam",
+  "description": "\"Bazam extracts paired reads from coordinate-sorted BAM files and streams them into interleaved FASTQ format for efficient re-alignment. Use when user asks to extract read pairs from a BAM file, pipe reads directly into an aligner like BWA, or filter reads by genomic region or custom criteria.\"",
+  "overview": "Bazam is a specialized tool designed to efficiently extract paired reads from coordinate-sorted BAM files—a task that is traditionally difficult because mate pairs are often stored far apart in the file. Instead of performing slow random lookups or requiring massive memory to buffer the entire file, bazam uses an optimized buffering strategy to pair reads as it streams through the file. It is primarily used for \"re-alignment\" pipelines where reads from an existing BAM need to be mapped to a new ",
+  "homepage": "https://github.com/ssadedin/bazam",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bazam/overview",
+  "github": "https://github.com/ssadedin/bazam",
+  "conda_downloads": "6.1K",
+  "conda_downloads_num": 6100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bazam"
+    ],
+    "description": "Bazam is a tool to extract paired reads from a coordinate-sorted BAM file and output them as FASTQ, suitable for piping into a new alignment.",
+    "docker_image": "quay.io/biocontainers/bazam:1.0.1--0",
+    "homepage": "https://github.com/ssadedin/bazam",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bazam/overview",
+    "github": "https://github.com/ssadedin/bazam",
+    "conda_downloads": "6.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bazam.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bazam\n\n## Overview\nBazam is a specialized tool designed to efficiently extract paired reads from coordinate-sorted BAM files—a task that is traditionally difficult because mate pairs are often stored far apart in the file. Instead of performing slow random lookups or requiring massive memory to buffer the entire file, bazam uses an optimized buffering strategy to pair reads as it streams through the file. It is primarily used for \"re-alignment\" pipelines where reads from an existing BAM need to be mapped to a new reference genome.\n\n## Installation and Setup\nBazam can be run as a standalone JAR file or installed via package managers:\n- **Conda**: `conda install -c bioconda bazam`\n- **Executable**: Download `bazam.jar` from GitHub releases and run via `java -jar bazam.jar`.\n\n## Common CLI Patterns\n\n### Basic FASTQ Extraction\nExtract all read pairs into an interleaved FASTQ format:\n```bash\njava -jar bazam.jar -bam input.bam > output.fastq\n```\n\n### Direct Realignment Stream (BWA)\nThe most efficient way to use bazam is by piping its output directly into an aligner. This avoids the disk I/O overhead of intermediate FASTQ files:\n```bash\njava -jar bazam.jar -bam original.bam | \\\nbwa mem -p reference.fa - | \\\nsamtools view -bSu - | \\\nsamtools sort -o realigned.bam\n```\n*Note: The `-p` flag in BWA tells it to expect interleaved paired-end input.*\n\n### Extracting Specific Regions\nUse the `-L` flag to target a specific genomic region. Bazam will emit the full pair if either read overlaps the region:\n```bash\njava -jar bazam.jar -bam input.bam -L chr1:1000000-2000000 > region.fastq\n```\n\n### Custom Groovy Filtering\nBazam allows complex filtering using Groovy expressions via the `-f` flag. The variable `pair` provides access to `r1` and `r2` (Picard SAMRecord objects).\n\n**Example: Extract only chimeric reads (mates on different chromosomes):**\n```bash\njava -jar bazam.jar -bam input.bam -f \"pair.r1.referenceIndex != pair.r2.referenceIndex\" > chimeric.fastq\n```\n\n### Parallelization via Sharding\nFor very large genomes, you can shard the processing to reduce memory requirements or increase speed through parallel instances. Use `-s n,N` where `n` is the shard number and `N` is the total shards:\n```bash\n# Process the 1st of 4 shards\njava -jar bazam.jar -bam input.bam -s 1,4 > shard1.fastq\n```\n\n## Expert Tips and Best Practices\n\n### Memory Management\nBazam buffers reads in memory to find their mates. For whole-genome sequencing (WGS) data, you may need to increase the JVM heap size:\n```bash\njava -Xmx16g -jar bazam.jar -bam input.bam ...\n```\n\n### Working with CRAM Files\nSince CRAM is reference-based, you must provide the reference fasta to the HTSJDK library used by bazam:\n```bash\njava -Dsamjdk.reference_fasta=ref.fa -jar bazam.jar -bam input.cram > output.fastq\n```\n\n### Tracking Original Positions\nIf you need to know where the reads originally mapped after they have been realigned, use the `-namepos` flag. This appends the original coordinates to the read name in the FASTQ output.\n\n### Performance Tuning\nIf bazam is running slower than your aligner, consider sharding the input. If the aligner is the bottleneck, bazam's efficient buffering ensures it won't add significant overhead to the pipeline.\n\n## Reference documentation\n- [Bazam GitHub Repository](./references/github_com_ssadedin_bazam.md)\n- [Bioconda Bazam Overview](./references/anaconda_org_channels_bioconda_packages_bazam_overview.md)",
+  "skill_front_matter": {
+    "name": "bazam",
+    "description": "Bazam extracts paired reads from coordinate-sorted BAM files and streams them into interleaved FASTQ format for efficient re-alignment. Use when user asks to extract read pairs from a BAM file, pipe reads directly into an aligner like BWA, or filter reads by genomic region or custom criteria.",
+    "homepage": "https://github.com/ssadedin/bazam"
+  }
+}

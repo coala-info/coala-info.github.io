@@ -1,0 +1,45 @@
+{
+  "id": "pstrain",
+  "category": "CLI",
+  "name": "pstrain",
+  "description": "PStrain is an iterative profiling algorithm that identifies the number, relative abundances, and genotypes of microbial strains in shotgun metagenomic datasets. Use when user asks to profile microbial strains, phase variants for a single species, or merge strain results from multiple metagenomic samples.",
+  "overview": "PStrain is an iterative profiling algorithm designed to resolve microbial strains within shotgun metagenomic datasets. While many tools stop at species-level identification, PStrain identifies the number of strains present, their relative abundances, and their specific genotypes. It functions primarily as a pipeline that leverages MetaPhlAn for taxonomic profiling and Bowtie2 for mapping, but it also includes a dedicated mode for phasing variants of a single species given pre-aligned data.",
+  "homepage": "https://github.com/wshuai294/PStrain",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pstrain/overview",
+  "github": "https://github.com/wshuai294/PStrain",
+  "conda_downloads": "1.8K",
+  "conda_downloads_num": 1800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pstrain"
+    ],
+    "description": "PStrain: profile strains in shotgun metagenomic sequencing reads.",
+    "docker_image": "quay.io/biocontainers/pstrain:1.0.3--h9ee0642_0",
+    "homepage": "https://github.com/wshuai294/PStrain",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pstrain/overview",
+    "github": "https://github.com/wshuai294/PStrain",
+    "conda_downloads": "1.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pstrain.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pstrain\n\n## Overview\nPStrain is an iterative profiling algorithm designed to resolve microbial strains within shotgun metagenomic datasets. While many tools stop at species-level identification, PStrain identifies the number of strains present, their relative abundances, and their specific genotypes. It functions primarily as a pipeline that leverages MetaPhlAn for taxonomic profiling and Bowtie2 for mapping, but it also includes a dedicated mode for phasing variants of a single species given pre-aligned data.\n\n## Installation and Environment Setup\nPStrain can be installed via Bioconda or by cloning the source and building a specific Conda environment.\n\n**Bioconda Installation:**\n```bash\nconda create --name pstrain -c bioconda -c conda-forge pstrain\nconda activate pstrain\n```\n\n**Source Installation (for MetaPhlAn 4):**\n```bash\ngit clone https://github.com/wshuai294/PStrain.git --depth 1\ncd PStrain/\nconda env create --name pstrain -f pstrain_metaphlan4_env.yml\nconda activate pstrain\n```\n\n## Database Preparation\nBefore running the main pipeline, you must collect the MetaPhlAn database and build the Bowtie2 index.\n\n```bash\n# For MetaPhlAn 4\nbash scripts/collect_metaphlan_datbase.sh -x mpa_vOct22_CHOCOPhlAnSGB_202403 -m 4 -d ./db_path/\n\n# For MetaPhlAn 3\nbash scripts/collect_metaphlan_datbase.sh -x mpa_v31_CHOCOPhlAn_201901 -m 3 -d ./db_path/\n```\n\n## Configuration File Format\nPStrain requires a specific configuration file format to define input samples. Note the use of double slashes for sample headers.\n\n**Paired-end reads:**\n```text\n// sample: SampleA_ID\nfq1: /path/to/sampleA_1.fastq\nfq2: /path/to/sampleA_2.fastq\n// sample: SampleB_ID\nfq1: /path/to/sampleB_1.fastq\nfq2: /path/to/sampleB_2.fastq\n```\n\n**Single-end reads:**\n```text\n// sample: SampleC_ID\nfq1: /path/to/sampleC.fastq\n```\n\n## Common CLI Patterns\n\n### Standard Strain Profiling (MetaPhlAn 4)\n```bash\npython3 scripts/PStrain.py \\\n    -c config.txt \\\n    -o output_dir \\\n    --bowtie2db ./db_path/ \\\n    -x mpa_vOct22_CHOCOPhlAnSGB_202403\n```\n\n### Profiling with MetaPhlAn 3\n```bash\npython3 scripts/PStrain.py \\\n    --metaphlan_version 3 \\\n    -c config.txt \\\n    -o output_dir \\\n    --bowtie2db ./db_path/ \\\n    -x mpa_v31_CHOCOPhlAn_201901\n```\n\n### Single Species Phasing\nIf you already have a BAM file and a VCF file for a specific species, use the `single_species.py` script.\n```bash\npython3 scripts/single_species.py \\\n    --bam species_alignment.bam \\\n    --vcf species_variants.vcf \\\n    --outdir phasing_results\n```\n\n### Merging Results\nTo combine strain results from multiple runs for downstream analysis:\n```bash\npython3 scripts/merge.py -i input_dir_list.txt -o merged_output\n```\n\n## Expert Tips and Best Practices\n\n1.  **Parallelization Strategy**: PStrain offers two levels of parallelization. Use `-p` to set the number of samples to process simultaneously and `-n` to set the number of threads used by Bowtie2 for mapping within each sample.\n2.  **Using Existing MetaPhlAn Results**: To save significant runtime, if you have already run MetaPhlAn (with the `--tax_lev s` flag), you can provide the output files using the `--metaphlan_output_files` argument. Ensure the order of files matches your config file.\n3.  **Depth Thresholds**: If dealing with low-abundance samples, adjust `--species_dp` (default: 5). Increasing this value improves genotype accuracy but may exclude rarer species.\n4.  **SNP Filtering**: The `--snp_ratio` (default: 0.45) removes SNVs with depth significantly lower than the species mean. Adjust this if you suspect high levels of contamination or extremely uneven coverage.\n5.  **Memory Management**: When running many samples in parallel (`-p`), monitor memory usage closely, as Bowtie2 and the iterative solver can be resource-intensive depending on the complexity of the community.\n\n## Reference documentation\n- [pstrain Overview](./references/anaconda_org_channels_bioconda_packages_pstrain_overview.md)\n- [PStrain GitHub Repository](./references/github_com_wshuai294_PStrain.md)",
+  "skill_front_matter": {
+    "name": "pstrain",
+    "description": "PStrain is an iterative profiling algorithm that identifies the number, relative abundances, and genotypes of microbial strains in shotgun metagenomic datasets. Use when user asks to profile microbial strains, phase variants for a single species, or merge strain results from multiple metagenomic samples.",
+    "homepage": "https://github.com/wshuai294/PStrain"
+  }
+}

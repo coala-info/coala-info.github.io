@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bnem",
+  "category": "bioconductor",
+  "name": "bioconductor-bnem",
+  "description": "This tool infers Boolean signaling networks from high-dimensional downstream data like gene expression using Boolean Nested Effects Models. Use when user asks to reconstruct Boolean logic gates in signaling pathways, infer network structures from perturbation experiments, or determine synergistic and redundant interactions between signaling components.",
+  "overview": "The `bnem` package extends Nested Effects Models (NEM) by incorporating Boolean logic. It uses high-dimensional downstream data (E-genes, like mRNA expression) to infer the logical structure of a signaling pathway (S-genes). It is particularly useful for determining if two signaling components act redundantly (OR-gate) or synergistically (AND-gate).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/bnem.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bnem/overview",
+  "github": "https://github.com/MartinFXP/bnem",
+  "conda_downloads": "9.6K",
+  "conda_downloads_num": 9600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bnem"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bnem.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bnem/overview",
+    "github": "https://github.com/MartinFXP/bnem",
+    "conda_downloads": "9.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bnem\n\nname: bioconductor-bnem\ndescription: Infer signaling pathways from indirect measurements (transcriptional targets) using Boolean Nested Effects Models (B-NEM). Use this skill when you need to reconstruct Boolean logic gates (AND/OR) in signaling networks based on differential gene expression data from perturbation experiments (stimuli and inhibitors).\n\n## Overview\n\nThe `bnem` package extends Nested Effects Models (NEM) by incorporating Boolean logic. It uses high-dimensional downstream data (E-genes, like mRNA expression) to infer the logical structure of a signaling pathway (S-genes). It is particularly useful for determining if two signaling components act redundantly (OR-gate) or synergistically (AND-gate).\n\n## Core Workflow\n\n### 1. Data Preparation\nB-NEM requires two primary inputs:\n- **Differential Expression Data**: A matrix of fold changes (or similar) where rows are E-genes and columns are experimental conditions.\n- **Prior Knowledge Network (PKN)**: A SIF file or matrix defining potential interactions between S-genes.\n\n```r\nlibrary(bnem)\nlibrary(CellNOptR)\n\n# Load your data (example using package data)\ndata(bcr)\nfc <- bcr$fc # Fold changes\n```\n\n### 2. Defining the Search Space\nYou must define the experimental setup using a `CNOlist` and preprocess the PKN into a Boolean model.\n\n```r\n# Define stimuli and inhibitors\nCNOlist <- dummyCNOlist(stimuli = \"BCR\", \n                        inhibitors = c(\"Tak1\", \"Pi3k\", \"Ikk2\"),\n                        maxStim = 1, maxInhibit = 3)\n\n# Preprocess PKN (sif file) into a Boolean model\n# PKN <- readSIF(\"pathway.sif\")\nmodel <- preprocessing(CNOlist, PKN)\n```\n\n### 3. Network Inference\nThe `bnem` function performs the search for the optimal Boolean network.\n\n```r\n# Initialize with an empty string (all edges 0)\ninitBstring <- rep(0, length(model$reacID))\n\n# Run greedy search\nresult <- bnem(search = \"greedy\",\n               fc = fc,\n               CNOlist = CNOlist,\n               model = model,\n               initBstring = initBstring,\n               method = \"cosine\") # \"s\" for rank correlation, \"cosine\" for similarity\n```\n\n### 4. Visualization and Validation\nVisualize the inferred hyper-graph and check how well the model fits the data.\n\n```r\n# Plot the resulting network\nplotDnf(result$graph, stimuli = \"BCR\")\n\n# Validate and visualize E-gene attachments\nfitinfo <- validateGraph(CNOlist, fc = fc, model = model,\n                         bString = result$bString,\n                         Sgene = 4, Egenes = 100)\n```\n\n## Advanced Features\n\n### Search Algorithms\n- **greedy**: Fast neighborhood search (recommended for most cases).\n- **genetic**: Genetic algorithm for complex search spaces.\n- **exhaustive**: Checks all possible models (only for < 20 hyper-edges).\n\n### Handling Overlapping Stimuli/Inhibitors\nIf a gene is both stimulated and inhibited in the dataset, B-NEM can resolve this by adding extra S-nodes. Use `simBoolGtn(..., allstim = TRUE)` for simulations or manually adjust the PKN to ensure inhibitors overrule stimuli.\n\n### Pre-attaching E-genes\nIf you have prior knowledge of which E-genes belong to which S-genes, provide an `egenes` list to the `bnem` function to fix or constrain their attachment.\n\n```r\negenes <- list(Sgene1 = c(\"EgeneA\", \"EgeneB\"), Sgene2 = c(\"EgeneC\"))\n# Pass to bnem(..., egenes = egenes)\n```\n\n## Tips for Success\n- **Method Selection**: Use `method = \"s\"` (Spearman) if your data has outliers or non-linear relationships; use `method = \"cosine\"` for standard fold-change data.\n- **Parallelization**: For large networks, set `parallel` to the number of cores (e.g., `parallel = 4`) to speed up the greedy search.\n- **Cycles**: B-NEM can resolve cycles in the signaling network, provided there is no contradictory repression that prevents a stable state.\n\n## Reference documentation\n\n- [Boolean Nested Effects Models](./references/bnem.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bnem",
+    "description": "This tool infers Boolean signaling networks from high-dimensional downstream data like gene expression using Boolean Nested Effects Models. Use when user asks to reconstruct Boolean logic gates in signaling pathways, infer network structures from perturbation experiments, or determine synergistic and redundant interactions between signaling components.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bnem.html"
+  }
+}

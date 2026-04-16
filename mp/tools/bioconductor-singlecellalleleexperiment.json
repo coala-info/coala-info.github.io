@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-singlecellalleleexperiment",
+  "category": "bioconductor",
+  "name": "bioconductor-singlecellalleleexperiment",
+  "description": "This package extends the SingleCellExperiment class to support multi-layer quantification and analysis of immune genes at the allele, gene, and functional group levels. Use when user asks to create a SingleCellAlleleExperiment object, process multi-layer immune gene count matrices, or subset single-cell data by immune quantification levels.",
+  "overview": "The `SingleCellAlleleExperiment` package extends the standard `SingleCellExperiment` (SCE) class to support multi-layer quantification of immune genes. It allows researchers to simultaneously analyze data at three levels of granularity:\n1. **Alleles**: Specific variants (e.g., `A*02:01:01:01`).\n2. **Immune Genes**: Aggregated allele counts (e.g., `HLA-A`).\n3. **Functional Classes**: Groups of similar genes (e.g., `HLA-class I`).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SingleCellAlleleExperiment.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/AGImkeller/SingleCellAlleleExperiment",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SingleCellAlleleExperiment"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SingleCellAlleleExperiment.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/AGImkeller/SingleCellAlleleExperiment",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-singlecellalleleexperiment\n\n## Overview\n\nThe `SingleCellAlleleExperiment` package extends the standard `SingleCellExperiment` (SCE) class to support multi-layer quantification of immune genes. It allows researchers to simultaneously analyze data at three levels of granularity:\n1. **Alleles**: Specific variants (e.g., `A*02:01:01:01`).\n2. **Immune Genes**: Aggregated allele counts (e.g., `HLA-A`).\n3. **Functional Classes**: Groups of similar genes (e.g., `HLA-class I`).\n\nThis structure is particularly useful for immunogenomic studies where donor-specific allelic diversity impacts gene expression analysis and inter-donor comparability.\n\n## Core Workflow\n\n### 1. Data Loading and Object Creation\n\nThe primary entry point is `read_allele_counts()`. It processes raw count matrices and integrates them with a lookup table to build the multi-layer object.\n\n```r\nlibrary(SingleCellAlleleExperiment)\n\n# Required files: barcodes.txt, features.txt, matrix.mtx, and lookup_table.csv\nscae <- read_allele_counts(\n  sample_dir = \"path/to/data\",\n  sample_names = \"my_sample\",\n  lookup_file = \"lookup_table.csv\",\n  filter_mode = \"yes\", # Options: \"yes\" (knee-plot), \"no\" (threshold 0), \"custom\"\n  log = TRUE           # Automatically compute logcounts\n)\n```\n\n### 2. Accessing Data Layers\n\nSCAE provides specific getter functions to extract subsets of the experiment based on the quantification level.\n\n```r\n# Extract specific layers\nni_genes <- scae_subset(scae, \"nonimmune\")\nalleles  <- scae_subset(scae, \"alleles\")\ni_genes  <- scae_subset(scae, \"immune_genes\")\nfunc_grp <- scae_subset(scae, \"functional_groups\")\n\n# Check row metadata for layer identification\nrowData(scae) # Contains 'NI_I' (Non-Immune/Immune) and 'Quant_type' (G/A/F)\n```\n\n### 3. Downstream Analysis\n\nBecause SCAE inherits from `SingleCellExperiment`, it is compatible with `scater` and `scran`. A common pattern is to create subsets combining non-immune genes with a specific immune layer for dimensionality reduction.\n\n```r\nlibrary(scran)\nlibrary(scater)\n\n# Combine non-immune genes with immune genes for PCA\ntarget_rows <- c(rownames(scae_subset(scae, \"nonimmune\")), \n                 rownames(scae_subset(scae, \"immune_genes\")))\nscae_sub <- scae[target_rows, ]\n\n# Standard Bioconductor workflow\ndec <- modelGeneVar(scae_sub)\ntop_hvgs <- getTopHVGs(dec, prop = 0.1)\nscae <- runPCA(scae, subset_row = top_hvgs, name = \"PCA_immune_genes\")\nscae <- runTSNE(scae, dimred = \"PCA_immune_genes\", name = \"TSNE_immune_genes\")\n```\n\n### 4. Visualization\n\nUse `plotExpression` to compare expression across different layers (e.g., comparing a gene to its constituent alleles).\n\n```r\n# Visualize a gene and its alleles\nplotExpression(scae, features = c(\"HLA-A\", \"A*02:01:01:01\", \"A*24:02:01:01\"))\n\n# Plot reduced dimensions colored by allele expression\nplotReducedDim(scae, dimred = \"TSNE_immune_genes\", colour_by = \"A*02:01:01:01\")\n```\n\n## Usage Tips\n\n- **Filtering**: If using `filter_mode = \"yes\"`, you can inspect the knee plot data in `metadata(scae)[[\"knee_info\"]]`.\n- **Normalization**: When manually normalizing, ensure scaling factors are calculated only on the raw data layers (non-immune and alleles) to avoid double-counting the aggregated layers (genes/functional groups). `read_allele_counts(log=TRUE)` handles this correctly by default.\n- **Interactive Exploration**: The object is fully compatible with `iSEE` for interactive visualization.\n- **Gene Symbols**: If your input uses Ensembl IDs, set `gene_symbols = TRUE` in `read_allele_counts()` to map them to symbols using `org.Hs.eg.db`.\n\n## Reference documentation\n\n- [An introduction to the SingleCellAlleleExperiment class](./references/intro.Rmd)\n- [SingleCellAlleleExperiment Workflow Overview](./references/scae_intro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-singlecellalleleexperiment",
+    "description": "This package extends the SingleCellExperiment class to support multi-layer quantification and analysis of immune genes at the allele, gene, and functional group levels. Use when user asks to create a SingleCellAlleleExperiment object, process multi-layer immune gene count matrices, or subset single-cell data by immune quantification levels.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SingleCellAlleleExperiment.html"
+  }
+}

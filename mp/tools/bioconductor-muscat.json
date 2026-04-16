@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-muscat",
+  "category": "bioconductor",
+  "name": "bioconductor-muscat",
+  "description": "This tool performs differential state analysis to identify cell-type-specific responses across experimental conditions in multi-sample single-cell RNA-seq data. Use when user asks to perform differential state analysis, aggregate single-cell data into pseudobulk, run cell-level mixed models, or visualize cluster-specific gene expression changes across groups.",
+  "overview": "The `muscat` package is designed for **Differential State (DS)** analysis in multi-sample, multi-condition scRNA-seq datasets. Unlike standard differential expression that compares clusters to find markers, DS analysis compares the same cell type across different experimental groups (e.g., Control vs. Treatment) to identify cell-type-specific responses. It supports both \"pseudobulk\" methods (aggregating cells by sample) and cell-level mixed models.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/muscat.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/HelenaLC/muscat",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "muscat"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/muscat.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/HelenaLC/muscat",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-muscat\n\n## Overview\nThe `muscat` package is designed for **Differential State (DS)** analysis in multi-sample, multi-condition scRNA-seq datasets. Unlike standard differential expression that compares clusters to find markers, DS analysis compares the same cell type across different experimental groups (e.g., Control vs. Treatment) to identify cell-type-specific responses. It supports both \"pseudobulk\" methods (aggregating cells by sample) and cell-level mixed models.\n\n## Data Preparation\n`muscat` requires a `SingleCellExperiment` (SCE) object with specific columns in `colData`:\n*   `sample_id`: Unique identifier for each biological replicate.\n*   `cluster_id`: Cell type or cluster assignments.\n*   `group_id`: Experimental condition (e.g., stim vs. ctrl).\n\nUse `prepSCE()` to format your object correctly:\n```r\nsce <- prepSCE(sce, \n               kid = \"cell_type_column\", \n               sid = \"sample_id_column\", \n               gid = \"condition_column\", \n               drop = TRUE)\n```\n\n## Pseudobulk Analysis Workflow\nThis is the recommended starting point as it is computationally efficient and leverages robust bulk RNA-seq frameworks like `edgeR` and `limma`.\n\n1.  **Aggregate Data**: Sum counts by cluster and sample.\n    ```r\n    pb <- aggregateData(sce, assay = \"counts\", fun = \"sum\")\n    ```\n2.  **MDS Plot**: Visualize sample relationships at the pseudobulk level.\n    ```r\n    pbMDS(pb)\n    ```\n3.  **Run DS Analysis**:\n    ```r\n    # Default: tests the last coefficient (usually group_id)\n    res <- pbDS(pb)\n    \n    # Custom contrast (e.g., Treatment - Control)\n    library(limma)\n    ei <- metadata(sce)$experiment_info\n    mm <- model.matrix(~ 0 + ei$group_id)\n    dimnames(mm) <- list(ei$sample_id, levels(ei$group_id))\n    contrast <- makeContrasts(\"stim-ctrl\", levels = mm)\n    res <- pbDS(pb, design = mm, contrast = contrast)\n    ```\n\n## Cell-Level Mixed Models\nUse mixed models when you want to account for cell-level variability directly without aggregation.\n```r\n# Using the 'dream' method (linear mixed model)\nres_mm <- mmDS(sce, method = \"dream\")\n```\n\n## Handling and Visualizing Results\nResults are returned as a list of data frames (one per cluster).\n\n*   **Extract Tables**: Use `resDS` to flatten results into a tidy format.\n    ```r\n    tbl <- resDS(sce, res, bind = \"row\")\n    ```\n*   **Calculate Expression Frequencies**: Find the fraction of cells expressing a gene per group.\n    ```r\n    frq <- calcExprFreqs(sce, assay = \"counts\")\n    ```\n*   **Heatmaps**: Visualize top DS genes across clusters and samples.\n    ```r\n    pbHeatmap(sce, res, top_n = 5)\n    ```\n*   **UpSet Plots**: View shared vs. cluster-specific DE genes.\n    ```r\n    library(UpSetR)\n    de_gs <- lapply(res$table[[1]], function(u) u$gene[u$p_adj.loc < 0.05])\n    upset(fromList(de_gs))\n    ```\n\n## Increasing Power with BBHW\nIf independent bulk RNA-seq data for the same contrast is available, use Bulk-Based Hypothesis Weighing (`bbhw`) to improve FDR power.\n```r\n# res2 is a merged table of DS results\n# bulkDEA is a data.frame with 'logFC' and 'PValue' from bulk data\nres_weighted <- bbhw(pbDEA = res2, bulkDEA = bulkDEA, pb = pb, method = \"gBH.LSL\")\n```\n\n## Reference documentation\n- [Differential state analysis with muscat](./references/analysis.md)\n- [Increasing power with bulk-based hypothesis weighing (bbhw)](./references/bbhw.md)\n- [Cell-type specific gene expression detection](./references/detection.md)\n- [Simulation of multi-sample scRNA-seq data](./references/simulation.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-muscat",
+    "description": "This tool performs differential state analysis to identify cell-type-specific responses across experimental conditions in multi-sample single-cell RNA-seq data. Use when user asks to perform differential state analysis, aggregate single-cell data into pseudobulk, run cell-level mixed models, or visualize cluster-specific gene expression changes across groups.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/muscat.html"
+  }
+}

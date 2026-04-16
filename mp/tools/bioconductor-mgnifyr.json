@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mgnifyr",
+  "category": "bioconductor",
+  "name": "bioconductor-mgnifyr",
+  "description": "This R package provides an interface to search and retrieve microbiome data and metadata from the EBI MGnify database. Use when user asks to search for metagenomic studies or samples, fetch analysis metadata, and import microbial abundance data into TreeSummarizedExperiment or MultiAssayExperiment formats.",
+  "overview": "MGnifyR provides an R interface to the EBI MGnify metagenomics resource. It allows users to programmatically search the MGnify database and retrieve processed results (taxonomic and functional) without manual downloads. The package is designed to integrate seamlessly with the `miaverse` ecosystem, converting MGnify API responses into standard Bioconductor objects like `TreeSummarizedExperiment`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MGnifyR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/EBI-Metagenomics/MGnifyR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MGnifyR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MGnifyR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/EBI-Metagenomics/MGnifyR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mgnifyr\n\nname: bioconductor-mgnifyr\ndescription: Access and retrieve microbiome data from the EBI MGnify database using the MGnifyR R package. Use this skill when you need to search for metagenomic studies, samples, or analyses, fetch metadata, and import microbial abundance data directly into TreeSummarizedExperiment (TreeSE) or MultiAssayExperiment (MAE) formats for downstream analysis with the miaverse framework.\n\n## Overview\n\nMGnifyR provides an R interface to the EBI MGnify metagenomics resource. It allows users to programmatically search the MGnify database and retrieve processed results (taxonomic and functional) without manual downloads. The package is designed to integrate seamlessly with the `miaverse` ecosystem, converting MGnify API responses into standard Bioconductor objects like `TreeSummarizedExperiment`.\n\n## Core Workflow\n\n### 1. Initialize the Client\nAll operations require a `MgnifyClient` object. Enabling local caching is highly recommended to speed up repetitive queries.\n\n```r\nlibrary(MGnifyR)\nmg <- MgnifyClient(useCache = TRUE, cacheDir = \"./mgnify_cache\")\n```\n\n### 2. Search for Data\nUse `doQuery()` to find accessions based on biomes, locations, or experiment types.\n\n```r\n# Search for drinking water samples\nsamples <- doQuery(\n    mg,\n    type = \"samples\",\n    biome_name = \"root:Environmental:Aquatic:Freshwater:Drinking water\",\n    max.hits = 20\n)\n```\n\n### 3. Resolve Analysis Accessions\nMGnify uses \"Analysis\" IDs as the canonical identifier for specific pipeline runs. Convert study or sample IDs to analysis IDs before fetching data.\n\n```r\n# Convert sample accessions to analysis accessions\nanalysis_ids <- searchAnalysis(mg, type = \"samples\", accession = samples$accession)\n```\n\n### 4. Fetch Metadata\nRetrieve detailed metadata for the selected analyses. Note that all returned values are initially characters; numeric conversion may be required.\n\n```r\nmeta_df <- getMetadata(mg, analysis_ids)\n# Example: Filter for specific pipeline version\nmeta_v5 <- meta_v5[meta_v5$`analysis_pipeline-version` == \"5.0\", ]\n```\n\n### 5. Import Microbiome Data\nUse `getResult()` to fetch abundance tables.\n- **Amplicon data**: Usually returns a single `TreeSummarizedExperiment` (TreeSE).\n- **Metagenomic data**: Usually returns a `MultiAssayExperiment` (MAE) containing multiple TreeSE objects (taxonomic, GO terms, InterPro, etc.).\n\n```r\n# Fetch taxonomic data\ntse <- getResult(mg, accession = analysis_ids, get.func = FALSE)\n\n# Fetch both taxonomic and functional data (Metagenomics)\nmae <- getResult(mg, accession = analysis_ids, bulk.dl = TRUE)\n```\n\n### 6. Fetch Files and Raw Data\nFor files not included in the standard TreeSE output (e.g., contigs, hidden Markov models), use `searchFile()` and `getFile()`.\n\n```r\n# Find download URLs for predicted CDS\nfile_list <- searchFile(mg, analysis_ids, type = \"analyses\")\ntarget_file <- file_list[file_list$attributes.description.label == \"Predicted CDS\", ]\n\n# Download a specific file\nlocal_path <- getFile(mg, target_file$download_url[1])\n```\n\n## Integration with miaverse\nOnce data is in `TreeSE` format, use the `mia` and `scater` packages for analysis:\n\n```r\nlibrary(mia)\n# Transform to relative abundance\ntse <- transformAssay(tse, method = \"relabundance\")\n\n# Calculate Alpha Diversity\ntse <- addAlpha(tse, index = \"shannon\")\n\n# Perform PCoA (Beta Diversity)\ntse <- runMDS(tse, FUN = vegan::vegdist, method = \"bray\", assay.type = \"relabundance\")\n```\n\n## Tips and Best Practices\n- **Caching**: Always use `useCache = TRUE` for `MgnifyClient` to avoid redundant API calls and slow network speeds.\n- **Bulk Downloads**: When fetching large metagenomic datasets, set `bulk.dl = TRUE` in `getResult()` to download study-level TSV files, which is significantly faster than per-analysis API queries.\n- **Pipeline Versions**: MGnify often has multiple pipeline runs for the same sample. Filter your metadata by `analysis_pipeline-version` to ensure consistency.\n- **Data Types**: `doQuery()` supports `studies`, `samples`, `runs`, `analyses`, and `assemblies`.\n\n## Reference documentation\n- [MGnifyR](./references/MGnifyR.md)\n- [MGnifyR, extended vignette](./references/MGnifyR_long.md)\n- [Metagenomics bioinformatics at MGnify](./references/MGnify_course.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mgnifyr",
+    "description": "This R package provides an interface to search and retrieve microbiome data and metadata from the EBI MGnify database. Use when user asks to search for metagenomic studies or samples, fetch analysis metadata, and import microbial abundance data into TreeSummarizedExperiment or MultiAssayExperiment formats.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MGnifyR.html"
+  }
+}

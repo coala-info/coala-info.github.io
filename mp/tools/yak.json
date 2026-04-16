@@ -1,0 +1,53 @@
+{
+  "id": "yak",
+  "category": "CLI",
+  "name": "yak",
+  "description": "Yak evaluates genomic assembly quality and base-level accuracy by comparing sequences against k-mer spectra from high-quality short reads. Use when user asks to estimate assembly quality values, calculate k-mer completeness, build k-mer hash tables, or partition sex chromosomes.",
+  "overview": "Yak is a specialized bioinformatics tool designed to evaluate the quality of genomic assemblies and long reads (specifically PacBio CCS/HiFi) by comparing them against the k-mer spectrum of high-quality short reads. It provides a robust, reference-free method for estimating base-level accuracy (Quality Value or QV) and completeness. It is particularly effective at high accuracy levels (up to Q50) where naive estimators often fail due to sampling bias or short-read errors.",
+  "homepage": "https://github.com/lh3/yak",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/yak/overview",
+  "github": "https://github.com/lh3/yak",
+  "conda_downloads": "10.0K",
+  "conda_downloads_num": 10000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "yak_count",
+      "yak_qv",
+      "yak_triobin",
+      "yak_trioeval",
+      "yak_inspect"
+    ],
+    "description": "Count k-mers in FASTA files",
+    "docker_image": "quay.io/biocontainers/yak:0.1--hed695b0_0",
+    "homepage": "https://github.com/lh3/yak",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/yak/overview",
+    "github": "https://github.com/lh3/yak",
+    "conda_downloads": "10.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "yak_count.cwl",
+    "yak_inspect.cwl",
+    "yak_qv.cwl",
+    "yak_triobin.cwl",
+    "yak_trioeval.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# yak\n\n## Overview\nYak is a specialized bioinformatics tool designed to evaluate the quality of genomic assemblies and long reads (specifically PacBio CCS/HiFi) by comparing them against the k-mer spectrum of high-quality short reads. It provides a robust, reference-free method for estimating base-level accuracy (Quality Value or QV) and completeness. It is particularly effective at high accuracy levels (up to Q50) where naive estimators often fail due to sampling bias or short-read errors.\n\n## Core Workflows and CLI Patterns\n\n### 1. Building K-mer Hash Tables\nBefore analysis, you must count k-mers in your input data to create `.yak` files.\n\n*   **For Assemblies:** Count all k-mers, including singletons.\n    ```bash\n    ./yak count -K1.5g -t32 -o asm.yak asm.fa.gz\n    ```\n*   **For High-Coverage Reads:** Discard singletons to reduce noise and memory usage.\n    ```bash\n    ./yak count -b37 -t32 -o ccs.yak ccs-reads.fq.gz\n    ```\n*   **For Paired-End Short Reads:** Provide both files to create a combined spectrum.\n    ```bash\n    ./yak count -b37 -t32 -o sr.yak <(zcat sr_1.fq.gz) <(zcat sr_2.fq.gz)\n    ```\n\n### 2. Quality Value (QV) Estimation\nEstimate the base accuracy of an assembly or long reads by comparing them to a short-read k-mer hash table.\n\n*   **Assembly QV:**\n    ```bash\n    ./yak qv -t32 -p -K3.2g -l100k sr.yak asm.fa.gz > asm-sr.qv.txt\n    ```\n*   **CCS Read QV:**\n    ```bash\n    ./yak qv -t32 -p sr.yak ccs-reads.fq.gz > ccs-sr.qv.txt\n    ```\n\n### 3. Inspection and Completeness\nEvaluate how well the assembly represents the k-mers found in the raw reads.\n\n*   **K-mer QV for Reads:**\n    ```bash\n    ./yak inspect ccs.yak sr.yak > ccs-sr.kqv.txt\n    ```\n*   **Assembly Completeness:**\n    ```bash\n    ./yak inspect sr.yak asm.yak > sr-asm.kqv.txt\n    ```\n*   **K-mer Histogram:** Generate a frequency distribution of k-mers.\n    ```bash\n    ./yak inspect sr.yak > sr.hist\n    ```\n\n### 4. Sex Chromosome Partitioning\nFor human de novo assemblies, yak can help separate X and Y contigs using specialized k-mer databases.\n\n```bash\n# Partition contigs based on k-mer counts\n./yak sexchr -K2g -t16 chrY-no-par.yak chrX-no-par.yak par.yak hap1.fa hap2.fa > cnt.txt\n\n# Use the provided helper script to group and extract sequences\n./groupxy.pl cnt.txt | awk '$4==1' | cut -f2 | seqtk subseq -l80 <(cat hap1.fa hap2.fa) - > new-hap1.fa\n```\n\n## Best Practices\n*   **Memory Management:** Use the `-K` flag to pre-allocate hash table memory (e.g., `-K1.5g`). This prevents frequent re-allocations during the counting phase.\n*   **Threading:** Yak is highly multi-threaded. Always utilize the `-t` flag to match your available CPU cores for significant speedups in `count` and `qv` operations.\n*   **Singleton Handling:** When working with high-coverage short reads (e.g., Illumina), use `-b` (typically `-b37`) to ignore k-mers that appear only once, as these are likely sequencing errors. For assemblies, keep singletons to ensure every part of the sequence is evaluated.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| yak count | Count k-mers in FASTA files |\n| yak inspect | Evaluates k-mer QV and k-mer sensitivity. |\n| yak qv | Calculate k-mer quality values (QV) for sequences. |\n| yak triobin | Identify and extract triobins from yak files. |\n| yak trioeval | Evaluate trios from yak files and a reference FASTA. |\n\n## Reference documentation\n- [Yak GitHub Repository Overview](./references/github_com_lh3_yak.md)\n- [Yak README and Getting Started](./references/github_com_lh3_yak_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "yak",
+    "description": "Yak evaluates genomic assembly quality and base-level accuracy by comparing sequences against k-mer spectra from high-quality short reads. Use when user asks to estimate assembly quality values, calculate k-mer completeness, build k-mer hash tables, or partition sex chromosomes.",
+    "homepage": "https://github.com/lh3/yak"
+  }
+}

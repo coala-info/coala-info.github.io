@@ -1,0 +1,55 @@
+{
+  "id": "hhsuite",
+  "category": "CLI",
+  "name": "hhsuite",
+  "description": "HH-suite is a bioinformatics toolkit that uses profile Hidden Markov Models to detect distant evolutionary relationships between protein sequences. Use when user asks to find remote homologs, generate multiple sequence alignments, build protein HMMs, or search protein databases like Pfam and PDB.",
+  "overview": "The HH-suite is a specialized bioinformatics toolkit designed for detecting distant evolutionary relationships (homology) between proteins. Unlike standard BLAST which compares single sequences, HH-suite uses profile Hidden Markov Models (HMMs) to represent protein families. By aligning these HMMs against each other, it can identify homologous proteins even when sequence identity is very low (the \"twilight zone\"). This is particularly useful for protein function annotation, secondary structure p",
+  "homepage": "https://github.com/soedinglab/hh-suite",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hhsuite/overview",
+  "github": "https://github.com/soedinglab/hh-suite",
+  "conda_downloads": "428.7K",
+  "conda_downloads_num": 428700,
+  "last_updated": "2025-05-28",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hhsuite_hhblits",
+      "hhsuite_hhsearch",
+      "hhsuite_hhmake",
+      "hhsuite_hhalign",
+      "hhsuite_hhfilter",
+      "hhsuite_reformat.pl"
+    ],
+    "description": "HMM-HMM-based lightning-fast iterative sequence search\nHHblits is a sensitive, general-purpose, iterative sequence search tool that represents\nboth query and database sequences by HMMs. You can search HHblits databases starting\nwith a single query sequence, a multiple sequence alignment (MSA), or an HMM. HHblits\nprints out a ranked list of database HMMs/MSAs and can also generate an MSA by merging\nthe significant database HMMs/MSAs onto the query MSA.",
+    "docker_image": "quay.io/biocontainers/hhsuite:3.3.0--h503566f_15",
+    "homepage": "https://github.com/soedinglab/hh-suite",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hhsuite/overview",
+    "github": "https://github.com/soedinglab/hh-suite",
+    "conda_downloads": "428.7K",
+    "last_updated": "2025-05-28",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "hhsuite_hhalign.cwl",
+    "hhsuite_hhblits.cwl",
+    "hhsuite_hhfilter.cwl",
+    "hhsuite_hhmake.cwl",
+    "hhsuite_hhsearch.cwl",
+    "hhsuite_reformat.pl.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hhsuite\n\n## Overview\nThe HH-suite is a specialized bioinformatics toolkit designed for detecting distant evolutionary relationships (homology) between proteins. Unlike standard BLAST which compares single sequences, HH-suite uses profile Hidden Markov Models (HMMs) to represent protein families. By aligning these HMMs against each other, it can identify homologous proteins even when sequence identity is very low (the \"twilight zone\"). This is particularly useful for protein function annotation, secondary structure prediction, and identifying templates for 3D structure modeling.\n\n## Core Workflows\n\n### Iterative Sequence Searching (HHblits)\nHHblits is the fastest and most common tool for generating high-quality Multiple Sequence Alignments (MSAs) and finding remote homologs.\n\n*   **Single iteration search**:\n    `hhblits -i query.fasta -d <database_basename> -o results.hhr -n 1`\n*   **Generate an alignment (A3M format)**:\n    `hhblits -i query.fasta -d <database_basename> -oa3m output.a3m`\n*   **High-sensitivity search (multiple iterations)**:\n    `hhblits -i query.fasta -d <database_basename> -n 3 -e 1e-3`\n\n### Database Searching (HHsearch)\nUse HHsearch when you already have a query MSA or HMM and want to search it against a database of HMMs (like Pfam or PDB70).\n\n*   **Standard search**:\n    `hhsearch -i query.a3m -d <database_basename> -o results.hhr`\n*   **Search with secondary structure scoring**:\n    `hhsearch -i query.a3m -d <database_basename> -ssm 2 -ssw 0.11`\n\n### Building and Manipulating HMMs\n*   **Build an HMM from an alignment**:\n    `hhmake -i input.a3m -o output.hhm`\n*   **Align two specific MSAs/HMMs**:\n    `hhalign -i query.a3m -t template.a3m -o alignment.hhr`\n*   **Filter an MSA for diversity**:\n    `hhfilter -i input.a3m -o filtered.a3m -id 90 -cov 50`\n\n## Expert Tips & Best Practices\n\n### Performance Optimization\n*   **CPU Architecture**: HH-suite3 is optimized for AVX2 and SSE2. Ensure you use the AVX2 build if your CPU supports it for a ~2x speed increase.\n*   **Parallelization**: Use the `-cpu <N>` flag to specify the number of threads. For large-scale searches, HH-suite supports MPI for distribution across cluster nodes.\n*   **Memory Management**: Searching large databases like BFD requires significant RAM. If memory is limited, ensure you are using the compressed `.ffdata` and `.ffindex` database formats.\n\n### Alignment Formats\n*   **A3M Format**: This is the native format for HH-suite. It stores the master sequence in uppercase and insertions relative to the master in lowercase, with deletions marked as dots. It is much more compact than standard FASTA alignments.\n*   **Reformatting**: Use the included `reformat.pl` script to convert between formats:\n    `reformat.pl a3m fas input.a3m output.fas`\n\n### Interpreting Results\n*   **Probability**: The most reliable metric in HH-suite. A probability > 95% usually indicates a true homologous relationship.\n*   **E-value**: Indicates the number of false positives expected at this score.\n*   **Neff**: (Number of effective sequences) Check this value in the `.hhr` header. A low Neff (< 3.0) suggests the input alignment is not diverse enough, which may reduce search sensitivity.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| hhalign | Align a query alignment/HMM to a template alignment/HMM by HMM-HMM alignment |\n| hhblits | HMM-HMM-based lightning-fast iterative sequence search HHblits is a sensitive, general-purpose, iterative sequence search tool that represents both query and database sequences by HMMs. You can search HHblits databases starting with a single query sequence, a multiple sequence alignment (MSA), or an HMM. HHblits prints out a ranked list of database HMMs/MSAs and can also generate an MSA by merging the significant database HMMs/MSAs onto the query MSA. |\n| hhfilter | Filter an alignment by maximum pairwise sequence identity, minimum coverage, minimum sequence identity, or score per column to the first (seed) sequence. |\n| hhmake | Build an HMM from an input alignment in A2M, A3M, or FASTA format, or convert between HMMER format (.hmm) and HHsearch format (.hhm). |\n| hhsearch | Search a database of HMMs with a query alignment or query HMM |\n| reformat.pl | Read a multiple alignment in one format and write it in another format |\n\n## Reference documentation\n- [HH-suite GitHub Repository](./references/github_com_soedinglab_hh-suite.md)\n- [HH-suite User Guide](./references/github_com_soedinglab_hh-suite_wiki.md)\n- [HH-suite3 Research Paper (BMC Bioinformatics)](./references/link_springer_com_article_10.1186_s12859-019-3019-7.md)",
+  "skill_front_matter": {
+    "name": "hhsuite",
+    "description": "HH-suite is a bioinformatics toolkit that uses profile Hidden Markov Models to detect distant evolutionary relationships between protein sequences. Use when user asks to find remote homologs, generate multiple sequence alignments, build protein HMMs, or search protein databases like Pfam and PDB.",
+    "homepage": "https://github.com/soedinglab/hh-suite"
+  }
+}

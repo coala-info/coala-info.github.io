@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cancermutationanalysis",
+  "category": "bioconductor",
+  "name": "bioconductor-cancermutationanalysis",
+  "description": "This tool performs statistical analysis of somatic mutations to distinguish driver genes from passenger mutations in cancer genomes. Use when user asks to calculate gene-level scores like CaMP or logLRT, estimate passenger probabilities via empirical Bayes FDR, or perform patient-oriented gene-set analysis.",
+  "overview": "The `CancerMutationAnalysis` package provides tools for distinguishing \"driver\" genes (active in tumorigenesis) from \"passenger\" genes (mutated but neutral) in cancer sequencing studies. It implements methods for both gene-level scoring and gene-set level analysis, specifically designed for discovery and prevalence screen study designs.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/CancerMutationAnalysis.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cancermutationanalysis/overview",
+  "github": "N/A",
+  "conda_downloads": "38.8K",
+  "conda_downloads_num": 38800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CancerMutationAnalysis"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/CancerMutationAnalysis.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cancermutationanalysis/overview",
+    "github": "N/A",
+    "conda_downloads": "38.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cancermutationanalysis\n\nname: bioconductor-cancermutationanalysis\ndescription: Statistical analysis of somatic mutations in cancer genomes using the CancerMutationAnalysis R package. Use this skill to calculate gene-level scores (CaMP, logLRT), estimate passenger probabilities via empirical Bayes FDR, and perform patient-oriented gene-set analysis to distinguish driver genes from passenger mutations.\n\n## Overview\n\nThe `CancerMutationAnalysis` package provides tools for distinguishing \"driver\" genes (active in tumorigenesis) from \"passenger\" genes (mutated but neutral) in cancer sequencing studies. It implements methods for both gene-level scoring and gene-set level analysis, specifically designed for discovery and prevalence screen study designs.\n\n## Core Data Objects\n\nThe package uses specific data structures for mutations, coverage, and samples:\n- `GeneAlter*`: Mutation details (transcript, type [Mut/Amp/Del], sample, screen [Disc/Prev]).\n- `GeneCov*`: Sequencing coverage (nucleotides successfully sequenced per transcript/context).\n- `GeneSamp*`: Sample counts for discovery and prevalence screens.\n- `BackRates*`: Estimated background passenger rates.\n\nExample datasets included: `WoodBreast07`, `WoodColon07`, `JonesPancreas08`, `ParsonsGBM08`, `ParsonsMB11`.\n\n## Gene-Level Analysis\n\n### Calculating Gene Scores\nUse `cma.scores` to calculate Cancer Mutation Prevalence (CaMP) and log Likelihood Ratio (logLRT) scores.\n\n```r\nlibrary(CancerMutationAnalysis)\ndata(ParsonsGBM08)\n\nscores <- cma.scores(\n  cma.alter = GeneAlterGBM,\n  cma.cov = GeneCovGBM,\n  cma.samp = GeneSampGBM,\n  passenger.rates = BackRatesGBM[\"MedianRates\",]\n)\nhead(scores)\n```\n\n### Estimating Passenger Probabilities (FDR)\nUse `cma.fdr` to perform empirical Bayes analysis to estimate local false discovery rates (fdr), which represent passenger probabilities.\n\n```r\nfdr_results <- cma.fdr(\n  cma.alter = GeneAlterGBM,\n  cma.cov = GeneCovGBM,\n  cma.samp = GeneSampGBM,\n  scores = \"logLRT\",\n  passenger.rates = BackRatesGBM[\"MedianRates\",],\n  showFigure = TRUE,\n  cutoffFdr = 0.1\n)\n# Access results for a specific score\nhead(fdr_results[[\"logLRT\"]])\n```\n\n## Gene-Set Analysis\n\nThe package implements \"patient-oriented\" approaches that calculate scores per sample before combining them.\n\n### Performing Gene-Set Tests\nUse `cma.set.stat` to test specific gene sets (e.g., from KEGG).\n\n```r\n# Requires mapping between Entrez IDs and Gene Names\ndata(EntrezID2Name)\n\nresults <- cma.set.stat(\n  cma.alter = GeneAlterGBM,\n  cma.cov = GeneCovGBM,\n  cma.samp = GeneSampGBM,\n  GeneSets = my_gene_sets, # List of gene vectors\n  ID2name = EntrezID2Name,\n  gene.method = FALSE,          # Wilcoxon gene-oriented method\n  perm.null.method = TRUE,      # Permutation null (no heterogeneity)\n  pass.null.method = TRUE       # Passenger null (no heterogeneity)\n)\n```\n\n### Simulating Gene-Set Data\nUse `cma.set.sim` to evaluate methods under null hypotheses or with \"spiked-in\" signals.\n\n```r\nsim_results <- cma.set.sim(\n  cma.alter = GeneAlterGBM,\n  cma.cov = GeneCovGBM,\n  cma.samp = GeneSampGBM,\n  GeneSets = my_gene_sets,\n  nr.iter = 10,\n  pass.null = TRUE,             # Use passenger null mechanism\n  perc.samples = c(75, 95),     # Spiked-in mutation probabilities\n  spiked.set.sizes = c(50)      # Size of spiked-in sets\n)\n\n# Extract specific metrics from simulation\np_vals <- extract.sims.method(sim_results, \"p.values.perm.null\")\n```\n\n## Workflow Tips\n\n1. **Data Filtering**: Most analyses (especially gene-set methods) focus on point mutations (`Mut`) and discovery (`Disc`) samples.\n2. **Annotation**: Ensure gene identifiers in your `GeneSets` match the names used in `GeneAlter` objects. Use the `ID2name` parameter to map identifiers if necessary.\n3. **Performance**: Running all gene-set methods simultaneously via `cma.set.stat` can be computationally intensive; enable only the specific null models required for your study.\n\n## Reference documentation\n\n- [CancerMutationAnalysis](./references/CancerMutationAnalysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cancermutationanalysis",
+    "description": "This tool performs statistical analysis of somatic mutations to distinguish driver genes from passenger mutations in cancer genomes. Use when user asks to calculate gene-level scores like CaMP or logLRT, estimate passenger probabilities via empirical Bayes FDR, or perform patient-oriented gene-set analysis.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/CancerMutationAnalysis.html"
+  }
+}

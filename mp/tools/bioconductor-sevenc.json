@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sevenc",
+  "category": "bioconductor",
+  "name": "bioconductor-sevenc",
+  "description": "This tool predicts chromatin looping interactions by combining ChIP-seq data with CTCF motif information and genomic features. Use when user asks to predict chromatin loops, identify interactions between regulatory elements and genes, or calculate ChIP-seq signal correlations between genomic anchors.",
+  "overview": "The `sevenC` package implements a computational method to predict chromatin loops. It leverages the observation that proteins involved in looping (like CTCF) often show correlated ChIP-seq signals at both anchor points. By combining ChIP-seq coverage correlation with sequence features (motif similarity, distance, and orientation), `sevenC` provides a logistic regression framework to predict interactions without requiring expensive Hi-C or ChIA-PET experiments.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/sevenC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ibn-salem/sevenC",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sevenC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sevenC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ibn-salem/sevenC",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sevenc\n\nname: bioconductor-sevenc\ndescription: Predict chromatin looping interactions using ChIP-seq data and CTCF motif information. Use this skill when you need to identify potential physical interactions between distal regulatory elements (like enhancers) and target genes based on protein binding signals, motif orientation, and genomic distance.\n\n## Overview\n\nThe `sevenC` package implements a computational method to predict chromatin loops. It leverages the observation that proteins involved in looping (like CTCF) often show correlated ChIP-seq signals at both anchor points. By combining ChIP-seq coverage correlation with sequence features (motif similarity, distance, and orientation), `sevenC` provides a logistic regression framework to predict interactions without requiring expensive Hi-C or ChIA-PET experiments.\n\n## Core Workflow\n\n### 1. Prepare Motif Anchors\nThe process starts with CTCF motif locations as `GRanges`. The package provides pre-computed motifs for hg19, but custom motifs can be used.\n\n```r\nlibrary(sevenC)\n# Load example motifs (hg19 CTCF on chr22)\nmotifs <- motif.hg19.CTCF.chr22\n```\n\n### 2. Add ChIP-seq Signals\nChIP-seq data (typically in bigWig format) is mapped to the motif regions. This adds a `chip` metadata column containing signal vectors.\n\n```r\nbigWigFile <- \"path/to/your/chipseq.bigWig\"\n# Add coverage in a 1000bp window around motifs\nmotifs <- addCovToGR(motifs, bigWigFile)\n```\n*Note: On Windows, bigWig reading is not supported via rtracklayer; ChIP signals must be provided as a NumericList manually.*\n\n### 3. Generate Candidate Pairs\nCreate pairs of motifs within a specific distance (default 1Mb) and annotate them with genomic features.\n\n```r\n# Creates a GInteractions object with distance and orientation\ngi <- prepareCisPairs(motifs, maxDist = 10^6)\n```\n\n### 4. Compute Correlation and Predict\nCalculate the Pearson correlation of ChIP-seq signals between anchors and apply the prediction model.\n\n```r\n# Compute correlation of signals\ngi <- addCovCor(gi)\n\n# Predict loops using the default pre-trained model\nloops <- predLoops(gi)\n```\n\n## Advanced Usage\n\n### Custom Model Training\nIf experimental loop data (e.g., Hi-C) is available, you can train a cell-type-specific model.\n\n```r\n# 1. Load known loops (e.g., Rao et al. format)\nknownLoops <- parseLoopsRao(\"hic_loops.txt\")\n\n# 2. Label candidates\ngi <- addInteractionSupport(gi, knownLoops)\n\n# 3. Fit logistic regression\nfit <- glm(loop ~ cor_chip + dist + strandOrientation, \n           data = mcols(gi), family = binomial())\n\n# 4. Predict with custom parameters\ngi <- predLoops(gi, \n                formula = loop ~ cor_chip + dist + strandOrientation, \n                betas = coef(fit), \n                cutoff = NULL)\n```\n\n### Downstream Analysis\nThe output is a `GInteractions` object, compatible with the `InteractionSet` and `GenomicInteractions` packages.\n\n*   **Linking Regions:** Use `linkOverlaps()` to find loops connecting specific enhancers to promoters.\n*   **Exporting:** Use `export.bedpe(loops, \"output.bedpe\", score = \"pred\")` for visualization in genome browsers like Juicebox or IGV.\n\n## Key Functions\n- `addCovToGR()`: Extracts ChIP-seq signal from bigWig files to GRanges.\n- `prepareCisPairs()`: Wrapper to create candidate pairs and add distance/orientation.\n- `addCovCor()`: Calculates signal correlation between interaction anchors.\n- `predLoops()`: Predicts interactions using a logistic regression model.\n- `parseLoopsRao()`: Utility to read Hi-C loop files from the Rao et al. format.\n\n## Reference documentation\n- [Prediction of chromatin looping interactions with sevenC](./references/sevenC.Rmd)\n- [sevenC Package Manual](./references/sevenC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sevenc",
+    "description": "This tool predicts chromatin looping interactions by combining ChIP-seq data with CTCF motif information and genomic features. Use when user asks to predict chromatin loops, identify interactions between regulatory elements and genes, or calculate ChIP-seq signal correlations between genomic anchors.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sevenC.html"
+  }
+}

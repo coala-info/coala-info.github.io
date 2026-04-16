@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-txreginfra",
+  "category": "bioconductor",
+  "name": "bioconductor-txreginfra",
+  "description": "TxRegInfra provides infrastructure to query and integrate diverse transcriptional regulatory data modalities from remote MongoDB databases into Bioconductor containers. Use when user asks to connect to regulatory databases, perform genomic range-based queries on eQTL or footprinting data, and convert results into RaggedExperiment objects for downstream analysis.",
+  "overview": "TxRegInfra provides the infrastructure to query and integrate diverse transcriptional regulatory data modalities. It leverages MongoDB as a backend to handle the high volume of tissue-specific data (like digital genomic footprinting and eQTLs) without requiring the user to store massive BED files locally. The package primarily facilitates the conversion of remote database queries into standard Bioconductor containers like `RaggedExperiment` for downstream analysis.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/TxRegInfra.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TxRegInfra"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/TxRegInfra.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-txreginfra\n\n## Overview\n\nTxRegInfra provides the infrastructure to query and integrate diverse transcriptional regulatory data modalities. It leverages MongoDB as a backend to handle the high volume of tissue-specific data (like digital genomic footprinting and eQTLs) without requiring the user to store massive BED files locally. The package primarily facilitates the conversion of remote database queries into standard Bioconductor containers like `RaggedExperiment` for downstream analysis.\n\n## Core Workflows\n\n### 1. Connecting to the Regulatory Database\nThe package uses `mongolite` to interface with a MongoDB server. A default AWS-hosted instance is often used for testing and general regulatory queries.\n\n```r\nlibrary(TxRegInfra)\nlibrary(mongolite)\n\n# Connect to the default AWS-hosted txregnet database\ncon1 <- mongo(url = URL_txregInAWS(), db = \"txregnet\")\n\n# List available collections (requires local mongo installation)\nif (verifyHasMongoCmd()) {\n  collections <- listAllCollections(url = URL_txregInAWS(), db = \"txregnet\")\n}\n```\n\n### 2. Querying and Aggregation\nYou can perform raw MongoDB queries or use the package's helper functions to generate JSON-based aggregation pipelines.\n\n```r\n# Find a single record from a specific collection\ncoll_name <- \"Adipose_Subcutaneous_allpairs_v7_eQTL\"\nm1 <- mongo(url = URL_txregInAWS(), db = \"txregnet\", collection = coll_name)\nsample_rec <- m1$find(limit = 1)\n\n# Create an aggregator to compute statistics by chromosome\n# Example: Find minimum footprint statistic (stat) by chromosome (chr)\nnewagg <- makeAggregator(by = \"chr\", vbl = \"stat\", op = \"$min\", opname = \"min\")\nres <- m1$aggregate(newagg)\n```\n\n### 3. Using the RaggedMongoExpt Container\nThe `RaggedMongoExpt` object binds sample metadata to the MongoDB connection, allowing for genomic range-based subsetting.\n\n```r\n# Load basic sample metadata\ncd <- TxRegInfra::basicColData\n\n# Create the integrative container\nrme0 <- RaggedMongoExpt(con1, colData = cd)\n\n# Filter by data type (e.g., Footprinting 'FP')\nrme1 <- rme0[, which(cd$type == \"FP\")]\n\n# Subset by genomic coordinates (returns a RaggedExperiment)\nroi <- GRanges(\"chr17\", IRanges(38.07e6, 38.09e6))\nse_sub <- sbov(rme1, roi)\n```\n\n### 4. Data Extraction and Visualization\nOnce subsetted into a `RaggedExperiment`, data can be converted into matrices for visualization with `Gviz`.\n\n```r\n# Extract a sparse assay (e.g., the 3rd assay containing 'stat')\nsa <- sparseAssay(se_sub, 3)\n\n# Example: Prepare for Gviz plotting\n# Convert rownames (chr:start-end) back to GRanges\nsar <- strsplit(rownames(sa), \":|-\")\ngr <- GRanges(seqnames(roi), \n              IRanges(as.numeric(sapply(sar, \"[\", 2)), \n                      as.numeric(sapply(sar, \"[\", 3))))\n\n# Add scores from the sparse assay\ngr$score <- 1 - sa[, 1] # Example transformation\n```\n\n## Tips and Best Practices\n- **Memory Management**: Use `sbov()` (subset by overlap) to pull only the necessary genomic slices from the remote database into your R session to avoid memory exhaustion.\n- **Parallelization**: When performing many queries, register a parallel backend using `BiocParallel`, though `SerialParam()` is safer for initial debugging of database connections.\n- **Collection Names**: Collection names typically follow a pattern: `[Tissue]_[Study]_[Build]_[Type]`. Use `basicColData` to explore available tissue/type combinations.\n\n## Reference documentation\n- [TxRegInfra](./references/TxRegInfra.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-txreginfra",
+    "description": "TxRegInfra provides infrastructure to query and integrate diverse transcriptional regulatory data modalities from remote MongoDB databases into Bioconductor containers. Use when user asks to connect to regulatory databases, perform genomic range-based queries on eQTL or footprinting data, and convert results into RaggedExperiment objects for downstream analysis.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/TxRegInfra.html"
+  }
+}

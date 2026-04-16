@@ -1,0 +1,45 @@
+{
+  "id": "pgzip",
+  "category": "CLI",
+  "name": "pgzip",
+  "description": "pgzip is a parallelized gzip implementation that increases throughput by distributing compression and decompression tasks across multiple CPU cores. Use when user asks to compress data in parallel, decompress files with read-ahead optimization, or tune gzip performance using custom concurrency settings.",
+  "overview": "pgzip provides a parallelized implementation of the gzip format, significantly increasing throughput by distributing compression tasks across multiple CPU cores. It produces standard, fully compatible gzip files that can be read by any conventional gzip tool. This skill focuses on optimizing performance through concurrency settings and understanding the thresholds where parallel processing provides the most benefit.",
+  "homepage": "https://github.com/klauspost/pgzip",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/conda-forge/packages/pgzip/overview",
+  "github": "https://github.com/klauspost/pgzip",
+  "conda_downloads": "15.5K",
+  "conda_downloads_num": 15500,
+  "last_updated": "2025-12-26",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pgzip"
+    ],
+    "description": "A parallel implementation of gzip for compression and decompression that utilizes multiple cores.",
+    "docker_image": "quay.io/biocontainers/pgzip:0.3.5",
+    "homepage": "https://github.com/klauspost/pgzip",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/conda-forge/packages/pgzip/overview",
+    "github": "https://github.com/klauspost/pgzip",
+    "conda_downloads": "15.5K",
+    "last_updated": "2025-12-26",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pgzip.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pgzip\n\n## Overview\npgzip provides a parallelized implementation of the gzip format, significantly increasing throughput by distributing compression tasks across multiple CPU cores. It produces standard, fully compatible gzip files that can be read by any conventional gzip tool. This skill focuses on optimizing performance through concurrency settings and understanding the thresholds where parallel processing provides the most benefit.\n\n## Installation\nInstall the tool and its dependencies using the Go toolchain:\n```bash\ngo get github.com/klauspost/pgzip/...\ngo get -u github.com/klauspost/compress\n```\n\n## Go Library Integration\nTo use pgzip as a drop-in replacement for the standard library, update your imports:\n```go\nimport gzip \"github.com/klauspost/pgzip\"\n```\n\n### Configuring Concurrency\nThe primary advantage of pgzip is the ability to tune block sizes and parallel workers. Use `SetConcurrency(blockSize, blocks int)` to optimize for your hardware:\n\n- **blockSize**: The approximate size of data chunks to be compressed in parallel.\n- **blocks**: The number of blocks to process concurrently.\n\n**Default Settings:**\n- Block size: 1MB\n- Blocks: `runtime.GOMAXPROCS(0)`\n\n**Example Implementation:**\n```go\nvar b bytes.Buffer\nw := gzip.NewWriter(&b)\n// Optimize for a specific workload (e.g., 100k blocks, 10 goroutines)\nw.SetConcurrency(100000, 10)\nw.Write([]byte(\"data\"))\nw.Close()\n```\n\n## Decompression Optimization\nDecompression in pgzip is optimized through a \"read-ahead\" mechanism. It decodes data into a buffer before the reader requests it, ensuring that I/O operations are non-blocking if the decompressor stays ahead of the consumer.\n\nTo customize decompression buffering, use `NewReaderN`:\n```go\n// r is an io.Reader, blockSize is the decode chunk, blocks is the look-ahead count\nreader, err := pgzip.NewReaderN(r, blockSize, blocks)\n```\n\n## Performance Best Practices\n- **Data Size Threshold**: Only use pgzip for data larger than 1MB. For smaller files, the overhead of managing goroutines and block splitting may result in slower performance than standard single-threaded gzip.\n- **Block Size Tuning**: For most high-core-count systems, a block size of 250k is a \"sweet spot\" for balancing memory usage and compression speed.\n- **Worker Allocation**: Set the number of blocks to approximately twice the number of available CPU cores to ensure the pipeline remains full and handles spikes in data throughput efficiently.\n- **Memory Management**: pgzip uses `sync.Pool` to reduce GC pressure. Ensure you call `Close()` on writers to return buffers to the pool.\n- **Non-Blocking Writes**: Because pgzip buffers blocks for parallel processing, calls to `Write()` will only block if the internal queue of blocks is full. This can naturally smooth out performance in data pipelines.\n\n## Reference documentation\n- [pgzip README](./references/github_com_klauspost_pgzip.md)",
+  "skill_front_matter": {
+    "name": "pgzip",
+    "description": "pgzip is a parallelized gzip implementation that increases throughput by distributing compression and decompression tasks across multiple CPU cores. Use when user asks to compress data in parallel, decompress files with read-ahead optimization, or tune gzip performance using custom concurrency settings.",
+    "homepage": "https://github.com/klauspost/pgzip"
+  }
+}

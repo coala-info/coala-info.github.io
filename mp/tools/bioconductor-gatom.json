@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gatom",
+  "category": "bioconductor",
+  "name": "bioconductor-gatom",
+  "description": "The bioconductor-gatom package identifies active metabolic modules by integrating transcriptomic and metabolomic data into a metabolic reaction network. Use when user asks to identify highly regulated metabolic subnetworks, integrate gene expression and metabolite abundance data, solve the maximum weight connected subgraph problem, or visualize active metabolic modules.",
+  "overview": "The `gatom` package identifies \"active modules\"—subnetworks of a metabolic graph that show significant coordinated changes across experimental conditions. It integrates transcriptomic and metabolomic data by mapping them onto a metabolic reaction network (atom-level or metabolite-level). The core workflow involves building a metabolic graph, scoring nodes and edges based on p-values, and solving the Maximum Weight Connected Subgraph (MWCS) problem to extract the most regulated module.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/gatom.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gatom/overview",
+  "github": "https://github.com/ctlab/gatom",
+  "conda_downloads": "284",
+  "conda_downloads_num": 284,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gatom"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gatom.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gatom/overview",
+    "github": "https://github.com/ctlab/gatom",
+    "conda_downloads": "284",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gatom\n\nname: bioconductor-gatom\ndescription: Finding active metabolic modules from transcriptional and metabolic data using the gatom R package. Use this skill when you need to identify highly regulated metabolic subnetworks (modules) by integrating gene expression (differential expression) and metabolite abundance data. It supports KEGG, Rhea, and combined networks, and provides tools for scoring, solving (SGMWCS problem), and visualizing metabolic modules.\n\n## Overview\n\nThe `gatom` package identifies \"active modules\"—subnetworks of a metabolic graph that show significant coordinated changes across experimental conditions. It integrates transcriptomic and metabolomic data by mapping them onto a metabolic reaction network (atom-level or metabolite-level). The core workflow involves building a metabolic graph, scoring nodes and edges based on p-values, and solving the Maximum Weight Connected Subgraph (MWCS) problem to extract the most regulated module.\n\n## Core Workflow\n\n### 1. Load Data and Annotations\nThe package requires differential expression (DE) tables for genes and/or metabolites, a reaction network, and organism-specific annotations.\n\n```R\nlibrary(gatom)\nlibrary(data.table)\nlibrary(igraph)\nlibrary(mwcsr)\n\n# Load input DE data (columns: ID, pval, log2FC)\ndata(\"gene.de.rawEx\")\ndata(\"met.de.rawEx\")\n\n# Load network and annotations\ndata(\"networkEx\")\ndata(\"met.kegg.dbEx\")\ndata(\"org.Mm.eg.gatom.annoEx\")\n```\n\n### 2. Create the Metabolic Graph\nUse `makeMetabolicGraph` to build the network. The `topology` parameter is crucial: `\"atoms\"` (default, more structured) or `\"metabolites\"`.\n\n```R\ng <- makeMetabolicGraph(network=networkEx, \n                        topology=\"atoms\",\n                        org.gatom.anno=org.Mm.eg.gatom.annoEx, \n                        gene.de=gene.de.rawEx,\n                        met.db=met.kegg.dbEx, \n                        met.de=met.de.rawEx)\n```\n\n### 3. Scoring the Graph\nScores are assigned to nodes and edges based on p-values. Adjust `k.gene` and `k.met` to control module size (higher values = larger modules).\n\n```R\n# Score the graph (set k to NULL if data for that type is missing)\ngs <- scoreGraph(g, k.gene = 25, k.met = 25)\n```\n\n### 4. Solve for the Active Module\nUse the `mwcsr` package solvers. `rnc_solver()` is a fast heuristic; `virgo_solver()` is exact but requires Java and CPLEX.\n\n```R\nsolver <- rnc_solver()\nset.seed(42)\nres <- solve_mwcsp(solver, gs)\nm <- res$graph # This is the resulting active module (igraph object)\n```\n\n## Visualization and Export\n\n### Interactive Visualization\n```R\n# Create an interactive Shiny/Cytoscape widget\ncreateShinyCyJSWidget(m)\n\n# Save to HTML\nsaveModuleToHtml(m, file = \"module.html\", name = \"ActiveModule\")\n```\n\n### Static Export\n```R\n# Save as PDF with nice layout\nsaveModuleToPdf(m, file = \"module.pdf\", name = \"ActiveModule\")\n\n# Save as GraphML for Cytoscape desktop\nwrite_graph(m, file = \"module.graphml\", format = \"graphml\")\n```\n\n## Advanced Usage\n\n### Network Types\n- **KEGG**: Standard metabolic IDs.\n- **Rhea**: Uses ChEBI IDs for metabolites; often requires `gene2reaction.extra` files for better gene mapping.\n- **Combined**: Integrates KEGG, Rhea, and BiGG transport reactions.\n- **Lipid Subnetwork**: Specialized for lipidomics; recommended to use `topology=\"metabolites\"`.\n\n### Pathway Enrichment\nAnnotate the resulting module using `fgsea`:\n```R\nforaRes <- fgsea::fora(pathways = org.Mm.eg.gatom.anno$pathways,\n                       genes = E(m)$gene,\n                       universe = unique(E(g)$gene))\n```\n\n## Tips for Success\n- **Missing Data**: If you only have gene data, set `met.de = NULL` in `makeMetabolicGraph` and `k.met = NULL` in `scoreGraph`.\n- **ID Mapping**: Ensure gene IDs match the `org.gatom.anno` (e.g., Entrez, Symbol, or RefSeq) and metabolite IDs match the `met.db` (e.g., HMDB, ChEBI, or KEGG).\n- **Solver Choice**: For publication-quality results, use `virgo_solver()` if CPLEX is available to ensure an exact solution.\n\n## Reference documentation\n- [Using gatom package](./references/gatom-tutorial.md)\n- [Using gatom package (RMarkdown)](./references/gatom-tutorial.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-gatom",
+    "description": "The bioconductor-gatom package identifies active metabolic modules by integrating transcriptomic and metabolomic data into a metabolic reaction network. Use when user asks to identify highly regulated metabolic subnetworks, integrate gene expression and metabolite abundance data, solve the maximum weight connected subgraph problem, or visualize active metabolic modules.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gatom.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scmap",
+  "category": "bioconductor",
+  "name": "bioconductor-scmap",
+  "description": "This tool projects single-cell RNA-seq data from a query experiment onto cell-type clusters or individual cells of a reference dataset. Use when user asks to map cells to a reference, perform feature selection for cross-dataset comparisons, or project query cells onto predefined clusters or individual cells.",
+  "overview": "`scmap` is a tool for projecting cells from a query scRNA-seq dataset onto a reference dataset. It supports two main workflows: `scmap-cluster` (mapping cells to clusters/cell-types) and `scmap-cell` (mapping cells to individual cells using a product quantizer algorithm). It relies on the `SingleCellExperiment` (SCE) class.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scmap.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/hemberg-lab/scmap",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scmap"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scmap.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/hemberg-lab/scmap",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scmap\n\nname: bioconductor-scmap\ndescription: Projection of single-cell RNA-seq data across datasets. Use when Claude needs to map cells from a query scRNA-seq experiment onto cell-type clusters or individual cells of a reference dataset, perform feature selection for cross-dataset comparisons, or visualize cell mapping results.\n\n# bioconductor-scmap\n\n## Overview\n\n`scmap` is a tool for projecting cells from a query scRNA-seq dataset onto a reference dataset. It supports two main workflows: `scmap-cluster` (mapping cells to clusters/cell-types) and `scmap-cell` (mapping cells to individual cells using a product quantizer algorithm). It relies on the `SingleCellExperiment` (SCE) class.\n\n## Data Preparation\n\nEnsure your data is in a `SingleCellExperiment` object.\n\n1.  **Required Slots**: The object must contain a `logcounts` assay.\n2.  **Feature Symbols**: Store gene names in `rowData(sce)$feature_symbol`.\n3.  **Cell Labels**: For reference datasets, cluster labels must be in `colData(sce)$cell_type1`.\n\n```r\nlibrary(SingleCellExperiment)\nlibrary(scmap)\n\n# Example setup\nsce <- SingleCellExperiment(assays = list(logcounts = as.matrix(your_data)))\nrowData(sce)$feature_symbol <- rownames(sce)\n```\n\n## Feature Selection\n\nSelect the most informative genes for projection. By default, `scmap` selects 500 features.\n\n```r\n# Select features and store in rowData(sce)$scmap_features\nsce <- selectFeatures(sce, n_features = 500, suppress_plot = FALSE)\n```\n\n## scmap-cluster Workflow\n\nUse this to project query cells onto predefined clusters in a reference.\n\n### 1. Indexing the Reference\nCreate an index by calculating the median gene expression for each cluster.\n\n```r\n# Uses colData(sce)$cell_type1 by default\nsce <- indexCluster(sce)\n\n# View the index\nhead(metadata(sce)$scmap_cluster_index)\n```\n\n### 2. Projection\nProject the query dataset onto the reference index.\n\n```r\nscmapCluster_results <- scmapCluster(\n  projection = query_sce, \n  index_list = list(ref_name = metadata(ref_sce)$scmap_cluster_index)\n)\n\n# Access labels and similarity scores\nlabels <- scmapCluster_results$scmap_cluster_labs\nsimilarities <- scmapCluster_results$scmap_cluster_siml\n```\n\n## scmap-cell Workflow\n\nUse this to project query cells onto individual cells in a reference. This method is stochastic; set a seed for reproducibility.\n\n### 1. Indexing the Reference\nUses a product quantizer algorithm to index individual cells.\n\n```r\nset.seed(1)\nsce <- indexCell(sce)\n```\n\n### 2. Projection\nFind the nearest neighbors in the reference for each query cell.\n\n```r\nscmapCell_results <- scmapCell(\n  query_sce, \n  list(ref_name = metadata(ref_sce)$scmap_cell_index)\n)\n```\n\n### 3. Cluster Annotation\nConvert cell-to-cell mappings into cluster assignments based on the nearest neighbors.\n\n```r\nscmapCell_clusters <- scmapCell2Cluster(\n  scmapCell_results, \n  list(as.character(colData(ref_sce)$cell_type1))\n)\n```\n\n## Visualization\n\nVisualize the mapping between query clusters and reference clusters using a Sankey diagram.\n\n```r\n# Requires both datasets to have cluster labels\nplot(\n  getSankey(\n    colData(query_sce)$cell_type1, \n    scmapCluster_results$scmap_cluster_labs[,'ref_name'],\n    plot_height = 400\n  )\n)\n```\n\n## Tips and Best Practices\n\n- **Thresholds**: `scmap` assigns \"unassigned\" if the maximum similarity is below the threshold (default 0.7 for cluster, 0.5 for cell). Adjust these in `scmapCluster` or `scmapCell2Cluster` if needed.\n- **Multiple References**: Both `scmapCluster` and `scmapCell` accept a list of indexes, allowing simultaneous projection against multiple reference datasets.\n- **Feature Consistency**: Ensure that the `feature_symbol` names used in the query and reference datasets are compatible (e.g., same case, same nomenclature).\n\n## Reference documentation\n\n- [scmap package vignette](./references/scmap.Rmd)\n- [scmap package vignette (Markdown)](./references/scmap.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scmap",
+    "description": "This tool projects single-cell RNA-seq data from a query experiment onto cell-type clusters or individual cells of a reference dataset. Use when user asks to map cells to a reference, perform feature selection for cross-dataset comparisons, or project query cells onto predefined clusters or individual cells.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scmap.html"
+  }
+}

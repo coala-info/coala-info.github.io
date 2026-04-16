@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-busseq",
+  "category": "bioconductor",
+  "name": "bioconductor-busseq",
+  "description": "BUSseq implements a Bayesian hierarchical model to simultaneously correct batch effects, cluster cell types, and impute dropout events in single-cell RNA-sequencing data. Use when user asks to perform batch correction, cluster cells into latent types, impute missing counts, or identify intrinsic genes in scRNA-seq datasets.",
+  "overview": "The `BUSseq` package implements a Bayesian hierarchical model designed to simultaneously correct batch effects, cluster cell types, and impute dropout events in single-cell RNA-sequencing (scRNA-seq) data. Unlike methods that require known subtypes, BUSseq treats cell types as latent variables, making it ideal for discovery-based workflows. It accounts for count-based distributions (Negative Binomial), overdispersion, and cell-specific sequencing depth.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BUSseq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-busseq/overview",
+  "github": "https://github.com/songfd2018/BUSseq",
+  "conda_downloads": "9.1K",
+  "conda_downloads_num": 9100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BUSseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BUSseq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-busseq/overview",
+    "github": "https://github.com/songfd2018/BUSseq",
+    "conda_downloads": "9.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-busseq\n\n## Overview\n\nThe `BUSseq` package implements a Bayesian hierarchical model designed to simultaneously correct batch effects, cluster cell types, and impute dropout events in single-cell RNA-sequencing (scRNA-seq) data. Unlike methods that require known subtypes, BUSseq treats cell types as latent variables, making it ideal for discovery-based workflows. It accounts for count-based distributions (Negative Binomial), overdispersion, and cell-specific sequencing depth.\n\n## Core Workflow\n\n### 1. Data Preparation\nBUSseq accepts either a `SingleCellExperiment` object or a named `list` of count matrices.\n\n```r\nlibrary(BUSseq)\nlibrary(SingleCellExperiment)\n\n# Option A: SingleCellExperiment (Recommended)\n# counts: matrix of raw read counts\n# colData: must contain a factor indicating batch membership\nsce <- SingleCellExperiment(assays = list(counts = count_matrix),\n                           colData = DataFrame(Batch_ind = factor(batch_vector)))\n\n# Option B: List of matrices\n# Each element is a batch (genes in rows, cells in columns)\nlist_input <- list(Batch1 = matrix1, Batch2 = matrix2)\n```\n\n### 2. Model Fitting\nThe `BUSseq_MCMC` function performs the posterior sampling. You must specify the expected number of cell types (`n.celltypes`).\n\n```r\n# Fit the model\n# n.celltypes: Number of clusters to identify\n# n.iterations: Total MCMC iterations (default burn-in is half)\nbus_results <- BUSseq_MCMC(ObservedData = sce, \n                           n.celltypes = 4, \n                           n.iterations = 500, \n                           seed = 1234, \n                           n.cores = 2)\n```\n\n### 3. Extracting Results\nAfter fitting, use specific accessor functions to retrieve inferred parameters and biological signals.\n\n*   **Cell Types:** `celltypes(bus_results)` returns the posterior mode of cell-type indicators for each cell.\n*   **Batch Effects:** `location_batch_effects(bus_results)` returns the $\\nu_{bg}$ parameters (first batch is the reference).\n*   **Overdispersion:** `overdispersions(bus_results)` returns batch-specific gene overdispersion.\n*   **Cell Effects:** `cell_effect_values(bus_results)` returns cell-specific size factors $\\delta_{bi}$.\n*   **Mean Expression:** `celltype_mean_expression(bus_results)` returns the batch-corrected, cell-type-specific expression levels.\n\n### 4. Batch Correction and Imputation\nTo obtain a corrected count matrix for downstream visualization or analysis (e.g., Seurat/Scanpy), use `corrected_read_counts`.\n\n```r\n# Impute dropouts and remove batch effects\nbus_results <- corrected_read_counts(bus_results)\n\n# Access the corrected data\ncorrected_counts <- assay(bus_results, \"corrected_data\")\nimputed_counts <- assay(bus_results, \"imputed_data\")\n```\n\n### 5. Identifying Intrinsic Genes\nIntrinsic genes are those that drive the differences between cell types and are not influenced by batch effects.\n\n```r\nintrinsic_genes <- intrinsic_genes_BUSseq(bus_results)\n# Returns a DataFrame indicating 'Yes' or 'No' for each gene\n```\n\n## Visualization\nThe package provides a built-in heatmap function to compare data states.\n\n```r\n# data_type can be \"Raw\", \"Imputed\", or \"Corrected\"\nheatmap_data_BUSseq(bus_results, \n                    data_type = \"Corrected\", \n                    gene_set = 1:100, \n                    project_name = \"MyStudy\", \n                    image_dir = \"./plots\")\n```\n\n## Tips and Best Practices\n*   **Selecting K:** If the number of cell types (`n.celltypes`) is unknown, run `BUSseq_MCMC` across a range of values and select the one that minimizes the Bayesian Information Criterion (BIC).\n*   **Reference Batch:** BUSseq automatically treats the first batch as the reference. Ensure your most \"reliable\" or largest batch is indexed first if necessary.\n*   **Convergence:** For publication-quality results, increase `n.iterations` (e.g., 2000+) to ensure MCMC convergence.\n*   **Memory:** For very large datasets, ensure `n.cores` is set appropriately to leverage parallel processing during the MCMC sampling.\n\n## Reference documentation\n- [BUSseq User's Guide](./references/BUSseq_user_guide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-busseq",
+    "description": "BUSseq implements a Bayesian hierarchical model to simultaneously correct batch effects, cluster cell types, and impute dropout events in single-cell RNA-sequencing data. Use when user asks to perform batch correction, cluster cells into latent types, impute missing counts, or identify intrinsic genes in scRNA-seq datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BUSseq.html"
+  }
+}

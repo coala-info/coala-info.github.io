@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scaledmatrix",
+  "category": "bioconductor",
+  "name": "bioconductor-scaledmatrix",
+  "description": "This tool provides a memory-efficient representation of scaled and centered matrices by storing transformations separately to avoid full memory realization. Use when user asks to scale or center large matrices, perform memory-efficient matrix multiplication, calculate row or column sums on scaled data, or run PCA on sparse matrices.",
+  "overview": "The `ScaledMatrix` package provides a memory-efficient way to represent a scaled and centered matrix. Instead of realizing the full, dense matrix in memory (as `scale()` does), it stores the original matrix along with the centering and scaling vectors. It refactors matrix operations—specifically multiplication and sums—to apply these transformations mathematically on the fly. This is particularly beneficial for sparse matrices or file-backed representations (like HDF5) where maintaining sparsity",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ScaledMatrix.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/LTLA/ScaledMatrix",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ScaledMatrix"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ScaledMatrix.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/LTLA/ScaledMatrix",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scaledmatrix\n\nname: bioconductor-scaledmatrix\ndescription: Efficiently scale and center large or sparse matrices without full memory realization. Use this skill when performing matrix multiplication, PCA (via BiocSingular), or row/column sums on scaled data to optimize for speed and memory compared to base R scale() or DelayedArray.\n\n# bioconductor-scaledmatrix\n\n## Overview\n\nThe `ScaledMatrix` package provides a memory-efficient way to represent a scaled and centered matrix. Instead of realizing the full, dense matrix in memory (as `scale()` does), it stores the original matrix along with the centering and scaling vectors. It refactors matrix operations—specifically multiplication and sums—to apply these transformations mathematically on the fly. This is particularly beneficial for sparse matrices or file-backed representations (like HDF5) where maintaining sparsity or avoiding large memory allocations is critical.\n\n## Core Workflow\n\n### 1. Creating a ScaledMatrix\nWrap an existing matrix (ordinary, sparse, or `DelayedArray`) using the `ScaledMatrix()` constructor.\n\n```r\nlibrary(ScaledMatrix)\n\n# Works with ordinary matrices\nmat <- matrix(rnorm(10000), ncol=10)\nsmat <- ScaledMatrix(mat, center=TRUE, scale=TRUE)\n\n# Works with sparse matrices (preserves efficiency)\nlibrary(Matrix)\nsparse_mat <- rsparsematrix(2000, 1000, density=0.01)\nsmat_sparse <- ScaledMatrix(sparse_mat, center=TRUE, scale=TRUE)\n```\n\n### 2. Efficient Matrix Operations\nUse standard R operators. `ScaledMatrix` implements optimized methods for multiplication and sums that avoid expanding the matrix.\n\n```r\n# Fast matrix multiplication\nblob <- matrix(runif(ncol(smat_sparse) * 5), ncol=5)\nresult <- smat_sparse %*% blob\n\n# Fast row and column sums\nrs <- rowSums(smat_sparse)\ncs <- colSums(smat_sparse)\n```\n\n### 3. Downstream Analysis (PCA)\n`ScaledMatrix` is highly effective when paired with `BiocSingular` for Principal Component Analysis on scaled data.\n\n```r\nlibrary(BiocSingular)\n# Performs PCA without ever realizing the full scaled matrix in memory\npcs <- runSVD(smat_sparse, k=10, BSPARAM=IrlbaParam())\n```\n\n## Supported Manipulations\nThe following operations preserve the `ScaledMatrix` representation:\n- **Subsetting**: `smat[1:10, 1:5]`\n- **Transposition**: `t(smat)`\n- **Dimnames**: `rownames(smat) <- paste0(\"R\", 1:nrow(smat))`\n\n## Important Considerations\n\n### Numerical Precision\n`ScaledMatrix` refactors operations using the formula $Y = (X - c \\cdot 1^T)S$. This involves subtracting potentially large values, which can lead to \"catastrophic cancellation\" and loss of precision if the original matrix values are extremely large (e.g., $10^{12}$) compared to the variance. For standard log-normalized genomic data, this is rarely an issue.\n\n### Representation Collapse\nOperations not specifically optimized for `ScaledMatrix` (e.g., adding a scalar `smat + 1`) will cause the object to \"collapse\" into a `DelayedMatrix`. While the operation will still work via block processing, it will lose the specific performance optimizations of the `ScaledMatrix` class.\n\n### Multiplication Overhead\nThe optimization assumes that the matrix being multiplied (the \"right-hand side\") is relatively small compared to the `ScaledMatrix`. If both matrices are very large and dense, the overhead of the refactored math may offer less benefit.\n\n## Reference documentation\n- [Using the ScaledMatrix class](./references/ScaledMatrix.Rmd)\n- [Using the ScaledMatrix class](./references/ScaledMatrix.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scaledmatrix",
+    "description": "This tool provides a memory-efficient representation of scaled and centered matrices by storing transformations separately to avoid full memory realization. Use when user asks to scale or center large matrices, perform memory-efficient matrix multiplication, calculate row or column sums on scaled data, or run PCA on sparse matrices.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ScaledMatrix.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bioga",
+  "category": "bioconductor",
+  "name": "bioconductor-bioga",
+  "description": "BioGA performs multi-objective genetic algorithm optimization on high-throughput genomic data to balance data fidelity and model sparsity. Use when user asks to perform feature selection, identify gene signatures, tune model parameters, or optimize genomic models using biologically informed operators.",
+  "overview": "BioGA (Biologically Informed Genetic Algorithm) is a high-performance R package implemented in C++ designed for genomic data optimization. It utilizes a modified NSGA-II (Non-dominated Sorting Genetic Algorithm II) framework to solve multi-objective problems—specifically balancing **Expression Difference** (data fidelity) and **Sparsity** (minimizing the number of features). Unlike general GAs, BioGA can incorporate biological priors such as gene co-expression clusters or interaction networks to",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BioGA.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bioga/overview",
+  "github": "https://github.com/danymukesha/BioGA",
+  "conda_downloads": "508",
+  "conda_downloads_num": 508,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BioGA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioGA.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bioga/overview",
+    "github": "https://github.com/danymukesha/BioGA",
+    "conda_downloads": "508",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bioga\n\nname: bioconductor-bioga\ndescription: Expert guidance for using the BioGA Bioconductor package to perform multi-objective genetic algorithm (GA) optimization on high-throughput genomic data. Use this skill when you need to perform feature selection (gene signatures), parameter tuning, or model optimization where balancing predictive accuracy and model sparsity is required. It supports biologically informed operators, parallel processing via Rcpp/OpenMP, and integration with SummarizedExperiment objects.\n\n## Overview\n\nBioGA (Biologically Informed Genetic Algorithm) is a high-performance R package implemented in C++ designed for genomic data optimization. It utilizes a modified NSGA-II (Non-dominated Sorting Genetic Algorithm II) framework to solve multi-objective problems—specifically balancing **Expression Difference** (data fidelity) and **Sparsity** (minimizing the number of features). Unlike general GAs, BioGA can incorporate biological priors such as gene co-expression clusters or interaction networks to guide the evolutionary process, ensuring results are both statistically sound and biologically plausible.\n\n## Core Workflow\n\n### 1. Data Preparation\nBioGA expects a genomic expression matrix where rows are genes and columns are samples. It integrates seamlessly with `SummarizedExperiment`.\n\n```r\nlibrary(BioGA)\nlibrary(SummarizedExperiment)\n\n# Extract matrix from SummarizedExperiment\ngenomic_data <- assay(se) \n\n# Optional: Pre-cluster genes to inform initialization\ncor_matrix <- cor(t(genomic_data))\nhc <- hclust(as.dist(1 - cor_matrix), method = \"average\")\nclusters <- cutree(hc, k = 20)\n```\n\n### 2. Running the Optimization\nThe primary interface is `bioga_main_cpp`. This function handles the entire evolutionary cycle in a single call.\n\n```r\nresult <- bioga_main_cpp(\n    genomic_data = genomic_data,\n    population_size = 30,\n    num_generations = 50,\n    crossover_rate = 0.9,\n    eta_c = 20,            # Distribution index for SBX crossover\n    mutation_rate = 0.05,\n    num_parents = 20,\n    num_offspring = 20,\n    num_to_replace = 10,\n    weights = c(1.0, 0.3), # w1: Expression Difference, w2: Sparsity\n    seed = 2025,\n    clusters = clusters    # Optional: cluster-based initialization\n)\n```\n\n### 3. Interpreting Results\nThe output is a list containing the final population and their fitness scores.\n\n*   **`result$population`**: A matrix where each row is an optimized individual (gene expression values).\n*   **`result$fitness`**: A matrix of objective scores (Column 1: Expression Diff, Column 2: Sparsity).\n\n```r\n# Identify the best individual (lowest expression difference)\nbest_idx <- which.min(result$fitness[, 1])\nbest_individual <- result$population[best_idx, ]\n\n# Extract selected gene signature (non-zero features)\nselected_genes <- which(abs(best_individual) > 1e-6)\ngene_names <- rownames(genomic_data)[selected_genes]\n```\n\n## Advanced Operators\n\nBioGA allows for granular control over the GA steps if the main wrapper is not used:\n\n*   **Initialization**: `initialize_population_cpp(data, size, seed, clusters)`\n*   **Fitness**: `evaluate_fitness_cpp(data, population, weights)`\n*   **Selection**: `selection_cpp(population, fitness, num_parents)`\n*   **Crossover**: `crossover_cpp(parents, offspring_size, eta_c)`\n*   **Mutation**: `mutation_cpp(population, rate, iteration, max_iterations, network)`\n    *   *Tip*: Provide a `network` adjacency matrix to dampen mutations in highly connected hub genes.\n*   **Replacement**: `replacement_cpp(old_pop, offspring, old_fit, off_fit, num_to_replace)`\n\n## Best Practices\n\n1.  **Weight Tuning**: The `weights` parameter is critical. A higher second weight (Sparsity) will result in fewer selected genes but potentially higher expression error.\n2.  **Parallelism**: BioGA uses OpenMP. Ensure your environment allows multi-threading. Use `RcppParallel::setThreadOptions()` to manage CPU usage.\n3.  **Convergence**: Always visualize the Pareto front (Expression Diff vs. Sparsity) to ensure the algorithm has converged and to select the best trade-off for your specific biological question.\n4.  **Network Constraints**: When using `mutation_cpp`, providing a STRINGdb or KEGG-derived adjacency matrix helps maintain biological modules during the search.\n\n## Reference documentation\n\n- [Introduction to BioGA](./references/BioGA.Rmd)\n- [The Foundation of BioGA: Mathematical Theory](./references/Foundation.Rmd)\n- [BioGA Overview and Getting Started](./references/Introduction.md)\n- [Usage Demonstration of BioGA](./references/UsageDemostration.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-bioga",
+    "description": "BioGA performs multi-objective genetic algorithm optimization on high-throughput genomic data to balance data fidelity and model sparsity. Use when user asks to perform feature selection, identify gene signatures, tune model parameters, or optimize genomic models using biologically informed operators.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioGA.html"
+  }
+}

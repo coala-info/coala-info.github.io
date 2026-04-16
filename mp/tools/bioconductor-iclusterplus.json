@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-iclusterplus",
+  "category": "bioconductor",
+  "name": "bioconductor-iclusterplus",
+  "description": "This tool performs integrative clustering of multi-type genomic data using joint latent variable modeling across various statistical distributions. Use when user asks to identify disease subtypes, perform joint analysis of multi-omics data, or select driver features across mutation, copy number, and expression datasets.",
+  "overview": "The `iClusterPlus` package provides tools for the integrative clustering of multiple omics data types. It extends the original iCluster framework by allowing for different statistical distributions for different data types:\n- **Binomial**: Somatic mutations (binary 0/1).\n- **Gaussian**: Gene expression, DNA methylation, or segmented copy number (continuous).\n- **Multinomial**: Categorical copy number states (e.g., -1, 0, 1).\n- **Poisson**: Count data (e.g., RNA-seq counts).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/iClusterPlus.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iclusterplus/overview",
+  "github": "N/A",
+  "conda_downloads": "21.1K",
+  "conda_downloads_num": 21100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iClusterPlus"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iClusterPlus.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iclusterplus/overview",
+    "github": "N/A",
+    "conda_downloads": "21.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-iclusterplus\n\nname: bioconductor-iclusterplus\ndescription: Integrative clustering of multi-type genomic data (e.g., somatic mutation, copy number, gene expression). Use this skill to perform joint latent variable modeling across different data distributions (Binomial, Gaussian, Poisson, Multinomial) to identify disease subtypes and driver features.\n\n# bioconductor-iclusterplus\n\n## Overview\n\nThe `iClusterPlus` package provides tools for the integrative clustering of multiple omics data types. It extends the original iCluster framework by allowing for different statistical distributions for different data types:\n- **Binomial**: Somatic mutations (binary 0/1).\n- **Gaussian**: Gene expression, DNA methylation, or segmented copy number (continuous).\n- **Multinomial**: Categorical copy number states (e.g., -1, 0, 1).\n- **Poisson**: Count data (e.g., RNA-seq counts).\n\nThe package includes two primary methods: `iClusterPlus` (penalized likelihood using Lasso) and `iClusterBayes` (a Bayesian approach that avoids grid searches for penalty parameters).\n\n## Core Workflow\n\n### 1. Data Pre-processing\nData must be organized as matrices where rows are samples and columns are features. Ensure all data types have the same samples in the same order.\n\n- **Mutation data**: Filter for frequency (e.g., > 5% mutation rate).\n- **Expression data**: Use top variable genes (variance filtering).\n- **Copy Number**: Use segmented data. Use `CNregions()` to reduce dimensionality by defining non-redundant regions.\n\n```R\n# Example CN reduction\ngbm.cn = CNregions(seg=gbm.seg, epsilon=0, adaptive=FALSE, rmCNV=TRUE, cnv=cnv_ref)\n```\n\n### 2. Model Tuning (iClusterPlus)\nUse `tune.iClusterPlus` to find the optimal number of clusters ($K+1$) and penalty parameters ($\\lambda$).\n\n```R\n# Parallel tuning across K=1 to 5\nfor(k in 1:5){\n  cv.fit = tune.iClusterPlus(cpus=12, dt1=mut, dt2=cn, dt3=exp, \n                             type=c(\"binomial\",\"gaussian\",\"gaussian\"), \n                             K=k, n.lambda=185)\n  save(cv.fit, file=paste0(\"cv.fit.k\", k, \".Rdata\"))\n}\n```\n\n### 3. Model Selection\nSelect the best model based on:\n- **BIC**: Choose the $\\lambda$ that minimizes BIC for a given $K$.\n- **Deviance Ratio (% Explained Variation)**: Plot $K$ vs. PercentEV. Choose $K$ where the curve levels off (elbow method).\n\n```R\n# Extracting metrics\nBIC = getBIC(output)\ndevR = getDevR(output)\nclusters = getClusters(output)\n```\n\n### 4. Feature Selection\nIdentify features contributing to the clusters by examining the Lasso coefficient estimates (`beta`).\n\n```R\n# Select top 25% features for a specific data type\nrowsum = apply(abs(best.fit$beta[[i]]), 1, sum)\nupper = quantile(rowsum, prob=0.75)\nsigfeatures = features[[i]][which(rowsum > upper)]\n```\n\n### 5. Bayesian Approach (iClusterBayes)\n`iClusterBayes` is often faster for large datasets as it does not require a $\\lambda$ grid search and provides posterior probabilities for feature importance.\n\n```R\nbayfit = tune.iClusterBayes(cpus=6, dt1=mut, dt2=cn, dt3=exp, \n                            type=c(\"binomial\",\"gaussian\",\"gaussian\"), \n                            K=1:6, n.burnin=18000, n.draw=12000)\n```\n\n## Visualization\nUse `plotHeatmap` to visualize the integrated clusters across all data types.\n\n```R\nplotHeatmap(fit=best.fit, datasets=list(mut, cn, exp), \n            type=c(\"binomial\",\"gaussian\",\"gaussian\"), \n            sparse=c(T, F, T), cap=c(F, T, F))\n```\n\n## Tips\n- **Scale Lambda**: If one data type (like mutations) yields no selected features, adjust `scale.lambda` (e.g., `0.05`) in `tune.iClusterPlus` to balance the penalty across different data scales.\n- **K vs Clusters**: The parameter `K` refers to the number of latent variables. The number of clusters is $K+1$.\n- **Reproducibility**: Always use `set.seed()` before tuning or Bayesian analysis.\n\n## Reference documentation\n- [iClusterPlus: integrative clustering of multiple genomic data sets](./references/iClusterPlus.md)\n- [iManual: iClusterPlus User's Guide](./references/iManual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-iclusterplus",
+    "description": "This tool performs integrative clustering of multi-type genomic data using joint latent variable modeling across various statistical distributions. Use when user asks to identify disease subtypes, perform joint analysis of multi-omics data, or select driver features across mutation, copy number, and expression datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iClusterPlus.html"
+  }
+}

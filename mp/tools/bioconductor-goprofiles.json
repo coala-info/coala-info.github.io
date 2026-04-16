@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-goprofiles",
+  "category": "bioconductor",
+  "name": "bioconductor-goprofiles",
+  "description": "This tool performs statistical analysis and comparison of gene lists by projecting them onto specific Gene Ontology functional profiles. Use when user asks to create functional profiles at specific GO levels, compare gene lists using statistical tests for difference or equivalence, or visualize functional distributions between experiments.",
+  "overview": "The `goProfiles` package provides a statistical framework for comparing lists of genes by projecting them onto a fixed level of the Gene Ontology (GO) hierarchy. Instead of looking at individual gene enrichment, it creates a \"functional profile\" (a frequency vector of genes per GO category at a specific level). This allows for quantitative comparison of datasets, visual exploration of functional distributions, and statistical testing for both difference and equivalence.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/goProfiles.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-goprofiles/overview",
+  "github": "N/A",
+  "conda_downloads": "23.4K",
+  "conda_downloads_num": 23400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "goProfiles"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/goProfiles.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-goprofiles/overview",
+    "github": "N/A",
+    "conda_downloads": "23.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-goprofiles\n\nname: bioconductor-goprofiles\ndescription: Statistical analysis and comparison of gene lists using Gene Ontology (GO) functional profiles. Use this skill when you need to project gene lists onto specific GO levels, compare functional profiles between different experiments (e.g., using squared Euclidean distance or Fisher's exact test), and perform equivalence testing to determine if two gene sets are functionally similar.\n\n## Overview\n\nThe `goProfiles` package provides a statistical framework for comparing lists of genes by projecting them onto a fixed level of the Gene Ontology (GO) hierarchy. Instead of looking at individual gene enrichment, it creates a \"functional profile\" (a frequency vector of genes per GO category at a specific level). This allows for quantitative comparison of datasets, visual exploration of functional distributions, and statistical testing for both difference and equivalence.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package typically requires Entrez Gene IDs and an appropriate organism annotation package (e.g., `org.Hs.eg.db`).\n\n```r\nlibrary(goProfiles)\nlibrary(org.Hs.eg.db)\ndata(prostateIds) # Example data containing Entrez IDs\n```\n\n### 2. Creating Functional Profiles\nUse `basicProfile` to create a profile for a single list. You must specify the ontology (\"MF\", \"BP\", or \"CC\") and the GO level (usually level 2 or 3).\n\n```r\n# Create a profile for Molecular Function at level 2\nwelsh.MF <- basicProfile(welsh01EntrezIDs[1:100], \n                         onto=\"MF\", \n                         level=2, \n                         orgPackage=\"org.Hs.eg.db\")\n\n# Use onto=\"ANY\" to compute profiles for all three ontologies\nwelsh.all <- basicProfile(welsh01EntrezIDs[1:100], onto=\"ANY\", level=2, orgPackage=\"org.Hs.eg.db\")\n```\n\n### 3. Comparing and Visualizing Profiles\nTo compare two lists visually, merge their profiles and plot them.\n\n```r\n# Merge two profiles\nsingh.MF <- basicProfile(singh01EntrezIDs[1:100], onto=\"MF\", level=2, orgPackage=\"org.Hs.eg.db\")\nmerged <- mergeProfilesLists(welsh.MF, singh.MF, profNames=c(\"Welsh\", \"Singh\"))\n\n# Print and Plot\nprintProfiles(merged, percentage=TRUE)\nplotProfiles(merged, percentage=TRUE, aTitle=\"Comparison of Welsh vs Singh\", legend=TRUE)\n```\n\n### 4. Statistical Comparison\nTo determine if two gene lists are statistically different or equivalent:\n\n**Test for Difference:**\n`compareGeneLists` calculates the squared Euclidean distance and provides a p-value.\n\n```r\ncomp <- compareGeneLists(list1, list2, onto=\"MF\", level=2, orgPackage=\"org.Hs.eg.db\")\nprint(compSummary(comp))\n```\n\n**Fisher's Exact Test per Category:**\nCheck which specific GO categories contribute to the differences.\n\n```r\n# Requires the profiles and the profile of the intersection of the two lists\ncommonGenes <- intersect(list1, list2)\ncommProf <- basicProfile(commonGenes, onto=\"MF\", level=2, orgPackage=\"org.Hs.eg.db\")$MF\nfisherGOProfiles(welsh.MF$MF, singh.MF$MF, commProf, method=\"holm\")\n```\n\n**Equivalence Testing:**\nUsed to confirm if two lists are functionally similar (e.g., when combining datasets).\n\n```r\n# Requires 'expanded' profiles\nexp1 <- expandedProfile(list1, onto=\"MF\", level=2, orgPackage=\"org.Hs.eg.db\")\nexp2 <- expandedProfile(list2, onto=\"MF\", level=2, orgPackage=\"org.Hs.eg.db\")\nexpComm <- expandedProfile(commonGenes, onto=\"MF\", level=2, orgPackage=\"org.Hs.eg.db\")\n\nequiv <- equivalentGOProfiles(exp1$MF, exp2$MF, commonExpanded = expComm$MF)\nprint(equivSummary(equiv))\n```\n\n## Tips and Best Practices\n- **GO Levels:** Level 2 is standard for a broad overview; Level 3 provides more specificity but may result in many categories with zero counts.\n- **Ontology Selection:** \"MF\" (Molecular Function), \"BP\" (Biological Process), and \"CC\" (Cellular Component) can be analyzed individually or together using `onto=\"ANY\"`.\n- **Input IDs:** Ensure input IDs are Entrez IDs. If you have Gene Symbols or Ensembl IDs, use `AnnotationDbi` to convert them before profiling.\n- **Interpretation:** A low p-value in `compareGeneLists` suggests the functional profiles are significantly different. In `equivalentGOProfiles`, the \"Equivalent?\" result (1 for yes, 0 for no) indicates if the profiles are within a statistical threshold of similarity.\n\n## Reference documentation\n- [goProfiles: Statistical Analysis of Functional Profiles](./references/goProfiles.md)\n- [Visual Comparison of Profiles](./references/goProfiles-comparevisual.md)\n- [Plotting MF Ontology Profiles](./references/goProfiles-plotProfileMF.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-goprofiles",
+    "description": "This tool performs statistical analysis and comparison of gene lists by projecting them onto specific Gene Ontology functional profiles. Use when user asks to create functional profiles at specific GO levels, compare gene lists using statistical tests for difference or equivalence, or visualize functional distributions between experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/goProfiles.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-multibac",
+  "category": "bioconductor",
+  "name": "bioconductor-multibac",
+  "description": "Bioconductor-multibac corrects batch effects and removes systematic noise from single-omic and multi-omic datasets using ARSyNbac and MultiBaC methods. Use when user asks to remove batch effects from high-throughput biological data, integrate multi-omic datasets sharing a common omic type, or filter structured noise from genomic experiments.",
+  "overview": "MultiBaC is a Bioconductor package designed to correct batch effects in both single-omic and multi-omic scenarios. It provides two primary methods:\n1. **ARSyNbac**: An adaptation of the ARSyN method that uses ANOVA-Simultaneous Components Analysis (ASCA) to remove structured noise and batch effects from a single omic type.\n2. **MultiBaC**: A strategy for multi-omic data integration that corrects batch effects across different omic types (e.g., RNA-seq, Proteomics, Metabolomics) by leveraging a c",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MultiBaC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MultiBaC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MultiBaC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-multibac\n\nname: bioconductor-multibac\ndescription: Batch effect correction for single-omic and multi-omic datasets using ARSyNbac and MultiBaC. Use this skill when you need to remove systematic noise or batch effects from high-throughput biological data, especially when combining datasets from different labs or technologies that share at least one common omic type.\n\n# bioconductor-multibac\n\n## Overview\n\nMultiBaC is a Bioconductor package designed to correct batch effects in both single-omic and multi-omic scenarios. It provides two primary methods:\n1. **ARSyNbac**: An adaptation of the ARSyN method that uses ANOVA-Simultaneous Components Analysis (ASCA) to remove structured noise and batch effects from a single omic type.\n2. **MultiBaC**: A strategy for multi-omic data integration that corrects batch effects across different omic types (e.g., RNA-seq, Proteomics, Metabolomics) by leveraging a common omic type present across all batches.\n\n## Typical Workflow\n\n### 1. Data Preparation\nMultiBaC uses the `mbac` object, which is a list of `MultiAssayExperiment` objects (one per batch).\n\n```r\nlibrary(MultiBaC)\n\n# Create the mbac object\n# inputOmics: list of matrices (features in rows, samples in columns)\n# batchFactor: vector identifying the batch for each input matrix\n# experimentalDesign: list of factors/data.frames describing conditions per batch\n# omicNames: names for each input matrix (common omics must have the same name)\nmy_mbac <- createMbac(\n  inputOmics = list(batch1_rna, batch1_gro, batch2_rna, batch2_metab),\n  batchFactor = c(\"B1\", \"B1\", \"B2\", \"B2\"),\n  experimentalDesign = list(\n    \"B1\" = c(\"Control\", \"Control\", \"Treat\", \"Treat\"),\n    \"B2\" = c(\"Control\", \"Treat\")\n  ),\n  omicNames = c(\"RNA\", \"GRO\", \"RNA\", \"METAB\")\n)\n```\n\n### 2. Single Omic Correction (ARSyNbac)\nUse this when you have one omic type across multiple batches or want to reduce unknown noise.\n\n```r\n# batchEstimation: TRUE if batch source is known\n# filterNoise: TRUE to remove unknown structured noise from residuals\ncorrected_single <- ARSyNbac(\n  my_mbac, \n  batchEstimation = TRUE, \n  filterNoise = TRUE,\n  Variability = 0.90 # Threshold for explained batch variability\n)\n```\n\n### 3. Multi-Omic Correction (MultiBaC)\nUse this when batches contain different omics but share at least one common omic (e.g., all batches have RNA-seq).\n\n```r\n# MultiBaC wrapper function\nfinal_mbac <- MultiBaC(\n  my_mbac,\n  test.comp = NULL,    # Max PLS components\n  Interaction = FALSE, # Model interaction between batch and condition\n  Variability = 0.90   # Variability threshold for ARSyN step\n)\n\n# Access corrected data\ncorrected_data_list <- final_mbac$CorrectedData\n```\n\n### 4. Visualization and Validation\nMultiBaC provides specialized plotting methods to evaluate correction performance.\n\n```r\n# PCA plots to see batch separation before and after\nplot(final_mbac, typeP = \"pca.org\") # Original data\nplot(final_mbac, typeP = \"pca.cor\") # Corrected data\nplot(final_mbac, typeP = \"pca.both\") # Side-by-side comparison\n\n# Diagnostic plots\nplot(final_mbac, typeP = \"inner\") # PLS inner correlation (linearity check)\nplot(final_mbac, typeP = \"batch\") # Magnitude of estimated batch effects\n```\n\n## Key Functions\n\n- `createMbac()`: Initializes the data structure. Requires common omic variables to have matching row names.\n- `ARSyNbac()`: Performs correction on a single omic. Useful for \"noise reduction\" mode when batch factors are unknown.\n- `MultiBaC()`: The main wrapper for multi-omic correction. It fits PLS models to predict missing omics across batches before applying ARSyN-based correction.\n- `genModelList()`, `genMissingOmics()`, `batchCorrection()`: Intermediate functions for running the MultiBaC workflow step-by-step.\n\n## Tips for Success\n\n- **Common Omic**: MultiBaC requires at least one common omic type across all batches to act as a bridge.\n- **Feature Identifiers**: Ensure that the common omic uses the same ID system (e.g., Gene Symbols or Entrez IDs) across all matrices.\n- **Experimental Design**: Within a single batch, all omic types must have the same samples in the same order.\n- **Interaction Term**: Setting `Interaction = TRUE` in `MultiBaC` or `ARSyNbac` can provide a better fit if the batch effect varies significantly between experimental conditions, but use it cautiously to avoid over-correcting biological signals.\n\n## Reference documentation\n- [MultiBaC user’s guide](./references/MultiBaC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-multibac",
+    "description": "Bioconductor-multibac corrects batch effects and removes systematic noise from single-omic and multi-omic datasets using ARSyNbac and MultiBaC methods. Use when user asks to remove batch effects from high-throughput biological data, integrate multi-omic datasets sharing a common omic type, or filter structured noise from genomic experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MultiBaC.html"
+  }
+}

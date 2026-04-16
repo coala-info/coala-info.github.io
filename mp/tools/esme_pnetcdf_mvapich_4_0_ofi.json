@@ -1,0 +1,51 @@
+{
+  "id": "esme_pnetcdf_mvapich_4_0_ofi",
+  "category": "CLI",
+  "name": "esme_pnetcdf_mvapich_4_0_ofi",
+  "description": "PnetCDF is a high-performance parallel I/O library that enables MPI-based applications to access netCDF files simultaneously using the MVAPICH stack. Use when user asks to perform parallel I/O on netCDF files, validate file integrity, compare large datasets, or optimize I/O throughput in HPC environments.",
+  "overview": "PnetCDF (Parallel netCDF) is a high-performance I/O library designed to allow MPI-based applications to access netCDF files in parallel. It provides a specialized interface that enables multiple processes to read from or write to a single shared file simultaneously, bypassing the bottlenecks of serial I/O. This specific implementation is built to work with the MVAPICH MPI stack over the OpenFabrics Interface (OFI), making it ideal for high-performance computing (HPC) environments. It supports cl",
+  "homepage": "https://parallel-netcdf.github.io/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/esme_pnetcdf_mvapich_4_0_ofi/overview",
+  "github": "N/A",
+  "conda_downloads": "289",
+  "conda_downloads_num": 289,
+  "last_updated": "2025-08-16",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "esme_pnetcdf_mvapich_4_0_ofi",
+      "esme_pnetcdf_mvapich_4_0_ofi_ncvalidator",
+      "esme_pnetcdf_mvapich_4_0_ofi_ncmpidiff",
+      "esme_pnetcdf_mvapich_4_0_ofi_cdfdiff",
+      "esme_pnetcdf_mvapich_4_0_ofi_ncoffsets",
+      "esme_pnetcdf_mvapich_4_0_ofi_pnetcdf_version",
+      "esme_pnetcdf_mvapich_4_0_ofi_pnetcdf-config"
+    ],
+    "description": "The provided text does not contain help information or usage instructions. It contains error logs related to a container runtime (Apptainer/Singularity) failing to build a SIF image due to insufficient disk space.",
+    "docker_image": "quay.io/biocontainers/esme_netcdf-fortran_mvapich_4_0_ofi:4.6.2--hb2a3317_0",
+    "homepage": "https://parallel-netcdf.github.io/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/esme_pnetcdf_mvapich_4_0_ofi/overview",
+    "github": "N/A",
+    "conda_downloads": "289",
+    "last_updated": "2025-08-16",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "esme_pnetcdf_mvapich_4_0_ofi_cdfdiff.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# esme_pnetcdf_mvapich_4_0_ofi\n\n## Overview\n\nPnetCDF (Parallel netCDF) is a high-performance I/O library designed to allow MPI-based applications to access netCDF files in parallel. It provides a specialized interface that enables multiple processes to read from or write to a single shared file simultaneously, bypassing the bottlenecks of serial I/O. This specific implementation is built to work with the MVAPICH MPI stack over the OpenFabrics Interface (OFI), making it ideal for high-performance computing (HPC) environments. It supports classic netCDF formats as well as extended formats like CDF-5, which allows for variables with more than 4 billion elements.\n\n## Utility Programs\n\nThe package includes several command-line utilities for managing and inspecting parallel netCDF files:\n\n*   **ncvalidator**: Validates a netCDF file against the CDF-1, CDF-2, or CDF-5 specifications. Use this to ensure file integrity after parallel writes.\n*   **ncmpidiff**: A parallel tool to compare two netCDF files and report differences. It is more efficient than serial `diff` for large datasets.\n*   **cdfdiff**: A serial version of `ncmpidiff` for smaller files or quick checks.\n*   **ncoffsets**: Reports the starting and ending file offsets of variables within a netCDF file. Useful for debugging file layout and alignment.\n*   **pnetcdf_version**: Reports the library version and build configuration.\n*   **pnetcdf-config**: Provides compiler and linker flags used during the library build, essential for compiling custom C or Fortran applications against this specific PnetCDF build.\n\n## Performance Optimization Best Practices\n\nTo achieve maximum I/O throughput, follow these expert guidelines:\n\n### 1. Use Collective APIs\nAlways prefer collective I/O functions (those ending in `_all`, such as `ncmpi_put_vara_all`) over independent APIs. Collective calls allow the underlying MPI-IO layer to coordinate requests across processes, enabling optimizations like \"collective buffering\" and \"data sieving.\"\n\n### 2. Leverage Nonblocking APIs for Aggregation\nIf your application performs many small I/O requests, use the nonblocking interface (`ncmpi_iput_...` and `ncmpi_iget_...`). \n*   **Workflow**: Post multiple requests using `iput` or `iget`, then call `ncmpi_wait_all`.\n*   **Benefit**: PnetCDF will aggregate these small requests into a single, large, contiguous MPI-IO operation, significantly reducing metadata overhead and improving bandwidth.\n\n### 3. File Alignment and Striping\nOn parallel file systems like Lustre or GPFS, align your data with the file system's striping unit:\n*   **nc_header_align_size**: Set this hint via `MPI_Info` to reserve extra space in the file header. This prevents a \"data shift penalty\" if you add attributes later.\n*   **nc_var_align_size**: Set this to match your file system's stripe size (e.g., 1MB or 4MB) to ensure variables start on block boundaries, reducing lock contention.\n\n### 4. Select the Correct File Format\n*   **CDF-1**: Use for maximum compatibility with legacy serial netCDF tools.\n*   **CDF-2 (64-bit Offset)**: Use for files larger than 2GB.\n*   **CDF-5 (64-bit Data)**: Use when you need to define dimensions or variables with more than $2^{32}$ elements or require 8-byte integer support.\n\n## Common Environment Variables\n\n*   **PNETCDF_SAFE_MODE**: Set to `1` to enable internal data consistency checking (useful for debugging).\n*   **PNETCDF_VERBOSE_DEBUG_MODE**: Set to `1` to print detailed debugging messages regarding I/O operations.\n*   **PNETCDF_HINTS**: Use this to pass MPI-IO hints directly to the library without modifying application code (e.g., `export PNETCDF_HINTS=\"nc_var_align_size=1048576\"`).\n\n## Reference documentation\n\n- [PnetCDF C Interface Guide](./references/parallel-netcdf_github_io_doc_c-reference_pnetcdf-c_index.html.md)\n- [PnetCDF Quick Tutorial](./references/parallel-netcdf_github_io_wiki_QuickTutorial.html.md)\n- [PnetCDF FAQ](./references/parallel-netcdf_github_io_doc_faq.html.md)\n- [CDF-5 File Format Specification](./references/parallel-netcdf_github_io_doc_c-reference_pnetcdf-c_CDF_002d5-file-format-specification.html.md)\n- [Nonblocking I/O Aggregation](./references/parallel-netcdf_github_io_wiki_CombiningOperations.html.md)",
+  "skill_front_matter": {
+    "name": "esme_pnetcdf_mvapich_4_0_ofi",
+    "description": "PnetCDF is a high-performance parallel I/O library that enables MPI-based applications to access netCDF files simultaneously using the MVAPICH stack. Use when user asks to perform parallel I/O on netCDF files, validate file integrity, compare large datasets, or optimize I/O throughput in HPC environments.",
+    "homepage": "https://parallel-netcdf.github.io/"
+  }
+}

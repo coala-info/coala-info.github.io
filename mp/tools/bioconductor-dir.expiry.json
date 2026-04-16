@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dir.expiry",
+  "category": "bioconductor",
+  "name": "bioconductor-dir.expiry",
+  "description": "The dir.expiry package manages versioned cache directories by tracking usage and performing automated cleanup of stale files. Use when user asks to lock versioned directories, update cache access timestamps, or delete expired cache versions.",
+  "overview": "The `dir.expiry` package provides a robust mechanism for managing versioned cache directories. It is specifically designed for packages that store resources in external caches (like `~/.cache/package/version/`). It solves the problem of \"stale\" caches by tracking actual package usage rather than relying on unreliable filesystem access times (atime). It uses file locking to ensure that cleanup operations do not interfere with active R processes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/dir.expiry.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dir.expiry/overview",
+  "github": "N/A",
+  "conda_downloads": "19.6K",
+  "conda_downloads_num": 19600,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "dir.expiry"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dir.expiry.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dir.expiry/overview",
+    "github": "N/A",
+    "conda_downloads": "19.6K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dir.expiry\n\n## Overview\n\nThe `dir.expiry` package provides a robust mechanism for managing versioned cache directories. It is specifically designed for packages that store resources in external caches (like `~/.cache/package/version/`). It solves the problem of \"stale\" caches by tracking actual package usage rather than relying on unreliable filesystem access times (atime). It uses file locking to ensure that cleanup operations do not interfere with active R processes.\n\n## Core Workflow\n\nThe standard workflow involves three steps: locking the directory, performing operations, and updating the access time upon success.\n\n### 1. Locking a Directory\nAlways lock a versioned directory before reading from or writing to it. This prevents other processes from deleting the directory while you are using it.\n\n```r\nlibrary(dir.expiry)\n\n# Define the versioned path\ncache_base <- tools::R_user_dir(\"my_package\", which=\"cache\")\nversion <- \"1.0.0\"\ntarget_dir <- file.path(cache_base, version)\n\n# Acquire a lock\n# Use exclusive=FALSE for read-only access to allow concurrent readers\nlock <- lockDirectory(target_dir, exclusive = TRUE)\n\n# Recommended: ensure unlock happens even if the script errors\n# on.exit(unlockDirectory(lock))\n```\n\n### 2. Updating Access Time\nAfter successfully accessing or creating the cache, \"touch\" the directory. This creates an `*_dir.expiry` metadata file that records the current date.\n\n```r\n# Create the directory if it doesn't exist\ndir.create(target_dir, recursive = TRUE, showWarnings = FALSE)\n\n# Update the access timestamp\ntouchDirectory(target_dir)\n```\n\n### 3. Unlocking and Automatic Cleanup\nWhen you call `unlockDirectory()`, the package automatically checks for other versioned directories in the same parent folder that have expired.\n\n```r\n# This releases the lock and triggers clearDirectories() for stale versions\nunlockDirectory(lock)\n```\n\n## Key Functions\n\n### `lockDirectory(path, exclusive = TRUE)`\n- Creates a lock file for the specified versioned directory.\n- If `exclusive = TRUE`, other processes cannot lock this directory.\n- If `exclusive = FALSE`, other readers can access it, but writers are blocked.\n\n### `touchDirectory(path, date = Sys.Date())`\n- Writes an `ExpiryVersion` and `AccessDate` to a metadata file in the parent directory.\n- The metadata file is named `basename(path)_dir.expiry`.\n\n### `unlockDirectory(lock, clear = TRUE)`\n- Releases the file lock.\n- If `clear = TRUE`, it triggers the deletion of expired directories in the same parent folder.\n- **Note:** It will only delete versions *older* than the currently locked version to prevent accidental deletion of newer installations.\n\n### `clearDirectories(parent, limit = 30)`\n- Manually trigger cleanup of a cache folder.\n- `limit`: Number of days since last access before a directory is considered expired.\n- Can be controlled via the environment variable `BIOC_DIR_EXPIRY_LIMIT`.\n\n## Implementation Tips\n\n- **Thread Safety:** Always use `lockDirectory()` before `touchDirectory()`.\n- **Version Format:** The package expects subdirectories to be named as valid R versions (e.g., \"1.0.0\").\n- **Avoid Collisions:** Do not name your own package files with the suffix `_dir.expiry`, as these are reserved for this package's metadata.\n- **Read-Only Optimization:** If your package only needs to read from a cache, use `exclusive = FALSE` in `lockDirectory` to maximize performance across multiple R sessions.\n\n## Reference documentation\n\n- [Managing expiration of versioned subdirectories](./references/userguide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dir.expiry",
+    "description": "The dir.expiry package manages versioned cache directories by tracking usage and performing automated cleanup of stale files. Use when user asks to lock versioned directories, update cache access timestamps, or delete expired cache versions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dir.expiry.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-consensusde",
+  "category": "bioconductor",
+  "name": "bioconductor-consensusde",
+  "description": "This tool performs differential expression analysis by integrating results from the voom/limma, DESeq2, and edgeR algorithms. Use when user asks to perform consensus RNA-seq differential expression analysis, remove unwanted variation using RUV, or generate automated pairwise comparisons and diagnostic plots.",
+  "overview": "The `consensusDE` package streamlines the process of performing differential expression analysis by running three popular algorithms—**voom/limma**, **DESeq2**, and **edgeR**—simultaneously. It merges their results into a single table, ranking genes by the summed ranks of their p-values. This \"consensus\" approach helps identify robust DE genes that are consistently detected across different statistical frameworks.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/consensusDE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "consensusDE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/consensusDE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-consensusde\n\nname: bioconductor-consensusde\ndescription: Differential expression (DE) analysis using a consensus approach with multiple algorithms (voom/limma, DESeq2, and edgeR). Use this skill when you need to perform RNA-seq DE analysis that integrates results from multiple methods, removes unwanted variation (RUV), or requires automated pairwise comparisons and diagnostic plotting.\n\n## Overview\n\nThe `consensusDE` package streamlines the process of performing differential expression analysis by running three popular algorithms—**voom/limma**, **DESeq2**, and **edgeR**—simultaneously. It merges their results into a single table, ranking genes by the summed ranks of their p-values. This \"consensus\" approach helps identify robust DE genes that are consistently detected across different statistical frameworks.\n\n## Core Workflow\n\n### 1. Building a SummarizedExperiment\nUse `buildSummarized()` to prepare your data. It can count reads from BAM files or import existing count data.\n\n```r\nlibrary(consensusDE)\nlibrary(TxDb.Dmelanogaster.UCSC.dm3.ensGene)\n\n# Sample table must have \"file\" and \"group\" columns\nsample_table <- data.frame(\n  file = c(\"sample1.bam\", \"sample2.bam\", \"sample3.bam\", \"sample4.bam\"),\n  group = c(\"treat\", \"treat\", \"untreat\", \"untreat\")\n)\n\n# Build the object\nse <- buildSummarized(\n  sample_table = sample_table,\n  bam_dir = \"/path/to/bams\",\n  tx_db = TxDb.Dmelanogaster.UCSC.dm3.ensGene,\n  read_format = \"paired\" # or \"single\"\n)\n```\n\n### 2. Performing Differential Expression\nThe `multi_de_pairs()` function performs all possible pairwise comparisons between groups defined in your metadata.\n\n```r\n# Basic DE analysis\nresults <- multi_de_pairs(\n  summarized = se,\n  paired = \"unpaired\",\n  ruv_correct = FALSE\n)\n\n# Access merged results for a specific comparison\nhead(results$merged[[\"treat-untreat\"]])\n```\n\n### 3. Removing Unwanted Variation (RUV)\nTo account for batch effects or hidden factors, set `ruv_correct = TRUE`. This implements the RUVr method (residuals-based).\n\n```r\nresults_ruv <- multi_de_pairs(\n  summarized = se,\n  ruv_correct = TRUE\n)\n```\n\n### 4. Paired Analysis\nFor paired designs (e.g., before/after treatment in the same patient), ensure your `colData` has a `pairs` column.\n\n```r\ncolData(se)$pairs <- as.factor(c(\"p1\", \"p1\", \"p2\", \"p2\"))\nresults_paired <- multi_de_pairs(\n  summarized = se,\n  paired = \"paired\"\n)\n```\n\n## Key Functions and Parameters\n\n- **`buildSummarized()`**:\n  - `filter = TRUE`: Removes low-count genes.\n  - `strand_mode`: 0 (unstranded), 1 (stranded), 2 (reversely stranded).\n  - `gtf`: Path to a GTF file if a TxDb object is not available.\n- **`multi_de_pairs()`**:\n  - `ensembl_annotate`: Pass an OrgDb (e.g., `org.Hs.eg.db`) to add gene symbols and KEGG IDs.\n  - `norm_method`: \"all_defaults\" (uses method-specific defaults) or \"EDASeq\" (consistent normalization across all methods).\n  - `plot_dir`: Path to save a comprehensive PDF report of diagnostic plots.\n\n## Interpreting Results\n\nThe `merged` output table contains several unique columns:\n- `rank_sum`: The sum of p-value ranks across the three methods (lower is better).\n- `p_intersect`: The largest p-value among the methods (conservative intersection).\n- `p_union`: The smallest p-value among the methods (liberal union).\n- `LogFC`: The average log2 fold-change across all methods.\n\n## Diagnostic Plotting\n\nUse `diag_plots()` to visualize data quality and DE results:\n\n```r\n# PCA Plot\ndiag_plots(se_in = se, pca = TRUE)\n\n# Volcano Plot (requires a list with specific column names)\n# Note: diag_plots expects a list where the dataframe has an \"Adj_PVal\" column\ncomp_list <- results$merged\ncolnames(comp_list[[1]])[colnames(comp_list[[1]]) == \"edger_adj_p\"] <- \"Adj_PVal\"\ndiag_plots(merged_in = comp_list, volcano = TRUE)\n```\n\n## Reference documentation\n- [consensusDE: DE analysis using multiple algorithms](./references/consensusDE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-consensusde",
+    "description": "This tool performs differential expression analysis by integrating results from the voom/limma, DESeq2, and edgeR algorithms. Use when user asks to perform consensus RNA-seq differential expression analysis, remove unwanted variation using RUV, or generate automated pairwise comparisons and diagnostic plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/consensusDE.html"
+  }
+}

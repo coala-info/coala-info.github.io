@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-wppi",
+  "category": "bioconductor",
+  "name": "bioconductor-wppi",
+  "description": "This tool calculates context-specific functional scores for genes in a protein-protein interaction network by integrating functional annotations from Gene Ontology and Human Phenotype Ontology. Use when user asks to prioritize candidate genes, calculate gene functional similarity scores, or perform a random walk with restarts on a weighted protein-protein interaction network.",
+  "overview": "The `wppi` package implements a Random Walk with Restarts (RWR) algorithm on a weighted PPI network to prioritize genes. It is \"context-specific\" because it weights the network based on functional annotations (GO/HPO) relevant to the user's genes of interest or a specific disease context. The workflow typically involves retrieving network data, defining a subgraph around seed genes, weighting the edges based on shared neighbors and functional similarity, and running the random walk to generate s",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/wppi.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/AnaGalhoz37/wppi",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "wppi"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/wppi.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/AnaGalhoz37/wppi",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-wppi\n\nname: bioconductor-wppi\ndescription: Calculate context-specific functional scores for genes in a protein-protein interaction (PPI) network neighborhood. Use this skill when you need to prioritize candidate genes based on their functional similarity to a set of genes of interest, integrating OmniPath PPI networks, Gene Ontology (GO), and Human Phenotype Ontology (HPO) data.\n\n# bioconductor-wppi\n\n## Overview\n\nThe `wppi` package implements a Random Walk with Restarts (RWR) algorithm on a weighted PPI network to prioritize genes. It is \"context-specific\" because it weights the network based on functional annotations (GO/HPO) relevant to the user's genes of interest or a specific disease context. The workflow typically involves retrieving network data, defining a subgraph around seed genes, weighting the edges based on shared neighbors and functional similarity, and running the random walk to generate scores.\n\n## Core Workflow\n\n### Single-Call Execution\nFor most use cases, the entire pipeline can be executed with one function.\n```r\nlibrary(wppi)\n\n# Define seed genes (Gene Symbols)\ngenes_interest <- c('ERCC8', 'AKT3', 'NOL3', 'TTK', 'GFI1B', 'CDC25A', 'TPX2', 'SHE')\n\n# Run full prioritization\n# Returns a tibble with: score, gene_symbol, uniprot\nscores <- score_candidate_genes_from_PPI(genes_interest)\n```\n\n### Step-by-Step Customization\nIf you need to filter specific ontologies (e.g., only Diabetes-related HPO terms) or adjust network parameters:\n\n1.  **Retrieve Data**: Use `wppi_data()` to fetch OmniPath, GO, and HPO data.\n    ```r\n    # Customize datasets (e.g., only literature curated 'omnipath')\n    db <- wppi_data(datasets = 'omnipath')\n    ```\n\n2.  **Filter HPO (Optional)**: Narrow down the context.\n    ```r\n    HPO_data <- wppi_hpo_data()\n    # Filter for a specific condition\n    diabetes_terms <- unique(dplyr::filter(HPO_data, grepl('Diabetes', Name))$Name)\n    ```\n\n3.  **Build Subgraph**: Create an igraph object and extract the neighborhood.\n    ```r\n    graph_op <- graph_from_op(db$omnipath)\n    # sub_level = 1 (direct neighbors), sub_level = 2 (neighbors of neighbors)\n    graph_sub <- subgraph_op(graph_op, genes_interest, sub_level = 1)\n    ```\n\n4.  **Weight and Rank**:\n    ```r\n    # Calculate weights based on common neighbors and functional similarity\n    w_adj <- weighted_adj(graph_sub, db$go, db$hpo)\n    \n    # Perform Random Walk with Restarts\n    w_rw <- random_walk(w_adj)\n    \n    # Summarize scores\n    final_scores <- prioritization_genes(graph_sub, w_rw, genes_interest)\n    ```\n\n## Key Functions\n\n- `score_candidate_genes_from_PPI()`: The wrapper for the full automated pipeline.\n- `wppi_data()`: Downloads all necessary database knowledge (OmniPath, GO, HPO, UniProt).\n- `subgraph_op()`: Extracts a local neighborhood from the global PPI network.\n- `weighted_adj()`: The core scoring engine that combines topology and ontology.\n- `random_walk()`: Propagates scores across the weighted network.\n\n## Tips for Success\n\n- **Gene Identifiers**: The package primarily uses Gene Symbols. Ensure your input list is consistent.\n- **Network Depth**: The `sub_level` argument in `subgraph_op` significantly impacts computation time. A level of 1 or 2 is usually sufficient for prioritization.\n- **Context Filtering**: To make the scores truly \"context-specific,\" filter the HPO or GO data frames before passing them to `weighted_adj()`.\n- **Dependencies**: This package relies heavily on `OmnipathR` for data retrieval and `igraph` for network manipulation.\n\n## Reference documentation\n\n- [WPPI workflow](./references/wppi_workflow.Rmd)\n- [WPPI workflow (Markdown)](./references/wppi_workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-wppi",
+    "description": "This tool calculates context-specific functional scores for genes in a protein-protein interaction network by integrating functional annotations from Gene Ontology and Human Phenotype Ontology. Use when user asks to prioritize candidate genes, calculate gene functional similarity scores, or perform a random walk with restarts on a weighted protein-protein interaction network.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/wppi.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genomicalignments",
+  "category": "bioconductor",
+  "name": "bioconductor-genomicalignments",
+  "description": "The GenomicAlignments package provides efficient containers and methods for representing and manipulating high-throughput sequencing alignments in R. Use when user asks to load BAM files, count reads for differential expression, analyze RNA-seq splice compatibility, or perform nucleotide-level analysis on aligned sequences.",
+  "overview": "The `GenomicAlignments` package is the standard Bioconductor infrastructure for handling high-throughput sequencing alignments. It provides efficient containers for single-end and paired-end reads, allowing for complex operations like overlap detection, coverage calculation, and nucleotide-level analysis. It is particularly powerful for RNA-seq because it natively supports gapped alignments (junction reads).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genomicalignments/overview",
+  "github": "https://github.com/Bioconductor/GenomicAlignments",
+  "conda_downloads": "1.1M",
+  "conda_downloads_num": 1100000,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GenomicAlignments"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genomicalignments/overview",
+    "github": "https://github.com/Bioconductor/GenomicAlignments",
+    "conda_downloads": "1.1M",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genomicalignments\n\n## Overview\nThe `GenomicAlignments` package is the standard Bioconductor infrastructure for handling high-throughput sequencing alignments. It provides efficient containers for single-end and paired-end reads, allowing for complex operations like overlap detection, coverage calculation, and nucleotide-level analysis. It is particularly powerful for RNA-seq because it natively supports gapped alignments (junction reads).\n\n## Core Workflows\n\n### 1. Loading Alignment Data\nUse `readGAlignments` for single-end data and `readGAlignmentPairs` for paired-end data.\n\n```r\nlibrary(GenomicAlignments)\n\n# Load single-end BAM\nbam_file <- \"path/to/file.bam\"\naln <- readGAlignments(bam_file)\n\n# Load paired-end BAM (preserves pairing information)\ngalp <- readGAlignmentPairs(bam_file, use.names=TRUE)\n\n# Use ScanBamParam for filtering (e.g., duplicates, map quality)\nparam <- ScanBamParam(flag=scanBamFlag(isDuplicate=FALSE), what=\"seq\")\naln_filtered <- readGAlignments(bam_file, param=param)\n```\n\n### 2. Accessing Alignment Metadata\nStandard accessors extract information directly from the objects:\n- `seqnames(aln)`: Chromosomes.\n- `strand(aln)`: Alignment strand.\n- `cigar(aln)`: CIGAR strings.\n- `qwidth(aln)`: Query (read) width.\n- `start(aln)` / `end(aln)`: Genomic coordinates.\n- `njunc(aln)`: Number of junctions (N operations in CIGAR).\n- `grglist(aln)`: Convert alignments to a `GRangesList` (useful for gapped reads).\n\n### 3. Counting Reads (summarizeOverlaps)\nThis is the primary method for generating count matrices for differential expression (DESeq2/edgeR).\n\n```r\n# features is usually a GRangesList (exons by gene)\n# fls is a vector of BAM file paths\ncounts <- summarizeOverlaps(features, fls, mode=\"Union\", ignore.strand=TRUE)\n\n# Access the count matrix\ncount_matrix <- assay(counts)\n```\n**Modes:**\n- `Union`: (Default) Read overlaps any part of a feature.\n- `IntersectionStrict`: Read must be entirely within the feature.\n- `IntersectionNotEmpty`: Resolves overlaps where a read hits multiple features.\n\n### 4. RNA-seq Splice Compatibility\nTo determine if a read is compatible with a specific transcript's splicing pattern:\n\n```r\n# Find overlaps between reads and transcripts\nov <- findOverlaps(aln, exbytx)\n\n# Encode the overlaps\nenc <- encodeOverlaps(aln, exbytx, hits=ov, flip.query.if.wrong.strand=TRUE)\n\n# Filter for splice-compatible hits\nis_compatible <- isCompatibleWithSplicing(enc)\ncompatible_ov <- ov[is_compatible]\n```\n\n### 5. Nucleotide-Level Analysis\nExtract sequences to compare reads against the reference genome.\n\n```r\n# Get original query sequences (restoring orientation)\noqseq <- mcols(aln)$seq\nis_minus <- as.logical(strand(aln) == \"-\")\noqseq[is_minus] <- reverseComplement(oqseq[is_minus])\n\n# Extract reference sequences for the aligned regions\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\nref_seqs <- extractTranscriptSeqs(Hsapiens, grglist(aln))\n```\n\n## Tips and Best Practices\n- **Memory Management**: For large BAM files, use `BamFileList(..., yieldSize=1000000)` to process data in chunks.\n- **Paired-End Strand Mode**: When using `readGAlignmentPairs`, pay attention to `strandMode`. `strandMode=1` (default) means the strand of the pair is the strand of the first mate.\n- **CIGAR Operations**: Use `tabulate_cigar_ops()` (from the `cigarillo` dependency) or `cigarOpTable()` to summarize insertions, deletions, and skips across a whole BAM file.\n- **Junctions**: `njunc(aln) > 0` identifies reads that cross at least one exon-exon junction.\n\n## Reference documentation\n- [An Introduction to the GenomicAlignments Package](./references/GenomicAlignmentsIntroduction.md)\n- [Overlap encodings](./references/OverlapEncodings.md)\n- [Working with aligned nucleotides](./references/WorkingWithAlignedNucleotides.md)\n- [Counting reads with summarizeOverlaps](./references/summarizeOverlaps.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genomicalignments",
+    "description": "The GenomicAlignments package provides efficient containers and methods for representing and manipulating high-throughput sequencing alignments in R. Use when user asks to load BAM files, count reads for differential expression, analyze RNA-seq splice compatibility, or perform nucleotide-level analysis on aligned sequences.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html"
+  }
+}

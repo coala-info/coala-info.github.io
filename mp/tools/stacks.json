@@ -1,0 +1,61 @@
+{
+  "id": "stacks",
+  "category": "CLI",
+  "name": "stacks",
+  "description": "Stacks processes short-read sequences into genetic markers for population genomics and genetic mapping using de novo or reference-based workflows. Use when user asks to demultiplex RAD-seq data, perform de novo assembly of loci, align reads to a reference genome, or calculate population-level statistics like FST and Pi.",
+  "overview": "Stacks is a specialized bioinformatics suite designed to turn short-read sequences into genetic markers. It is primarily used for population genomics, phylogeography, and genetic mapping. The pipeline handles the entire workflow from demultiplexing raw Illumina reads to calculating population-level statistics like FST, π, and FIS. It supports both *de novo* assembly (when no reference genome is available) and reference-aligned workflows.",
+  "homepage": "https://catchenlab.life.illinois.edu/stacks/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/stacks/overview",
+  "github": "N/A",
+  "conda_downloads": "314.4K",
+  "conda_downloads_num": 314400,
+  "last_updated": "2025-09-30",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "stacks_process_radtags",
+      "stacks_process_shortreads",
+      "stacks_clone_filter",
+      "stacks_ustacks",
+      "stacks_cstacks",
+      "stacks_sstacks",
+      "stacks_tsv2bam",
+      "stacks_gstacks",
+      "stacks_populations"
+    ],
+    "description": "Process RAD-seq data to demultiplex, clean, and filter reads.",
+    "docker_image": "quay.io/biocontainers/stacks:2.68--h077b44d_3",
+    "homepage": "https://catchenlab.life.illinois.edu/stacks/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/stacks/overview",
+    "github": "N/A",
+    "conda_downloads": "314.4K",
+    "last_updated": "2025-09-30",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "stacks_clone_filter.cwl",
+    "stacks_cstacks.cwl",
+    "stacks_gstacks.cwl",
+    "stacks_populations.cwl",
+    "stacks_process_radtags.cwl",
+    "stacks_process_shortreads.cwl",
+    "stacks_sstacks.cwl",
+    "stacks_tsv2bam.cwl",
+    "stacks_ustacks.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# stacks\n\n## Overview\nStacks is a specialized bioinformatics suite designed to turn short-read sequences into genetic markers. It is primarily used for population genomics, phylogeography, and genetic mapping. The pipeline handles the entire workflow from demultiplexing raw Illumina reads to calculating population-level statistics like FST, π, and FIS. It supports both *de novo* assembly (when no reference genome is available) and reference-aligned workflows.\n\n## Core Pipeline Workflows\n\n### 1. Data Pre-processing\nBefore assembly, raw reads must be cleaned and demultiplexed.\n- **process_radtags**: Use for RAD-seq data to check barcodes and restriction sites.\n  `process_radtags -p ./raw -o ./samples -b ./barcodes -e sbfI -r -c -q`\n- **clone_filter**: Use for paired-end, sheared data to remove PCR duplicates.\n  `clone_filter -1 read1.fq.gz -2 read2.fq.gz -i gzfastq -o ./filtered`\n- **process_shortreads**: Use for non-RAD genomic or transcriptomic data cleaning.\n\n### 2. De Novo Pipeline (denovo_map.pl)\nThe most common entry point for users without a reference genome. It wraps `ustacks`, `cstacks`, `sstacks`, `tsv2bam`, `gstacks`, and `populations`.\n- **Basic Execution**:\n  `denovo_map.pl --samples ./samples --popmap ./popmap -o ./stacks -M 3 -n 3 -T 8`\n- **Key Parameters**:\n  - `-M`: Mismatches allowed between stacks within an individual (default 2).\n  - `-n`: Mismatches allowed between stacks between individuals (often set equal to M).\n  - `--paired`: Required if using paired-end data to trigger contig assembly in `gstacks`.\n\n### 3. Reference-based Pipeline (ref_map.pl)\nUse when reads have already been aligned to a reference genome (e.g., via BWA or Bowtie2).\n- **Basic Execution**:\n  `ref_map.pl --samples ./aligned_bam_dir --popmap ./popmap -o ./stacks -T 8`\n\n### 4. Population Analysis (populations)\nThis module is often run multiple times after the core pipeline to refine filters or export different formats.\n- **Filtering and Export**:\n  `populations -P ./stacks -M ./popmap -r 0.80 -p 3 --vcf --genepop --structure --write-single-snp`\n- **Parameters**:\n  - `-r`: Minimum percentage of individuals in a population required to keep a locus.\n  - `-p`: Minimum number of populations a locus must be present in.\n  - `--write-single-snp`: Recommended for STRUCTURE to avoid linked markers.\n\n## Expert Tips and Best Practices\n\n- **Parameter Optimization**: Follow the \"r80\" method. Run the pipeline with varying `-M` and `-n` values (e.g., 1-9) and select the value that maximizes the number of polymorphic loci found in 80% of individuals.\n- **Population Maps**: Ensure your popmap is a tab-separated file with `[sample_name] [population_id]`. The sample name must match the filename prefix in your samples directory.\n- **Memory Management**: For very large datasets, avoid `denovo_map.pl`. Run `ustacks` individually across a cluster, then build a catalog (`cstacks`) using only a representative subset of individuals to reduce error accumulation.\n- **PCR Duplicates**: If using single-digest RAD-seq with random shearing, always use `--rm-pcr-duplicates` in `gstacks` or `denovo_map.pl` to improve SNP calling accuracy.\n- **Gapped Alignments**: Stacks 2.0+ supports gapped alignments. If your species has high indel rates, ensure gapped assembly is not disabled (it is enabled by default).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| clone_filter | You must specify an input file of a directory path to a set of input files. |\n| cstacks | Build a catalog of loci from sample data. |\n| gstacks | De novo and reference-based mode for variant calling. |\n| populations | Stacks populations module for population genetics analysis. |\n| process_radtags | Process RAD-seq data to demultiplex, clean, and filter reads. |\n| process_shortreads | process_shortreads 2.68 |\n| sstacks | Stacks de novo assembly pipeline |\n| tsv2bam | Converts STACKS tsv files to BAM format. |\n| ustacks | ustacks -f in_path -o out_path [-M max_dist] [-m min_reads] [-t num_threads] |\n\n## Reference documentation\n- [Stacks Manual](./references/catchenlab_life_illinois_edu_stacks_manual.md)\n- [denovo_map.pl Documentation](./references/catchenlab_life_illinois_edu_stacks_comp_denovo_map.php.md)\n- [populations Documentation](./references/catchenlab_life_illinois_edu_stacks_comp_populations.php.md)\n- [Parameter Optimization Tutorial](./references/catchenlab_life_illinois_edu_stacks_param_tut.php.md)",
+  "skill_front_matter": {
+    "name": "stacks",
+    "description": "Stacks processes short-read sequences into genetic markers for population genomics and genetic mapping using de novo or reference-based workflows. Use when user asks to demultiplex RAD-seq data, perform de novo assembly of loci, align reads to a reference genome, or calculate population-level statistics like FST and Pi.",
+    "homepage": "https://catchenlab.life.illinois.edu/stacks/"
+  }
+}

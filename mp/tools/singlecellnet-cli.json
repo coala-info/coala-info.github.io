@@ -1,0 +1,47 @@
+{
+  "id": "singlecellnet-cli",
+  "category": "CLI",
+  "name": "singlecellnet-cli",
+  "description": "singlecellnet-cli constructs and applies random forest classifiers for cell type annotation in single-cell transcriptomics data. Use when user asks to train a classifier from a reference dataset or predict cell types in a query dataset.",
+  "overview": "The `singlecellnet-cli` provides a streamlined interface for the singleCellNet R package, enabling the construction and application of random forest classifiers specifically designed for single-cell transcriptomics. You should use this skill when you need to:\n1. **Train a classifier**: Build a model using a reference dataset with known cell type annotations.\n2. **Predict cell types**: Assign labels to a query dataset based on a previously trained model.",
+  "homepage": "https://github.com/ebi-gene-expression-group/singlecellnet-cli",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/singlecellnet-cli/overview",
+  "github": "https://github.com/ebi-gene-expression-group/singlecellnet-cli",
+  "conda_downloads": "1.9K",
+  "conda_downloads_num": 1900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "singlecellnet-cli_scn-train-model.R",
+      "singlecellnet-cli_scn-predict.R"
+    ],
+    "description": "Train a single cell classifier model.",
+    "docker_image": "quay.io/biocontainers/singlecellnet-cli:0.0.1--hdfd78af_0",
+    "homepage": "https://github.com/ebi-gene-expression-group/singlecellnet-cli",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/singlecellnet-cli/overview",
+    "github": "https://github.com/ebi-gene-expression-group/singlecellnet-cli",
+    "conda_downloads": "1.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "singlecellnet-cli_scn-predict.R.cwl",
+    "singlecellnet-cli_scn-train-model.R.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# singlecellnet-cli\n\n## Overview\n\nThe `singlecellnet-cli` provides a streamlined interface for the singleCellNet R package, enabling the construction and application of random forest classifiers specifically designed for single-cell transcriptomics. You should use this skill when you need to:\n1. **Train a classifier**: Build a model using a reference dataset with known cell type annotations.\n2. **Predict cell types**: Assign labels to a query dataset based on a previously trained model.\n\nThe tool is particularly robust because it uses \"Top-Pair\" transformation, making it less sensitive to technical variation between different datasets or species.\n\n## Installation and Setup\n\nThe tool is available via Bioconda:\n```bash\nconda install singlecellnet-cli\n```\n\n## Training a Model\n\nUse `scn-train-model.R` to generate a classifier from a reference SingleCellExperiment object.\n\n### Required Parameters\n- `--input-object`: Path to the reference SCE object (.rds).\n- `--cell-type-col`: The metadata column containing ground-truth cell type labels.\n- `--cell-barcode-col`: The metadata column containing unique cell identifiers.\n- `--output-path`: Destination for the trained classifier (.rds).\n\n### Expert Tips for Training\n- **Data Cleaning**: The tool automatically filters out cells labeled as \"unknown\", \"unassigned\", \"ambiguous\", or \"rand\". Ensure your reference labels are clean before training.\n- **Assay Selection**: The script looks for a `counts` slot first. If missing, it will attempt to use `normcounts`. Ensure your SCE object has one of these populated.\n- **Feature Selection**: Adjust `--n-top-genes` (default 10) and `--n-top-gene-pairs` (default 25) to balance between classification speed and accuracy. Increasing these can improve performance on complex datasets but increases memory usage.\n\n### Example Command\n```bash\nscn-train-model.R \\\n    --input-object reference_data.rds \\\n    --cell-type-col \"cell_ontology_class\" \\\n    --cell-barcode-col \"barcode\" \\\n    --n-trees 1000 \\\n    --output-path my_classifier.rds\n```\n\n## Predicting Cell Types\n\nUse `scn-predict.R` to classify cells in a query dataset using your trained model.\n\n### Required Parameters\n- `--input-classifier-object`: Path to the classifier generated during the training step.\n- `--query-expression-data`: Path to the query SCE object (.rds).\n- `--prediction-output`: Path for the output file.\n\n### Handling Missing Genes\nA common issue in cross-platform classification is the absence of specific feature genes in the query data. `singlecellnet-cli` handles this automatically by:\n1. Identifying classification genes missing from the query.\n2. Performing mean imputation for those missing values to allow the classifier to proceed.\n\n### Output Formats\n- **Default (TSV)**: Produces a tab-separated table containing `cell_id`, `predicted_label`, and the classification `score`.\n- **Raw (RDS)**: Use the `--return-raw-output` flag to save the full prediction matrix as an .rds file, which is useful for downstream analysis in R.\n\n### Example Command\n```bash\nscn-predict.R \\\n    --input-classifier-object my_classifier.rds \\\n    --query-expression-data query_data.rds \\\n    --prediction-output results.tsv\n```\n\n## Best Practices\n- **Dataset ID**: When training, use `--dataset-id` to tag your classifier. This ID is embedded in the prediction output headers, providing better provenance for your analysis.\n- **Random Profiles**: The `--n-rand` (training) and `--n-rand-prof` (prediction) parameters control the generation of \"random\" cell profiles used to set a baseline for \"unassigned\" classifications. If you get too many false positives, consider increasing these values.\n- **Memory Management**: For very large datasets, ensure your environment has sufficient RAM, as the Top-Pair transformation creates a large matrix of gene-pair comparisons.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| /usr/local/bin/scn-train-model.R | Train a single cell classifier model. |\n| scn-predict.R | Predict cell types using a trained classifier. |\n\n## Reference documentation\n- [singlecellnet-cli README](./references/github_com_ebi-gene-expression-group_singlecellnet-cli_blob_main_README.md)\n- [Model Training Script Details](./references/github_com_ebi-gene-expression-group_singlecellnet-cli_blob_main_scn-train-model.R.md)\n- [Prediction Script Details](./references/github_com_ebi-gene-expression-group_singlecellnet-cli_blob_main_scn-predict.R.md)",
+  "skill_front_matter": {
+    "name": "singlecellnet-cli",
+    "description": "singlecellnet-cli constructs and applies random forest classifiers for cell type annotation in single-cell transcriptomics data. Use when user asks to train a classifier from a reference dataset or predict cell types in a query dataset.",
+    "homepage": "https://github.com/ebi-gene-expression-group/singlecellnet-cli"
+  }
+}

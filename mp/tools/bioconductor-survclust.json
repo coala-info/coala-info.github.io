@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-survclust",
+  "category": "bioconductor",
+  "name": "bioconductor-survclust",
+  "description": "bioconductor-survclust performs outcome-weighted integrative supervised clustering for multi-omic data. Use when user asks to identify clinically relevant subtypes, cluster molecular data supervised by survival outcomes, or integrate multiple data types like mutations and expression.",
+  "overview": "`survClust` is an R package for supervised integrative clustering. Unlike unsupervised methods that cluster molecular data alone, `survClust` uses time-to-event data (e.g., Overall Survival) to weight molecular features, ensuring that the resulting clusters are clinically meaningful. It supports multiple data types including continuous (RNA-seq, methylation) and binary (mutation status) data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/survClust.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/arorarshi/survClust",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "survClust"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/survClust.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/arorarshi/survClust",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-survclust\n\nname: bioconductor-survclust\ndescription: Outcome-weighted integrative supervised clustering for multi-omic data. Use when clustering molecular data (such as mutations, copy number, or expression) supervised by survival or time-to-event outcomes to identify clinically relevant subtypes.\n\n# bioconductor-survclust\n\n## Overview\n\n`survClust` is an R package for supervised integrative clustering. Unlike unsupervised methods that cluster molecular data alone, `survClust` uses time-to-event data (e.g., Overall Survival) to weight molecular features, ensuring that the resulting clusters are clinically meaningful. It supports multiple data types including continuous (RNA-seq, methylation) and binary (mutation status) data.\n\n## Installation\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"survClust\")\n```\n\n## Data Preparation\n\nThe package requires two main inputs:\n1. **Molecular Data**: A list of `m` data types. Each element in the list should be a matrix or data frame where rows are samples and columns are features.\n2. **Survival Data**: A matrix or data frame with at least two columns: time-to-event and event status (0/1). Row names must match the sample names in the molecular data.\n\n**Pre-processing Tips:**\n- Remove features with >20% missing data.\n- For mRNA, filter out low-expression genes (e.g., bottom 10% quantile).\n- For mutations, filter out silent variants and singletons.\n- For Copy Number, use segmented data (e.g., from CBS).\n\n## Core Workflow\n\nThe recommended workflow uses cross-validation to prevent overfitting.\n\n### 1. Compute Weighted Distance\nUse `getDist` to calculate distance matrices weighted by the survival outcome.\n\n```r\nlibrary(survClust)\n# Example with a list of data matrices 'dat' and survival data 'surv'\ndist_list <- getDist(dat, surv)\n```\n\n### 2. Cross-Validation\nUse `cv_survclust` to evaluate different cluster numbers ($k$). It is recommended to run at least 50 rounds for stability.\n\n```r\nlibrary(BiocParallel)\n\n# Function to run multiple rounds for a specific k\nrun_cv <- function(k, data, survival, rounds = 10) {\n    fit <- list()\n    for (i in 1:rounds) {\n        fit[[i]] <- cv_survclust(data, survival, k, fold = 3)\n    }\n    return(fit)\n}\n\n# Run for k = 2 to 7\ncv_results <- bplapply(2:7, run_cv, data = dat, survival = surv)\n```\n\n### 3. Evaluate and Pick k\nAnalyze the logrank statistic and Standardized Pooled Within-cluster Sum of Squares (SPWSS).\n\n```r\n# Summarize stats\nstats <- getStats(cv_results, kk = 7, cvr = 10)\n\n# Plot metrics: Look for logrank peak and SPWSS \"elbow\"\nplotStats(stats, 2:7)\n```\n\n### 4. Final Cluster Assignment\nOnce an optimal $k$ is chosen (e.g., $k=4$), use `cv_voting` to get the consensus labels.\n\n```r\nfinal_labels <- cv_voting(cv_results, dist_list, pick_k = 4)\n\n# Visualize with Kaplan-Meier\nlibrary(survival)\nplot(survfit(Surv(surv[,1], surv[,2]) ~ final_labels), col = 1:4, mark.time = TRUE)\n```\n\n## Key Functions\n\n- `getDist(x, surv, type)`: Computes weighted distance. `type` can be \"standard\" (continuous) or \"mut\" (binary).\n- `combineDist(list_of_distances)`: Integrates multiple distance matrices by averaging.\n- `cv_survclust(x, surv, k, fold)`: Wrapper for cross-validated clustering.\n- `cv_voting(cv_fit, dist, pick_k)`: Performs majority voting across CV rounds to assign final cluster labels.\n- `getStats` / `plotStats`: Tools for model selection based on logrank, SPWSS, and cluster size constraints.\n\n## Reference documentation\n\n- [An introduction to survClust package](./references/survClust_vignette.md)\n- [survClust Vignette Source](./references/survClust_vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-survclust",
+    "description": "bioconductor-survclust performs outcome-weighted integrative supervised clustering for multi-omic data. Use when user asks to identify clinically relevant subtypes, cluster molecular data supervised by survival outcomes, or integrate multiple data types like mutations and expression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/survClust.html"
+  }
+}

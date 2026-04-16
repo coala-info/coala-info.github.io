@@ -1,0 +1,53 @@
+{
+  "id": "fermikit",
+  "category": "CLI",
+  "name": "fermikit",
+  "description": "FermiKit is a de novo assembly-based pipeline for identifying SNPs, short indels, and complex structural variants from high-depth Illumina data. Use when user asks to assemble reads into unitigs, call variants against a reference genome, or detect large deletions and novel insertions.",
+  "overview": "FermiKit is a specialized pipeline designed for high-depth Illumina data that utilizes de novo assembly rather than simple mapping to identify genetic variations. By assembling reads into unitigs before mapping, it excels at detecting complex structural variants, long deletions, and novel insertions that traditional mapping-based pipelines might miss. It is highly efficient, capable of processing a 30x human genome in approximately 24 hours on a 16-core machine.",
+  "homepage": "https://github.com/lh3/fermikit",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/fermikit/overview",
+  "github": "https://github.com/lh3/fermikit",
+  "conda_downloads": "6.2K",
+  "conda_downloads_num": 6200,
+  "last_updated": "2025-09-09",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fermikit_fermi2.pl",
+      "fermikit_run-calling",
+      "fermikit_seqtk",
+      "fermikit_trimadap-mt",
+      "fermikit_htsbox"
+    ],
+    "description": "fermi2.pl is a Perl script for de novo genome assembly using the Fermi assembler.",
+    "docker_image": "quay.io/biocontainers/fermikit:0.14.dev1--pl5321h86e5fe9_2",
+    "homepage": "https://github.com/lh3/fermikit",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/fermikit/overview",
+    "github": "https://github.com/lh3/fermikit",
+    "conda_downloads": "6.2K",
+    "last_updated": "2025-09-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "fermikit_fermi2.pl.cwl",
+    "fermikit_htsbox.cwl",
+    "fermikit_run-calling.cwl",
+    "fermikit_seqtk.cwl",
+    "fermikit_trimadap-mt.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# fermikit\n\n## Overview\n\nFermiKit is a specialized pipeline designed for high-depth Illumina data that utilizes de novo assembly rather than simple mapping to identify genetic variations. By assembling reads into unitigs before mapping, it excels at detecting complex structural variants, long deletions, and novel insertions that traditional mapping-based pipelines might miss. It is highly efficient, capable of processing a 30x human genome in approximately 24 hours on a 16-core machine.\n\n## Installation and Setup\n\nTo build FermiKit from source, ensure `zlib` is installed on your system:\n\n```bash\ngit clone --recursive https://github.com/lh3/fermikit.git\ncd fermikit\nmake\n```\n\nThe build process creates a `fermi.kit` directory containing all necessary executables. You can move this directory to any location and call the tools using their relative or absolute paths.\n\n## Core Workflow\n\n### 1. Assembly into Unitigs\nThe first step generates a Makefile to manage the assembly process. You must provide the estimated genome size (`-s`) and the read length (`-l`).\n\n```bash\n# Generate the makefile\nfermi.kit/fermi2.pl unitig -s3g -t16 -l150 -p prefix reads.fq.gz > prefix.mak\n\n# Execute the assembly\nmake -f prefix.mak\n```\n\n### 2. Variant Calling\nOnce the assembly (`prefix.mag.gz`) is generated, use `run-calling` to identify variants against a BWA-indexed reference genome.\n\n```bash\nfermi.kit/run-calling -t16 bwa-indexed-ref.fa prefix.mag.gz | sh\n```\n\n**Outputs:**\n*   `prefix.flt.vcf.gz`: Filtered SNPs and short INDELs.\n*   `prefix.sv.vcf.gz`: Structural variations (long deletions, novel insertions, translocations).\n\n## Advanced CLI Patterns\n\n### Pre-processing with Adapter Trimming\nIf your raw data contains adapters, you can pipe trimmed reads directly into the assembly command using `seqtk` and `trimadap-mt`:\n\n```bash\nfermi.kit/fermi2.pl unitig -s3g -t16 -l150 -p prefix \\\n  \"fermi.kit/seqtk mergepe r1.fq r2.fq | fermi.kit/trimadap-mt -p4\" > prefix.mak\n```\n\n### Multi-sample Pileup\nTo call variants across multiple samples simultaneously and produce a joint VCF:\n\n```bash\n# Generate raw multi-sample VCF\nfermi.kit/htsbox pileup -cuf ref.fa sample1.srt.bam sample2.srt.bam > out.raw.vcf\n\n# Filter and summarize\nfermi.kit/k8 fermi.kit/hapdip.js vcfsum -f out.raw.vcf > out.flt.vcf\n```\n\n## Expert Tips and Limitations\n\n*   **Memory Management**: While generally efficient (~85GB RAM for human 30x), the error correction phase (BFC) may spike in RAM usage if the input data has an unusually high error rate.\n*   **Deterministic Behavior**: Running the pipeline twice on the same data may result in slightly different assemblies due to multi-threading randomness in the BFC and unitig construction phases. However, variant calls from the same assembly remain consistent.\n*   **Paired-End Data**: FermiKit treats reads as single-end during assembly. For modern Illumina data with overlapping pairs, it is recommended to merge them before assembly to improve results.\n*   **Genome Size**: Always specify an accurate genome size with the `-s` flag (e.g., `3g` for human, `100m` for C. elegans) to ensure proper k-mer counting and error correction.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| fermi2.pl | fermi2.pl is a Perl script for de novo genome assembly using the Fermi assembler. |\n| fermitool | A tool for adapter trimming. |\n| htsbox | A collection of htslib-based tools for sequence data manipulation. |\n| run-calling | Calling |\n| seqtk | A toolkit for processing sequences. |\n\n## Reference documentation\n- [FermiKit GitHub Repository](./references/github_com_lh3_fermikit.md)",
+  "skill_front_matter": {
+    "name": "fermikit",
+    "description": "FermiKit is a de novo assembly-based pipeline for identifying SNPs, short indels, and complex structural variants from high-depth Illumina data. Use when user asks to assemble reads into unitigs, call variants against a reference genome, or detect large deletions and novel insertions.",
+    "homepage": "https://github.com/lh3/fermikit"
+  }
+}

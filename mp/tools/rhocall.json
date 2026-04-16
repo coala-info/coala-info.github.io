@@ -1,0 +1,53 @@
+{
+  "id": "rhocall",
+  "category": "CLI",
+  "name": "rhocall",
+  "description": "\"rhocall identifies genomic regions of homozygosity and detects potential uniparental disomy from variant call files. Use when user asks to call regions of homozygosity, annotate VCF files with ROH information, tally chromosome-wide homozygosity for UPD detection, or visualize zygosity plots.\"",
+  "overview": "rhocall is a specialized bioinformatics utility designed to identify genomic regions of homozygosity (ROH) and provide tentative calls for Uniparental Disomy (UPD). It works by analyzing variant call files (VCF/BCF) to detect stretches of homozygous variants that exceed specific density and length thresholds. The tool is particularly useful in clinical genetics for identifying consanguinity, mapping recessive disease genes, or detecting chromosomal abnormalities like UPD. It integrates with `bcf",
+  "homepage": "https://github.com/dnil/rhocall",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/rhocall/overview",
+  "github": "https://github.com/dnil/rhocall",
+  "conda_downloads": "9.9K",
+  "conda_downloads_num": 9900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rhocall_aggregate",
+      "rhocall_annotate",
+      "rhocall_call",
+      "rhocall_tally",
+      "rhocall_viz"
+    ],
+    "description": "Aggregate runs of autozygosity from rhofile into windowed rho BED file.\nAccepts a bcftools roh style TSV-file with CHR,POS,AZ,QUAL.",
+    "docker_image": "quay.io/biocontainers/rhocall:0.5.1--py312h0fa9677_5",
+    "homepage": "https://github.com/dnil/rhocall",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/rhocall/overview",
+    "github": "https://github.com/dnil/rhocall",
+    "conda_downloads": "9.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "rhocall_aggregate.cwl",
+    "rhocall_annotate.cwl",
+    "rhocall_call.cwl",
+    "rhocall_tally.cwl",
+    "rhocall_viz.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# rhocall\n\n## Overview\n\nrhocall is a specialized bioinformatics utility designed to identify genomic regions of homozygosity (ROH) and provide tentative calls for Uniparental Disomy (UPD). It works by analyzing variant call files (VCF/BCF) to detect stretches of homozygous variants that exceed specific density and length thresholds. The tool is particularly useful in clinical genetics for identifying consanguinity, mapping recessive disease genes, or detecting chromosomal abnormalities like UPD. It integrates with `bcftools roh` outputs but provides additional layers of aggregation, annotation, and visualization.\n\n## Core Workflows\n\n### 1. Standard ROH Calling Pipeline\nThe most effective way to use rhocall is in conjunction with `bcftools`.\n\n**Step A: Prepare population frequencies**\n```bash\nbcftools query -f'%CHROM\\t%POS\\t%REF,%ALT\\t%INFO/AF\\n' popfreq.vcf.gz | bgzip -c > popfreq.tab.gz\n```\n\n**Step B: Generate ROH calls**\n```bash\nbcftools roh --AF-file popfreq.tab.gz -I sample.bcf > sample.roh\n```\n\n**Step C: Annotate the VCF**\nFor bcftools v1.4+, use the `--v14` flag to handle RG entries:\n```bash\nrhocall annotate --v14 -r sample.roh -o sample.annotated.vcf sample.bcf\n```\n\n### 2. UPD Detection and Tallying\nTo get a per-chromosome summary and flag potential UPD:\n```bash\nrhocall tally sample.roh -o sample.tally.tsv\n```\n*   **Tip**: Use the `-u` or `--flag_upd_at_fraction` option (default 0.3) to adjust the sensitivity of UPD flagging based on the fraction of the chromosome covered by homozygous blocks.\n\n### 3. Visualization\nGenerate zygosity plots (one per chromosome) to visually inspect ROH regions:\n```bash\nrhocall viz --rho sample.roh --out_dir plots/ --wig sample.vcf\n```\n*   **Note**: The `--wig` flag produces a wiggle file for genome browser integration.\n\n## Command Reference & Best Practices\n\n### rhocall call\nUsed for direct calling from VCF if not using the bcftools workflow.\n*   **Heterozygote Tolerance**: Adjust `-m` (max hets per Mb) and `-f` (max het/hom fraction) to account for sequencing noise or \"leaky\" homozygosity.\n*   **Exome vs. Genome**: Adjust `-s` (block_constant) based on the density of your data. Exomes require different constants than WGS due to capture gaps.\n\n### rhocall annotate\n*   **Legacy Support**: If using bcftools < 1.4, you must first run `rhocall aggregate` to create a BED file, then annotate using the `-b` flag.\n*   **Sample Selection**: In multi-sample VCFs, use `--select-sample` to ensure annotations are applied based on the correct individual's ROH profile.\n\n### rhocall aggregate\n*   **Quality Filtering**: Use `-q` (quality_threshold) to ignore low-confidence ROH windows. This prevents small, noisy regions from being merged into larger blocks.\n\n## Expert Tips\n*   **Filter First**: Always ensure your input VCF is sorted. rhocall assumes sorted input for its parsing logic.\n*   **Avoid bcftools v1.3**: The ROH functionality in bcftools v1.3 is known to be buggy; use v1.2 or v1.4+ for reliable results.\n*   **Visualization Parameters**: When using `rhoviz` or `rhocall viz`, if your VCF lacks allele frequency annotations, you **must** set `--minaf 0` to ensure variants are not filtered out of the plots.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| rhocall aggregate | Aggregate runs of autozygosity from rhofile into windowed rho BED file. Accepts a bcftools roh style TSV-file with CHR,POS,AZ,QUAL. |\n| rhocall annotate | Markup VCF file using rho-calls. Use BED file to mark all variants in AZ   windows. Alternatively, use a bcftools v>=1.4 file with RG entries to mark   all vars. With the --no-v14 flag, use an older bcftools v<=1.2 style roh TSV   to mark only selected AZ variants. Roh is broken in bcftools v1.3 - do not   use. |\n| rhocall call | Call runs of autozygosity. (deprecated: use bcftools roh instead. |\n| rhocall tally | Tally runs of autozygosity from rhofile. Accepts a bcftools roh style TSV-file with CHR,POS,AZ,QUAL. |\n| rhocall viz | Plot binned zygosity and RHO-regions. |\n\n## Reference documentation\n- [rhocall README](./references/github_com_dnil_rhocall_blob_main_README.md)\n- [rhocall CLI Source](./references/github_com_dnil_rhocall_blob_main_rhocall.py.md)\n- [rhocall Changelog](./references/github_com_dnil_rhocall_blob_main_CHANGELOG.md)",
+  "skill_front_matter": {
+    "name": "rhocall",
+    "description": "rhocall identifies genomic regions of homozygosity and detects potential uniparental disomy from variant call files. Use when user asks to call regions of homozygosity, annotate VCF files with ROH information, tally chromosome-wide homozygosity for UPD detection, or visualize zygosity plots.",
+    "homepage": "https://github.com/dnil/rhocall"
+  }
+}

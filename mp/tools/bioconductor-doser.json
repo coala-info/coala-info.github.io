@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-doser",
+  "category": "bioconductor",
+  "name": "bioconductor-doser",
+  "description": "bioconductor-doser analyzes dosage compensation by comparing gene expression across different genomic groupings and biological treatments. Use when user asks to calculate RPKM values, compare expression ratios between sexes, or perform statistical tests on dosage effects across chromosomes.",
+  "overview": "The `doseR` package provides a framework for analyzing dosage compensation by comparing gene expression across different genomic groupings (typically chromosomes) and biological treatments (typically sexes). It utilizes the `SummarizedExperiment` class to manage read counts, RPKM values, and metadata.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/doseR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-doser/overview",
+  "github": "N/A",
+  "conda_downloads": "22.0K",
+  "conda_downloads_num": 22000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "doseR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/doseR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-doser/overview",
+    "github": "N/A",
+    "conda_downloads": "22.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-doser\n\n## Overview\n\nThe `doseR` package provides a framework for analyzing dosage compensation by comparing gene expression across different genomic groupings (typically chromosomes) and biological treatments (typically sexes). It utilizes the `SummarizedExperiment` class to manage read counts, RPKM values, and metadata.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe workflow requires three primary inputs: a matrix of read counts, a vector of transcript lengths, and a dataframe of gene annotations (e.g., chromosome assignments).\n\n```r\nlibrary(doseR)\nlibrary(SummarizedExperiment)\n\n# Load example or user data\ndata(hmel.data.doser) # hmel.dat contains readcounts, chromosome, trxLength\n\n# 1. Define replicates\nreps <- c(\"Male\", \"Male\", \"Male\", \"Female\", \"Female\", \"Female\")\n\n# 2. Create annotation dataframe (factorize for plotting order)\nannotxn <- data.frame(\"Chromosome\" = factor(hmel.dat$chromosome, levels = 1:21))\nannotxn$ZA <- factor(ifelse(hmel.dat$chromosome == 21, \"Z\", \"A\"), levels = c(\"A\", \"Z\"))\n\n# 3. Construct SummarizedExperiment\ncolData <- S4Vectors::DataFrame(Treatment=as.factor(reps), row.names=colnames(hmel.dat$readcounts))\nrowData <- S4Vectors::DataFrame(annotation = annotxn, seglens = hmel.dat$trxLength)\nse <- SummarizedExperiment(assays=list(counts=hmel.dat$readcounts), colData=colData, rowData=rowData)\n```\n\n### 2. Normalization and RPKM Calculation\n`doseR` scales counts by library size and transcript length.\n\n```r\n# Calculate library sizes (scaling factors)\ncolData(se)$Libsizes <- getLibsizes3(se, estimationType = \"total\")\n\n# Generate RPKM assay\nassays(se)$rpkm <- make_RPKM(se)\n\n# Diagnostic MA plot to check normalization\nplotMA.se(se, samplesA =\"Male\", samplesB = \"Female\")\n```\n\n### 3. Filtering Unexpressed Loci\nRemoving low-abundance transcripts is critical to avoid artifacts in dosage analysis.\n\n```r\n# Filter by mean RPKM across all samples\nf_se <- simpleFilter(se, mean_cutoff = 0.01, counts = FALSE)\n```\n\n### 4. Analyzing Absolute Expression\nCompare the distribution of expression levels within a treatment across gene groups.\n\n```r\n# Boxplot of RPKM by grouping (e.g., Z vs Autosome)\nplotExpr(f_se, groupings = \"annotation.ZA\", notch = TRUE, ylab = \"Log2(RPKM)\")\n\n# Statistical summary and Kruskal-Wallis test\nse.male <- f_se[, colData(f_se)$Treatment == \"Male\"]\nmale_stats <- generateStats(se.male, groupings = \"annotation.ZA\")\nmale_stats$summary\nmale_stats$kruskal\n```\n\n### 5. Analyzing Relative Expression (Ratios)\nAssess dosage effects by comparing ratios (e.g., Male:Female) across gene groups.\n\n```r\n# Boxplot of ratios\nplotRatioBoxes(f_se, groupings = \"annotation.ZA\", treatment1 = \"Male\", treatment2 = \"Female\")\n\n# Density plot of ratios\nplotRatioDensity(f_se, groupings = \"annotation.ZA\", treatment1 = \"Male\", treatment2 = \"Female\")\n\n# Statistical test for ratio differences between groups\nratio_test <- test_diffs(f_se, groupings = \"annotation.ZA\", treatment1 = \"Male\", treatment2 = \"Female\")\nratio_test$kruskal\n```\n\n## Key Functions\n- `getLibsizes3()`: Calculates library scaling factors (options: \"total\", \"median\", \"quant\").\n- `make_RPKM()`: Converts raw counts to RPKM using stored library sizes and segment lengths.\n- `simpleFilter()`: Removes rows based on expression thresholds.\n- `plotExpr()`: Visualizes absolute expression distributions.\n- `plotRatioBoxes()` / `plotRatioDensity()`: Visualizes expression shifts between treatments.\n- `generateStats()` / `test_diffs()`: Provides distributional summaries and non-parametric statistical tests.\n\n## Reference documentation\n- [doseR](./references/doseR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-doser",
+    "description": "bioconductor-doser analyzes dosage compensation by comparing gene expression across different genomic groupings and biological treatments. Use when user asks to calculate RPKM values, compare expression ratios between sexes, or perform statistical tests on dosage effects across chromosomes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/doseR.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ramr",
+  "category": "bioconductor",
+  "name": "bioconductor-ramr",
+  "description": "This tool detects rare aberrantly methylated regions or epimutations in DNA methylation data from arrays or sequencing. Use when user asks to identify low-frequency methylation outliers, visualize individual sample deviations from a cohort, or simulate methylation data for benchmarking.",
+  "overview": "The `ramr` package is designed to identify rare aberrantly methylated regions (AMRs), often referred to as epimutations, within large methylation datasets. Unlike standard Differential Methylation Region (DMR) analysis which compares groups, `ramr` identifies regions where an individual sample deviates significantly from the distribution of the rest of the cohort. It supports data from Illumina arrays (450k/EPIC) and high-throughput sequencing (Bismark/methylKit).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ramr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/BBCG/ramr",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ramr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ramr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/BBCG/ramr",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ramr\n\nname: bioconductor-ramr\ndescription: Detection of rare aberrantly methylated regions (AMRs/epimutations) in DNA methylation data (array or sequencing). Use this skill to identify low-frequency methylation outliers, visualize AMRs, simulate methylation data for benchmarking, and prepare data for enrichment analysis.\n\n# bioconductor-ramr\n\n## Overview\nThe `ramr` package is designed to identify rare aberrantly methylated regions (AMRs), often referred to as epimutations, within large methylation datasets. Unlike standard Differential Methylation Region (DMR) analysis which compares groups, `ramr` identifies regions where an individual sample deviates significantly from the distribution of the rest of the cohort. It supports data from Illumina arrays (450k/EPIC) and high-throughput sequencing (Bismark/methylKit).\n\n## Core Workflow\n\n### 1. Data Preparation\nThe primary input is a `GRanges` object where metadata columns contain beta values (0 to 1) for each sample.\n\n```r\nlibrary(ramr)\nlibrary(GenomicRanges)\n\n# Example: Accessing built-in data\ndata(ramr)\n# ramr.data is a GRanges object with beta values for 100 samples\n```\n\nFor external data:\n- **Minfi/GEO**: Extract beta values from a `GenomicRatioSet` and attach to `granges()`.\n- **Bismark/methylKit**: Use `methRead` and `unite`, then convert to `GRanges`. Ensure beta values are bounded (e.g., 0.001 to 0.999) if using beta distribution fitting.\n\n### 2. Identifying AMRs\nThe `getAMR` function is the main engine for detection.\n\n```r\namrs <- getAMR(\n  data.ranges = ramr.data,\n  data.samples = ramr.samples,\n  compute = \"beta+binom\",      # Recommended method\n  combine.min.cpgs = 5,        # Minimum number of CpGs in a region\n  combine.threshold = 0.01,    # P-value threshold for individual CpGs\n  combine.window = 1000        # Max distance between CpGs in a region\n)\n```\n\n**Key Parameters:**\n- `compute`: Method for outlier detection. `\"beta+binom\"` is robust for sequencing and array data.\n- `compute.estimate`: Use `\"amle\"` for faster, more robust parameter estimation.\n- `combine.min.cpgs`: Filters for regions with a minimum density of aberrant probes.\n\n### 3. Visualization\nVisualize identified regions against the cohort distribution.\n\n```r\n# Plot a specific AMR\nplotAMR(data.ranges = ramr.data, amr.ranges = amrs[1])\n\n# Plot multiple AMRs in a grid\nlibrary(gridExtra)\nplots <- plotAMR(data.ranges = ramr.data, amr.ranges = amrs[1:4])\ndo.call(\"grid.arrange\", c(plots, ncol=2))\n```\n\n### 4. Simulation and Benchmarking\n`ramr` can generate synthetic data to test AMR/DMR detection algorithms.\n\n```r\n# 1. Simulate specific AMR locations\nsim_amrs <- simulateAMR(ramr.data, nsamples=10, regions.per.sample=5, dbeta=0.3)\n\n# 2. Generate beta values based on a template and the simulated AMRs\nsim_data <- simulateData(ramr.data, nsamples=10, amr.ranges=sim_amrs)\n```\n\n### 5. Enrichment Analysis Preparation\nTo perform enrichment analysis (e.g., with `LOLA`), you must define the \"universe\" of all possible regions based on your filtering criteria.\n\n```r\nuniverse <- getUniverse(ramr.data, min.cpgs=5, merge.window=1000)\n# Use 'amrs' as the user set and 'universe' as the background in runLOLA\n```\n\n## Tips for Success\n- **Sample Size**: `ramr` relies on the distribution of the cohort to identify outliers; larger cohorts generally provide more stable background distributions.\n- **Sequencing Data**: For sequencing data containing many 0s and 1s, ensure you are using the updated `getAMR` (v1.16+) which uses C++/OpenMP for speed and handles boundary values correctly.\n- **Metadata**: The output of `getAMR` includes `sample` (which sample carries the epimutation), `dbeta` (effect size), and `pval` (significance).\n\n## Reference documentation\n- [The ramr User's Guide](./references/ramr.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ramr",
+    "description": "This tool detects rare aberrantly methylated regions or epimutations in DNA methylation data from arrays or sequencing. Use when user asks to identify low-frequency methylation outliers, visualize individual sample deviations from a cohort, or simulate methylation data for benchmarking.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ramr.html"
+  }
+}

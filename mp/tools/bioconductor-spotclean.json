@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spotclean",
+  "category": "bioconductor",
+  "name": "bioconductor-spotclean",
+  "description": "\"bioconductor-spotclean decontaminates spatial transcriptomics data by correcting for mRNA bleed and spot swapping between neighboring spots. Use when user asks to decontaminate 10x Visium data, estimate spot contamination rates, or reassign contaminating UMIs to their spots of origin.\"",
+  "overview": "SpotClean is a computational tool designed to correct for \"spot swapping\" in spatial transcriptomics (ST) experiments, particularly 10x Visium. Spot swapping occurs when mRNA bleeds from its spot of origin to neighboring spots during the permeabilization step, leading to contamination that can confound downstream analyses like clustering and differential expression. SpotClean estimates per-spot contamination rates and provides decontaminated expression levels.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SpotClean.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/zijianni/SpotClean",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SpotClean"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpotClean.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/zijianni/SpotClean",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spotclean\n\nname: bioconductor-spotclean\ndescription: Decontaminate spatial transcriptomics data by adjusting for spot swapping (mRNA bleed) between neighboring spots. Use when working with 10x Visium data to improve marker gene detection, tissue annotation, and differential expression analysis by reassigning contaminating UMIs to their spots of origin.\n\n# bioconductor-spotclean\n\n## Overview\n\nSpotClean is a computational tool designed to correct for \"spot swapping\" in spatial transcriptomics (ST) experiments, particularly 10x Visium. Spot swapping occurs when mRNA bleeds from its spot of origin to neighboring spots during the permeabilization step, leading to contamination that can confound downstream analyses like clustering and differential expression. SpotClean estimates per-spot contamination rates and provides decontaminated expression levels.\n\n## Installation\n\nInstall the package using BiocManager:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"SpotClean\")\nlibrary(SpotClean)\n```\n\n## Core Workflow\n\n### 1. Load Data\nSpotClean requires two components: the raw gene-by-spot count matrix and the slide metadata (spatial folder from Space Ranger).\n\n```r\n# Load raw matrix (path to folder containing barcodes.tsv.gz, features.tsv.gz, matrix.mtx.gz)\nraw_counts <- read10xRaw(\"/path/to/raw_feature_bc_matrix\")\n\n# Load slide metadata\nslide_info <- read10xSlide(\n    tissue_csv_file = \"/path/to/spatial/tissue_positions_list.csv\",\n    tissue_img_file = \"/path/to/spatial/tissue_lowres_image.png\",\n    scale_factor_file = \"/path/to/spatial/scalefactors_json.json\"\n)\n```\n\n### 2. Create Slide Object\nCombine the counts and metadata into a `SummarizedExperiment` object.\n\n```r\nslide_obj <- createSlide(count_mat = raw_counts, slide_info = slide_info)\n```\n\n### 3. Visualization\nVisualize the tissue image, spot labels, or gene expression heatmaps before or after decontamination.\n\n```r\n# Visualize the H&E image\nvisualizeSlide(slide_obj)\n\n# Visualize tissue vs background spots\nvisualizeLabel(slide_obj, \"tissue\")\n\n# Visualize raw gene expression\nvisualizeHeatmap(slide_obj, \"Mbp\")\n```\n\n### 4. Decontamination\nRun the main `spotclean()` function. By default, it evaluates candidate radii and iterates to reach convergence.\n\n```r\n# Run decontamination\n# maxit: maximum iterations (default 30)\n# candidate_radius: specific radius or vector of radii to test\ndecont_obj <- spotclean(slide_obj, maxit = 10)\n\n# Access decontaminated counts\ndecont_counts <- assays(decont_obj)$decont\n```\n\n### 5. Evaluate Contamination\nCheck the estimated contamination rates and the Ambient RNA Contamination (ARC) score.\n\n```r\n# Per-spot contamination rates\nsummary(metadata(decont_obj)$contamination_rate)\n\n# ARC score (lower bound of contamination)\narcScore(slide_obj)\n```\n\n## Integration with Other Classes\n\n### SpatialExperiment\nSpotClean can be applied directly to `SpatialExperiment` objects. Ensure the object contains the raw data (including background spots).\n\n```r\nlibrary(SpatialExperiment)\nse_obj <- read10xVisium(samples = \"/path/to/spaceranger/output/\", data = \"raw\")\ndecont_se <- spotclean(se_obj)\n```\n\n### Seurat\nConvert the decontaminated object to a Seurat object for standard downstream pipelines.\n\n```r\nseurat_obj <- convertToSeurat(decont_obj, image_dir = \"/path/to/spatial/folder\")\n```\n\n## Usage Tips and Constraints\n\n- **Background Spots**: SpotClean requires background spots (those not covered by tissue) to estimate the contamination profile. It is recommended that at least 25% of the spots on the slide are background spots.\n- **Gene Selection**: By default, SpotClean filters for highly expressed or highly variable genes. Decontaminating lowly expressed genes is often ineffective due to high sparsity and lack of signal.\n- **Normalization**: SpotClean reassigns UMIs, which changes the estimated sequencing depth of tissue spots. This process can be viewed as a form of normalization and may conflict with other depth-normalization methods.\n- **Speed**: For a typical dataset (~2,000 tissue spots), the process usually takes less than 15 minutes and does not require high-performance computing resources.\n\n## Reference documentation\n\n- [SpotClean adjusts for spot swapping in spatial transcriptomics data](./references/SpotClean.md)\n- [SpotClean Vignette (RMarkdown)](./references/SpotClean.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-spotclean",
+    "description": "bioconductor-spotclean decontaminates spatial transcriptomics data by correcting for mRNA bleed and spot swapping between neighboring spots. Use when user asks to decontaminate 10x Visium data, estimate spot contamination rates, or reassign contaminating UMIs to their spots of origin.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpotClean.html"
+  }
+}

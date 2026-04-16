@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-curatedtbdata",
+  "category": "bioconductor",
+  "name": "bioconductor-curatedtbdata",
+  "description": "This tool provides access to a standardized collection of curated tuberculosis transcriptomic studies and clinical metadata from the Bioconductor curatedTBData package. Use when user asks to browse available TB datasets, download gene expression profiles, subset data by clinical annotations, or integrate multiple studies with batch correction and gene symbol updates.",
+  "overview": "The `curatedTBData` package provides access to a standardized collection of tuberculosis (TB) transcriptomic studies (49 studies in the initial release). It streamlines the process of downloading, subsetting, and integrating gene expression data from different cohorts, facilitating the comparison of TB gene signatures across multiple datasets. Data is typically returned as `MultiAssayExperiment` or `SummarizedExperiment` objects.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/curatedTBData.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-curatedtbdata/overview",
+  "github": "https://github.com/compbiomed/curatedTBData",
+  "conda_downloads": "8.0K",
+  "conda_downloads_num": 8000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "curatedTBData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/curatedTBData.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-curatedtbdata/overview",
+    "github": "https://github.com/compbiomed/curatedTBData",
+    "conda_downloads": "8.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-curatedtbdata\n\nname: bioconductor-curatedtbdata\ndescription: Access, integrate, and analyze curated tuberculosis (TB) transcriptomic studies from the Bioconductor curatedTBData package. Use this skill when a user needs to: (1) Browse available TB transcriptomic datasets, (2) Download curated gene expression profiles and clinical metadata, (3) Merge multiple TB studies while handling gene symbol updates, (4) Perform batch correction across integrated datasets, or (5) Subset TB data based on clinical annotations like TB status, HIV status, or diabetes.\n\n# bioconductor-curatedtbdata\n\n## Overview\nThe `curatedTBData` package provides access to a standardized collection of tuberculosis (TB) transcriptomic studies (49 studies in the initial release). It streamlines the process of downloading, subsetting, and integrating gene expression data from different cohorts, facilitating the comparison of TB gene signatures across multiple datasets. Data is typically returned as `MultiAssayExperiment` or `SummarizedExperiment` objects.\n\n## Core Workflow\n\n### 1. Exploring Available Studies\nBefore downloading, use the `DataSummary` table to identify relevant studies based on technology (Microarray/RNA-seq), tissue, or clinical variables.\n\n```r\nlibrary(curatedTBData)\ndata(\"DataSummary\", package = \"curatedTBData\")\n\n# View available studies\nhead(DataSummary[, c(\"Study\", \"Resources\", \"Disease\", \"Organism\")])\n```\n\n### 2. Accessing Data\nThe `curatedTBData()` function retrieves data from ExperimentHub.\n\n*   `study_name`: A character vector of study IDs (e.g., \"GSE19439\").\n*   `dry.run`: Set to `TRUE` to see what will be downloaded without actually downloading.\n*   `curated.only`: Set to `TRUE` to download only the curated, ready-to-use gene expression and clinical data. Set to `FALSE` to include raw data and reprocessed RNA-seq assays.\n\n```r\n# Download curated data for specific studies\nmy_studies <- c(\"GSE19435\", \"GSE19439\")\nobject_list <- curatedTBData(my_studies, dry.run = FALSE, curated.only = TRUE)\n```\n\n### 3. Subsetting Data\nYou can subset `MultiAssayExperiment` objects using standard bracket notation or the specialized `subset_curatedTBData()` function.\n\n```r\n# Subset for Active TB (PTB) and Latent TB (LTBI)\n# annotationColName refers to columns in colData(object)\nmulti_set <- lapply(object_list, function(x) {\n  subset_curatedTBData(x, \n                       annotationColName = \"TBStatus\",\n                       annotationCondition = c(\"LTBI\", \"PTB\"), \n                       assayName = \"assay_curated\")\n})\n\n# Remove NULLs (studies that didn't meet the condition)\nmulti_set <- multi_set[!sapply(multi_set, is.null)]\n```\n\n### 4. Integrating Multiple Studies\nUse `combine_objects()` to merge different studies into a single `SummarizedExperiment` based on common gene symbols.\n\n```r\n# Combine studies using the curated assay\n# update_genes = TRUE ensures gene symbols are mapped correctly\nmerged_tb <- combine_objects(object_list, \n                             experiment_name = \"assay_curated\",\n                             update_genes = TRUE)\n\n# Check the source studies in the merged object\ntable(colData(merged_tb)$Study)\n```\n\n### 5. Batch Correction\nWhen merging studies, it is highly recommended to remove batch effects (where each study is treated as a batch).\n\n```r\nlibrary(sva)\nbatch_info <- colData(merged_tb)$Study\ncombat_data <- ComBat(dat = assay(merged_tb), batch = batch_info)\n\n# Add corrected data back to the object\nassays(merged_tb)[[\"Batch_corrected\"]] <- combat_data\n```\n\n## Tips and Best Practices\n*   **Assay Types**: \n    *   `assay_curated`: Normalized, curated gene expression matrix.\n    *   `assay_raw`: Raw expression data (often a `SummarizedExperiment`).\n    *   `assay_reprocess`: RNA-seq data reprocessed from FASTQ files (available when `curated.only = FALSE`).\n*   **Study Exclusion**: Studies like `GSE74092` (qPCR) are often excluded from large-scale integration because they lack the genome-wide coverage of Microarray or RNA-seq.\n*   **Gene Symbols**: Always set `update_genes = TRUE` in `combine_objects()` to handle varying gene nomenclature across older and newer studies.\n\n## Reference documentation\n- [curatedTBData](./references/curatedTBData.md)\n- [curatedTBData Vignette](./references/curatedTBData.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-curatedtbdata",
+    "description": "This tool provides access to a standardized collection of curated tuberculosis transcriptomic studies and clinical metadata from the Bioconductor curatedTBData package. Use when user asks to browse available TB datasets, download gene expression profiles, subset data by clinical annotations, or integrate multiple studies with batch correction and gene symbol updates.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/curatedTBData.html"
+  }
+}

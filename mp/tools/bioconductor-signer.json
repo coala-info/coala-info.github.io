@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-signer",
+  "category": "bioconductor",
+  "name": "bioconductor-signer",
+  "description": "This tool performs mutational signature discovery and exposure analysis in cancer genomics using Bayesian Non-negative Matrix Factorization. Use when user asks to discover de novo mutational signatures, estimate signature exposures, process VCF or MAF files into mutation count matrices, or correlate signatures with clinical data.",
+  "overview": "The `signeR` package provides a full Bayesian treatment for Non-negative Matrix Factorization (NMF) to discover mutational signatures and estimate their activities (exposures) in genomic samples. It accounts for mutational opportunities (genomic context) and provides robust statistical tools to correlate signatures with clinical data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/signeR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/TojalLab/signeR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "signeR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/signeR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/TojalLab/signeR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-signer\n\nname: bioconductor-signer\ndescription: Expert guidance for the Bioconductor package signeR. Use this skill to perform mutational signature discovery and exposure analysis in cancer genomics. It supports processing VCF/MAF files into mutation count matrices, estimating the optimal number of signatures using Bayesian NMF, fitting known signatures (e.g., COSMIC), and conducting downstream clinical correlation analysis including survival analysis, differential exposure, and clustering.\n\n# bioconductor-signer\n\n## Overview\n\nThe `signeR` package provides a full Bayesian treatment for Non-negative Matrix Factorization (NMF) to discover mutational signatures and estimate their activities (exposures) in genomic samples. It accounts for mutational opportunities (genomic context) and provides robust statistical tools to correlate signatures with clinical data.\n\n## Installation\n\nInstall the package via BiocManager:\n\n```r\nif (!require(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"signeR\")\nlibrary(signeR)\n```\n\n## Data Preparation\n\n`signeR` requires a mutation count matrix (samples x 96 features). It is highly recommended to provide an opportunity matrix to normalize for genomic context.\n\n### From VCF or MAF\nUse a `BSgenome` object matching your variant calls.\n\n```r\nlibrary(VariantAnnotation)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# From VCF\nvcfobj <- readVcf(\"path/to/file.vcf\", \"hg19\")\nmut <- genCountMatrixFromVcf(BSgenome.Hsapiens.UCSC.hg19, vcfobj)\n\n# From MAF\nmut <- genCountMatrixFromMAF(BSgenome.Hsapiens.UCSC.hg19, \"file.maf\")\n\n# Generate Opportunity Matrix from BED\nlibrary(rtracklayer)\ntarget_regions <- import(\"target.bed\", format=\"bed\")\nopp <- genOpportunityFromGenome(BSgenome.Hsapiens.UCSC.hg19, target_regions, nsamples=nrow(mut))\n```\n\n## Signature Estimation\n\n### De Novo Discovery\nThe `signeR()` function can automatically estimate the optimal number of signatures by maximizing the median Bayesian Information Criterion (BIC).\n\n```r\n# Automatic rank detection (1 to min(G,K)-1)\nsignatures <- signeR(M=mut, Opport=opp)\n\n# Specific range\nsignatures <- signeR(M=mut, Opport=opp, nlim=c(3,10))\n\n# Fixed number of signatures\nsignatures <- signeR(M=mut, Opport=opp, nsig=5)\n\n# Check BIC to validate rank selection\nBICboxplot(signatures)\n```\n\n### Fitting Known Signatures\nTo estimate exposures for a fixed set of signatures (e.g., COSMIC):\n\n```r\n# Pmatrix should have signatures in columns, 96 features in rows\nexposures <- signeR(M=mut, Opport=opp, P=Pmatrix, fixedP=TRUE)\n\n# Extract median exposures\nmed_exp <- Median_exp(exposures$SignExposures)\n```\n\n## Visualization\n\nVisualize the results using built-in plotting functions:\n\n*   **Signatures:** `SignPlot(signatures$SignExposures)` (barplot) or `SignHeat(signatures$SignExposures)` (heatmap).\n*   **Exposures:** `ExposureBarplot(signatures$SignExposures)` or `ExposureBoxplot(signatures$SignExposures)`.\n*   **Convergence:** `Paths(signatures$SignExposures)` to check MCMC sampler convergence.\n\n## Downstream Analysis\n\n### Supervised Analysis\nCorrelate signature exposures with clinical or categorical data.\n\n```r\n# Differential Exposure (Categorical labels)\ndiff_exp <- DiffExp(signatures$SignExposures, labels=group_labels)\n\n# Correlation (Continuous feature)\ncorr_res <- ExposureCorrelation(signatures$SignExposures, feature=continuous_var)\n\n# Survival Analysis\n# surv is a matrix with 'time' and 'status' columns\nsurv_res <- ExposureSurvival(Exposures=signatures$SignExposures, surv=surv_matrix, method=\"logrank\")\n\n# Sample Classification (Predict labels for NA samples)\nclass_res <- ExposureClassify(signatures$SignExposures, labels=labels_with_nas, method=\"knn\")\n```\n\n### Unsupervised Analysis\nCluster samples based on their exposure profiles.\n\n```r\n# Hierarchical Clustering\nhclust_res <- HClustExp(signatures$SignExposures, method.dist=\"euclidean\", method.hclust=\"average\")\n\n# Fuzzy Clustering\nfuzzy_res <- FuzzyClustExp(signatures$SignExposures, Clim=c(2,5))\n```\n\n## Interactive Analysis (signeRFlow)\n\nLaunch the Shiny application for a GUI-based workflow:\n\n```r\nsigneRFlow()\n```\n\n## Reference documentation\n\n- [signeR Vignette](./references/signeR-vignette.md)\n- [signeRFlow RMarkdown](./references/signeRFlow.Rmd)\n- [signeRFlow Documentation](./references/signeRFlow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-signer",
+    "description": "This tool performs mutational signature discovery and exposure analysis in cancer genomics using Bayesian Non-negative Matrix Factorization. Use when user asks to discover de novo mutational signatures, estimate signature exposures, process VCF or MAF files into mutation count matrices, or correlate signatures with clinical data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/signeR.html"
+  }
+}

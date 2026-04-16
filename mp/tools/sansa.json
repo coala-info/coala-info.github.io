@@ -1,0 +1,49 @@
+{
+  "id": "sansa",
+  "category": "CLI",
+  "name": "sansa",
+  "description": "\"Sansa is a high-performance tool for the functional and population-based annotation of structural variants. Use when user asks to annotate structural variants against reference databases, map variants to genomic features like genes or exons, identify gene fusion candidates, or mark duplicate variants in multi-sample files.\"",
+  "overview": "Sansa is a high-performance tool designed for the functional and population-based annotation of structural variants. It facilitates the identification of known SVs by comparing query calls against reference databases using flexible breakpoint and size-ratio matching. Additionally, it enables functional prioritization by mapping SVs to genomic features like genes or exons and can be used to identify potential gene fusion candidates based on breakpoint orientation.",
+  "homepage": "https://github.com/dellytools/sansa",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/sansa/overview",
+  "github": "https://github.com/dellytools/sansa",
+  "conda_downloads": "17.9K",
+  "conda_downloads_num": 17900,
+  "last_updated": "2025-10-14",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sansa_annotate",
+      "sansa_markdup",
+      "sansa_compvcf"
+    ],
+    "description": "Annotate structural variants",
+    "docker_image": "quay.io/biocontainers/sansa:0.2.5--h4d20210_0",
+    "homepage": "https://github.com/dellytools/sansa",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/sansa/overview",
+    "github": "https://github.com/dellytools/sansa",
+    "conda_downloads": "17.9K",
+    "last_updated": "2025-10-14",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "sansa_annotate.cwl",
+    "sansa_compvcf.cwl",
+    "sansa_markdup.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# sansa\n\n## Overview\n\nSansa is a high-performance tool designed for the functional and population-based annotation of structural variants. It facilitates the identification of known SVs by comparing query calls against reference databases using flexible breakpoint and size-ratio matching. Additionally, it enables functional prioritization by mapping SVs to genomic features like genes or exons and can be used to identify potential gene fusion candidates based on breakpoint orientation.\n\n## SV Annotation Workflow\n\nTo annotate SVs against a population database, use the `annotate` subcommand. This process typically requires a post-processing step to merge the results.\n\n### 1. Run Annotation\nExecute the annotation against a VCF database (e.g., gnomAD-SV).\n```bash\nsansa annotate -d database.vcf.gz input.vcf.gz\n```\nThis generates:\n- `anno.bcf`: The annotation database SVs augmented with a unique `INFO/ANNOID`.\n- `query.tsv.gz`: The query SVs matched to these `ANNOID` values.\n\n### 2. Extract Database Fields\nUse `bcftools` to extract the specific metadata (e.g., ID and Allele Frequency) from the generated BCF, ensuring `INFO/ANNOID` is the first column.\n```bash\nbcftools query -H -f \"%INFO/ANNOID\\t%ID\\t%INFO/EUR_AF\\n\" anno.bcf | sed -e 's/^# //' > anno.tsv\n```\n\n### 3. Join Results\nSort the query matches and join them with the extracted database metadata.\n```bash\njoin anno.tsv <(zcat query.tsv.gz | sort -k 1b,1) > results.tsv\n```\n\n## Feature and Gene Annotation\n\nSansa can map SVs to nearby genes or specific features using GTF or GFF files.\n\n- **Basic Gene Annotation**:\n  `sansa annotate -g features.gtf.gz input.vcf.gz`\n- **Specify ID Attribute**: Use `-i` to select the attribute for the output (e.g., `Name`, `gene_id`).\n  `sansa annotate -i Name -g features.gff3.gz input.vcf.gz`\n- **Exon-level Annotation**: Use `-f` to restrict matching to specific feature types.\n  `sansa annotate -f exon -i exon_id -g features.gtf.gz input.vcf.gz`\n\nThe output provides two columns (start and end breakpoints) containing the feature name, distance (0 if within the feature), and strand.\n\n## Advanced Matching Parameters\n\nFine-tune how SVs are matched between the query and the database:\n\n- **Breakpoint Sensitivity**: Adjust `-b` (default 50bp) to change the allowed absolute difference in breakpoint locations.\n- **Size Similarity**: Adjust `-r` (default 0.8) to set the minimum size ratio between the smaller and larger SV.\n- **Matching Strategy**: Use `-s all` to report all matches instead of just the best one.\n- **Unmatched Records**: Use `-m` to include query SVs that did not find a match in the output.\n- **Type Agnostic Matching**: Use `-n` to compare SVs regardless of their type (e.g., comparing a DEL to a BND).\n\n## Multi-Sample Operations\n\n- **Mark Duplicates**: Identify and mark duplicate SV sites across multi-sample VCF files.\n  `sansa markdup input_multi.vcf.gz`\n- **Compare VCFs**: Compare different multi-sample VCF files to identify shared or unique variants.\n  `sansa compvcf file1.vcf.gz file2.vcf.gz`\n\n## Expert Tips\n\n- **Gene Fusion Discovery**: When using Delly-called SVs, pay attention to the `INFO/CT` (Connection Type) values. Sansa's gene annotation combined with `CT` orientation (e.g., 3to5 for deletions, 3to3 for inversions) allows for the identification of specific gene fusion candidates.\n- **Distance Logic**: In gene annotation output, negative distance values indicate the feature is before the breakpoint, while positive values indicate it is after. A value of 0 indicates the breakpoint falls within the feature.\n- **Performance**: For large-scale annotations, ensure your input VCFs are indexed (`.tbi` or `.csi`) to allow for efficient random access.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| sansa annotate | Annotate structural variants |\n| sansa compvcf | Compare two VCF/BCF files and report differences. |\n| sansa markdup | Filter sites for PASS |\n\n## Reference documentation\n- [Sansa README](./references/github_com_dellytools_sansa_blob_main_README.md)\n- [Sansa Repository Overview](./references/github_com_dellytools_sansa.md)",
+  "skill_front_matter": {
+    "name": "sansa",
+    "description": "Sansa is a high-performance tool for the functional and population-based annotation of structural variants. Use when user asks to annotate structural variants against reference databases, map variants to genomic features like genes or exons, identify gene fusion candidates, or mark duplicate variants in multi-sample files.",
+    "homepage": "https://github.com/dellytools/sansa"
+  }
+}

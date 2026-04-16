@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-netdx",
+  "category": "bioconductor",
+  "name": "bioconductor-netdx",
+  "description": "netDx is a machine learning framework that builds patient classifier models by integrating heterogeneous biological data through Patient Similarity Networks. Use when user asks to perform multi-omic data integration, build binary or multi-class predictors, or conduct feature selection based on biological pathways.",
+  "overview": "netDx is a machine learning framework that utilizes Patient Similarity Networks (PSN) to integrate heterogeneous biological data. Instead of treating features as individual variables, netDx converts data layers into networks where nodes are patients and edges represent similarity. It performs feature selection to identify networks (e.g., pathways) that consistently distinguish patient classes and integrates these into a final predictor.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/netDx.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "netDx"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/netDx.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-netdx\n\nname: bioconductor-netdx\ndescription: Expert guidance for using the netDx Bioconductor package to build patient classifier models using Patient Similarity Networks (PSN). Use this skill when performing multi-omic data integration, feature selection based on biological pathways, and building binary or multi-class predictors from clinical, genomic, or sparse genetic data (like CNVs).\n\n# bioconductor-netdx\n\n## Overview\nnetDx is a machine learning framework that utilizes Patient Similarity Networks (PSN) to integrate heterogeneous biological data. Instead of treating features as individual variables, netDx converts data layers into networks where nodes are patients and edges represent similarity. It performs feature selection to identify networks (e.g., pathways) that consistently distinguish patient classes and integrates these into a final predictor.\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be organized into a `MultiAssayExperiment` object. The `colData` slot must contain two specific columns:\n- `ID`: Unique patient identifiers.\n- `STATUS`: Patient labels/classes (e.g., \"LumA\", \"notLumA\").\n\n### 2. Defining Grouping Rules (`groupList`)\nThe `groupList` defines how variables are grouped into features (networks).\n- **Pathways:** Use `readPathways()` and `fetchPathwayDefinitions()` to group gene-level data into pathway-level features.\n- **Clinical:** Usually defined as single-variable features.\n- **Whole Layer:** Group all probes/proteins into a single feature for that assay.\n\n```r\ngroupList <- list()\npathList <- readPathways(fetchPathwayDefinitions(\"January\", 2018))\ngroupList[[\"mRNA_Assay\"]] <- pathList[1:100] \ngroupList[[\"clinical\"]] <- list(age=\"age_column\", stage=\"stage_column\")\n```\n\n### 3. Custom Similarity Function (`makeNetFunc`)\nYou must define a function that tells netDx how to compute similarity for different data types.\n- **Continuous Data:** Typically uses Pearson correlation via `makePSN_NamedMatrix(..., writeProfiles=TRUE)`.\n- **Clinical/Categorical:** Often uses normalized difference (`simMetric=\"custom\"`, `customFunc=normDiff`).\n\n```r\nmakeNets <- function(dataList, groupList, netDir, ...) {\n    netList <- c()\n    # mRNA similarity (Pearson)\n    if (!is.null(groupList[[\"mRNA\"]])) {\n        netList <- makePSN_NamedMatrix(dataList[[\"mRNA\"]], rownames(dataList[[\"mRNA\"]]),\n                                     groupList[[\"mRNA\"]], netDir, ...)\n    }\n    # Clinical similarity (Normalized Difference)\n    if (!is.null(groupList[[\"clinical\"]])) {\n        netList2 <- makePSN_NamedMatrix(dataList$clinical, rownames(dataList$clinical),\n                                      groupList[[\"clinical\"]], netDir,\n                                      simMetric=\"custom\", customFunc=normDiff, ...)\n    }\n    return(c(unlist(netList), unlist(netList2)))\n}\n```\n\n### 4. Building the Predictor\nUse `buildPredictor()` for standard data or `buildPredictor_sparseGenetic()` for sparse data like CNVs.\n- `numSplits`: Number of train/test iterations (e.g., 100 for production, 2-10 for testing).\n- `featScoreMax`: Max score a feature can get in one split (usually 10).\n- `featSelCutoff`: Threshold for a feature to be used in prediction (e.g., 9).\n\n```r\nout <- buildPredictor(\n    dataList=brca, groupList=groupList, makeNetFunc=makeNets,\n    outDir=tempdir(), numSplits=10L, featScoreMax=10L, featSelCutoff=9L\n)\n```\n\n## Sparse Genetic Data (CNVs/Mutations)\nFor sparse data, similarity is binary (1 if patients share a mutation in a pathway, 0 otherwise).\n- Use `buildPredictor_sparseGenetic()`.\n- Enable `enrichLabels=TRUE` to perform permutation testing, which reduces false positives by ensuring selected pathways are statistically enriched for the target label.\n\n## Interpreting Results\n- **Performance:** Use `plotPerf(predList)` to generate ROC and Precision-Recall curves.\n- **Feature Selection:** Use `getNetConsensus()` and `callFeatSel()` to identify pathways that consistently scored high across splits.\n- **Visualization:** \n    - `getEMapInput_many()`: Prepares data for EnrichmentMap (Cytoscape).\n    - `plotIntegratedPatientNetwork()`: Creates a master PSN of top features.\n    - `plot_tSNE()`: Visualizes patient clustering based on the integrated network.\n\n## Reference documentation\n- [BuildPredictor](./references/BuildPredictor.md)\n- [Predict_CaseControl_from_CNV](./references/Predict_CaseControl_from_CNV.md)\n- [ThreeWayClassifier](./references/ThreeWayClassifier.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-netdx",
+    "description": "netDx is a machine learning framework that builds patient classifier models by integrating heterogeneous biological data through Patient Similarity Networks. Use when user asks to perform multi-omic data integration, build binary or multi-class predictors, or conduct feature selection based on biological pathways.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/netDx.html"
+  }
+}

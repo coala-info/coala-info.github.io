@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rwikipathways",
+  "category": "bioconductor",
+  "name": "bioconductor-rwikipathways",
+  "description": "This tool provides an R interface to the WikiPathways API for querying, retrieving, and analyzing biological pathway data. Use when user asks to search for pathways by keyword or identifier, retrieve pathway components like genes and metabolites, download pathway models, or perform functional enrichment analysis and network visualization.",
+  "overview": "The `rWikiPathways` package provides a programmatic interface to the WikiPathways database. It allows users to search for pathways by keywords or identifiers (Xrefs), retrieve pathway components (genes, proteins, metabolites), and download pathway models for downstream analysis. It is frequently used in conjunction with `clusterProfiler` for enrichment analysis and `RCy3` for Cytoscape-based visualization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/rWikiPathways.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/wikipathways/rWikiPathways",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rWikiPathways"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rWikiPathways.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/wikipathways/rWikiPathways",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rwikipathways\n\nname: bioconductor-rwikipathways\ndescription: Expert guidance for using the rWikiPathways R package to interface with the WikiPathways API. Use this skill when you need to query biological pathways, retrieve pathway information (WPIDs, names, URLs), download pathway data (GPML, GMT, SVG), or perform functional enrichment analysis and visualization in R. This skill includes workflows for identifier mapping with BridgeDbR and network visualization with RCy3/Cytoscape.\n\n# bioconductor-rwikipathways\n\n## Overview\nThe `rWikiPathways` package provides a programmatic interface to the WikiPathways database. It allows users to search for pathways by keywords or identifiers (Xrefs), retrieve pathway components (genes, proteins, metabolites), and download pathway models for downstream analysis. It is frequently used in conjunction with `clusterProfiler` for enrichment analysis and `RCy3` for Cytoscape-based visualization.\n\n## Core Workflows\n\n### 1. Exploration and Search\nIdentify available species and pathways using keywords or specific identifiers.\n```r\nlibrary(rWikiPathways)\n\n# List supported organisms\nlistOrganisms()\n\n# Search pathways by keyword\nhs_pathways <- findPathwaysByText(\"lung cancer\")\nhuman_only <- hs_pathways[hs_pathways$species == \"Homo sapiens\", ]\n\n# Search pathways by specific gene/metabolite (Xref)\n# System codes: 'H' for HGNC, 'En' for Ensembl, 'L' for Entrez Gene\ntnf_pathways <- findPathwayIdsByXref('TNF', 'H')\n```\n\n### 2. Retrieving Pathway Data\nExtract specific information or lists of entities from a known WikiPathways ID (WPID).\n```r\nwpid <- \"WP554\"\n\n# Get general info (URL, name, species)\ninfo <- getPathwayInfo(wpid)\n\n# Get all Entrez Gene IDs ('L') from a pathway\ngenes <- getXrefList(wpid, systemCode = 'L')\n\n# Get all ChEBI metabolites ('Ce')\nmetabolites <- getXrefList(wpid, systemCode = 'Ce')\n```\n\n### 3. Pathway Analysis (ORA and GSEA)\nIntegrate with `clusterProfiler` to find enriched pathways in differential expression results.\n```r\nlibrary(clusterProfiler)\n\n# Over-representation Analysis (ORA)\newp <- enrichWP(\n    gene = c(\"1017\", \"1018\", \"60\"), # Entrez IDs\n    organism = \"Homo sapiens\",\n    pvalueCutoff = 0.05\n)\n\n# Convert IDs to readable symbols\nlibrary(DOSE)\newp <- setReadable(ewp, org.Hs.eg.db, keyType = \"ENTREZID\")\ndotplot(ewp)\n```\n\n### 4. Cytoscape Integration\nVisualize pathways and overlay experimental data using `RCy3`.\n```r\nlibrary(RCy3)\n\n# Import a pathway as a visual model\ncommandsRun('wikipathways import-as-pathway id=WP179')\n\n# Import as a functional network (better for analysis)\ncommandsRun('wikipathways import-as-network id=WP179')\n\n# Map data onto the network\n# Ensure 'lung.expr' has a column matching the 'Ensembl' column in Cytoscape\nloadTableData(lung.expr, data.key.column = \"GeneID\", table.key.column = \"Ensembl\")\nsetNodeColorMapping(\"log2FC\", colors=paletteColorBrewerRdBu, style.name = \"WikiPathways\")\n```\n\n### 5. Downloading Archives\nDownload bulk data for offline analysis.\n```r\n# Download latest GMT file for Mouse\ndownloadPathwayArchive(organism = \"Mus musculus\", format = \"gmt\")\n\n# Download a specific version by date\ndownloadPathwayArchive(date = \"20231010\", organism = \"Homo sapiens\", format = \"gpml\")\n```\n\n## Tips and Best Practices\n- **System Codes**: WikiPathways uses BridgeDb system codes. Common ones include `H` (HGNC), `En` (Ensembl), `L` (Entrez Gene), `Ce` (ChEBI), and `W` (UniProt). Use `BridgeDbR::getSystemCode()` if unsure.\n- **Organism Names**: Always use the full scientific name (e.g., \"Homo sapiens\") in functions like `listPathways` or `enrichWP`.\n- **Network vs. Pathway**: In Cytoscape, `import-as-pathway` preserves the manual layout of the wiki, while `import-as-network` creates a simplified graph structure suitable for topological analysis.\n- **Identifier Mapping**: If your data uses Ensembl IDs but the pathway uses Entrez, use `clusterProfiler::bitr` or `BridgeDbR` to convert identifiers before enrichment.\n\n## Reference documentation\n- [Overview](./references/Overview.md)\n- [Pathway Analysis](./references/Pathway-Analysis.md)\n- [rWikiPathways and BridgeDbR](./references/rWikiPathways-and-BridgeDbR.md)\n- [rWikiPathways and RCy3](./references/rWikiPathways-and-RCy3.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rwikipathways",
+    "description": "This tool provides an R interface to the WikiPathways API for querying, retrieving, and analyzing biological pathway data. Use when user asks to search for pathways by keyword or identifier, retrieve pathway components like genes and metabolites, download pathway models, or perform functional enrichment analysis and network visualization.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rWikiPathways.html"
+  }
+}

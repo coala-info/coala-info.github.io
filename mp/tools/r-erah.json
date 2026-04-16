@@ -1,0 +1,41 @@
+{
+  "id": "r-erah",
+  "category": "R",
+  "name": "r-erah",
+  "description": "r-erah performs automated compound deconvolution, alignment, and identification for GC/MS-based untargeted metabolomics. Use when user asks to deconvolve metabolite signals, align compounds across samples, recover missing peaks, or identify metabolites using spectral libraries.",
+  "overview": "The `erah` package provides a complete pipeline for GC/MS metabolomics:\n1. **Deconvolution**: Blind source separation to extract pure spectra from co-eluting peaks.\n2. **Alignment**: Matching compounds across different samples based on spectral similarity and retention time.\n3. **Missing Peak Recovery**: Recursive integration to fill gaps in the data matrix.\n4. **Identification**: Spectral matching against reference databases.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-erah\n\nname: r-erah\ndescription: Automated compound deconvolution, alignment, and identification for GC/MS-based untargeted metabolomics. Use this skill when processing raw GC/MS data (netCDF, mzXML) to extract metabolite profiles, align them across samples, and identify them using spectral libraries like MassBank or GMD.\n\n## Overview\n\nThe `erah` package provides a complete pipeline for GC/MS metabolomics:\n1. **Deconvolution**: Blind source separation to extract pure spectra from co-eluting peaks.\n2. **Alignment**: Matching compounds across different samples based on spectral similarity and retention time.\n3. **Missing Peak Recovery**: Recursive integration to fill gaps in the data matrix.\n4. **Identification**: Spectral matching against reference databases.\n\n## Installation\n\n```r\ninstall.packages('erah')\nlibrary(erah)\n```\n\n## Workflow\n\n### 1. Experiment Setup\n\nDefine the samples and their metadata. You can create an experiment object (`MetaboSet`) from a directory structure or manually.\n\n**Manual Setup:**\n```r\n# Create tables for instrumental and phenotypic data\ninstrumental <- createInstrumentalTable(list.files(pattern = \".CDF\"))\nphenotype <- createPhenoTable(list.files(pattern = \".CDF\"), cls = c(\"Control\", \"Treat\"))\n\n# Initialize experiment\nex <- newExp(instrumental = instrumental, phenotype = phenotype, info = \"My Experiment\")\n```\n\n**Directory-based Setup:**\nOrganize files into subfolders named by class (e.g., `Experiment/ClassA/sample1.mzXML`).\n```r\ncreatedt('path/to/Experiment')\n# Then load the generated .csv files and use newExp()\n```\n\n### 2. Deconvolution\n\nExtract individual metabolite signals. The `min.peak.width` is the most critical parameter (set to approx. half the average peak width).\n\n```r\n# Set parameters (exclude common TMS fragments like 73, 147)\nex.dec.par <- setDecPar(min.peak.width = 1, \n                        avoid.processing.mz = c(1:69, 73:75, 147:149))\n\n# Optional: Parallel processing\n# future::plan(future::multisession, workers = 4)\n\nex <- deconvolveComp(ex, ex.dec.par)\n```\n\n### 3. Alignment\n\nAlign deconvolved compounds across the sample set.\n\n```r\nex.al.par <- setAlPar(min.spectra.cor = 0.90, max.time.dist = 3, mz.range = 70:600)\nex <- alignComp(ex, alParameters = ex.al.par)\n```\n\n### 4. Missing Compound Recovery (Optional)\n\nReduces \"zeros\" in the data matrix by re-searching for compounds in samples where they weren't initially detected.\n\n```r\nex <- recMissComp(ex, min.samples = 6)\n```\n\n### 5. Identification\n\nCompare aligned spectra against the library. By default, `erah` uses a built-in MassBank library.\n\n```r\nex <- identifyComp(ex)\n\n# View results\nid.list <- idList(ex)      # Identification details\nalign.list <- alignList(ex) # Peak areas across samples\nfinal.data <- dataList(ex)  # Combined table\n```\n\n## Visualization\n\nInspect specific metabolites by their `AlignID`:\n\n```r\n# Plot chromatographic profile across samples\nplotProfile(ex, AlignID = 84)\n\n# Plot spectral comparison (Empirical vs Library)\nplotSpectra(ex, AlignID = 84)\n\n# Compare with the 2nd best hit\nplotSpectra(ex, AlignID = 84, hit = 2)\n```\n\n## Custom Libraries\n\nTo use the Golm Metabolome Database (GMD) or in-house MSP files:\n\n```r\n# Import GMD\ngolm.db <- importGMD(filename=\"GMD_file.txt\", type=\"VAR5.ALK\")\n\n# Use custom library in identification\nex <- identifyComp(ex, id.database = golm.db)\n```\n\n## Reference documentation\n\n- [eRah Manual](./references/erah-manual.Rmd)",
+  "skill_front_matter": {
+    "name": "r-erah",
+    "description": "r-erah performs automated compound deconvolution, alignment, and identification for GC/MS-based untargeted metabolomics. Use when user asks to deconvolve metabolite signals, align compounds across samples, recover missing peaks, or identify metabolites using spectral libraries.",
+    "homepage": "https://cran.r-project.org/web/packages/erah/index.html"
+  }
+}

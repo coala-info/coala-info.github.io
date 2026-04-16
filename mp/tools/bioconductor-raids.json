@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-raids",
+  "category": "bioconductor",
+  "name": "bioconductor-raids",
+  "description": "This tool infers genetic ancestry from human molecular data including DNA and RNA sequences using synthetic data for parameter optimization. Use when user asks to infer genetic ancestry, analyze ancestry in cancer-derived sequences, or optimize ancestry inference parameters using synthetic data.",
+  "overview": "The `RAIDS` package provides a robust framework for genetic ancestry inference. It is particularly effective for \"noisy\" or non-standard molecular data, such as cancer-derived sequences or targeted panels, where traditional methods might fail. It works by synthesizing data specific to the input profile's coverage to optimize inference parameters ($D$ for PCA dimensions and $k$ for nearest neighbors) and estimate accuracy.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RAIDS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/KrasnitzLab/RAIDS",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RAIDS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RAIDS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/KrasnitzLab/RAIDS",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-raids\n\nname: bioconductor-raids\ndescription: Robust Ancestry Inference using Data Synthesis (RAIDS). Use this skill to infer genetic ancestry from human molecular data (DNA/RNA) including whole genomes, exomes, targeted panels, and cancer-derived sequences. It supports profile-specific parameter optimization using synthetic data.\n\n# bioconductor-raids\n\n## Overview\n\nThe `RAIDS` package provides a robust framework for genetic ancestry inference. It is particularly effective for \"noisy\" or non-standard molecular data, such as cancer-derived sequences or targeted panels, where traditional methods might fail. It works by synthesizing data specific to the input profile's coverage to optimize inference parameters ($D$ for PCA dimensions and $k$ for nearest neighbors) and estimate accuracy.\n\n## Core Workflow\n\nThe standard workflow involves setting up a reference, sampling donors for synthesis, and running the inference.\n\n### 1. Setup and Reference Data\nYou need two GDS files: a Population Reference GDS (genotypes) and a SNV Annotation GDS (phase/block info).\n\n```r\nlibrary(RAIDS)\nlibrary(SNPRelate)\n\n# Define paths to reference files (e.g., 1000 Genomes hg38)\nrefGenotype <- \"path/to/matGeno1000g.gds\"\nrefAnnotation <- \"path/to/matAnnot1000g.gds\"\npathProfileGDS <- \"path/to/output_gds_folder/\"\n```\n\n### 2. Sample Reference for Synthesis\nSelect donor profiles from the reference to create synthetic samples for parameter optimization.\n\n```r\nset.seed(3043) # For reproducibility\n# nbProfiles: recommended 30 per sub-continental population for real studies\ndataRef <- select1KGPopForSynthetic(fileReferenceGDS = refGenotype, \n                                    nbProfiles = 2L)\n```\n\n### 3. Infer Ancestry\nUse `inferAncestry()` for DNA (WGS, WXS, Panels) or `inferAncestryGeneAware()` for RNA.\n\n```r\n# Requires chromosome lengths (e.g., from BSgenome.Hsapiens.UCSC.hg38)\nlibrary(Seqinfo)\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\ngenome <- BSgenome.Hsapiens.UCSC.hg38::Hsapiens\nchrInfo <- seqlengths(genome)[1:25] # 1-22, X, Y, M\n\n# Run inference from a VCF (must be gzipped, containing GT, AD, DP)\nresOut <- inferAncestry(\n    profileFile = \"sample.vcf.gz\",\n    pathProfileGDS = pathProfileGDS,\n    fileReferenceGDS = refGenotype,\n    fileReferenceAnnotGDS = refAnnotation,\n    chrInfo = chrInfo,\n    syntheticRefDF = dataRef,\n    genoSource = \"VCF\"\n)\n```\n\n## Data Formats\n\n### Input Sources (`genoSource`)\n- **\"VCF\"**: Gzipped VCF with `GT`, `AD`, and `DP` fields.\n- **\"generic\"**: Comma-separated table with columns: `Chromosome`, `Position`, `Ref`, `Alt`, `Count`, `File1R` (Ref count), `File1A` (Alt count).\n\n### Output Structure\nThe result is a list containing:\n- `Ancestry`: A data.frame with `sample.id`, `D` (optimal PCA dims), `K` (optimal neighbors), and `SuperPop` (inferred ancestry).\n- `paraSample`: Optimization metrics (AUROC).\n- `pcaSample`: PCA projection data.\n\n## Visualization\nEvaluate the performance of the synthetic data optimization:\n\n```r\n# Plot AUROC as a function of D and k\ncreateAUROCGraph(dfAUROC = resOut$paraSample$dfAUROC, title = \"Sample Ancestry Optimization\")\n```\n\n## Tips for Success\n- **Reference Files**: Reliable inference requires complete reference files (e.g., 1000 Genomes). Mini-reference files included in the package are for demonstration only.\n- **RNA Data**: Always use `inferAncestryGeneAware()` for transcriptomic data to account for expression-related coverage biases.\n- **Memory**: Processing large VCFs or GDS files can be memory-intensive; ensure the R session has sufficient allocation.\n\n## Reference documentation\n\n- [Population reference dataset GDS files](./references/Create_Reference_GDS_File.md)\n- [Robust Ancestry Inference using Data Synthesis](./references/RAIDS.md)\n- [Using wrapper functions](./references/Wrappers.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-raids",
+    "description": "This tool infers genetic ancestry from human molecular data including DNA and RNA sequences using synthetic data for parameter optimization. Use when user asks to infer genetic ancestry, analyze ancestry in cancer-derived sequences, or optimize ancestry inference parameters using synthetic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RAIDS.html"
+  }
+}

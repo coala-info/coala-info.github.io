@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tigre",
+  "category": "bioconductor",
+  "name": "bioconductor-tigre",
+  "description": "This tool implements Gaussian process differential equation models to analyze gene expression time series data. Use when user asks to infer latent transcription factor protein concentrations, rank candidate transcription factor targets, or model single input motif networks.",
+  "overview": "The `tigre` package (Transcription factor Inference through Gaussian process Reconstruction of Expression) implements Gaussian process models to analyze gene expression time series. It is primarily used for Single Input Motif (SIM) networks where a single TF regulates multiple target genes. The package allows for the reconstruction of latent TF protein activity and the ranking of potential targets based on how well their expression profiles fit the differential equation model.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/tigre.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ahonkela/tigre",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tigre"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tigre.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ahonkela/tigre",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tigre\n\nname: bioconductor-tigre\ndescription: Gaussian process differential equation models for gene expression time series analysis. Use this skill to infer unobserved transcription factor (TF) protein concentrations from target gene expression data, rank candidate TF targets, and model single input motif (SIM) networks.\n\n# bioconductor-tigre\n\n## Overview\n\nThe `tigre` package (Transcription factor Inference through Gaussian process Reconstruction of Expression) implements Gaussian process models to analyze gene expression time series. It is primarily used for Single Input Motif (SIM) networks where a single TF regulates multiple target genes. The package allows for the reconstruction of latent TF protein activity and the ranking of potential targets based on how well their expression profiles fit the differential equation model.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nThe package requires time series data, ideally with associated measurement uncertainty (error bars).\n\n- **Affymetrix Data**: If using Affymetrix arrays, process with `puma::mmgmos` to obtain expression levels and variances.\n- **Processing for tigre**: Use `processData` to format the expression data for modeling.\n  ```r\n  # experiments argument defines independent time series replicates\n  data <- processData(expression_set, experiments = rep(1:3, each = 12))\n  ```\n- **Non-Affymetrix Data**: Use `processRawData` for data without pre-calculated variances.\n  ```r\n  procData <- processRawData(data_matrix, times = c(...), experiments = c(...))\n  ```\n\n### 2. Learning Models\n\nUse `GPLearn` to fit Gaussian process models to specific TF-target pairs or groups.\n\n- **Single-Target Model**: Learn a model for one TF and one target.\n  ```r\n  model <- GPLearn(data, TF = \"TF_probe_id\", targets = \"Target_probe_id\")\n  ```\n- **Multiple-Target Model**: Learn a joint model for a TF and multiple targets.\n  ```r\n  mt_model <- GPLearn(data, TF = \"TF_probe_id\", targets = c(\"T1\", \"T2\", \"T3\"))\n  ```\n- **Model without TF mRNA**: If TF mRNA data is unavailable or unreliable, fit a model using only target data.\n  ```r\n  nt_model <- GPLearn(data, targets = c(\"TF_id\", \"T1\", \"T2\"))\n  ```\n\n### 3. Ranking Targets\n\nTo identify the most likely targets of a TF from a large pool of candidates, use `GPRankTargets`.\n\n- **Basic Ranking**:\n  ```r\n  scores <- GPRankTargets(data, TF = \"TF_id\", testTargets = candidate_probes)\n  scores <- sort(scores, decreasing = TRUE)\n  write.scores(scores)\n  ```\n- **Filtering**: Use `filterLimit` to exclude weakly expressed genes (based on average expression z-score).\n- **Known Targets**: Improve ranking by providing `knownTargets` to help calibrate the TF activity profile.\n  ```r\n  scores <- GPRankTargets(data, TF = \"TF_id\", knownTargets = \"Known_T1\", testTargets = candidates)\n  ```\n\n### 4. Visualization and Export\n\n- **Plotting**: Visualize the inferred TF activity and the model fit for target genes.\n  ```r\n  GPPlot(model, nameMapping = getAnnMap(\"SYMBOL\", annotation(data)))\n  ```\n- **Recreating Models**: `GPRankTargets` returns scores, not full models. Recreate top models using `generateModels`.\n  ```r\n  top_models <- generateModels(data, scores[1:5])\n  ```\n- **Database Export**: Export results to an SQLite database for use with the `tigreBrowser`.\n  ```r\n  export.scores(scores, datasetName = \"MyStudy\", database = \"results.sqlite\", preprocData = data)\n  ```\n\n## Tips and Best Practices\n\n- **Measurement Noise**: `tigre` performs best when measurement noise (variances) is provided. If unavailable, the package will estimate noise variances, but results may be less robust.\n- **TF Activity**: The inferred TF protein concentration is a \"latent\" variable. It represents the effective activity of the TF, which may differ from its mRNA concentration due to translation delays or post-translational modifications.\n- **Batch Processing**: For large-scale rankings, use the `scoreSaveFile` argument in `GPRankTargets` to save progress incrementally.\n- **Annotation**: Use `annotate` or `org.XX.eg.db` packages to map between probe IDs and gene symbols for clearer plotting and reporting.\n\n## Reference documentation\n\n- [tigre User Guide](./references/tigre.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tigre",
+    "description": "This tool implements Gaussian process differential equation models to analyze gene expression time series data. Use when user asks to infer latent transcription factor protein concentrations, rank candidate transcription factor targets, or model single input motif networks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tigre.html"
+  }
+}

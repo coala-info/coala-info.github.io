@@ -1,0 +1,55 @@
+{
+  "id": "chemfp",
+  "category": "CLI",
+  "name": "chemfp",
+  "description": "Chemfp is a high-performance toolkit for generating, searching, and managing cheminformatics fingerprints. Use when user asks to generate fingerprints from chemical structures, perform similarity searches, convert between FPS and FPB formats, or perform clustering and diversity selection.",
+  "overview": "chemfp is a specialized suite for handling cheminformatics fingerprints with a focus on speed and memory efficiency. It supports multiple chemistry toolkits (RDKit, Open Babel, OEChem, CDK) and provides both a command-line interface and a Python API. It is particularly effective for processing large-scale datasets (millions of molecules) using the binary FPB format, which allows for memory-mapped I/O and extremely fast similarity calculations.",
+  "homepage": "https://chemfp.com",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/chemfp/overview",
+  "github": "N/A",
+  "conda_downloads": "35.4K",
+  "conda_downloads_num": 35400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "chemfp",
+      "chemfp_rdkit2fps",
+      "chemfp_ob2fps",
+      "chemfp_oe2fps",
+      "chemfp_simsearch",
+      "chemfp_fps2fpb",
+      "chemfp_fpb_text",
+      "chemfp_fpc2fps",
+      "chemfp_simarray"
+    ],
+    "description": "The provided text does not contain help information for the chemfp tool. It contains error logs from a container runtime (Apptainer/Singularity) indicating a failure to build or extract the container image due to insufficient disk space.",
+    "docker_image": "quay.io/biocontainers/chemfp:1.6.1--py27h9801fc8_2",
+    "homepage": "https://chemfp.com",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/chemfp/overview",
+    "github": "N/A",
+    "conda_downloads": "35.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "chemfp_fps2fpb.cwl",
+    "chemfp_rdkit2fps.cwl",
+    "chemfp_simsearch.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# chemfp\n\n## Overview\n\nchemfp is a specialized suite for handling cheminformatics fingerprints with a focus on speed and memory efficiency. It supports multiple chemistry toolkits (RDKit, Open Babel, OEChem, CDK) and provides both a command-line interface and a Python API. It is particularly effective for processing large-scale datasets (millions of molecules) using the binary FPB format, which allows for memory-mapped I/O and extremely fast similarity calculations.\n\n## Common CLI Workflows\n\n### Fingerprint Generation\nGenerate fingerprints from structure files (SMILES, SDF) using a specific toolkit.\n```bash\n# Using RDKit to generate Morgan fingerprints (radius 2)\nchemfp rdkit2fps molecules.smi -o fingerprints.fps\n\n# Using Open Babel to generate FP2 fingerprints\nchemfp ob2fps molecules.sdf -o fingerprints.fps\n```\n\n### Similarity Searching\nPerform k-nearest neighbor or threshold-based searches.\n```bash\n# Find the 10 most similar targets for each query with a minimum score of 0.7\nsimsearch -k 10 --threshold 0.7 targets.fpb queries.fps -o results.txt\n\n# Output results in CSV format for easier downstream analysis\nsimsearch --threshold 0.8 targets.fpb queries.smi --out csv -o results.csv\n```\n\n### Format Conversion and Management\nConvert between the text-based FPS format and the high-performance binary FPB format.\n```bash\n# Convert FPS to FPB (highly recommended for large datasets)\nfpcat fingerprints.fps -o fingerprints.fpb\n\n# View metadata and header information of a fingerprint file\nfpcat --header fingerprints.fpb\n```\n\n## Working with Sparse Count Fingerprints\n\nChemfp 5.0+ supports sparse count fingerprints (FPC format), which can be converted to binary fingerprints for searching.\n\n### Generation and Conversion\n```bash\n# Generate Morgan count fingerprints using RDKit\nchemfp rdkit2fpc molecules.smi -o counts.fpc\n\n# Convert counts to binary using the \"superimpose\" method\nchemfp fpc2fps counts.fpc -o binary.fpb\n\n# Convert counts to binary using \"folding\" (ignores counts, same as standard Morgan)\nchemfp fpc2fps -m fold counts.fpc -o folded.fpb\n```\n\n## Diversity and Clustering\n\n### Butina Clustering\nGroup molecules into clusters based on a similarity threshold.\n```bash\n# Cluster molecules with a Tanimoto threshold of 0.8\nchemfp butina --threshold 0.8 fingerprints.fpb -o clusters.txt\n```\n\n### Diversity Selection (MaxMin)\nSelect a diverse subset of molecules from a larger library.\n```bash\n# Select 100 diverse molecules\nchemfp maxmin -n 100 fingerprints.fpb -o diverse_picks.fps\n```\n\n## Expert Tips and Performance\n\n- **Use FPB for Speed**: Always convert `.fps` files to `.fpb` for large-scale searches. FPB files are memory-mapped, meaning they load instantly and allow the OS to manage memory efficiently.\n- **Parallel Processing**: Use the `--procs` (or `-j`) flag in `simsearch` to utilize multiple CPU cores for faster searching.\n- **In-Memory Search**: For the fastest possible performance in Python, load fingerprints into an \"Arena\":\n  ```python\n  import chemfp\n  arena = chemfp.load_fingerprints(\"data.fpb\")\n  results = arena.threshold_tanimoto_search_fp(query_fp, threshold=0.7)\n  ```\n- **Toolkit Selection**: If a toolkit is not specified, chemfp will attempt to use available ones. Explicitly use `rdkit2fps`, `ob2fps`, etc., to ensure consistency.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| chemfp_fps2fpb | Convert a fingerprint file in FPS format to the FPB format. FPB files are a binary format for fingerprints that allow for fast loading and memory-mapped access. |\n| rdkit2fps | Generate FPS fingerprints from a structure file using RDKit |\n| simsearch | Search a set of target fingerprints for those similar to the query fingerprints. |\n\n## Reference documentation\n\n- [Command-line examples for binary fingerprints](./references/chemfp_com_docs_tools.html.md)\n- [Command-line examples for sparse count fingerprints](./references/chemfp_com_docs_count_tools.html.md)\n- [The chemfp command-line tools](./references/chemfp_com_docs_tool_help.html.md)\n- [Getting started with the API](./references/chemfp_com_docs_getting_started_api.html.md)\n- [FPB Format Overview](./references/chemfp_com_fpb_format.md)",
+  "skill_front_matter": {
+    "name": "chemfp",
+    "description": "Chemfp is a high-performance toolkit for generating, searching, and managing cheminformatics fingerprints. Use when user asks to generate fingerprints from chemical structures, perform similarity searches, convert between FPS and FPB formats, or perform clustering and diversity selection.",
+    "homepage": "https://chemfp.com"
+  }
+}

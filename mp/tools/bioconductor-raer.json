@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-raer",
+  "category": "bioconductor",
+  "name": "bioconductor-raer",
+  "description": "\"bioconductor-raer characterizes RNA Adenosine-to-Inosine editing in single-cell and bulk RNA-sequencing data. Use when user asks to quantify known editing sites, detect novel editing sites from BAM files, calculate the Alu Editing Index, or perform differential editing analysis.\"",
+  "overview": "The `raer` package provides a comprehensive framework for analyzing RNA editing (specifically A-to-I) within the Bioconductor ecosystem. It utilizes HTSlib-based pileup routines to extract base counts from BAM files and integrates with `SingleCellExperiment` and `SummarizedExperiment` objects for downstream analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/raer.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/rnabioco/raer",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "raer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/raer.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/rnabioco/raer",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-raer\n\nname: bioconductor-raer\ndescription: Tools for characterizing RNA Adenosine-to-Inosine (A-to-I) editing in single-cell and bulk RNA-sequencing data. Use this skill to quantify known editing sites, detect novel editing sites from BAM files, calculate the Alu Editing Index (AEI), and perform differential editing analysis.\n\n## Overview\n\nThe `raer` package provides a comprehensive framework for analyzing RNA editing (specifically A-to-I) within the Bioconductor ecosystem. It utilizes HTSlib-based pileup routines to extract base counts from BAM files and integrates with `SingleCellExperiment` and `SummarizedExperiment` objects for downstream analysis.\n\n## Core Workflows\n\n### 1. Single-Cell RNA-seq Quantification\nUse `pileup_cells()` to quantify UMI counts for edited and non-edited bases per cell.\n\n```r\nlibrary(raer)\n\n# Define sites as GRanges with REF/ALT metadata\n# For A-to-I, REF=\"A\", ALT=\"G\" (strand-specific)\nsites$REF <- \"A\"\nsites$ALT <- \"G\"\n\n# Set filtering parameters\nparams <- FilterParam(\n    min_mapq = 255,\n    library_type = \"fr-second-strand\", # Use 'unstranded' for SS2\n    min_variant_reads = 1\n)\n\n# Run pileup\ne_sce <- pileup_cells(\n    bamfile = \"path/to/sample.bam\",\n    sites = sites,\n    cell_barcodes = colnames(sce),\n    cb_tag = \"CB\",\n    umi_tag = \"UB\",\n    param = params\n)\n\n# Calculate frequencies and integrate with main SCE\ne_sce <- calc_edit_frequency(e_sce, edit_from = \"Ref\", edit_to = \"Alt\")\naltExp(sce) <- e_sce\n```\n\n### 2. Bulk RNA-seq and Differential Editing\nUse `pileup_sites()` to generate a `RangedSummarizedExperiment` for bulk samples.\n\n```r\n# Quantify sites\nrse <- pileup_sites(\n    bam_files,\n    fasta = \"genome.fa\",\n    sites = known_sites,\n    param = FilterParam(library_type = \"fr-first-strand\")\n)\n\n# Calculate frequency and filter\nrse <- calc_edit_frequency(rse, edit_from = \"A\", edit_to = \"G\", drop = TRUE)\n\n# Prepare for differential testing (e.g., DESeq2 or edgeR)\ndeobj <- make_de_object(rse, min_prop = 0.05, min_samples = 3)\nresults <- find_de_sites(\n    deobj,\n    test = \"DESeq2\",\n    condition_col = \"genotype\",\n    condition_control = \"WT\",\n    condition_treatment = \"KO\"\n)\n```\n\n### 3. Alu Editing Index (AEI)\nCalculate global editing activity across Alu elements.\n\n```r\nalu_index <- calc_AEI(\n    bam_files,\n    fasta = \"genome.fa\",\n    snp_db = snp_granges, # Exclude known SNPs\n    alu_ranges = alu_granges,\n    param = FilterParam()\n)\n# Access global index via alu_index$AEI\n```\n\n### 4. Novel Editing Site Detection\nIdentify sites by comparing RNA-seq to matched DNA-seq (WGS) or using strict filters.\n\n1. **Initial Pileup**: Run `pileup_sites()` on RNA and DNA BAMs.\n2. **DNA Filtering**: Remove sites where the DNA-seq shows a variant (to exclude SNPs).\n3. **Annotation**: Use `annot_from_gr()` to add RepeatMasker or SNP info.\n4. **Clustered Filter**: Use `filter_clustered_variants()` to remove artifacts.\n5. **Frequency Filter**: Require minimum editing frequency (e.g., > 0.05) and supporting reads.\n\n## Key Functions and Parameters\n\n- `FilterParam()`: Central configuration for quality control.\n    - `library_type`: Critical for strand-specific counting (`fr-first-strand`, `fr-second-strand`, or `unstranded`).\n    - `trim_5p`/`trim_3p`: Removes bases from read ends to avoid alignment artifacts.\n    - `min_splice_overhang`: Filters variants near splice junctions.\n- `calc_edit_frequency()`: Adds `edit_freq` and `depth` assays to objects.\n- `read_sparray()`: Efficiently loads sparse matrix outputs from `pileup_cells()`.\n\n## Reference documentation\n- [Introducing the raer package](./references/raer.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-raer",
+    "description": "bioconductor-raer characterizes RNA Adenosine-to-Inosine editing in single-cell and bulk RNA-sequencing data. Use when user asks to quantify known editing sites, detect novel editing sites from BAM files, calculate the Alu Editing Index, or perform differential editing analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/raer.html"
+  }
+}

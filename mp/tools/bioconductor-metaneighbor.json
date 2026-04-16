@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metaneighbor",
+  "category": "bioconductor",
+  "name": "bioconductor-metaneighbor",
+  "description": "MetaNeighbor assesses cell type identity and replicability across single-cell RNA-sequencing datasets using a neighbor voting algorithm. Use when user asks to quantify cell type replicability across studies, perform cross-dataset mapping, identify highly variable genes for comparison, or predict cell identities using neighbor voting.",
+  "overview": "MetaNeighbor is a tool for measuring the similarity of cell types across different scRNA-seq datasets. It uses a neighbor voting algorithm based on cell-cell correlations within specific gene sets. The primary output is an **AUROC (Area Under the Receiver Operating Characteristic) score**.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaNeighbor.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MetaNeighbor"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaNeighbor.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metaneighbor\n\nname: bioconductor-metaneighbor\ndescription: Use MetaNeighbor to assess cell type identity and replicability across single-cell RNA-sequencing (scRNA-seq) datasets. This skill should be used when Claude needs to: (1) Quantify how well cell type labels replicate across different studies, (2) Perform cross-dataset mapping of cell types, (3) Identify highly variable genes for cross-study comparison, or (4) Use neighbor voting to predict cell identities.\n\n# bioconductor-metaneighbor\n\n## Overview\n\nMetaNeighbor is a tool for measuring the similarity of cell types across different scRNA-seq datasets. It uses a neighbor voting algorithm based on cell-cell correlations within specific gene sets. The primary output is an **AUROC (Area Under the Receiver Operating Characteristic) score**. \n\n- **AUROC = 0.5**: The cell type is no more similar to itself across datasets than to a random cell type (random guessing).\n- **AUROC > 0.9**: Indicates high replicability and strong evidence that the cell type identity is consistent across datasets.\n\n## Data Requirements\n\nMetaNeighbor requires data in a `SummarizedExperiment` or `SingleCellExperiment` object.\n\n1.  **Expression Matrix**: An assay containing gene-by-sample data (e.g., RPKM, CPM, or log-transformed counts).\n2.  **Experiment Labels**: A vector in `colData` indicating the source/study of each sample (e.g., `study_id`).\n3.  **Cell Type Labels**: A vector in `colData` indicating the cell type of each sample.\n4.  **Gene Sets**: A list of vectors containing gene symbols that match the row names of the expression matrix.\n\n## Supervised MetaNeighbor\n\nUse this workflow when you have known, corresponding cell type labels across datasets and want to quantify their similarity.\n\n```r\nlibrary(MetaNeighbor)\nlibrary(SummarizedExperiment)\n\n# Required inputs:\n# dat: SummarizedExperiment object\n# experiment_labels: numeric or factor vector of study IDs\n# celltype_labels: binary matrix (samples x cell types) where 1 = member\n# genesets: list of gene vectors (e.g., GO terms)\n\nAUROC_scores <- MetaNeighbor(\n  dat = mn_data,\n  experiment_labels = as.numeric(factor(mn_data$study_id)),\n  celltype_labels = metadata(colData(mn_data))[[\"cell_labels\"]],\n  genesets = GOmouse,\n  bplot = TRUE\n)\n```\n\n## Unsupervised MetaNeighbor (Data Exploration)\n\nUse this workflow to identify potential cell type overlaps between datasets when labels are ambiguous or different.\n\n1.  **Identify Variable Genes**: Use `variableGenes` to find genes that are highly variable across datasets.\n2.  **Run MetaNeighborUS**: Run the unsupervised version.\n3.  **Identify Top Hits**: Use `topHits` to find reciprocal best matches.\n\n```r\n# 1. Identify variable genes\nvar_genes <- variableGenes(dat = mn_data, exp_labels = mn_data$study_id)\n\n# 2. Run Unsupervised MetaNeighbor\ncelltype_NV <- MetaNeighborUS(\n  var_genes = var_genes,\n  dat = mn_data,\n  study_id = mn_data$study_id,\n  cell_type = mn_data$cell_type\n)\n\n# 3. Find reciprocal top hits (AUROC > 0.9)\ntop_hits <- topHits(\n  cell_NV = celltype_NV,\n  dat = mn_data,\n  study_id = mn_data$study_id,\n  cell_type = mn_data$cell_type,\n  threshold = 0.9\n)\n```\n\n## Handling Large Datasets\n\nFor datasets with >10,000 cells, use the low-memory \"fast\" version. This version approximates the correlation network to save time and RAM.\n\n- Set `fast_version = TRUE` in `MetaNeighbor()` or `MetaNeighborUS()`.\n- Use `SingleCellExperiment` objects with sparse matrices for better efficiency.\n\n```r\ncelltype_NV <- MetaNeighborUS(\n  var_genes = var_genes,\n  dat = large_pancreas_obj,\n  study_id = large_pancreas_obj$study_id,\n  cell_type = large_pancreas_obj$cell_type,\n  fast_version = TRUE\n)\n```\n\n## Visualization\n\n- **Beanplots**: Generated by default in `MetaNeighbor()` (`bplot = TRUE`) to show the distribution of AUROC scores across gene sets.\n- **Heatmaps**: Use `gplots::heatmap.2` to visualize the `celltype_NV` matrix from unsupervised runs. High AUROC (red) indicates strong similarity between the training (row) and testing (column) cell types.\n\n## Reference documentation\n\n- [MetaNeighbor](./references/MetaNeighbor.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metaneighbor",
+    "description": "MetaNeighbor assesses cell type identity and replicability across single-cell RNA-sequencing datasets using a neighbor voting algorithm. Use when user asks to quantify cell type replicability across studies, perform cross-dataset mapping, identify highly variable genes for comparison, or predict cell identities using neighbor voting.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaNeighbor.html"
+  }
+}

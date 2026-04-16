@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scgps",
+  "category": "bioconductor",
+  "name": "bioconductor-scgps",
+  "description": "\"bioconductor-scgps provides a framework for stable clustering and relationship prediction between cell subpopulations in single-cell transcriptomics data. Use when user asks to identify stable cell clusters using bagging and bootstrapping, find cluster marker genes, or estimate transition potentials between subpopulations using supervised learning.\"",
+  "overview": "The `scGPS` package provides a framework for two primary tasks in single-cell analysis:\n1. **SCORE (Stable Clustering at Optimal REsolution):** An unsupervised clustering approach that uses bagging and bootstrapping to find stable cell subpopulations.\n2. **scGPS Prediction:** A supervised learning approach (using LDA and ElasticNet) to estimate the relationship or \"transition potential\" between identified subpopulations, either within a single dataset or across different time points/samples.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scGPS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/IMB-Computational-Genomics-Lab/scGPS",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scGPS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scGPS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/IMB-Computational-Genomics-Lab/scGPS",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scgps\n\n## Overview\nThe `scGPS` package provides a framework for two primary tasks in single-cell analysis:\n1. **SCORE (Stable Clustering at Optimal REsolution):** An unsupervised clustering approach that uses bagging and bootstrapping to find stable cell subpopulations.\n2. **scGPS Prediction:** A supervised learning approach (using LDA and ElasticNet) to estimate the relationship or \"transition potential\" between identified subpopulations, either within a single dataset or across different time points/samples.\n\n## Core Workflow\n\n### 1. Data Preparation\n`scGPS` uses a specialized object created from an expression matrix and metadata.\n\n```r\nlibrary(scGPS)\n\n# Create scGPS object\n# ExpressionMatrix: genes (rows) x cells (columns)\n# CellMetadata: dataframe with at least one column for cluster/cell info\nscgps_obj <- new_scGPS_object(\n    ExpressionMatrix = count_matrix,\n    GeneMetadata = gene_info,\n    CellMetadata = cell_info\n)\n```\n\n### 2. Subpopulation Discovery (SCORE/CORE)\nIf clusters are unknown, use `CORE_clustering` or the more robust `CORE_bagging` (SCORE).\n\n```r\n# Standard CORE clustering\ncore_results <- CORE_clustering(scgps_obj, remove_outlier = c(0), PCA = FALSE)\n\n# SCORE (CORE with bagging for stability)\nscore_results <- CORE_bagging(\n    scgps_obj, \n    bagging_run = 20, \n    subsample_proportion = 0.8,\n    PCA = FALSE\n)\n\n# Visualizing clusters\nplot_CORE(score_results$tree, list_clusters = score_results$Cluster)\n```\n\n### 3. Marker Identification\nIdentify differentially expressed genes to characterize clusters and provide features for the prediction model.\n\n```r\n# Find markers for all clusters\nDE_genes <- find_markers(\n    expression_matrix = assay(scgps_obj),\n    cluster = colData(scgps_obj)[,1],\n    selected_cluster = unique(colData(scgps_obj)[,1])\n)\n\n# Annotate clusters using enrichment analysis\nenrichment <- annotate_clusters(DE_genes$id[1:500], pvalueCutoff = 0.05, gene_symbol = TRUE)\n```\n\n### 4. Relationship Prediction (scGPS)\nEstimate the transition scores between a source subpopulation and target subpopulations.\n\n```r\n# Define features (e.g., top 200 markers of the source cluster)\nselected_genes <- DE_genes$id[1:200]\n\n# Run bootstrap prediction\n# c_selectID: the index of the subpopulation to start from\nprediction_data <- bootstrap_prediction(\n    nboots = 50,\n    mixedpop1 = scgps_obj, # Source population\n    mixedpop2 = scgps_obj, # Target population (can be the same or different)\n    genes = selected_genes,\n    c_selectID = 1,\n    cluster_mixedpop1 = colData(scgps_obj)[,1],\n    cluster_mixedpop2 = colData(scgps_obj)[,1]\n)\n\n# Summarize results\nsummary_prediction_lda(prediction_data, nPredSubpop = 4)\nsummary_prediction_lasso(prediction_data, nPredSubpop = 4)\n```\n\n### 5. Visualization of Relationships\nUse Sankey diagrams to visualize how cells from one subpopulation are classified into others, representing potential transitions.\n\n```r\n# Reformat LASSO results for Sankey\nlasso_formatted <- reformat_LASSO(\n    c_selectID = 1, \n    mp_selectID = 2, \n    LSOLDA_dat = prediction_data,\n    nPredSubpop = 4,\n    Nodes_group = \"#7570b3\"\n)\n\n# Plotting requires networkD3\nlibrary(networkD3)\n# (Follow vignette patterns for preparing the combined D3 object)\n```\n\n## Tips and Best Practices\n- **nboots:** For publication-quality results, use `nboots = 50-100` in `bootstrap_prediction`. Use low values (2-5) only for testing code.\n- **Gene Selection:** The accuracy of scGPS prediction is highly dependent on the gene list. Using top DE genes (markers) for the cluster of interest is the recommended approach.\n- **Outliers:** `CORE_clustering` allows for outlier removal by setting `remove_outlier`.\n- **Dimensionality Reduction:** Use the built-in `tSNE` function or `plot_reduced` to validate clustering results visually.\n\n## Reference documentation\n- [scGPS introduction](./references/vignette.md)\n- [scGPS RMarkdown Source](./references/vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-scgps",
+    "description": "bioconductor-scgps provides a framework for stable clustering and relationship prediction between cell subpopulations in single-cell transcriptomics data. Use when user asks to identify stable cell clusters using bagging and bootstrapping, find cluster marker genes, or estimate transition potentials between subpopulations using supervised learning.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scGPS.html"
+  }
+}

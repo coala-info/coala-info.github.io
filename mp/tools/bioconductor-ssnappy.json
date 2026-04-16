@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ssnappy",
+  "category": "bioconductor",
+  "name": "bioconductor-ssnappy",
+  "description": "This tool performs single-sample directional pathway perturbation analysis on RNA-seq data by incorporating pathway topology. Use when user asks to compute pathway perturbation scores, test significance via sample permutation, or visualize pathway activation and inhibition as networks or heatmaps.",
+  "overview": "The `sSNAPPY` package implements a method for Single Sample directioNAl Pathway Perturbation analYsis. Unlike standard gene set enrichment methods, it incorporates pathway topology (gene-gene interactions) to propagate expression changes down a signaling pathway. This allows for the calculation of directional scores (activation or inhibition) for individual samples. It is particularly useful for datasets with complex experimental designs, small sample sizes, or when seeking to understand inter-p",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/sSNAPPY.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Wenjun-Liu/sSNAPPY",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sSNAPPY"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sSNAPPY.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Wenjun-Liu/sSNAPPY",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ssnappy\n\nname: bioconductor-ssnappy\ndescription: Perform single-sample directional pathway perturbation analysis (sSNAPPY) on RNA-seq data. Use this skill to compute pathway perturbation scores that incorporate topology, test significance via sample permutation, and visualize results as networks or heatmaps.\n\n# bioconductor-ssnappy\n\n## Overview\n\nThe `sSNAPPY` package implements a method for Single Sample directioNAl Pathway Perturbation analYsis. Unlike standard gene set enrichment methods, it incorporates pathway topology (gene-gene interactions) to propagate expression changes down a signaling pathway. This allows for the calculation of directional scores (activation or inhibition) for individual samples. It is particularly useful for datasets with complex experimental designs, small sample sizes, or when seeking to understand inter-patient heterogeneity in pathway response.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a normalized logCPM matrix with Entrez IDs as row names.\n\n```r\nlibrary(sSNAPPY)\n# Load example data\ndata(logCPM_example)\ndata(metadata_example)\n\n# Ensure treatment is a factor with the control as the reference level\nmetadata_example$treatment <- factor(metadata_example$treatment, levels = c(\"Vehicle\", \"R5020\", \"E2+R5020\"))\n```\n\n### 2. Compute Weighted Single-Sample logFC (ssLogFC)\nThe `weight_ss_fc` function calculates logFCs for treated samples relative to their matched controls (e.g., same patient) and applies weights to account for the mean-variance relationship in RNA-seq data.\n\n```r\nweightedFC <- weight_ss_fc(logCPM_example, \n                           metadata = metadata_example,\n                           groupBy = \"patient\", \n                           sampleColumn = \"sample\", \n                           treatColumn = \"treatment\")\n# Returns a list: weightedFC$weighted_logFC and weightedFC$weight\n```\n\n### 3. Retrieve Pathway Topologies\nRetrieve and convert pathway information from databases like KEGG, Reactome, or WikiPathways into weighted adjacency matrices.\n\n```r\n# Retrieve all KEGG human pathways\ngsTopology <- retrieve_topology(database = \"kegg\", species = \"hsapiens\")\n\n# Or filter by keyword\ngsTopology_sub <- retrieve_topology(database = \"kegg\", species = \"hsapiens\", keyword = \"metabolism\")\n```\n\n### 4. Scoring Perturbation\nCalculate gene-wise perturbation scores and aggregate them into pathway-level scores.\n\n```r\n# Gene-level scores\ngenePertScore <- raw_gene_pert(weightedFC$weighted_logFC, gsTopology)\n\n# Pathway-level scores\npathwayPertScore <- pathway_pert(genePertScore, weightedFC$weighted_logFC)\n```\n\n### 5. Significance Testing (Permutation)\nGenerate null distributions to calculate empirical p-values and robust z-scores.\n\n```r\n# Generate null distributions (NB = number of permutations)\nset.seed(123)\npermutedScore <- generate_permuted_scores(expreMatrix = logCPM_example, \n                                          gsTopology = gsTopology, \n                                          weight = weightedFC$weight,\n                                          NB = 1000)\n\n# Normalize scores and get p-values\nnormalisedScores <- normalise_by_permu(permutedScore, pathwayPertScore, sortBy = \"pvalue\")\n```\n\n## Visualization Functions\n\n### Pathway Networks\nVisualize overlap between significantly perturbed pathways. Edges represent shared genes.\n\n```r\n# Plot network colored by direction (robustZ)\nplot_gs_network(normalisedScores[normalisedScores$adjPvalue < 0.05, ], \n                gsTopology = gsTopology, \n                colorBy = \"robustZ\")\n```\n\n### Gene Contributions\nIdentify which specific genes are driving a pathway's perturbation score using a heatmap.\n\n```r\n# Plot top 10 genes contributing to a specific pathway\nplot_gene_contribution(genePertMatr = genePertScore$`kegg.Estrogen signaling pathway`,\n                       filterBy = \"mean\", \n                       topGene = 10,\n                       mapEntrezID = entrez2name) # entrez2name is a mapping df\n```\n\n### Community Detection\nGroup perturbed pathways into functional communities to summarize high-level biological changes.\n\n```r\nplot_community(normalisedScores[normalisedScores$adjPvalue < 0.05, ], \n               gsTopology = gsTopology, \n               colorBy = \"community\")\n```\n\n## Tips for Success\n- **Entrez IDs**: The package strictly requires Entrez IDs (formatted as `ENTREZID:XXXX`) because the underlying topology databases use them. Use `AnnotationDbi` to convert symbols if necessary.\n- **Control Reference**: Always ensure the `treatColumn` factor levels have the control group as the first level.\n- **Computational Cost**: The `generate_permuted_scores` step is computationally intensive. For large datasets, consider running this on a high-performance computing cluster or reducing the number of pathways analyzed.\n- **Directionality**: A positive `robustZ` score indicates pathway activation, while a negative score indicates inhibition.\n\n## Reference documentation\n- [sSNAPPY: Single Sample Directional Pathway Perturbation Analysis](./references/sSNAPPY.Rmd)\n- [sSNAPPY: Single Sample Directional Pathway Perturbation Analysis](./references/sSNAPPY.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ssnappy",
+    "description": "This tool performs single-sample directional pathway perturbation analysis on RNA-seq data by incorporating pathway topology. Use when user asks to compute pathway perturbation scores, test significance via sample permutation, or visualize pathway activation and inhibition as networks or heatmaps.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sSNAPPY.html"
+  }
+}

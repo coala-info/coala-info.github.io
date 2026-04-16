@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mumosa",
+  "category": "bioconductor",
+  "name": "bioconductor-mumosa",
+  "description": "The mumosa package provides utilities for integrating and analyzing multi-modal single-cell data through joint clustering, dimensionality reduction, and feature correlation. Use when user asks to perform multi-modal data integration, rescale modalities by neighbors, run multi-metric UMAP, intersect clusterings or graphs, and find correlations between different feature types.",
+  "overview": "The `mumosa` package provides utilities for integrating multi-modal single-cell data (e.g., CITE-seq, RNA-seq + Proteomics, or Epigenomics). It focuses on sharing information across modalities to perform joint clustering, dimensionality reduction, and feature correlation without requiring one modality to dominate the analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mumosa.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mumosa"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mumosa.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mumosa\n\n## Overview\n\nThe `mumosa` package provides utilities for integrating multi-modal single-cell data (e.g., CITE-seq, RNA-seq + Proteomics, or Epigenomics). It focuses on sharing information across modalities to perform joint clustering, dimensionality reduction, and feature correlation without requiring one modality to dominate the analysis.\n\n## Core Workflows\n\n### 1. Data Integration by Rescaling\nWhen combining different modalities (like RNA and ADT), differences in feature counts and variance can cause one modality to dominate. `rescaleByNeighbors()` equalizes the \"noise\" based on the median distance to the $k$-th nearest neighbor.\n\n```r\nlibrary(mumosa)\n# list of matrices (e.g., PCA results from different modalities)\nrescaled_combined <- rescaleByNeighbors(list(reducedDim(sce, \"PCA\"), reducedDim(altExp(sce), \"PCA\")))\n\n# Use the output for joint clustering or visualization\nlibrary(bluster)\nclusters <- clusterRows(rescaled_combined, NNGraphParam())\n```\n\n### 2. Intersecting Clusters\nIf you have independent clusterings for each modality, `intersectClusters()` performs a refined intersection. It merges small, noisy clusters while ensuring that the within-cluster sum of squares does not exceed the original per-modality clustering.\n\n```r\n# rna_clusters and adt_clusters are vectors of cluster assignments\nrefined_clusters <- intersectClusters(\n    clusters = list(rna_clusters, adt_clusters),\n    latent = list(reducedDim(sce, \"PCA\"), reducedDim(altExp(sce), \"PCA\"))\n)\n```\n\n### 3. Multi-metric UMAP\n`calculateMultiUMAP()` (or the `SingleCellExperiment` wrapper `runMultiUMAP()`) integrates modalities by intersecting nearest-neighbor graphs. Cells are considered neighbors only if they are close in all modalities.\n\n```r\n# Using the SCE wrapper\nsce <- runMultiUMAP(sce, \n                    dimred=\"PCA\", \n                    extras=list(reducedDim(altExp(sce), \"PCA\")),\n                    name=\"MultiUMAP\")\n\nplotReducedDim(sce, \"MultiUMAP\", colour_by=\"column_name\")\n```\n\n### 4. Intersecting Graphs\nFor graph-based clustering, `intersectGraphs()` combines SNN graphs from different modalities by multiplying edge weights.\n\n```r\ng.rna <- buildSNNGraph(sce, use.dimred=\"PCA\")\ng.adt <- buildSNNGraph(altExp(sce), use.dimred=\"PCA\")\n\ng.combined <- intersectGraphs(g.rna, g.adt)\ncombined_clusters <- igraph::cluster_walktrap(g.combined)$membership\n```\n\n### 5. Correlation Analysis\nTo find relationships between features of different modalities (e.g., which genes correlate with which proteins):\n\n*   **Exact Correlation:** `computeCorrelations()` computes Spearman's rho for all pairs.\n*   **Approximate Search:** `findTopCorrelations()` uses PCA-based compression to quickly find the top $N$ most correlated features.\n\n```r\n# Find top 10 ADT features correlated to each RNA feature\ntop_cor <- findTopCorrelations(sce, y=altExp(sce), number=10)\n\n# Access positive or negative correlations\npos_cor <- top_cor$positive\n```\n\n## Tips and Best Practices\n*   **Batch Correction:** Use the `block=` argument in `computeCorrelations()` or `findTopCorrelations()` to account for batch effects; this ensures correlations are calculated within batches and then averaged.\n*   **Weighting:** In `rescaleByNeighbors()`, use the `weights=` argument if you want to manually prioritize one modality over another (e.g., giving more weight to the RNA component).\n*   **Preprocessing:** Always perform independent QC and normalization (e.g., `logNormCounts`) on each modality before attempting integration with `mumosa`.\n\n## Reference documentation\n- [Utilities for multi-modal single-cell analyses](./references/overview.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mumosa",
+    "description": "The mumosa package provides utilities for integrating and analyzing multi-modal single-cell data through joint clustering, dimensionality reduction, and feature correlation. Use when user asks to perform multi-modal data integration, rescale modalities by neighbors, run multi-metric UMAP, intersect clusterings or graphs, and find correlations between different feature types.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mumosa.html"
+  }
+}

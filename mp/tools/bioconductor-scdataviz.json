@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scdataviz",
+  "category": "bioconductor",
+  "name": "bioconductor-scdataviz",
+  "description": "\"bioconductor-scdataviz provides specialized visualization and analysis tools for high-dimensional single-cell data such as CyTOF, flow cytometry, and scRNA-seq. Use when user asks to process FCS files, perform dimensionality reduction, identify cell clusters via k-NN, or generate publication-quality plots like contour plots and marker expression maps.\"",
+  "overview": "scDataviz is a Bioconductor package designed to simplify the visualization and downstream analysis of high-dimensional single-cell data. It is built upon the `SingleCellExperiment` (SCE) class and uses the `ggplot2` engine, allowing for \"plug-and-play\" compatibility with other Bioconductor workflows and easy customization of graphics. It is particularly useful for researchers working with flow and mass cytometry (CyTOF) data who need to identify cell populations and visualize marker distribution",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scDataviz.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kevinblighe/scDataviz",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scDataviz"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scDataviz.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kevinblighe/scDataviz",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scdataviz\n\nname: bioconductor-scdataviz\ndescription: Specialized visualization and analysis for single-cell data, including CyTOF, flow cytometry, and scRNA-seq. Use this skill to process FCS files, perform dimensionality reduction (PCA/UMAP), identify cell clusters via k-NN, and generate publication-quality plots such as contour plots, marker expression maps, and cluster signatures.\n\n# bioconductor-scdataviz\n\n## Overview\nscDataviz is a Bioconductor package designed to simplify the visualization and downstream analysis of high-dimensional single-cell data. It is built upon the `SingleCellExperiment` (SCE) class and uses the `ggplot2` engine, allowing for \"plug-and-play\" compatibility with other Bioconductor workflows and easy customization of graphics. It is particularly useful for researchers working with flow and mass cytometry (CyTOF) data who need to identify cell populations and visualize marker distributions.\n\n## Core Workflow\n\n### 1. Data Input and Preprocessing\nYou can import data from raw FCS files or from existing numerical matrices.\n\n**From FCS files:**\nUse `processFCS` to read, transform (e.g., asinh), and downsample data.\n```r\nlibrary(scDataviz)\nsce <- processFCS(\n  files = filelist,\n  metadata = metadata_df,\n  transformation = TRUE,\n  transFun = function(x) asinh(x),\n  asinhFactor = 5,\n  downsample = 10000,\n  colsRetain = inclusions,\n  newColnames = markernames\n)\n```\n\n**From a Matrix:**\n```r\nsce <- importData(mat, assayname = 'normcounts', metadata = metadata_df)\n```\n\n**From Seurat:**\n```r\nlibrary(Seurat)\nsce <- as.SingleCellExperiment(seurat_obj)\nmetadata(sce) <- data.frame(colData(sce)) # Ensure metadata slot is populated\n```\n\n### 2. Dimensionality Reduction\nscDataviz supports PCA (via `PCAtools`) and UMAP.\n\n```r\n# PCA\nlibrary(PCAtools)\np <- pca(assay(sce, 'scaled'), metadata = metadata(sce))\nreducedDim(sce, 'PCA') <- p$rotated\n\n# UMAP (on expression values)\nsce <- performUMAP(sce)\n\n# UMAP (on PC eigenvectors)\nsce <- performUMAP(sce, reducedDim = 'PCA', dims = 1:5)\n```\n\n### 3. Visualization\nThe package provides several specialized plotting functions.\n\n*   **Contour Plots:** Visualize cellular density to identify \"islands.\"\n    ```r\n    contourPlot(sce, reducedDim = 'UMAP', bins = 150)\n    ```\n*   **Marker Expression:** Map specific marker levels onto the UMAP/PCA layout.\n    ```r\n    markerExpression(sce, markers = c('CD4', 'CD8', 'Foxp3'), reducedDim = 'UMAP')\n    ```\n*   **Metadata Plot:** Shade cells by categorical variables (e.g., Treatment, Genotype).\n    ```r\n    metadataPlot(sce, colby = 'group', colkey = c(Healthy='blue', Disease='red'))\n    ```\n\n### 4. Clustering and Enrichment\nIdentify cell populations using k-nearest neighbors (k-NN) and characterize them.\n\n```r\n# Clustering\nsce <- clusKNN(sce, k.param = 20, resolution = 0.01, algorithm = 2)\n\n# Visualize Clusters\nplotClusters(sce, clusterColname = 'Cluster', labSize = 5)\n\n# Marker Enrichment (identifies Pos/Neg markers per cluster)\nenrichment <- markerEnrichment(sce, method = 'quantile', studyvarID = 'group')\n\n# Expression Signatures (Heatmap of marker expression per cluster)\nplotSignatures(sce, labCex = 1.2)\n```\n\n## Tips for Success\n*   **Marker Naming:** Ensure marker names are consistent. FCS files often use metal isotopes (e.g., \"Nd143Di\") as column names; use the `newColnames` argument in `processFCS` to map these to biological names (e.g., \"CD45RA\").\n*   **Assay Selection:** Most functions default to the `scaled` assay. If your data is in `logcounts` or `normcounts`, specify the `assay` parameter in the function call.\n*   **UMAP Tuning:** You can pass a `config` object from the `umap` package to `performUMAP` to adjust parameters like `min_dist` or `n_neighbors`.\n*   **Interoperability:** Since the output is a `SingleCellExperiment` object, you can seamlessly transition to other tools like `scran`, `scater`, or `ComplexHeatmap`.\n\n## Reference documentation\n- [scDataviz: single cell dataviz and downstream analyses](./references/scDataviz.Rmd)\n- [scDataviz: single cell dataviz and downstream analyses](./references/scDataviz.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scdataviz",
+    "description": "bioconductor-scdataviz provides specialized visualization and analysis tools for high-dimensional single-cell data such as CyTOF, flow cytometry, and scRNA-seq. Use when user asks to process FCS files, perform dimensionality reduction, identify cell clusters via k-NN, or generate publication-quality plots like contour plots and marker expression maps.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scDataviz.html"
+  }
+}

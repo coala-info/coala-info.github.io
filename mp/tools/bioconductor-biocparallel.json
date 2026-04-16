@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biocparallel",
+  "category": "bioconductor",
+  "name": "bioconductor-biocparallel",
+  "description": "BiocParallel provides a unified interface for performing parallel computing across various R backends and cluster schedulers. Use when user asks to parallelize R code, distribute tasks across multiple cores or clusters, manage parallel backends, or handle errors in distributed computations.",
+  "overview": "`BiocParallel` provides a unified interface for parallel computing across different R backends. It allows developers and users to write code once and execute it on multiple cores, clusters (SGE, SLURM, LSF), or ad-hoc socket connections by simply changing a `BPPARAM` object. It is the standard for parallelization within the Bioconductor ecosystem.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocParallel.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocparallel/overview",
+  "github": "https://github.com/Bioconductor/BiocParallel",
+  "conda_downloads": "1.6M",
+  "conda_downloads_num": 1600000,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BiocParallel"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocParallel.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocparallel/overview",
+    "github": "https://github.com/Bioconductor/BiocParallel",
+    "conda_downloads": "1.6M",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biocparallel\n\n## Overview\n\n`BiocParallel` provides a unified interface for parallel computing across different R backends. It allows developers and users to write code once and execute it on multiple cores, clusters (SGE, SLURM, LSF), or ad-hoc socket connections by simply changing a `BPPARAM` object. It is the standard for parallelization within the Bioconductor ecosystem.\n\n## Core Workflows\n\n### 1. Parallel Iteration\nThe primary functions mimic the base R `*apply` family but distribute tasks across workers.\n\n```R\nlibrary(BiocParallel)\n\n# Standard list apply\nresults <- bplapply(1:10, function(x) sqrt(x))\n\n# Vectorized apply (subsets X into chunks)\nresults_vec <- bpvec(1:100, function(x) sqrt(x))\n\n# Iterating over files or streams (e.g., BAM files)\n# ITER is a function returning the next chunk or NULL\nresults_iter <- bpiterate(ITER, FUN)\n```\n\n### 2. Managing Backends (BPPARAM)\nBackends are configured using `Param` objects.\n\n*   **MulticoreParam**: Uses forked processes (Unix/macOS only). Efficient due to copy-on-change memory.\n*   **SnowParam**: Uses separate R instances (Sockets or MPI). Works on all platforms, including Windows.\n*   **BatchtoolsParam**: Interfaces with cluster schedulers (SLURM, SGE, etc.).\n*   **SerialParam**: Runs code sequentially. Essential for debugging.\n\n```R\n# Define a specific backend\nparam <- SnowParam(workers = 4, type = \"SOCK\")\n\n# Use it in a function\nbplapply(1:10, sqrt, BPPARAM = param)\n\n# Register a default backend for the session\nregister(SnowParam(workers = 2))\nbplapply(1:10, sqrt) # Uses the registered SnowParam\n```\n\n### 3. Error Handling and Debugging\n`BiocParallel` can capture errors and return partial results instead of failing the entire job.\n\n*   **Stop on Error**: Set `stop.on.error = FALSE` to collect results from successful tasks even if some fail.\n*   **bptry**: Wrap calls to catch errors gracefully.\n*   **BPREDO**: Rerun only the failed tasks after fixing the input or function.\n\n```R\n# Catching errors\nparam <- SnowParam(workers = 2, stop.on.error = FALSE)\nres <- bptry(bplapply(list(1, \"a\", 3), sqrt, BPPARAM = param))\n\n# Identify failures\nbpok(res) # [1] TRUE FALSE TRUE\n\n# Rerun failed tasks\nfixed_list <- list(1, 2, 3)\nfinal_res <- bplapply(fixed_list, sqrt, BPREDO = res, BPPARAM = param)\n```\n\n### 4. Reproducible Random Numbers\nTo ensure reproducibility across parallel workers, use the `RNGseed` argument in the Param constructor. `BiocParallel` uses the L'Ecuyer-CMRG generator to create independent streams.\n\n```R\n# Reproducible parallel random numbers\nparam <- SnowParam(workers = 2, RNGseed = 123)\nbplapply(1:3, runif, BPPARAM = param)\n```\n\n### 5. Logging\nEnable logging to monitor worker progress or troubleshoot silent failures.\n\n```R\nparam <- SnowParam(workers = 2, log = TRUE, threshold = \"INFO\")\n# Logs will be printed to the console or written to logdir if specified\n```\n\n## Best Practices\n*   **Windows Compatibility**: Always use `SnowParam` instead of `MulticoreParam` for cross-platform scripts.\n*   **Memory Management**: Forked processes (`MulticoreParam`) share memory until modified, but R's garbage collector can trigger unexpected memory copying.\n*   **Package Loading**: In `SnowParam`, ensure `FUN` explicitly loads required libraries or use the `packages` argument in `BatchtoolsParam`.\n*   **Avoid Nested Registration**: Developers should not call `register()` inside package functions; instead, accept a `BPPARAM` argument.\n\n## Reference documentation\n- [Introduction to BatchtoolsParam](./references/BiocParallel_BatchtoolsParam.md)\n- [Errors, Logs and Debugging in BiocParallel](./references/Errors_Logs_And_Debugging.md)\n- [Introduction to BiocParallel](./references/Introduction_To_BiocParallel.md)\n- [Random Numbers in BiocParallel](./references/Random_Numbers.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biocparallel",
+    "description": "BiocParallel provides a unified interface for performing parallel computing across various R backends and cluster schedulers. Use when user asks to parallelize R code, distribute tasks across multiple cores or clusters, manage parallel backends, or handle errors in distributed computations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocParallel.html"
+  }
+}

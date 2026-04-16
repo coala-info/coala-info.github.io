@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bandits",
+  "category": "bioconductor",
+  "name": "bioconductor-bandits",
+  "description": "BANDITS is a Bayesian hierarchical method for detecting differential transcript usage in RNA-seq data while accounting for mapping uncertainty and over-dispersion. Use when user asks to perform differential transcript usage analysis, test for gene-level or transcript-level changes, or model transcript abundance using Dirichlet-multinomial distributions and equivalence classes.",
+  "overview": "BANDITS is a Bayesian hierarchical method for detecting Differential Transcript Usage (DTU). It employs a Dirichlet-multinomial model to account for over-dispersion between biological replicates and treats the allocation of reads to transcripts as a latent variable sampled via MCMC. This approach allows for both gene-level and transcript-level testing while incorporating mapping uncertainty.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BANDITS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bandits/overview",
+  "github": "https://github.com/SimoneTiberi/BANDITS",
+  "conda_downloads": "29.1K",
+  "conda_downloads_num": 29100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BANDITS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BANDITS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bandits/overview",
+    "github": "https://github.com/SimoneTiberi/BANDITS",
+    "conda_downloads": "29.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bandits\n\n## Overview\nBANDITS is a Bayesian hierarchical method for detecting Differential Transcript Usage (DTU). It employs a Dirichlet-multinomial model to account for over-dispersion between biological replicates and treats the allocation of reads to transcripts as a latent variable sampled via MCMC. This approach allows for both gene-level and transcript-level testing while incorporating mapping uncertainty.\n\n## Core Workflow\n\n### 1. Data Preparation\nBANDITS requires three main components:\n- **Gene-Transcript Matching**: A data frame with `gene_id` and `transcript_id`.\n- **Transcript Counts**: Estimated counts (e.g., from `tximport`).\n- **Equivalence Classes**: Files from Salmon (`--dumpEq`) or Kallisto (`bus`).\n\n```r\nlibrary(BANDITS)\nlibrary(tximport)\n\n# Load gene-transcript mapping\ndata(\"gene_tr_id\", package = \"BANDITS\")\n\n# Load transcript counts via tximport\ntxi = tximport(files = quant_files, type = \"salmon\", txOut = TRUE)\ncounts = txi$counts\n\n# Compute median effective transcript lengths\neff_len = eff_len_compute(x_eff_len = txi$length)\n```\n\n### 2. Pre-filtering (Recommended)\nFiltering lowly abundant transcripts improves sensitivity and reduces computational overhead.\n```r\ntranscripts_to_keep = filter_transcripts(gene_to_transcript = gene_tr_id,\n                                         transcript_counts = counts, \n                                         min_transcript_proportion = 0.01,\n                                         min_transcript_counts = 10, \n                                         min_gene_counts = 20)\n```\n\n### 3. Creating the BANDITS Data Object\nImport equivalence classes and create the S4 object.\n```r\n# For Salmon\ninput_data = create_data(salmon_or_kallisto = \"salmon\",\n                         gene_to_transcript = gene_tr_id,\n                         salmon_path_to_eq_classes = equiv_classes_files,\n                         eff_len = eff_len, \n                         n_cores = parallel::detectCores(),\n                         transcripts_to_keep = transcripts_to_keep)\n\n# Filter genes with low total counts across all samples\ninput_data = filter_genes(input_data, min_counts_per_gene = 20)\n```\n\n### 4. Informative Prior for Precision\nEstimating a prior for the Dirichlet-multinomial precision parameter ($\\delta$) is highly recommended.\n```r\nset.seed(123)\nprecision = prior_precision(gene_to_transcript = gene_tr_id,\n                            transcript_counts = counts, \n                            n_cores = 2,\n                            transcripts_to_keep = transcripts_to_keep)\n# precision$prior contains mean and SD of log-precision\n```\n\n### 5. Testing for DTU\nRun the MCMC to infer posterior distributions and calculate p-values.\n```r\nsamples_design = data.frame(sample_id = sample_names, group = c(\"A\", \"A\", \"B\", \"B\"))\n\nresults = test_DTU(BANDITS_data = input_data,\n                   precision = precision$prior,\n                   samples_design = samples_design,\n                   group_col_name = \"group\",\n                   R = 10^4, burn_in = 2*10^3, \n                   n_cores = 2,\n                   gene_to_transcript = gene_tr_id)\n```\n\n## Interpreting Results\n\n### Accessing Tables\n- `top_genes(results)`: Gene-level results. Includes `p.values_inverted` (conservative measure for dominant transcript changes) and `DTU_measure` (magnitude of change, 0 to 2).\n- `top_transcripts(results)`: Transcript-level results. Includes `Max_Gene_Tr.Adj.p.val` (ensures transcript significance only if the gene is significant).\n- `convergence(results)`: Check MCMC stationary status.\n\n### Visualization\nPlot estimated transcript proportions for a specific gene:\n```r\nplot_proportions(results, gene_id = \"ENSG00000162585\", CI = TRUE)\n```\n\n## Key Parameters for `test_DTU`\n- `R`: MCMC iterations (minimum $10^4$).\n- `burn_in`: Initial iterations to discard (minimum $2 \\times 10^3$).\n- `n_cores`: Parallelize across genes.\n- `gene_to_transcript`: Required to correctly map results back to IDs.\n\n## Reference documentation\n- [BANDITS: Bayesian ANalysis of DIfferenTial Splicing](./references/BANDITS.md)\n- [BANDITS Vignette Source](./references/BANDITS.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-bandits",
+    "description": "BANDITS is a Bayesian hierarchical method for detecting differential transcript usage in RNA-seq data while accounting for mapping uncertainty and over-dispersion. Use when user asks to perform differential transcript usage analysis, test for gene-level or transcript-level changes, or model transcript abundance using Dirichlet-multinomial distributions and equivalence classes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BANDITS.html"
+  }
+}

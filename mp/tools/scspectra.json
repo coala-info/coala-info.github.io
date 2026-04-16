@@ -1,0 +1,43 @@
+{
+  "id": "scspectra",
+  "category": "library",
+  "name": "scspectra",
+  "description": "scspectra decomposes single-cell gene expression matrices into biologically interpretable factors by incorporating prior knowledge from gene sets. Use when user asks to perform factor analysis on single-cell data, decompose gene expression into global or cell-type-specific programs, or link latent variables to known biological pathways.",
+  "overview": "scspectra (SPECTRA) is a factor analysis tool designed to decompose single-cell gene expression matrices into biologically interpretable programs. Unlike unsupervised methods like PCA or NMF, scspectra incorporates prior knowledge from gene sets (pathways) to guide the discovery of factors. It allows for the simultaneous estimation of \"global\" factors shared across all cells and \"cell-type-specific\" factors, providing a clearer link between latent variables and known biological mechanisms.",
+  "homepage": "https://github.com/dpeerlab/spectra",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/scspectra/overview",
+  "github": "https://github.com/dpeerlab/spectra",
+  "conda_downloads": "875",
+  "conda_downloads_num": 875,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scspectra"
+    ],
+    "description": "FAIL to generate CWL: scspectra not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/scspectra:0.2.1--pyhdfd78af_0",
+    "homepage": "https://github.com/dpeerlab/spectra",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/scspectra/overview",
+    "github": "https://github.com/dpeerlab/spectra",
+    "conda_downloads": "875",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# scspectra\n\n## Overview\nscspectra (SPECTRA) is a factor analysis tool designed to decompose single-cell gene expression matrices into biologically interpretable programs. Unlike unsupervised methods like PCA or NMF, scspectra incorporates prior knowledge from gene sets (pathways) to guide the discovery of factors. It allows for the simultaneous estimation of \"global\" factors shared across all cells and \"cell-type-specific\" factors, providing a clearer link between latent variables and known biological mechanisms.\n\n## Installation\nInstall the package via pip or conda:\n```bash\npip install scSpectra\n# OR\nconda install bioconda::scspectra\n```\n\n## Core Workflow\nThe standard implementation involves preparing an AnnData object and a nested dictionary of gene sets.\n\n### 1. Prepare Input Data\nEnsure the `AnnData` object contains log-normalized counts (e.g., log1p transformed) and cell type annotations in `adata.obs`.\n* **Leukocyte data**: Use scran normalization for better results.\n* **Memory**: Ensure at least 12GB of RAM is available for standard datasets.\n\n### 2. Define Gene Sets\nThe `gene_set_dictionary` must follow a specific structure:\n- A \"global\" key for processes occurring across all cell types.\n- Keys for each unique cell type matching `adata.obs[cell_type_key]`.\n```python\n# Example structure\ngene_sets = {\n    \"global\": {\"pathway_1\": [\"GENE1\", \"GENE2\"], \"pathway_2\": [...]},\n    \"T_cell\": {\"activation\": [\"GENE3\", \"GENE4\"], ...},\n    \"B_cell\": {...}\n}\n```\n\n### 3. Estimate Number of Factors (L)\nWhile `est_spectra` can default to the number of gene sets + 1, it is often better to estimate L from the data using bulk eigenvalue matching analysis.\n```python\nfrom Spectra import K_est as kst\nL = kst.estimate_L(adata, attribute=\"cell_type_annotations\", highly_variable=True)\n```\n\n### 4. Run the Model\nUse `est_spectra` to fit the model. This is the primary entry point for most analyses.\n```python\nimport Spectra\nmodel = Spectra.est_spectra(\n    adata=adata,\n    gene_set_dictionary=gene_sets,\n    cell_type_key=\"cell_type_annotations\",\n    use_highly_variable=True,\n    lam=0.1,        # Weight of prior knowledge (try 0.001 to 0.5)\n    delta=0.001,    # Lower bound for gene scaling\n    rho=0.001,      # Background rate of non-edges\n    use_weights=True,\n    label_factors=True\n)\n```\n\n## Accessing Results\nThe model populates the `AnnData` object with several key attributes:\n* `adata.uns['SPECTRA_factors']`: Factor-to-gene weights (interpretability matrix).\n* `adata.uns['SPECTRA_markers']`: Top `n_top_vals` genes per factor.\n* `adata.obsm['SPECTRA_cell_scores']`: Activity of each factor per cell.\n* `adata.var['spectra_vocab']`: Boolean mask of genes used in the model.\n\n## Expert Tips and Best Practices\n* **Parameter Tuning**: The `lam` parameter is critical. If the resulting factors are too similar to the input gene sets, decrease `lam`. If they ignore the gene sets, increase it.\n* **Background Rates**: Setting `rho=None` or `kappa=None` allows the model to estimate background rates of non-edges and edges from the data, which can improve fit in complex datasets.\n* **Gene Set Cleaning**: Set `clean_gs=True` and `min_gs_num=3` to automatically filter out gene sets that are too small or contain genes not present in the dataset.\n* **Interpretability**: Use `model.return_eta_diag()` to check how much each factor was influenced by prior information. High values indicate strong alignment with the provided gene sets.\n* **Small Datasets**: For small problems where memory is not a constraint, consider using `Spectra.SPECTRA_EM` for a more intensive Expectation-Maximization approach.\n\n## Reference documentation\n- [SPECTRA GitHub Repository](./references/github_com_dpeerlab_spectra.md)\n- [Bioconda scspectra Overview](./references/anaconda_org_channels_bioconda_packages_scspectra_overview.md)",
+  "skill_front_matter": {
+    "name": "scspectra",
+    "description": "scspectra decomposes single-cell gene expression matrices into biologically interpretable factors by incorporating prior knowledge from gene sets. Use when user asks to perform factor analysis on single-cell data, decompose gene expression into global or cell-type-specific programs, or link latent variables to known biological pathways.",
+    "homepage": "https://github.com/dpeerlab/spectra"
+  }
+}

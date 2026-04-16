@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ancombc",
+  "category": "bioconductor",
+  "name": "bioconductor-ancombc",
+  "description": "This package performs differential abundance analysis and correlation estimation for microbiome data while correcting for compositional biases. Use when user asks to perform differential abundance analysis, account for sampling fractions, identify structural zeros, or estimate sparse correlations between taxa.",
+  "overview": "The `ANCOMBC` package provides a suite of statistical methods for microbiome data analysis that account for compositionality and various biases (sampling fractions and sequencing efficiencies). It includes:\n* **ANCOM-BC2**: The latest version for DA analysis, supporting bias correction, sensitivity analysis for pseudo-counts, and complex experimental designs (multi-group, longitudinal, and pattern analysis).\n* **ANCOM-BC**: The original bias-corrected DA method.\n* **ANCOM**: A heuristic DA metho",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ANCOMBC.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ancombc/overview",
+  "github": "https://github.com/FrederickHuangLin/ANCOMBC",
+  "conda_downloads": "178.7K",
+  "conda_downloads_num": 178700,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ANCOMBC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ANCOMBC.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ancombc/overview",
+    "github": "https://github.com/FrederickHuangLin/ANCOMBC",
+    "conda_downloads": "178.7K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ancombc\n\nname: bioconductor-ancombc\ndescription: Analysis of Compositions of Microbiomes with Bias Correction (ANCOM-BC, ANCOM-BC2), ANCOM, and SECOM. Use this skill for differential abundance (DA) analysis of microbiome data, correcting for sampling fractions and sequencing efficiencies, and for sparse correlation analysis (SECOM).\n\n# bioconductor-ancombc\n\n## Overview\n\nThe `ANCOMBC` package provides a suite of statistical methods for microbiome data analysis that account for compositionality and various biases (sampling fractions and sequencing efficiencies). It includes:\n* **ANCOM-BC2**: The latest version for DA analysis, supporting bias correction, sensitivity analysis for pseudo-counts, and complex experimental designs (multi-group, longitudinal, and pattern analysis).\n* **ANCOM-BC**: The original bias-corrected DA method.\n* **ANCOM**: A heuristic DA method using log-ratio transformations.\n* **SECOM**: Sparse Estimation of Correlations among Microbiomes for linear and non-linear correlation analysis.\n\n## Core Workflows\n\n### 1. Data Preparation\nThe package primarily works with `phyloseq` or `TreeSummarizedExperiment` (TSE) objects.\n\n```r\nlibrary(ANCOMBC)\nlibrary(tidyverse)\n\n# Example: Preparing a phyloseq object\ndata(atlas1006, package = \"microbiome\")\npseq = phyloseq::subset_samples(atlas1006, time == 0)\n\n# Ensure categorical variables are factors with correct reference levels\nsample_data(pseq)$bmi = factor(sample_data(pseq)$bmi_group, \n                               levels = c(\"obese\", \"overweight\", \"lean\"))\n```\n\n### 2. Differential Abundance with ANCOM-BC2\n`ancombc2` is the recommended function for most DA tasks. It handles structural zeros and provides sensitivity analysis.\n\n```r\nset.seed(123)\noutput = ancombc2(\n  data = pseq, \n  tax_level = \"Family\",\n  fix_formula = \"age + region + bmi\",\n  p_adj_method = \"holm\",\n  prv_cut = 0.10, \n  lib_cut = 1000,\n  group = \"bmi\", \n  struc_zero = TRUE, \n  neg_lb = TRUE,\n  alpha = 0.05, \n  global = TRUE, \n  pairwise = TRUE, \n  dunnet = TRUE, \n  trend = TRUE\n)\n\n# Access results\nres_prim = output$res        # Primary DA results\nres_global = output$res_global # Global test results\nres_pair = output$res_pair   # Pairwise comparisons\n```\n\n### 3. Correlation Analysis with SECOM\nUse `secom_linear` for Pearson/Spearman correlations and `secom_dist` for non-linear distance correlations.\n\n```r\n# Linear correlation between Genus and Phylum levels\nres_linear = secom_linear(\n  pseqs = list(c(genus_data, phylum_data)), \n  prv_cut = 0.5, \n  method = \"pearson\"\n)\n\n# Non-linear distance correlation\nres_dist = secom_dist(\n  pseqs = list(c(genus_data, phylum_data)), \n  R = 1000\n)\n```\n\n### 4. Classic ANCOM\nFor studies where the heuristic W-statistic approach is preferred.\n\n```r\nout = ancom(\n  data = pseq, \n  tax_level = \"Family\", \n  main_var = \"bmi\", \n  adj_formula = \"age + region\",\n  struc_zero = TRUE\n)\n# W statistic represents the number of ALR models where taxon is DA\nres = out$res \n```\n\n## Key Parameters and Tips\n\n* **Formula Syntax**: Use `fix_formula` for fixed effects. Interactions must use `*` (e.g., `age * bmi`). The `:` operator is not supported.\n* **Structural Zeros**: Set `struc_zero = TRUE` to identify taxa present in one group but completely absent in another. These are automatically declared DA.\n* **Sensitivity Analysis**: Always check `diff_robust`. If `TRUE`, the taxon's significance is stable across different pseudo-count values (0.1, 0.5, 1).\n* **Multi-group Comparisons**: \n  * `global = TRUE`: Performs a Likelihood Ratio Test across all levels of the `group` variable.\n  * `pairwise = TRUE`: Performs all possible pairwise comparisons with mdFDR control.\n  * `dunnet = TRUE`: Compares all groups against the reference level.\n* **Bias Correction**: Access bias-corrected log-abundances via `out$samp_frac`. Subtract these sampling fractions from log-observed counts to get corrected values.\n\n## Reference documentation\n- [ANCOM Tutorial](./references/ANCOM.md)\n- [ANCOM-BC Vignette](./references/ANCOMBC.Rmd)\n- [ANCOM-BC Methodology](./references/ANCOMBC.md)\n- [ANCOM-BC2 Comprehensive Guide](./references/ANCOMBC2.md)\n- [SECOM Correlation Analysis](./references/SECOM.md)\n- [Data Sanity Checks](./references/data_sanity_check.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ancombc",
+    "description": "This package performs differential abundance analysis and correlation estimation for microbiome data while correcting for compositional biases. Use when user asks to perform differential abundance analysis, account for sampling fractions, identify structural zeros, or estimate sparse correlations between taxa.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ANCOMBC.html"
+  }
+}

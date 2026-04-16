@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spacemarkers",
+  "category": "bioconductor",
+  "name": "bioconductor-spacemarkers",
+  "description": "This tool identifies molecular interactions between cell groups in spatial transcriptomics data by analyzing gene expression in regions where latent spatial patterns overlap. Use when user asks to identify interacting genes in spatial data, find non-linear expression patterns in overlapping cell types, or analyze spatial hotspots using latent feature analysis.",
+  "overview": "SpaceMarkers is a Bioconductor package designed to infer molecular interactions between cell groups by leveraging latent features (e.g., from CoGAPS). It identifies \"hotspots\" of spatial influence for specific patterns and determines which genes are significantly up-regulated or down-regulated in overlapping regions compared to regions where patterns exist in isolation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SpaceMarkers.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/DeshpandeLab/SpaceMarkers",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SpaceMarkers"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpaceMarkers.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/DeshpandeLab/SpaceMarkers",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spacemarkers\n\nname: bioconductor-spacemarkers\ndescription: Identify biologically relevant molecular interactions between cell groups in spatial transcriptomics data using latent feature analysis. Use this skill when analyzing Visium or similar spatial data to find genes with non-linear expression patterns in regions where different cell types or latent patterns overlap.\n\n## Overview\nSpaceMarkers is a Bioconductor package designed to infer molecular interactions between cell groups by leveraging latent features (e.g., from CoGAPS). It identifies \"hotspots\" of spatial influence for specific patterns and determines which genes are significantly up-regulated or down-regulated in overlapping regions compared to regions where patterns exist in isolation.\n\n## Installation\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"SpaceMarkers\")\nlibrary(SpaceMarkers)\n```\n\n## Typical Workflow\n\n### 1. Data Preparation\nSpaceMarkers requires an expression matrix, spatial coordinates, and latent feature patterns (e.g., CoGAPS sample factors).\n\n```R\n# Load Visium expression data\ncounts_matrix <- load10XExpr(visiumDir = \"path/to/data\", h5filename = \"filtered_feature_bc_matrix.h5\")\n\n# Load spatial coordinates\nspCoords <- load10XCoords(visiumDir = \"path/to/data\", resolution = \"lowres\")\n\n# Combine coordinates with latent patterns (e.g., from a CoGAPS result)\n# spPatterns should have columns: barcode, x, y, and Pattern_1, Pattern_2, etc.\nspPatterns <- cbind(spCoords, cogaps_sample_factors)\n```\n\n### 2. Identify Spatial Parameters\nDetermine the kernel width (`sigmaOpt`) and outlier threshold (`threshOpt`) for each pattern using Moran's I based optimization.\n\n```R\noptParams <- get_spatial_parameters(spPatterns, visiumDir = \"path/to/data\", resolution = \"lowres\")\n```\n\n### 3. Identify Interacting Genes\nThe core function `get_pairwise_interacting_genes` identifies genes associated with regions of pattern overlap.\n\n**Modes:**\n*   **residual (Default):** Compares expression to a reconstructed matrix to account for confounding linear effects. Requires a `reconstruction` matrix.\n*   **DE:** Assesses simple linear interactions directly from expression. Set `reconstruction = NULL`.\n\n**Analysis Types:**\n*   **overlap:** Stricter; genes must pass post-hoc tests.\n*   **enrichment:** More inclusive; useful for pathway analysis.\n\n```R\n# Residual Mode\nresults <- get_pairwise_interacting_genes(\n    data = counts_matrix,\n    reconstruction = cogaps_reconstruction_matrix,\n    optParams = optParams,\n    spPatterns = spPatterns,\n    mode = \"residual\",\n    analysis = \"overlap\"\n)\n\n# DE Mode\nresults_de <- get_pairwise_interacting_genes(\n    data = counts_matrix,\n    reconstruction = NULL,\n    optParams = optParams,\n    spPatterns = spPatterns,\n    mode = \"DE\",\n    analysis = \"overlap\"\n)\n```\n\n### 4. Interpreting Results\nThe output is a list of data frames containing:\n*   `interacting_genes`: Statistics (Kruskal-Wallis and Dunn's test) and the `SpaceMarkersMetric`.\n*   `hotspots`: A data frame indicating the regions of influence for the patterns.\n\n**SpaceMarkersMetric:**\n*   **Positive:** Gene is highly expressed in the interacting (overlap) region relative to individual patterns.\n*   **Negative:** Gene expression is lower in the interacting region.\n\n```R\n# View top interacting genes for the first pattern pair\ntop_genes <- results[[1]]$interacting_genes[[1]]\nhead(top_genes[order(-top_genes$SpaceMarkersMetric), ])\n```\n\n## Visualization\nUse the built-in function to overlay gene expression or pattern weights onto the tissue image.\n\n```R\nplot_spatial_data_over_image(\n    visiumDir = \"path/to/data\",\n    df = cbind(spPatterns, as.matrix(t(counts_matrix))),\n    feature_col = \"GENE_NAME\",\n    resolution = \"lowres\",\n    title = \"Gene Expression Overlap\"\n)\n```\n\n## Tips\n*   **Sparse Data:** Warnings about dropped columns during Kruskal-Wallis tests are common with sparse single-cell/spatial data and usually indicate regions with insufficient non-zero counts for that specific gene.\n*   **Memory:** For large datasets, subset the `counts_matrix` to genes of interest or highly variable genes before running the interaction analysis.\n*   **Column Names:** Ensure `spPatterns` contains columns explicitly named 'x' and 'y'.\n\n## Reference documentation\n- [Inferring Immune Interactions in Breast Cancer](./references/SpaceMarkers_vignette.md)\n- [SpaceMarkers Vignette Source](./references/SpaceMarkers_vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-spacemarkers",
+    "description": "This tool identifies molecular interactions between cell groups in spatial transcriptomics data by analyzing gene expression in regions where latent spatial patterns overlap. Use when user asks to identify interacting genes in spatial data, find non-linear expression patterns in overlapping cell types, or analyze spatial hotspots using latent feature analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpaceMarkers.html"
+  }
+}

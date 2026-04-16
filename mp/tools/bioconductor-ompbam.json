@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ompbam",
+  "category": "bioconductor",
+  "name": "bioconductor-ompbam",
+  "description": "The ompBAM package provides C++ header files and templates for developing high-performance, multi-threaded R packages that process BAM files using OpenMP. Use when user asks to create a new ompBAM-based project, implement multi-threaded BAM processing in C++, or use the pbam_in and pbam1_t APIs for genomic data analysis.",
+  "overview": "`ompBAM` is a developer-focused Bioconductor package that provides C++ header files for high-performance, multi-threaded BAM file processing. It abstracts the complexities of BGZF decompression, file access, and memory management, allowing developers to focus on domain-specific logic. It is particularly suited for whole-transcriptome calculations where sequential reading of the entire BAM file is required.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ompBAM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/alexchwong/ompBAM",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ompBAM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ompBAM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/alexchwong/ompBAM",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ompbam\n\nname: bioconductor-ompbam\ndescription: Specialized guidance for using the Bioconductor package ompBAM to develop R packages that process BAM files using C++ and OpenMP. Use this skill when a user needs to create high-performance BAM processing tools, set up a new ompBAM-based project, or understand the pbam_in and pbam1_t C++ APIs for multi-threaded genomic data analysis.\n\n# bioconductor-ompbam\n\n## Overview\n\n`ompBAM` is a developer-focused Bioconductor package that provides C++ header files for high-performance, multi-threaded BAM file processing. It abstracts the complexities of BGZF decompression, file access, and memory management, allowing developers to focus on domain-specific logic. It is particularly suited for whole-transcriptome calculations where sequential reading of the entire BAM file is required.\n\n## Core Workflow: Creating a New Package\n\nTo start a new R package that utilizes `ompBAM`, use the following workflow:\n\n1.  **Initialize the Package**:\n    ```r\n    library(ompBAM)\n    pkg_path <- file.path(tempdir(), \"MyNewPkg\")\n    use_ompBAM(pkg_path)\n    ```\n    This function creates the directory structure, `DESCRIPTION` (with `Rcpp` and `ompBAM` dependencies), `Makevars` files for OpenMP/zlib linking, and an example C++ implementation.\n\n2.  **Document and Export**:\n    ```r\n    devtools::document(pkg_path)\n    ```\n    This processes the roxygen2 tags and generates the `NAMESPACE`.\n\n3.  **Compile and Load**:\n    ```r\n    devtools::load_all(pkg_path)\n    ```\n\n## C++ API Usage Patterns\n\n### 1. Setting up Headers\nIn your `.cpp` files, ensure `Rcpp` is included before `ompBAM`, and define `cout` to use R's console:\n```cpp\n#include \"Rcpp.h\"\nusing namespace Rcpp;\n#define cout Rcpp::Rcout\n\n// [[Rcpp::depends(ompBAM)]]\n#include <ompBAM.hpp>\n```\n\n### 2. The pbam_in Object (File Input)\nThe `pbam_in` class manages the BAM stream.\n- **Open**: `inbam.openFile(bam_file, n_threads);`\n- **Metadata**: `inbam.obtainChrs(names_vec, lens_vec);`\n- **The Processing Loop**:\n  ```cpp\n  while(0 == inbam.fillReads()) {\n      #pragma omp parallel for num_threads(n) schedule(static,1)\n      for(int i = 0; i < n; i++) {\n          pbam1_t read(inbam.supplyRead(i));\n          while(read.validate()) {\n              // Process read\n              read = inbam.supplyRead(i);\n          }\n      }\n  }\n  ```\n\n### 3. The pbam1_t Object (Read Access)\n`pbam1_t` provides \"getters\" for BAM alignment data:\n- **Core**: `refID()`, `pos()`, `mapq()`, `flag()`, `l_seq()`.\n- **Cigar**: `cigar(string_dest)`, `cigar_op(pos)`, `cigar_val(pos)`.\n- **Sequence/Qual**: `seq(string_dest)`, `qual(uint8_vec_dest)`.\n- **Tags**: `tagVal_i(\"NM\")`, `tagVal_Z(\"RG\", string_dest)`.\n\n## Key Performance Tips\n\n- **Virtual vs. Real Reads**: By default, `pbam1_t` is a \"virtual\" read (a pointer to the `pbam_in` buffer). It becomes invalid after the next `fillReads()` call. To keep a read in memory (e.g., for paired-end matching), call `read.realize()`.\n- **Thread Safety**: `supplyRead(i)` is thread-safe when `i` corresponds to the thread ID in an OpenMP loop.\n- **Critical Sections**: Use `#pragma omp critical` when aggregating results from multiple threads into a shared Rcpp/STL container to avoid race conditions.\n- **MacOS Compatibility**: MacOS does not support OpenMP natively. Users must install `libomp` (e.g., via brew) and the package must use the `configure` script provided by `use_ompBAM()`.\n\n## Reference documentation\n\n- [ompBAM API Documentation](./references/ompBAM-API-Docs.md)\n- [ompBAM API Source (Rmd)](./references/ompBAM-API-Docs.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-ompbam",
+    "description": "The ompBAM package provides C++ header files and templates for developing high-performance, multi-threaded R packages that process BAM files using OpenMP. Use when user asks to create a new ompBAM-based project, implement multi-threaded BAM processing in C++, or use the pbam_in and pbam1_t APIs for genomic data analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ompBAM.html"
+  }
+}

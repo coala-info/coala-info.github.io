@@ -1,0 +1,49 @@
+{
+  "id": "tirmite",
+  "category": "CLI",
+  "name": "tirmite",
+  "description": "\"tirmite models natural variation in transposon termini to identify and annotate cryptic structural variants like MITEs. Use when user asks to generate profile HMMs for terminal sequences, search genomes for transposon hits, or pair termini to define element boundaries.\"",
+  "overview": "tirmite is a bioinformatics pipeline designed to model natural variation in transposon termini to identify cryptic structural variants. It is particularly effective for annotating non-autonomous elements—such as MITEs—which may lack functional transposition machinery but retain conserved boundary features. The tool works by building profile HMMs of terminal sequences and using an iterative pairing algorithm to define element boundaries across a genome, even when internal sequences are highly var",
+  "homepage": "https://github.com/Adamtaranto/TIRmite",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/tirmite/overview",
+  "github": "https://github.com/Adamtaranto/TIRmite",
+  "conda_downloads": "22.9K",
+  "conda_downloads_num": 22900,
+  "last_updated": "2026-01-14",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tirmite_legacy",
+      "tirmite_seed",
+      "tirmite_pair"
+    ],
+    "description": "Map HMM models of transposon termini to genomic sequences",
+    "docker_image": "quay.io/biocontainers/tirmite:1.3.0--pyhdfd78af_0",
+    "homepage": "https://github.com/Adamtaranto/TIRmite",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/tirmite/overview",
+    "github": "https://github.com/Adamtaranto/TIRmite",
+    "conda_downloads": "22.9K",
+    "last_updated": "2026-01-14",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "tirmite_legacy.cwl",
+    "tirmite_pair.cwl",
+    "tirmite_seed.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# tirmite\n\n## Overview\n\ntirmite is a bioinformatics pipeline designed to model natural variation in transposon termini to identify cryptic structural variants. It is particularly effective for annotating non-autonomous elements—such as MITEs—which may lack functional transposition machinery but retain conserved boundary features. The tool works by building profile HMMs of terminal sequences and using an iterative pairing algorithm to define element boundaries across a genome, even when internal sequences are highly variable or captured from other sources.\n\n## Core Workflow\n\n### 1. Generating a Seed Model\nBefore searching a genome, you must create a profile HMM (pHMM) from a known or draft terminal sequence.\n\n```bash\ntirmite seed --left-seed seed_sequence.fasta \\\n             --model-name MY_ELEMENT \\\n             --genome target_genome.fasta \\\n             --outdir output_dir \\\n             --threads 8\n```\n\n*   **Expert Tip**: Set `--flank-size 10` during seeding. If you see high conservation in the flanking bases across multiple hits, your initial seed sequence was likely truncated and should be adjusted.\n\n### 2. Searching the Genome\ntirmite typically uses `nhmmer` (from the HMMER3 suite) to locate hits for the pHMM.\n\n```bash\nnhmmer --dna --cpu 8 --tblout hits.tab output_dir/MY_ELEMENT.hmm target_genome.fasta\n```\n\n*   **Alternative**: For very large genomes where `nhmmer` is too slow, use `blastn` with `-outfmt 6` and provide the results to the pairing command using `--blastFile`.\n\n### 3. Pairing Termini\nThe final step identifies valid pairs of terminal hits to annotate complete or partial elements.\n\n```bash\ntirmite pair --genome target_genome.fasta \\\n             --nhmmerFile hits.tab \\\n             --hmmFile output_dir/MY_ELEMENT.hmm \\\n             --orientation F,R \\\n             --mincov 0.4 \\\n             --maxdist 20000 \\\n             --gffOut \\\n             --outdir final_annotations\n```\n\n## Common CLI Patterns & Parameters\n\n| Parameter | Usage |\n| :--- | :--- |\n| `--orientation` | Use `F,R` for Terminal Inverted Repeats (TIRs) and `F,F` for Long Terminal Repeats (LTRs). |\n| `--maxdist` | Maximum distance (bp) between paired termini. Default is often 20kb; adjust based on expected TE size. |\n| `--mincov` | Minimum coverage of the HMM model required for a hit to be considered (0.0 to 1.0). |\n| `--pairin` | Required when processing multiple HMM models simultaneously to map which termini belong together. |\n| `--stableReps` | Used in iterative updates to define how many rounds a model must remain stable before stopping. |\n\n## Best Practices\n\n*   **Terminal Extraction**: If starting from a full TE model (e.g., from RepeatModeler), use the companion tool `tsplit` to isolate the TIRs or LTRs before running `tirmite seed`.\n*   **Handling Asymmetry**: For elements with different conserved features at either end (like Helitrons or Starships), provide both `--left-seed` and `--right-seed` to the `seed` command.\n*   **Output Formats**: Always use `--gffOut` to generate a standard genomic annotation file (GFF3) compatible with genome browsers like JBrowse or IGV.\n*   **Database Extraction**: If using BLAST, create your database with `makeblastdb -parse_seqids`. This allows `tirmite pair` to extract sequences directly from the BLAST database using `--blastdb` instead of re-parsing the entire FASTA file.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| tirmite legacy | Map HMM models of transposon termini to genomic sequences |\n| tirmite_pair | Pair precomputed nhmmer hits for transposon detection |\n| tirmite_seed | Build HMM models from seed sequences for TIRmite |\n\n## Reference documentation\n- [TIRmite Main Documentation](./references/github_com_Adamtaranto_TIRmite.md)\n- [TIRmite Wiki and Tutorials](./references/github_com_Adamtaranto_TIRmite_wiki.md)",
+  "skill_front_matter": {
+    "name": "tirmite",
+    "description": "tirmite models natural variation in transposon termini to identify and annotate cryptic structural variants like MITEs. Use when user asks to generate profile HMMs for terminal sequences, search genomes for transposon hits, or pair termini to define element boundaries.",
+    "homepage": "https://github.com/Adamtaranto/TIRmite"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-annotationhub",
+  "category": "bioconductor",
+  "name": "bioconductor-annotationhub",
+  "description": "This tool provides a client interface to discover and retrieve a vast collection of genomic resources from Bioconductor's AnnotationHub web service. Use when user asks to retrieve genomic annotations, search for OrgDb objects, download Ensembl GTF or FASTA files, or obtain chain files for liftOver.",
+  "overview": "AnnotationHub is a Bioconductor package that provides a client interface to a web service containing a vast collection of genomic resources. It allows users to discover and retrieve data as standard Bioconductor objects (e.g., GRanges, OrgDb, TxDb, BigWigFile) without manually downloading and formatting files. It features a local caching system to speed up repeated access.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-annotationhub/overview",
+  "github": "https://github.com/Bioconductor/AnnotationHub",
+  "conda_downloads": "130.7K",
+  "conda_downloads_num": 130699,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AnnotationHub"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-annotationhub/overview",
+    "github": "https://github.com/Bioconductor/AnnotationHub",
+    "conda_downloads": "130.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-annotationhub\n\nname: bioconductor-annotationhub\ndescription: Access and manage large collections of publicly available whole genome resources from Bioconductor's AnnotationHub. Use this skill when you need to retrieve genomic annotations, including OrgDb objects for non-model organisms, Roadmap Epigenomics data, Ensembl GTF and FASTA files, UCSC chain files for liftOver, and dbSNP variants.\n\n# bioconductor-annotationhub\n\n## Overview\n\nAnnotationHub is a Bioconductor package that provides a client interface to a web service containing a vast collection of genomic resources. It allows users to discover and retrieve data as standard Bioconductor objects (e.g., GRanges, OrgDb, TxDb, BigWigFile) without manually downloading and formatting files. It features a local caching system to speed up repeated access.\n\n## Core Workflow\n\n### 1. Initialize the Hub\nCreate an AnnotationHub object to connect to the service.\n```r\nlibrary(AnnotationHub)\nah <- AnnotationHub()\n```\n\n### 2. Search for Resources\nUse the `query()` function to search for data using keywords. The search is case-insensitive and looks across all metadata columns (species, dataprovider, rdataclass, etc.).\n```r\n# Search for OrgDb objects for a specific species\norgs <- query(ah, c(\"OrgDb\", \"Mus musculus\"))\n\n# Search for Ensembl GTF files for a specific release\ngtf_files <- query(ah, c(\"Ensembl\", \"gtf\", \"release-104\"))\n\n# Search for liftOver chain files\nchains <- query(ah, c(\"hg19\", \"hg38\", \"chainfile\"))\n```\n\n### 3. Inspect Metadata\nExplore the results of a query using standard R operations.\n```r\n# View summary\norgs\n\n# View specific metadata columns\nunique(orgs$species)\nunique(orgs$dataprovider)\n\n# Get all metadata as a DataFrame\nmetadata_df <- mcols(orgs)\n```\n\n### 4. Retrieve Data\nUse the double-bracket operator `[[` with the unique \"AH\" identifier to download and load the resource into your R session.\n```r\n# Retrieve by ID\nmy_data <- ah[[\"AH12345\"]]\n```\n\n## Common Use Cases\n\n### Non-Model Organism Annotations\nRetrieve `OrgDb` objects for organisms that do not have a dedicated Bioconductor annotation package.\n```r\nah <- AnnotationHub()\norgdb <- query(ah, c(\"OrgDb\", \"Arabidopsis thaliana\"))[[1]]\n# Use with AnnotationDbi\nlibrary(AnnotationDbi)\nkeytypes(orgdb)\nselect(orgdb, keys=head(keys(orgdb)), columns=c(\"SYMBOL\", \"GENENAME\"))\n```\n\n### Genomic Features and Sequences\nRetrieve Ensembl GTF files for gene models and 2bit files for genomic sequences.\n```r\n# Get GTF\ngtf <- query(ah, c(\"Takifugu\", \"GTF\", \"release-94\"))[[1]]\n# Get DNA sequence\ndna <- query(ah, c(\"Takifugu\", \"2bit\"))[[1]]\n\n# Create a TxDb from the retrieved GRanges\nlibrary(txdbmaker)\ntxdb <- makeTxDbFromGRanges(gtf)\n```\n\n### Genome Build LiftOver\nRetrieve chain files to map coordinates between different genome assemblies.\n```r\nchain <- query(ah, c(\"hg19\", \"To\", \"hg38\", \"chainfile\"))[[1]]\nlibrary(rtracklayer)\n# Assuming 'my_granges' is in hg19\ngr38 <- liftOver(my_granges, chain)\n```\n\n## Tips and Troubleshooting\n\n### Managing the Cache\nAnnotationHub stores files locally. If you encounter \"Corrupt Cache\" errors, you may need to use the `BiocFileCache` package to inspect or remove entries.\n```r\n# Check where the cache is located\ngetAnnotationHubOption(\"CACHE\")\n```\n\n### Snapshot Dates\nTo ensure reproducibility, you can set the hub to a specific snapshot date.\n```r\npd <- possibleDates(ah)\nsnapshotDate(ah) <- pd[length(pd)] # Set to a specific date\n```\n\n### Proxy Settings\nIf working behind a firewall, set the proxy option.\n```r\nAnnotationHub::setAnnotationHubOption(\"PROXY\", \"http://user:pass@myproxy:8080\")\n```\n\n### Cluster Environments\nOn a cluster, it is often better to download a resource once and save it as a local file (e.g., `.sqlite` for TxDb) that can be loaded by other nodes using `loadDb()`, rather than having every node attempt to access the hub cache simultaneously.\n\n## Reference documentation\n- [AnnotationHub How-To's](./references/AnnotationHub-HOWTO.md)\n- [AnnotationHub: Access the AnnotationHub Web Service](./references/AnnotationHub.md)\n- [Troubleshoot The Hubs](./references/TroubleshootingTheHubs.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-annotationhub",
+    "description": "This tool provides a client interface to discover and retrieve a vast collection of genomic resources from Bioconductor's AnnotationHub web service. Use when user asks to retrieve genomic annotations, search for OrgDb objects, download Ensembl GTF or FASTA files, or obtain chain files for liftOver.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html"
+  }
+}

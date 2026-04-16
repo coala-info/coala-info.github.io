@@ -1,0 +1,57 @@
+{
+  "id": "phyluce",
+  "category": "CLI",
+  "name": "phyluce",
+  "description": "Phyluce is a suite of tools designed for ultraconserved element phylogenomics and the preparation of alignment matrices. Use when user asks to assemble reads, match contigs to probes, extract UCE loci, align sequences, or format data for phylogenetic analysis.",
+  "overview": "Phyluce is a specialized suite of tools designed for UCE (Ultraconserved Element) phylogenomics. It provides a modular workflow to transform raw sequencing reads into curated alignment matrices suitable for downstream phylogenetic software like RAxML, IQ-TREE, or ExaML. While originally built for UCEs, its methods for assembly, locus identification, and parallel alignment are applicable to various conserved genomic markers across species, populations, and individuals.",
+  "homepage": "https://github.com/faircloth-lab/phyluce",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/phyluce/overview",
+  "github": "https://github.com/faircloth-lab/phyluce",
+  "conda_downloads": "36.7K",
+  "conda_downloads_num": 36700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "phyluce_phyluce_assembly_assemblo_spades",
+      "phyluce_phyluce_assembly_get_match_counts",
+      "phyluce_phyluce_assembly_get_fastas_from_match_counts",
+      "phyluce_phyluce_align_seqcap_align",
+      "phyluce_phyluce_align_get_only_loci_with_min_taxa",
+      "phyluce_phyluce_align_get_trimmed_alignments_from_untrimmed",
+      "phyluce_phyluce_align_get_align_summary_data"
+    ],
+    "description": "Assemble raw reads using SPAdes",
+    "docker_image": "quay.io/biocontainers/phyluce:1.6.8--py_0",
+    "homepage": "https://github.com/faircloth-lab/phyluce",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/phyluce/overview",
+    "github": "https://github.com/faircloth-lab/phyluce",
+    "conda_downloads": "36.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "phyluce_phyluce_align_get_align_summary_data.cwl",
+    "phyluce_phyluce_align_get_only_loci_with_min_taxa.cwl",
+    "phyluce_phyluce_align_get_trimmed_alignments_from_untrimmed.cwl",
+    "phyluce_phyluce_align_seqcap_align.cwl",
+    "phyluce_phyluce_assembly_assemblo_spades.cwl",
+    "phyluce_phyluce_assembly_get_fastas_from_match_counts.cwl",
+    "phyluce_phyluce_assembly_get_match_counts.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# phyluce\n\n## Overview\n\nPhyluce is a specialized suite of tools designed for UCE (Ultraconserved Element) phylogenomics. It provides a modular workflow to transform raw sequencing reads into curated alignment matrices suitable for downstream phylogenetic software like RAxML, IQ-TREE, or ExaML. While originally built for UCEs, its methods for assembly, locus identification, and parallel alignment are applicable to various conserved genomic markers across species, populations, and individuals.\n\n## Core Workflows and CLI Patterns\n\n### 1. Quality Control and Assembly\nBefore assembly, always verify read counts and perform adapter trimming. Phyluce typically interfaces with external assemblers like SPAdes or Velvet.\n\n*   **Assemble reads with SPAdes:**\n    ```bash\n    phyluce_assembly_assemblo_spades \\\n        --config assembly.conf \\\n        --output out_folder \\\n        --cores 12\n    ```\n    *Note: The config file should follow the standard INI format mapping sample names to their respective FASTQ paths.*\n\n### 2. Identifying and Extracting UCE Loci\nThis stage involves matching assembled contigs against a known probe set to identify conserved regions.\n\n*   **Match contigs to probes:**\n    ```bash\n    phyluce_assembly_match_contigs_to_probes \\\n        --contigs /path/to/contigs \\\n        --probes probes.fasta \\\n        --output uce-search-results\n    ```\n\n*   **Generate match counts and extract FASTA:**\n    After matching, create a relational database of matches and extract the sequences.\n    ```bash\n    # Create the match database\n    phyluce_assembly_get_match_counts \\\n        --locus-db uce-search-results/probe.matches.sqlite \\\n        --output uce-sample-matches.conf \\\n        --status-check\n\n    # Extract FASTA files for each locus\n    phyluce_assembly_get_fastas_from_match_counts \\\n        --contigs /path/to/contigs \\\n        --locus-db uce-search-results/probe.matches.sqlite \\\n        --match-conf uce-sample-matches.conf \\\n        --output extracted-uce-loci.fasta\n    ```\n\n### 3. Alignment and Trimming\nPhyluce automates parallel alignment of hundreds or thousands of loci.\n\n*   **Align sequences (using MAFFT):**\n    ```bash\n    phyluce_align_seqcap_align \\\n        --input extracted-uce-loci.fasta \\\n        --output aligned-uce-loci \\\n        --taxa 20 \\\n        --aligner mafft \\\n        --cores 8\n    ```\n\n*   **Trim alignments (using Gblocks or Trimal):**\n    ```bash\n    phyluce_align_get_gblocks_trimmed_alignments_from_untrimmed \\\n        --alignments aligned-uce-loci \\\n        --output trimmed-uce-loci \\\n        --b2 0.5\n    ```\n\n### 4. Final Matrix Preparation\nFilter loci based on taxon occupancy and format for phylogenetic analysis.\n\n*   **Filter for minimum taxon occupancy:**\n    ```bash\n    phyluce_align_get_only_loci_with_min_taxa \\\n        --alignments trimmed-uce-loci \\\n        --taxa 20 \\\n        --percent 0.75 \\\n        --output filtered-alignments\n    ```\n\n*   **Format for RAxML/IQ-TREE:**\n    ```bash\n    phyluce_align_format_nexus_files_for_raxml \\\n        --alignments filtered-alignments \\\n        --output raxml-ready-matrix\n    ```\n\n## Expert Tips\n\n*   **Conda Environment:** Always run phyluce within a dedicated Conda environment to avoid dependency conflicts with Python versions or bioinformatics libraries.\n*   **Memory Management:** Assembly (SPAdes) and parallel alignment are RAM-intensive. Monitor your system resources and adjust the `--cores` parameter accordingly.\n*   **Phasing Data:** For population-level studies, use the phasing workflow (`phyluce_assembly_phase_data`) to resolve allelic variation by mapping reads back to UCE contigs.\n*   **Locus Names:** Ensure your probe FASTA headers are clean. Phyluce uses these headers to track loci across the entire pipeline.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| phyluce_align_get_trimmed_alignments_from_untrimmed | Use the PHYLUCE trimming algorithm to trim existing alignments in parallel |\n| phyluce_assembly_assemblo_spades | Assemble raw reads using SPAdes |\n| phyluce_assembly_get_fastas_from_match_counts | Given an input SQL database of UCE locus matches, a config file containing the loci in your data matrix, and the contigs you have assembled, extract the fastas for each locus for each taxon in the assembled contigs, and rename those to the appropriate UCE loci, outputting the results as a single monolithic FASTA file containing all records. Can also incorporate data from genome-enabled taxa or other studies using the --extend-db and --extend- contigs parameters. |\n| phyluce_assembly_get_match_counts | Given an SQL database of UCE loci and a taxon-set file, output those taxa and those loci in complete and incomplete data matrices. |\n| phyluce_phyluce_align_get_align_summary_data | Compute summary statistics for alignments in parallel |\n| phyluce_phyluce_align_get_only_loci_with_min_taxa | Screen a directory of alignments, only returning those containing >= --percent of taxa |\n| phyluce_phyluce_align_seqcap_align | Align and possibly trim records in a monolithic UCE FASTA file with MAFFT or MUSCLE |\n\n## Reference documentation\n- [Phyluce ReadTheDocs Overview](./references/phyluce_readthedocs_io_en_latest.md)\n- [Tutorial I: UCE Phylogenomics](./references/phyluce_readthedocs_io_en_latest_tutorials_tutorial-1.html.md)\n- [Tutorial II: Phasing UCE data](./references/phyluce_readthedocs_io_en_latest_tutorials_tutorial-2.html.md)\n- [List of Programs](./references/phyluce_readthedocs_io_en_latest_daily-use_list-of-programs.html.md)",
+  "skill_front_matter": {
+    "name": "phyluce",
+    "description": "Phyluce is a suite of tools designed for ultraconserved element phylogenomics and the preparation of alignment matrices. Use when user asks to assemble reads, match contigs to probes, extract UCE loci, align sequences, or format data for phylogenetic analysis.",
+    "homepage": "https://github.com/faircloth-lab/phyluce"
+  }
+}

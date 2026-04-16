@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-qsvar",
+  "category": "bioconductor",
+  "name": "bioconductor-qsvar",
+  "description": "The bioconductor-qsvar package implements the Quality Surrogate Variable Analysis framework to identify and remove RNA degradation-related noise from differential expression models. Use when user asks to identify degradation-associated principal components, remove transcript degradation bias, or improve biological signal detection in RNA-seq data.",
+  "overview": "The `qsvaR` package implements the Quality Surrogate Variable Analysis (qSVA) framework. It identifies principal components (qSVs) associated with RNA degradation profiles. These qSVs are then included as covariates in differential expression models to remove degradation-related noise, improving the detection of true biological signals.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/qsvaR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/LieberInstitute/qsvaR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "qsvaR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qsvaR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/LieberInstitute/qsvaR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-qsvar\n\n## Overview\n\nThe `qsvaR` package implements the Quality Surrogate Variable Analysis (qSVA) framework. It identifies principal components (qSVs) associated with RNA degradation profiles. These qSVs are then included as covariates in differential expression models to remove degradation-related noise, improving the detection of true biological signals.\n\n## Core Workflow\n\n### 1. Prepare Transcript Data\nThe package requires a `RangedSummarizedExperiment` (RSE) object containing transcript-level quantification (e.g., from Salmon).\n\n```r\nlibrary(qsvaR)\nlibrary(SummarizedExperiment)\n\n# Load your RangedSummarizedExperiment object\n# rse_tx <- ... \n\n# Recommended: Filter for lowly expressed transcripts\nrse_tx <- rse_tx[rowMeans(assays(rse_tx)$tpm) > 0.3, ]\n```\n\n### 2. Select Degradation-Associated Transcripts\nIdentify the subset of transcripts known to be sensitive to degradation.\n\n```r\n# Select the signature transcripts (cell_component is generally most effective)\nsig_tx <- select_transcripts(cell_component = TRUE)\n\n# Subset your RSE to these transcripts\nDegTx <- getDegTx(rse_tx, sig_transcripts = sig_tx)\n```\n\n### 3. Generate qSVs\nCalculate the principal components and determine the optimal number (`k`) to include in your model.\n\n```r\n# Define your experimental design (excluding qSVs for now)\nmod <- model.matrix(~ Dx + Age + Sex + Race + Region, data = colData(rse_tx))\n\n# Calculate number of PCs needed (requires a seed for sva::num.sv reproducibility)\nset.seed(20230621)\nk <- k_qsvs(rse_tx = DegTx, mod = mod, assayname = \"tpm\")\n\n# Extract the qSV matrix\npcTx <- getPCs(rse_tx = DegTx, assayname = \"tpm\")\nqsvs <- get_qsvs(qsvPCs = pcTx, k = k)\n```\n\n### 4. Differential Expression with qSVs\nIncorporate the qSVs into your final model matrix for use with `limma`.\n\n```r\nlibrary(limma)\n\n# Combine original model with qSVs\nmod_qSVA <- cbind(mod, qsvs)\n\n# Run differential expression on the FULL transcript set\ntxExprs <- log2(assays(rse_tx)$tpm + 1)\nfit <- lmFit(txExprs, mod_qSVA)\neb <- eBayes(fit)\nresults <- topTable(eb, coef = 2, number = Inf)\n```\n\n## Wrapper Function\nFor a streamlined analysis, use the `qSVA` wrapper which combines steps 2 and 3.\n\n```r\nset.seed(20230621)\nqsvs <- qSVA(\n    rse_tx = rse_tx,\n    sig_transcripts = select_transcripts(cell_component = TRUE),\n    mod = mod,\n    assayname = \"tpm\"\n)\n```\n\n## Diagnostic Tools\nUse `DEqual` to visualize if the differential expression results are still confounded by degradation. A correlation near 0 between the degradation t-statistics and your DE t-statistics indicates successful normalization.\n\n```r\n# Create a data frame of t-statistics from your results\nDE_stats <- data.frame(t = results$t, row.names = rownames(results))\n\n# Plot degradation association\nDEqual(DE_stats)\n```\n\n## Tips\n- **Transcript Level**: qSVA is designed for transcript-level data. While results can be aggregated to the gene level later, the qSVs should be calculated using transcript quantifications.\n- **Model Selection**: Three models are available in `select_transcripts()`: `cell_component` (recommended), `top1000`, and `top1500`.\n- **Assay Name**: Ensure the `assayname` argument matches the slot in your RSE (usually `\"tpm\"`).\n\n## Reference documentation\n- [Introduction to qsvaR](./references/Intro_qsvaR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-qsvar",
+    "description": "The bioconductor-qsvar package implements the Quality Surrogate Variable Analysis framework to identify and remove RNA degradation-related noise from differential expression models. Use when user asks to identify degradation-associated principal components, remove transcript degradation bias, or improve biological signal detection in RNA-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qsvaR.html"
+  }
+}

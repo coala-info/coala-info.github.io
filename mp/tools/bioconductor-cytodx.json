@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cytodx",
+  "category": "bioconductor",
+  "name": "bioconductor-cytodx",
+  "description": "This tool predicts clinical outcomes from single-cell cytometry data without the need for manual cell gating. Use when user asks to build predictive models from .fcs files, perform rank transformation to reduce batch effects, or identify cell subsets associated with clinical outcomes using decision trees.",
+  "overview": "CytoDx is a Bioconductor package designed to associate single-cell cytometry data with clinical outcomes using a two-stage statistical model. Unlike traditional methods, it bypasses the need for manual or automated cell gating. It first models the association between individual cells and the outcome, then aggregates these predictions at the sample level to make a final clinical prediction. This approach is robust across different platforms and provides high interpretability by identifying key ma",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CytoDx.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cytodx/overview",
+  "github": "N/A",
+  "conda_downloads": "25.6K",
+  "conda_downloads_num": 25600,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CytoDx"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CytoDx.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cytodx/overview",
+    "github": "N/A",
+    "conda_downloads": "25.6K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cytodx\n\nname: bioconductor-cytodx\ndescription: Predicts clinical outcomes from single-cell data (flow cytometry or CyTOF) without cell gating. Use this skill when you need to build predictive models from .fcs files, perform rank transformation to reduce batch effects, or identify cell subsets associated with specific clinical outcomes using decision trees.\n\n# bioconductor-cytodx\n\n## Overview\n\nCytoDx is a Bioconductor package designed to associate single-cell cytometry data with clinical outcomes using a two-stage statistical model. Unlike traditional methods, it bypasses the need for manual or automated cell gating. It first models the association between individual cells and the outcome, then aggregates these predictions at the sample level to make a final clinical prediction. This approach is robust across different platforms and provides high interpretability by identifying key markers and cell subsets.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad .fcs files and convert them into a data frame format suitable for modeling.\n\n```r\nlibrary(CytoDx)\n\n# Convert FCS files to Data Frame\n# b: cofactor for arcsinh transformation (1/150 for FCM, 1/5 for CyTOF)\ntrain_data <- fcs2DF(fcsFiles = file_paths,\n                     y = labels,\n                     assay = \"FCM\",\n                     b = 1/150,\n                     excludeTransformParameters = c(\"FSC-A\", \"FSC-W\", \"FSC-H\", \"Time\"))\n```\n\n### 2. Rank Transformation\nTo minimize batch effects and improve robustness across different instruments, apply a rank transformation.\n\n```r\n# Perform rank transformation per sample\nx_train <- pRank(x = train_data[, marker_columns], \n                 xSample = train_data$xSample)\n\n# Optional: Include interaction terms\nx_train_mat <- model.matrix(~.*., x_train)\n```\n\n### 3. Model Training\nBuild the predictive model using `CytoDx.fit`.\n\n```r\nfit <- CytoDx.fit(x = x_train_mat,\n                  y = (train_data$y == \"target_label\"),\n                  xSample = train_data$xSample,\n                  family = \"binomial\",\n                  reg = FALSE)\n```\n\n### 4. Prediction\nApply the trained model to new testing data.\n\n```r\n# Prepare test data (must follow same transformation as training)\nx_test <- pRank(x = test_data[, marker_columns], xSample = test_data$xSample)\nx_test_mat <- model.matrix(~.*., x_test)\n\n# Predict outcomes\npred <- CytoDx.pred(fit, xNew = x_test_mat, xSampleNew = test_data$xSample)\n\n# Access sample-level probabilities\nprobabilities <- pred$xNew.Pred.sample\n```\n\n### 5. Interpreting Results (Cell Subset Identification)\nUse `treeGate` to find the specific cell populations driving the prediction. Note: Use the original (non-ranked) data for this step to maintain interpretable marker scales.\n\n```r\n# TG identifies cell subsets associated with the outcome\nTG <- treeGate(P = fit$train.Data.cell$y.Pred.s0,\n               x = train_data[, marker_columns])\n\n# Plot the resulting decision tree\nplot(TG)\n```\n\n## Tips and Best Practices\n- **Transformation**: Always use `fcs2DF` for initial loading as it handles the necessary arcsinh transformations.\n- **Interactions**: Including 2-way interactions (`~.*.`) in the model matrix often improves predictive power by capturing complex cell phenotypes.\n- **Batch Effects**: If data comes from multiple centers or different days, `pRank` is highly recommended to normalize the feature space.\n- **Memory**: For very large datasets, ensure you have sufficient RAM as `model.matrix` with interactions can significantly increase the feature space size.\n\n## Reference documentation\n- [CytoDx Vignette](./references/CytoDx_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cytodx",
+    "description": "This tool predicts clinical outcomes from single-cell cytometry data without the need for manual cell gating. Use when user asks to build predictive models from .fcs files, perform rank transformation to reduce batch effects, or identify cell subsets associated with clinical outcomes using decision trees.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CytoDx.html"
+  }
+}

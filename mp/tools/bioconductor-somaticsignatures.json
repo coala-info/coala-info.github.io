@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-somaticsignatures",
+  "category": "bioconductor",
+  "name": "bioconductor-somaticsignatures",
+  "description": "This tool identifies mutational signatures from somatic single nucleotide variants by analyzing sequence contexts and performing matrix decomposition. Use when user asks to extract mutational motifs, construct motif matrices, identify mutational signatures using NMF or PCA, or visualize signature contributions across samples.",
+  "overview": "The `SomaticSignatures` package identifies mutational signatures from cancer sequencing studies. It relates somatically occurring SNVs to their surrounding sequence context (somatic motifs) and decomposes the resulting frequency matrix into signatures (composition of motifs) and sample contributions (exposure of signatures).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SomaticSignatures.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/juliangehring/SomaticSignatures",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SomaticSignatures"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SomaticSignatures.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/juliangehring/SomaticSignatures",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-somaticsignatures\n\nname: bioconductor-somaticsignatures\ndescription: Use this skill when analyzing somatic mutational signatures from single nucleotide variants (SNVs) in R. It provides workflows for extracting sequence motifs (trinucleotide contexts), constructing motif matrices, and performing matrix decomposition (NMF or PCA) to identify mutational signatures and their contributions across samples.\n\n# bioconductor-somaticsignatures\n\n## Overview\n\nThe `SomaticSignatures` package identifies mutational signatures from cancer sequencing studies. It relates somatically occurring SNVs to their surrounding sequence context (somatic motifs) and decomposes the resulting frequency matrix into signatures (composition of motifs) and sample contributions (exposure of signatures).\n\n## Core Workflow\n\n### 1. Prepare Input Data\nVariants must be in a `VRanges` object. You can convert a `VCF` or data frame to `VRanges` using `VariantAnnotation`.\n\n```r\nlibrary(SomaticSignatures)\nlibrary(VariantAnnotation)\n\n# Example: Constructing from scratch\nvr = VRanges(\n    seqnames = \"chr1\",\n    ranges = IRanges(start = 1000, width = 1),\n    ref = \"A\",\n    alt = \"C\",\n    sampleNames = \"Sample1\")\n```\n\n### 2. Extract Mutational Context\nUse `mutationContext` to retrieve the sequence surrounding the SNV. This requires a reference genome (e.g., `BSgenome.Hsapiens.UCSC.hg19`).\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n# Extracts trinucleotide context and shifts to pyrimidine-base reference\nsca_motifs = mutationContext(vr, BSgenome.Hsapiens.UCSC.hg19)\n```\n\n### 3. Construct Motif Matrix\nCreate a matrix $M$ where rows are motifs and columns are samples or groups.\n\n```r\n# normalize = TRUE returns frequencies; FALSE returns counts\nsca_mm = motifMatrix(sca_motifs, group = \"sampleNames\", normalize = TRUE)\n```\n\n### 4. Determine Number of Signatures\nIf the number of signatures ($r$) is unknown, use `assessNumberSignatures` to evaluate different values based on Residual Sum of Squares (RSS) and explained variance.\n\n```r\nn_sigs = 2:10\ngof_nmf = assessNumberSignatures(sca_mm, n_sigs, nReplicates = 5)\nplotNumberSignatures(gof_nmf)\n```\n\n### 5. Identify Signatures\nDecompose the matrix using Non-negative Matrix Factorization (NMF) or Principal Component Analysis (PCA).\n\n```r\n# Using NMF\nsigs_nmf = identifySignatures(sca_mm, 5, nmfDecomposition)\n\n# Using PCA\nsigs_pca = identifySignatures(sca_mm, 5, pcaDecomposition)\n```\n\n### 6. Visualization\nExplore the results using built-in plotting functions (based on `ggplot2`).\n\n```r\n# Plot the composition of signatures\nplotSignatures(sigs_nmf)\n\n# Plot the contribution of signatures to each sample\nplotSamples(sigs_nmf)\n\n# Plot the original mutation spectrum\nplotMutationSpectrum(sca_motifs, \"sampleNames\")\n```\n\n## Advanced Operations\n\n### Normalization for Capture Targets\nWhen comparing WES to WGS, normalize for the different k-mer frequencies in the target regions.\n\n```r\n# norms is a vector of ratios (e.g., genome-frequency / exome-frequency)\nsca_mm_norm = normalizeMotifs(sca_mm, norms)\n```\n\n### Batch Effect Correction\nUse `ComBat` from the `sva` package on the motif matrix if technical covariates (e.g., sequencing center) are present.\n\n```r\nlibrary(sva)\nsca_mm_corrected = ComBat(sca_mm, batch = batch_labels, mod = model.matrix(~1, metadata))\n```\n\n### Clustering\nGroup samples or motifs based on their mutational profiles.\n\n```r\nclu_motif = clusterSpectrum(sca_mm, \"motif\")\nlibrary(ggdendro)\nggdendrogram(clu_motif, rotate = TRUE)\n```\n\n## Tips for Success\n- **Object Accessors:** Use `signatures(sigs)`, `samples(sigs)`, `observed(sigs)`, and `fitted(sigs)` to extract the underlying matrices from the result object.\n- **Reference Genomes:** `mutationContext` works with any object providing a `getSeq` method, including `FaFile` (FASTA) and `TwoBitFile`.\n- **Custom Decompositions:** You can pass custom functions to the `decomposition` argument of `identifySignatures`.\n\n## Reference documentation\n- [Inferring Somatic Signatures from Single Nucleotide Variant Calls](./references/SomaticSignatures-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-somaticsignatures",
+    "description": "This tool identifies mutational signatures from somatic single nucleotide variants by analyzing sequence contexts and performing matrix decomposition. Use when user asks to extract mutational motifs, construct motif matrices, identify mutational signatures using NMF or PCA, or visualize signature contributions across samples.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SomaticSignatures.html"
+  }
+}

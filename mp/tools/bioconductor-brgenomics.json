@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-brgenomics",
+  "category": "bioconductor",
+  "name": "bioconductor-brgenomics",
+  "description": "BRGenomics provides tools for the efficient analysis and visualization of basepair-resolution genomics data in R. Use when user asks to import BAM or bigWig files into basepair-resolution GRanges, calculate signal counts over genomic regions, manipulate gene body annotations, or perform differential expression analysis using DESeq2.",
+  "overview": "BRGenomics is a Bioconductor package designed for the efficient analysis of high-resolution genomics data. It centers on the \"Basepair-Resolution GRanges\" (BRG) object—a GRanges where each range is 1 bp wide and contains a score representing signal. This structure allows for fast, vectorized operations across multiple datasets, simplifying workflows that previously required command-line tools like `bedtools` or `deeptools`.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/BRGenomics.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-brgenomics/overview",
+  "github": "https://github.com/mdeber/BRGenomics",
+  "conda_downloads": "15.8K",
+  "conda_downloads_num": 15800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BRGenomics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/BRGenomics.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-brgenomics/overview",
+    "github": "https://github.com/mdeber/BRGenomics",
+    "conda_downloads": "15.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-brgenomics\n\nname: bioconductor-brgenomics\ndescription: Expert guidance for using the BRGenomics R package for analyzing basepair-resolution genomics data (e.g., PRO-seq, PRO-cap, ATAC-seq). Use this skill when the user needs to import BAM/bigWig/bedGraph files into R, manipulate GRanges annotations, calculate signal counts over regions, perform spike-in normalization, or conduct differential expression analysis using DESeq2 with global perturbations.\n\n# bioconductor-brgenomics\n\n## Overview\nBRGenomics is a Bioconductor package designed for the efficient analysis of high-resolution genomics data. It centers on the \"Basepair-Resolution GRanges\" (BRG) object—a GRanges where each range is 1 bp wide and contains a score representing signal. This structure allows for fast, vectorized operations across multiple datasets, simplifying workflows that previously required command-line tools like `bedtools` or `deeptools`.\n\n## Core Workflows\n\n### 1. Data Import and BRG Creation\nThe package provides specialized functions to convert raw files into basepair-resolution GRanges.\n\n```r\nlibrary(BRGenomics)\n\n# Import PRO-seq BAM (automatically handles revcomp, shift -1, and 3' end extraction)\nps <- import_bam_PROseq(\"path/to/file.bam\", mapq = 30)\n\n# Import unstranded bigWigs as a single stranded GRanges\nbw_data <- import_bigWig(\"plus.bw\", \"minus.bw\", genome = \"dm6\")\n\n# Check if an object is basepair-resolution\nisBRG(ps)\n```\n\n### 2. Annotation Manipulation\nUse `genebodies()` for flexible region definition and `reduceByGene()` to handle isoforms.\n\n```r\ndata(\"txs_dm6_chr4\")\n\n# Get regions from 300bp downstream of TSS to 300bp upstream of CPS\nbodies <- genebodies(txs_dm6_chr4, start = 300, end = -300)\n\n# Get promoters (-50 to +100 around TSS)\npromoters <- genebodies(txs_dm6_chr4, -50, 100, fix.end = \"start\")\n\n# Combine isoforms into a single consensus representation per gene\ncollapsed_genes <- reduceByGene(txs_dm6_chr4, gene_names = txs_dm6_chr4$gene_id)\n```\n\n### 3. Signal Counting\nFunctions like `getCountsByRegions` and `getCountsByPositions` are optimized for speed and support multi-core processing via the `ncores` argument.\n\n```r\n# Count total signal in regions\ncounts <- getCountsByRegions(ps, bodies)\n\n# Get a matrix of signal at every position (for heatmaps/profiles)\n# Use 'binsize' to group bases\npos_matrix <- getCountsByPositions(ps, promoters, binsize = 1)\n```\n\n### 4. Analyzing Multiple Datasets\nStore multiple GRanges in a named list to process them simultaneously.\n\n```r\nps_list <- list(rep1 = ps1, rep2 = ps2)\n\n# Returns a melted dataframe ready for ggplot2\nmulti_counts <- getCountsByRegions(ps_list, bodies, melt = TRUE)\n\n# Merge replicates into a single BRG\nmerged <- mergeGRangesData(ps_list)\n```\n\n### 5. Differential Expression (DESeq2)\nBRGenomics provides wrappers for DESeq2 that are robust to global signal perturbations by avoiding \"blind\" dispersion estimation across all samples.\n\n```r\n# 1. Create DESeqDataSet (handles replicate grouping via \"repX\" naming convention)\ndds <- getDESeqDataSet(ps_list, txs_dm6_chr4, gene_names = txs_dm6_chr4$gene_id)\n\n# 2. Run pairwise results\n# Note: sizeFactors in DESeq2 are 1 / BRGenomics normalization factors\nres <- getDESeqResults(dds, contrast.numer = \"ConditionB\", contrast.denom = \"ConditionA\")\n```\n\n## Tips and Best Practices\n- **Parallelization**: Most functions use `ncores`. Set `options(mc.cores = 4)` to set a global default. Note: Parallel processing is not available on Windows.\n- **Memory**: For large datasets, use `saveRDS()` and `readRDS()` to store processed GRanges objects as binary files to avoid re-importing from bigWig/BAM.\n- **Multiplexed GRanges**: While `mergeGRangesData(..., multiplex = TRUE)` creates a single object with multiple metadata columns, a standard `list` of GRanges often performs better for sparse data.\n- **Normalization**: When using spike-ins, calculate factors using `getSpikeInNFs()`. Remember to use the inverse ($1/NF$) when passing to DESeq2 as `sizeFactors`.\n\n## Reference documentation\n- [Analyzing Multiple Datasets](./references/AnalyzingMultipleDatasets.md)\n- [DESeq2 with Global Perturbations](./references/DESeq2WithGlobalPerturbations.md)\n- [Getting Started](./references/GettingStarted.md)\n- [Importing and Modifying Annotations](./references/ImportingModifyingAnnotations.md)\n- [Importing and Processing Data](./references/ImportingProcessingData.md)\n- [Overview](./references/Overview.md)\n- [Profile Plots and Bootstrapping](./references/ProfilePlotsAndBootstrapping.md)\n- [Sequence Extraction](./references/SequenceExtraction.md)\n- [Signal Counting](./references/SignalCounting.md)\n- [Spike-In Normalization](./references/SpikeInNormalization.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-brgenomics",
+    "description": "BRGenomics provides tools for the efficient analysis and visualization of basepair-resolution genomics data in R. Use when user asks to import BAM or bigWig files into basepair-resolution GRanges, calculate signal counts over genomic regions, manipulate gene body annotations, or perform differential expression analysis using DESeq2.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/BRGenomics.html"
+  }
+}

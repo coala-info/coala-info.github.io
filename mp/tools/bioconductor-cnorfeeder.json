@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnorfeeder",
+  "category": "bioconductor",
+  "name": "bioconductor-cnorfeeder",
+  "description": "CNORfeeder integrates literature-based prior knowledge networks with data-driven inference to identify missing signaling links from experimental data. Use when user asks to extend signaling networks with data-driven links, prioritize integrated interactions using protein-protein interaction networks, or prepare models for training with CellNOptR.",
+  "overview": "CNORfeeder is an R package designed to bridge the gap between incomplete literature-based signaling networks and experimental data. It \"feeds\" the CellNOptR (CNOR) pipeline by inferring missing links directly from data using various reverse-engineering methods (FEED, ARACNe, CLR, Bayesian networks) and integrating them into a Prior Knowledge Network (PKN). It also supports \"Dynamic Feeder\" workflows for logic-based Ordinary Differential Equations (ODEs) using time-series data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CNORfeeder.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNORfeeder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNORfeeder.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnorfeeder\n\nname: bioconductor-cnorfeeder\ndescription: Integrate literature-constrained prior knowledge networks (PKN) with data-driven inference (DDN) using CNORfeeder. Use this skill to extend signaling networks with links derived from perturbation data, prioritize integrated links using protein-protein interaction (PPI) networks, and train logic-based or ODE-based models using CellNOptR.\n\n## Overview\n\nCNORfeeder is an R package designed to bridge the gap between incomplete literature-based signaling networks and experimental data. It \"feeds\" the CellNOptR (CNOR) pipeline by inferring missing links directly from data using various reverse-engineering methods (FEED, ARACNe, CLR, Bayesian networks) and integrating them into a Prior Knowledge Network (PKN). It also supports \"Dynamic Feeder\" workflows for logic-based Ordinary Differential Equations (ODEs) using time-series data.\n\n## Typical Workflow\n\n### 1. Data Preparation\nLoad the required libraries and data (typically formatted as a `CNOlist`).\n\n```R\nlibrary(CellNOptR)\nlibrary(CNORfeeder)\n\n# Load example data\ndata(CNOlistDREAM, package=\"CellNOptR\")\ndata(DreamModel, package=\"CellNOptR\")\n```\n\n### 2. Data-Driven Network (DDN) Inference\nInfer a network strictly from data. The native `FEED` method is specifically designed for perturbation experiments.\n\n```R\n# Infer Boolean tables using FEED method\n# k: threshold of significance; measErr: measurement error\nBTable <- makeBTables(CNOlist=CNOlistDREAM, k=2, measErr=c(0.1, 0))\n\n# Alternative: Rank links by significance\nLrank <- linksRanking(CNOlist=CNOlistDREAM, measErr=c(0.1, 0))\n```\n\nOther inference methods available:\n- `MIinference()`: Uses `minet` for ARACNE or CLR.\n- `Binference()`: Uses `catnet` for Bayesian networks.\n\n### 3. Integration with PKN\nMap the inferred links (DDN) onto the compressed Prior Knowledge Network.\n\n```R\n# Preprocess PKN (compression)\nmodel <- preprocessing(data=CNOlistDREAM, model=DreamModel)\n\n# Integrate DDN into the model\nmodelIntegr <- mapBTables2model(BTable=BTable, model=model, allInter=TRUE)\n\n# Visualize integrated links (highlighted in purple)\nplotModel(model=modelIntegr, CNOlist=CNOlistDREAM, indexIntegr=modelIntegr$indexIntegr)\n```\n\n### 4. Weighting and Prioritization\nAssign weights to integrated links. You can use a global factor or prioritize based on Protein-Protein Interaction (PPI) networks (shorter paths in PPI = higher reliability).\n\n```R\n# Weighting with a global factor (integrFac=10 prioritizes PKN over DDN)\nmodelIntegrWeight <- weighting(modelIntegr=modelIntegr, \n                               PKNmodel=DreamModel, \n                               CNOlist=CNOlistDREAM, \n                               integrFac=10)\n\n# Optional: Weighting using PPI (requires Uniprot IDs)\ndata(PPINigraph, package=\"CNORfeeder\")\ndata(UniprotIDdream, package=\"CNORfeeder\")\nmodelIntegrWeight <- weighting(modelIntegr=modelIntegr, \n                               PKNmodel=DreamModel, \n                               CNOlist=CNOlistDREAM, \n                               integrFac=10,\n                               UniprotID=UniprotIDdream, \n                               PPI=PPINigraph)\n```\n\n### 5. Model Training\nTrain the integrated network using a weighted genetic algorithm.\n\n```R\n# Optimization using weighted binary GA\nDreamT1opt <- gaBinaryT1W(CNOlist=CNOlistDREAM, \n                          model=modelIntegrWeight, \n                          maxGens=10, popSize=10)\n\n# Plot results\ncutAndPlotResultsT1(model=modelIntegrWeight, \n                    CNOlist=CNOlistDREAM, \n                    bString=DreamT1opt$bString)\n```\n\n## Dynamic Feeder Workflow (ODE-based)\n\nFor time-series data and ODE models, use the Dynamic Feeder pipeline:\n\n1.  **Identify Misfits**: Find measurements where the initial ODE model fails to fit the data.\n    ```R\n    indices <- identifyMisfitIndices(cnolist=cnolist, model=model, simData=simData, mseThresh=0.05)\n    ```\n2.  **Build Feeder Object**: Search for missing links in databases (e.g., OmniPath) or via FEED.\n    ```R\n    feederObject <- buildFeederObjectDynamic(model=model, cnolist=cnolist, indices=indices, database=database, DDN=TRUE)\n    ```\n3.  **Integrate and Fit**:\n    ```R\n    integratedModel <- integrateLinks(feederObject=feederObject, cnolist=cnolist, database=database)\n    # Run final optimization with runDynamicFeeder()\n    ```\n\n## Reference documentation\n\n- [Integrating literature-constrained and data-driven inference of signalling networks with CNORfeeder](./references/CNORfeeder-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnorfeeder",
+    "description": "CNORfeeder integrates literature-based prior knowledge networks with data-driven inference to identify missing signaling links from experimental data. Use when user asks to extend signaling networks with data-driven links, prioritize integrated interactions using protein-protein interaction networks, or prepare models for training with CellNOptR.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNORfeeder.html"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "id": "bowtie2",
+  "category": "CLI",
+  "name": "bowtie2",
+  "description": "\"Bowtie 2 is an ultrafast and memory-efficient tool for aligning sequencing reads to long reference sequences. Use when user asks to build a genome index, align single-end or paired-end reads, perform local or end-to-end alignment, or optimize alignment performance for large datasets.\"",
+  "overview": "Bowtie 2 is a cornerstone tool in computational biology for the ultrafast and memory-efficient alignment of sequencing reads. It utilizes an FM Index based on the Burrows-Wheeler Transform to maintain a small memory footprint (approximately 3.2 GB for the human genome). This skill enables the configuration of alignment modes—including gapped, local, and paired-end—and provides guidance on indexing reference sequences and optimizing performance through multithreading and hardware-specific instruc",
+  "homepage": "https://bowtie-bio.sourceforge.net/bowtie2/index.shtml",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bowtie2/overview",
+  "github": "https://github.com/BenLangmead/bowtie2",
+  "conda_downloads": "2.9M",
+  "conda_downloads_num": 2900000,
+  "last_updated": "2026-02-20",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [
+    {
+      "Tool": "bowtie2",
+      "Runtime": "PASS",
+      "Data used": "local:10XGenomics_subset-bam/test.bam.bai, plan:minimal.fq",
+      "Reason (if fail)": "WARNING Final process status is permanentFail"
+    },
+    {
+      "Tool": "bowtie2-build",
+      "Runtime": "PASS",
+      "Data used": "plan:minimal.fa",
+      "Reason (if fail)": "—"
+    }
+  ],
+  "report": {
+    "runtime_summary_table": [
+      {
+        "Tool": "bowtie2",
+        "Runtime": "PASS",
+        "Data used": "local:10XGenomics_subset-bam/test.bam.bai, plan:minimal.fq",
+        "Reason (if fail)": "WARNING Final process status is permanentFail"
+      },
+      {
+        "Tool": "bowtie2-build",
+        "Runtime": "PASS",
+        "Data used": "plan:minimal.fa",
+        "Reason (if fail)": "—"
+      }
+    ],
+    "tool_names": [
+      "bowtie2-build"
+    ],
+    "description": "Builds a Bowtie 2 index from a set of DNA sequences.",
+    "docker_image": "quay.io/biocontainers/bowtie2:2.5.4--h7071971_4",
+    "homepage": "https://bowtie-bio.sourceforge.net/bowtie2/index.shtml",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bowtie2/overview",
+    "github": "https://github.com/BenLangmead/bowtie2",
+    "conda_downloads": "2.9M",
+    "last_updated": "2026-02-20",
+    "skill_generated": true,
+    "validation_run": "pass"
+  },
+  "cwl_files": [
+    "bowtie2-build.cwl",
+    "bowtie2.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bowtie2\n\n## Overview\nBowtie 2 is a cornerstone tool in computational biology for the ultrafast and memory-efficient alignment of sequencing reads. It utilizes an FM Index based on the Burrows-Wheeler Transform to maintain a small memory footprint (approximately 3.2 GB for the human genome). This skill enables the configuration of alignment modes—including gapped, local, and paired-end—and provides guidance on indexing reference sequences and optimizing performance through multithreading and hardware-specific instructions like AVX2.\n\n## Core CLI Patterns\n\n### 1. Building a Genome Index\nBefore alignment, you must index the reference FASTA file.\n```bash\nbowtie2-build [options] <reference_in.fasta> <index_base_name>\n```\n*   **Large Genomes**: For references > 4GB, `bowtie2-build` automatically builds a \"large\" index (.bt2l).\n*   **Speed**: Use `--threads <int>` to parallelize index construction.\n*   **Compression**: Recent versions support Zstd-compressed reference files directly.\n\n### 2. Basic Read Alignment\nAligning unpaired (single-end) or paired-end reads to a pre-built index.\n\n**Single-end:**\n```bash\nbowtie2 -x <index_base> -U <reads.fastq> -S <output.sam>\n```\n\n**Paired-end:**\n```bash\nbowtie2 -x <index_base> -1 <mates_1.fastq> -2 <mates_2.fastq> -S <output.sam>\n```\n\n### 3. Alignment Modes\n*   **End-to-end (Default)**: Requires the entire read to align.\n    *   `--very-fast`, `--fast`, `--sensitive`, `--very-sensitive` (Presets for speed vs. sensitivity).\n*   **Local**: Allows \"soft-clipping\" of read ends to find the best alignment.\n    *   `--local` (Use this for reads with adapter contamination or low-quality ends).\n    *   Presets: `--very-fast-local`, `--very-sensitive-local`.\n\n## Expert Tips and Best Practices\n\n### Performance Optimization\n*   **Multithreading**: Always use `-p <threads>` to utilize multiple CPU cores.\n*   **Hardware Acceleration**: On x86_64 systems, Bowtie 2 utilizes AVX2 instructions. Ensure your environment supports these for maximum throughput.\n*   **Input Handling**: Bowtie 2 supports wildcards (e.g., `-q *.fq`) and direct processing of compressed files (Gzip, Zstd).\n\n### Reporting and Sensitivity\n*   **Deterministic Mode**: Use `-d` (or `--deterministic-mode`) in newer versions (v2.5.5+) to ensure that reporting for `-k` or `-a` options is consistent across runs while maintaining high speed.\n*   **Multiple Alignments**:\n    *   `-k <int>`: Report up to N alignments per read.\n    *   `-a`: Report all valid alignments (can be very slow and produce massive SAM files).\n*   **MAPQ Calculation**: Note that Bowtie 2 assigns a MAPQ of 255 to supplementary alignments when using `-k` or `-a`.\n\n### SAM Output Management\n*   **Preserve Tags**: Use `--preserve-tags` when aligning BAM files to keep original metadata.\n*   **Comments**: Use `--sam-append-comment` to include FASTA/Q comments in the SAM record.\n*   **Memory Management**: If aligning very large BAM files, monitor memory usage; versions prior to v2.5.4 had known memory leaks during BAM parsing.\n\n## Index Inspection\nTo extract information or the original reference sequence from an index:\n```bash\nbowtie2-inspect <index_base>\n```\n*   Use `-s` to see summary information about the index.\n*   Use `-o <file>` to save the reconstructed FASTA to a specific file.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bowtie2 | An ultrafast and memory-efficient tool for aligning sequencing reads to long reference sequences. |\n| bowtie2-build | Builds a Bowtie 2 index from a set of DNA sequences. |\n\n## Reference documentation\n- [Bowtie 2 Home](./references/bowtie-bio_sourceforge_net_bowtie2_index.shtml.md)\n- [Bowtie 2 Wiki](./references/github_com_BenLangmead_bowtie2_wiki.md)\n- [Bioconda Bowtie2 Package](./references/anaconda_org_channels_bioconda_packages_bowtie2_overview.md)",
+  "skill_front_matter": {
+    "name": "bowtie2",
+    "description": "Bowtie 2 is an ultrafast and memory-efficient tool for aligning sequencing reads to long reference sequences. Use when user asks to build a genome index, align single-end or paired-end reads, perform local or end-to-end alignment, or optimize alignment performance for large datasets.",
+    "homepage": "https://bowtie-bio.sourceforge.net/bowtie2/index.shtml"
+  }
+}

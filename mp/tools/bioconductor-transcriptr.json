@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-transcriptr",
+  "category": "bioconductor",
+  "name": "bioconductor-transcriptr",
+  "description": "The transcriptR package identifies and quantifies primary transcripts from nascent RNA-seq data by integrating RNA-seq coverage with ChIP-seq peak information. Use when user asks to identify continuous transcribed units, estimate background noise in RNA-seq, classify transcription start sites from ChIP-seq data, or resolve merged transcript signals.",
+  "overview": "The `transcriptR` package provides a data-driven pipeline to identify and quantify primary transcripts. It is specifically designed for sequencing techniques that capture nascent or nuclear RNA (GRO-seq, nucRNA-seq, chrRNA-seq), which typically show broad coverage across both exons and introns. The package uses a two-part approach:\n1. **RNA-seq:** Estimates background noise and identifies continuous transcribed units.\n2. **ChIP-seq:** Characterizes and classifies peaks (e.g., H3K4me3) to identif",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/transcriptR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "transcriptR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/transcriptR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-transcriptr\n\n## Overview\n\nThe `transcriptR` package provides a data-driven pipeline to identify and quantify primary transcripts. It is specifically designed for sequencing techniques that capture nascent or nuclear RNA (GRO-seq, nucRNA-seq, chrRNA-seq), which typically show broad coverage across both exons and introns. The package uses a two-part approach:\n1. **RNA-seq:** Estimates background noise and identifies continuous transcribed units.\n2. **ChIP-seq:** Characterizes and classifies peaks (e.g., H3K4me3) to identify active Transcription Start Sites (TSSs).\n\nThe final step integrates these sources to break apart merged RNA-seq signals into individual transcripts based on detected TSS activity.\n\n## Workflow and Core Functions\n\n### 1. RNA-seq Processing (TranscriptionDataSet)\n\nInitialize the analysis by constructing a `TranscriptionDataSet` (TDS) object from a BAM file.\n\n```r\nlibrary(transcriptR)\nlibrary(GenomicFeatures)\n\n# Construct TDS object\ntds <- constructTDS(file = \"path/to/rna_seq.bam\", \n                    region = NULL, # Optional GRanges to limit scope\n                    fragment.size = 250, \n                    unique = FALSE, \n                    paired.end = FALSE, \n                    swap.strand = TRUE)\n\n# Estimate background coverage cutoff (Poisson-based)\nestimateBackground(tds, fdr.cutoff = 0.01)\n\n# Tune gap distance (merging fragments based on reference annotations)\n# gd is a vector of distances to test\ngd <- seq(0, 10000, by = 100)\nestimateGapDistance(tds, annot = ref_genes, gap.dist.range = gd)\n\n# Call transcripts\ndetectTranscripts(tds, estimate.params = TRUE)\n```\n\n### 2. ChIP-seq Processing (ChipDataSet)\n\nIf ChIP-seq data for TSS marks is available, use it to refine transcript boundaries.\n\n```r\n# Construct CDS object\ncds <- constructCDS(peaks = \"peaks.bed\", \n                    reads = \"chip_reads.bam\", \n                    TxDb = txdb_object,\n                    tss.region = c(-2000, 2000))\n\n# Predict gene-associated peaks using logistic regression\n# 'pileup' is often the strongest predictor\npredictTssOverlap(cds, feature = \"pileup\", p = 0.75)\n\n# Predict peak strandedness using RNA-seq signal asymmetry\npredictStrand(cdsObj = cds, tdsObj = tds, win.size = 2000)\n```\n\n### 3. Integration and Refinement\n\nCombine the RNA-seq and ChIP-seq datasets to resolve overlapping or closely spaced transcripts.\n\n```r\n# Break merged transcripts using predicted TSS peaks\nbreakTranscriptsByPeaks(tdsObj = tds, cdsObj = cds, estimate.params = TRUE)\n\n# Annotate and retrieve results\nannotateTranscripts(tds, annot = ref_genes, min.overlap = 0.5)\nfinal_trx <- getTranscripts(tds, min.length = 250, min.fpkm = 0.5)\n```\n\n## Visualization and Export\n\nThe package supports exporting results to standard formats for genome browser visualization.\n\n*   **Coverage:** `exportCoverage(tds, file = \"plus.bw\", type = \"bigWig\", strand = \"+\")`\n*   **Transcripts:** `transcriptsToBed(object = final_trx, file = \"transcripts.bed\")`\n*   **ChIP Peaks:** `peaksToBed(object = cds, file = \"peaks.bed\", gene.associated.peaks = TRUE)`\n*   **Diagnostics:** `plotErrorRate(tds)` for gap distance tuning and `plotROC(cds)` for ChIP peak classification performance.\n\n## Key Tips\n\n*   **Nascent RNA:** This package is optimized for primary transcription. Standard mRNA-seq (exonic only) may result in highly fragmented transcript calls.\n*   **Gap Distance:** The `estimateGapDistance` function is critical. It balances \"dissected\" errors (splitting one gene) vs \"merged\" errors (joining two genes).\n*   **Strandedness:** Ensure `swap.strand` is set correctly during `constructTDS` based on your library preparation (e.g., dUTP-based protocols often require swapping).\n*   **Peak Merging:** Use `reduce.peaks = TRUE` in `constructCDS` to prevent artificial transcript truncation caused by fragmented ChIP-seq peak calls.\n\n## Reference documentation\n\n- [transcriptR: an integrative tool for ChIP- and RNA-seq based primary transcripts detection and quantification](./references/transcriptR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-transcriptr",
+    "description": "The transcriptR package identifies and quantifies primary transcripts from nascent RNA-seq data by integrating RNA-seq coverage with ChIP-seq peak information. Use when user asks to identify continuous transcribed units, estimate background noise in RNA-seq, classify transcription start sites from ChIP-seq data, or resolve merged transcript signals.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/transcriptR.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-perturbatr",
+  "category": "bioconductor",
+  "name": "bioconductor-perturbatr",
+  "description": "This package analyzes high-throughput genetic perturbation screens using hierarchical models and network diffusion to identify gene hits. Use when user asks to integrate multiple genetic screens, estimate gene effect sizes across conditions, or apply network propagation to smooth results using biological networks.",
+  "overview": "The `perturbatr` package provides a framework for the stage-wise analysis of large-scale genetic perturbation screens. It is specifically designed for integrated datasets consisting of multiple screens (e.g., different viruses, cell lines, or infection stages). It uses hierarchical linear mixed-effects models to estimate gene effect sizes while accounting for variance between biological conditions and applies network propagation (diffusion) to correct for false negatives by leveraging known gene",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/perturbatr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/cbg-ethz/perturbatr",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perturbatr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/perturbatr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/cbg-ethz/perturbatr",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-perturbatr\n\nname: bioconductor-perturbatr\ndescription: Analysis of high-throughput genetic perturbation screens (RNAi, CRISPR) using hierarchical models and network diffusion. Use when integrating multiple screens, estimating gene effect sizes across conditions, or smoothing results using biological networks to identify hits.\n\n# bioconductor-perturbatr\n\n## Overview\n\nThe `perturbatr` package provides a framework for the stage-wise analysis of large-scale genetic perturbation screens. It is specifically designed for integrated datasets consisting of multiple screens (e.g., different viruses, cell lines, or infection stages). It uses hierarchical linear mixed-effects models to estimate gene effect sizes while accounting for variance between biological conditions and applies network propagation (diffusion) to correct for false negatives by leveraging known gene-gene interactions.\n\n## Data Preparation\n\n### Creating PerturbationData Objects\nThe core data structure is the `PerturbationData` S4 object. Convert a `data.frame` or `tibble` using the `as` method.\n\n```r\nlibrary(perturbatr)\n# Convert data.frame to PerturbationData\npd <- methods::as(your_dataframe, \"PerturbationData\")\n```\n\n### Required Column Schema\nThe input data must contain the following columns:\n- **Condition**: Unique identifier for the screen (e.g., \"SARS\", \"HCV\").\n- **Replicate**: Integer representing the replicate number.\n- **GeneSymbol**: Character vector of gene identifiers (e.g., HUGO, Entrez).\n- **Perturbation**: Identifier for the specific reagent (e.g., siRNA ID, gRNA ID).\n- **Readout**: Normalized numeric value (e.g., log-fold change, Z-score).\n- **Control**: Integer vector: `-1` (negative control), `1` (positive control), `0` (sample).\n\n### Data Manipulation\n- **Access data**: Use `dataSet(pd)` to retrieve the underlying tibble.\n- **Filter**: Use `perturbatr::filter(pd, ...)` to subset data based on predicates.\n- **Combine**: Use `rbind(pd1, pd2)` to merge multiple `PerturbationData` objects.\n\n## Hierarchical Modeling\n\nUse the `hm()` function to fit a hierarchical model. This ranks genes by estimating effect sizes across different conditions.\n\n### Model Specification\nDefine the model using an R formula. Typically, `Readout` is the response, and `Condition` is a fixed effect, while `GeneSymbol` and its interaction with `Condition` are random effects.\n\n```r\n# Example formula for pan-condition analysis\nfrm <- Readout ~ Condition + \n                 (1|GeneSymbol) + \n                 (1|Condition:GeneSymbol)\n\n# Fit the model\nres.hm <- hm(pd, formula = frm)\n```\n\n### Interpreting Results\n- **Global Effects**: Use `geneEffects(res.hm)` to get the ranking of genes across all conditions.\n- **Condition-Specific Effects**: Use `nestedGeneEffects(res.hm)` to see effects for specific conditions.\n- **Visualization**: `plot(res.hm)` generates plots for the top 25 strongest gene effects (pan-viral and nested).\n\n## Network Diffusion\n\nTo reduce false negatives, \"smooth\" the hierarchical model results using a gene interaction network.\n\n### Running Diffusion\nSupply a graph (as a data.frame of edges) to the `diffuse()` function.\n\n```r\n# Load a network (edge list)\ngraph <- readRDS(\"path/to/graph.rds\")\n\n# Apply network propagation\nres.diff <- diffuse(res.hm, \n                    graph = graph, \n                    r = 0.35, \n                    delete.nodes.on.degree = 1)\n```\n\n### Parameters\n- **r**: Restart probability for the Markov random walk (typically 0.3 to 0.5).\n- **correct.for.hubs**: Boolean to normalize for high-degree nodes.\n- **take.largest.component**: Boolean to restrict analysis to the largest connected subgraph.\n\n## Workflow Summary\n\n1.  **Format**: Ensure data has required columns and convert to `PerturbationData`.\n2.  **Explore**: Use `plot(pd)` to check replicate consistency and gene coverage.\n3.  **Model**: Fit a hierarchical model with `hm()` to identify primary hits.\n4.  **Diffuse**: Use `diffuse()` with a protein-protein interaction (PPI) network to refine the hit list.\n5.  **Rank**: Extract final rankings using `geneEffects()` or `plot()`.\n\n## Reference documentation\n- [perturbatr tutorial](./references/perturbatr.Rmd)\n- [perturbatr cookbook](./references/perturbatr.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-perturbatr",
+    "description": "This package analyzes high-throughput genetic perturbation screens using hierarchical models and network diffusion to identify gene hits. Use when user asks to integrate multiple genetic screens, estimate gene effect sizes across conditions, or apply network propagation to smooth results using biological networks.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/perturbatr.html"
+  }
+}

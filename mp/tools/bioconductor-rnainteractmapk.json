@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rnainteractmapk",
+  "category": "bioconductor",
+  "name": "bioconductor-rnainteractmapk",
+  "description": "This package provides data and code to analyze and reproduce a large-scale synthetic genetic interaction screen of the MAPK signaling network in Drosophila cells. Use when user asks to analyze RNAi interaction data, estimate main effects and pairwise interaction scores, perform statistical significance testing for genetic interactions, or generate specialized plots like double perturbation and ternary classification plots.",
+  "overview": "The `RNAinteractMAPK` package contains the data and code required to reproduce the analysis of a large-scale synthetic genetic interaction screen in *Drosophila* cells. It maps signaling networks by identifying interactions between components of the MAPK and JNK pathways. Most underlying analysis logic is inherited from the `RNAinteract` package, while this package provides specific datasets and specialized plotting functions for the MAPK screen.",
+  "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/RNAinteractMAPK.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RNAinteractMAPK"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/RNAinteractMAPK.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rnainteractmapk\n\nname: bioconductor-rnainteractmapk\ndescription: Analysis and reproduction of the MAPK signaling network synthetic genetic interaction screen. Use when Claude needs to analyze RNAi interaction data, estimate main effects and pairwise interactions (PI-scores), perform classification of signaling components, or generate specific figures (heatmaps, double perturbation plots, ternary classification plots) as described in Horn et al. (2011).\n\n# bioconductor-rnainteractmapk\n\n## Overview\n\nThe `RNAinteractMAPK` package contains the data and code required to reproduce the analysis of a large-scale synthetic genetic interaction screen in *Drosophila* cells. It maps signaling networks by identifying interactions between components of the MAPK and JNK pathways. Most underlying analysis logic is inherited from the `RNAinteract` package, while this package provides specific datasets and specialized plotting functions for the MAPK screen.\n\n## Core Workflow\n\n### 1. Loading Data\nThe primary dataset is an `RNAinteract` object named `Dmel2PPMAPK`.\n\n```r\nlibrary(RNAinteractMAPK)\ndata(\"Dmel2PPMAPK\", package=\"RNAinteractMAPK\")\n\n# Extract the main interaction matrix (PI-scores)\nPI <- getData(Dmel2PPMAPK, type=\"pi\", format=\"targetMatrix\", screen=\"mean\", withoutgroups = c(\"pos\", \"neg\"))\n```\n\n### 2. Estimating Interactions\nIf starting from raw data or re-calculating effects:\n\n```r\n# 1. Estimate single perturbation (main) effects\nDmel2PPMAPK <- estimateMainEffect(Dmel2PPMAPK)\n\n# 2. Normalize main effects to remove plate/time trends\nDmel2PPMAPK <- normalizeMainEffectQuery(Dmel2PPMAPK, batch=rep(1:4,each=48))\nDmel2PPMAPK <- normalizeMainEffectTemplate(Dmel2PPMAPK, channel=\"intensity\")\n\n# 3. Compute pairwise interaction (PI) scores\nDmel2PPMAPK <- computePI(Dmel2PPMAPK)\n\n# 4. Summarize replicates\nDmel2PPMAPKmean <- summarizeScreens(Dmel2PPMAPK, screens=c(\"1\",\"2\"))\nDmel2PPMAPK <- bindscreens(Dmel2PPMAPK, Dmel2PPMAPKmean)\n```\n\n### 3. Statistical Significance\nCompute p-values using different methods (t-test, limma, or Hotelling T2 for multivariate analysis).\n\n```r\nlibrary(qvalue)\np.adj.fct <- function(x) {\n    I = which(is.finite(x))\n    qjob = qvalue(x[I])\n    q.value = rep(NA,length(x))\n    q.value[I] = qjob$qvalues\n    return(q.value)\n}\n\n# Compute p-values (default is t-test)\nDmel2PPMAPK <- computePValues(Dmel2PPMAPK, p.adjust.function = p.adj.fct)\n\n# Multivariate Hotelling T2 test\nDmel2PPMAPKT2 <- computePValues(Dmel2PPMAPK, method=\"HotellingT2\", p.adjust.function = p.adj.fct)\n```\n\n## Visualization and Analysis\n\n### Double Perturbation Plots\nVisualize the interaction between two specific genes compared to their single knockdown effects.\n\n```r\nplotDoublePerturbation(Dmel2PPMAPK, screen=\"mean\", channel=\"nrCells\", target=\"Gap1\",\n                       main=\"Gap1 (CG6721)\", range=c(-2.3, 1.0),\n                       show.labels=\"q.value\", xlab=\"rel. nuclear count [log2]\")\n```\n\n### Classification\nThe package includes functions to classify genes into signaling pathways (e.g., RasMapK vs JNK) based on their interaction profiles.\n\n```r\n# Define training groups\ntraingroups = list(\n    RasMapK = c(\"csw\",\"drk\",\"Sos\",\"Ras85D\",\"phl\",\"Dsor1\",\"rl\",\"pnt\"),\n    RasMapKInh = c(\"Gap1\",\"PTP-ER\",\"Mkp3\",\"aop\",\"Pten\"),\n    JNK = c(\"Gadd45\",\"Btk29A\",\"msn\",\"slpr\",\"bsk\",\"Jra\",\"kay\")\n)\n\n# Cross-validation\nsgi <- sgisubset(Dmel2PPMAPK, screen=c(\"1\",\"2\"))\nCV <- MAPK.cv.classifier(sgi, traingroups)\n\n# Plot ternary classification\nMAPK.plot.classification(CV$CVposterior, y=CV$y,\n                         classes = c(\"RasMapKInh\", \"JNK\", \"RasMapK\"),\n                         classnames = c(\"RasMAPK-Inhibitors\",\"JNK\",\"RasMAPK\"))\n```\n\n### Heatmaps\nGenerate rasterized heatmaps of interaction scores.\n\n```r\n# Get interaction matrix\nPInrcells <- getData(Dmel2PPMAPK, type=\"pi\", format=\"targetMatrix\", screen=\"mean\", channel=\"nrCells\")\n\n# Cluster and plot\nhc = hclust(dist(embedPCA(Dmel2PPMAPK, screen=\"mean\", channel=\"nrCells\", dim=4)))\nMAPK.plot.heatmap.raster(PInrcells, hc.row = hc, hc.col = hc, pi.max = 0.05)\n```\n\n## Tips for Usage\n- **Data Access**: Use `getData()` with `type=\"pi\"`, `type=\"main\"`, or `type=\"q.value\"` to extract specific matrices from the `RNAinteract` object.\n- **Feature Channels**: The screen contains three readout channels: `nrCells` (cell count), `area` (nuclear area), and `intensity` (staining intensity).\n- **Source Code**: To extract the full reproduction script from the package, use:\n  `Stangle(system.file(\"doc\", \"RNAinteractMAPK.Rnw\", package=\"RNAinteractMAPK\"))`\n\n## Reference documentation\n- [RNAinteractMAPK](./references/RNAinteractMAPK.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rnainteractmapk",
+    "description": "This package provides data and code to analyze and reproduce a large-scale synthetic genetic interaction screen of the MAPK signaling network in Drosophila cells. Use when user asks to analyze RNAi interaction data, estimate main effects and pairwise interaction scores, perform statistical significance testing for genetic interactions, or generate specialized plots like double perturbation and ternary classification plots.",
+    "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/RNAinteractMAPK.html"
+  }
+}

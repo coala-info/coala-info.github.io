@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-casper",
+  "category": "bioconductor",
+  "name": "bioconductor-casper",
+  "description": "\"Bioconductor-casper quantifies isoform expression and performs experimental design for RNA-seq data using Bayesian models. Use when user asks to estimate transcript-level expression, simulate RNA-seq data for power analysis, or analyze differential isoform usage.\"",
+  "overview": "The `casper` (Characterization of Alternative Splicing based on Paired-end Reads) package provides a comprehensive framework for analyzing alternative splicing from paired-end RNA-seq data. It uses a Bayesian model to estimate isoform expression by considering \"exon paths\" (the sequence of exons visited by a read pair) rather than simple pairwise connections. It also includes specialized tools for experimental design, allowing users to simulate data to determine optimal sequencing depth, read le",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/casper.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-casper/overview",
+  "github": "N/A",
+  "conda_downloads": "51.9K",
+  "conda_downloads_num": 51900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "casper"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/casper.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-casper/overview",
+    "github": "N/A",
+    "conda_downloads": "51.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-casper\n\nname: bioconductor-casper\ndescription: Statistical methods for quantifying isoform expression from RNA-seq data, including de novo prediction, experimental design, and differential expression analysis. Use this skill when you need to estimate transcript-level expression (RPKM), simulate RNA-seq data for power analysis, or compare isoform usage across samples using Bayesian models.\n\n# bioconductor-casper\n\n## Overview\nThe `casper` (Characterization of Alternative Splicing based on Paired-end Reads) package provides a comprehensive framework for analyzing alternative splicing from paired-end RNA-seq data. It uses a Bayesian model to estimate isoform expression by considering \"exon paths\" (the sequence of exons visited by a read pair) rather than simple pairwise connections. It also includes specialized tools for experimental design, allowing users to simulate data to determine optimal sequencing depth, read length, and sample size.\n\n## Core Workflow: Quantifying Known Isoforms\n\nThe most common task is quantifying expression for a set of known transcripts.\n\n### 1. Genome Annotation Pre-processing\nBefore analysis, you must process the genome annotation into a format `casper` understands.\n```r\nlibrary(casper)\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\n\n# Create the genome database object\nhg19DB <- procGenome(TxDb.Hsapiens.UCSC.hg19.knownGene, genome='hg19')\n```\n\n### 2. Single-Sample Pipeline (`wrapKnown`)\nThe `wrapKnown` function automates the entire pipeline from a BAM file to an `ExpressionSet`.\n```r\nbamFile <- \"path/to/sorted_indexed.bam\"\nans <- wrapKnown(bamFile = bamFile, \n                 genomeDB = hg19DB, \n                 readLength = 101, \n                 mc.cores.int = 4)\n\n# Access expression estimates (log-RPKM)\nexpData <- ans$exp\nhead(exprs(expData))\n```\n\n### 3. Multi-Sample Integration\nAfter processing individual samples, merge them and normalize.\n```r\n# Combine multiple wrapKnown outputs\nx <- mergeExp(sample1$exp, sample2$exp, sampleNames=c(\"S1\", \"S2\"), keep=c('transcript','gene'))\n\n# Quantile normalization\nxnorm <- quantileNorm(x)\n```\n\n## Experimental Design and Simulation\n\n`casper` allows for sequential experimental design by simulating data based on pilot studies.\n\n### Single Sample Design (MAE Calculation)\nEvaluate how different sequencing setups (N reads, read length r, insert size f) affect estimation error.\n```r\n# Setup experimental parameters to test\nn_reads <- c(2e7, 5e7)\nr_length <- c(76, 101)\nf_size <- c(200, 300)\n\n# Simulate and calculate Mean Absolute Error\nsims <- simMAE(nsim=5, nreads=n_reads, readLength=r_length, \n               fragLength=f_size, pc=pilotData$pc, \n               distr=pilotData$distr, genomeDB=hg19DB)\n```\n\n### Multiple Sample Design (Power Analysis)\nSimulate future experiments to predict differential expression (DE) discovery power.\n```r\n# Simulate 3 samples per group with 12M reads each\ngse.sim <- simMultSamples(nsim=5, nsamples=c(3,3), nreads=12e6,\n                          readLength=101, fragLength=200, \n                          x=pilotExpSet, groups='group', \n                          distrs=pilotDistrs, genomeDB=hg19DB)\n\n# Analyze simulated data for DE\npp <- probNonEquiv(gse.sim, groups='group', logfc=log(3))\n```\n\n## De Novo Isoform Discovery\nIf you suspect the presence of unannotated transcripts, use `wrapDenovo`.\n```r\n# Returns expression estimates and posterior probability of existence\ndenovo_ans <- wrapDenovo(bamFile=bamFile, genomeDB=hg19DB, readLength=101)\n\n# Probability that the isoform is expressed\npost_probs <- fData(denovo_ans$exp)$postProb\n```\n\n## Visualization\nVisualize transcripts and read alignments to inspect splicing patterns.\n```r\n# Plot gene island with estimated expression\ngenePlot(islandid=\"463\", genomeDB=hg19DB, reads=pbam0, exp=eset)\n```\n\n## Key Functions Reference\n- `procGenome`: Converts TxDb or GTF to `annotatedGenome`.\n- `getDistrs`: Estimates fragment length and read start distributions from BAM.\n- `pathCounts`: Summarizes BAM alignments into exon path counts.\n- `calcExp`: The core estimation engine for RPKM/relative expression.\n- `probNonEquiv`: Bayesian test for differential expression (equivalence testing).\n- `mergeBatches`: Combines pilot and simulated data with batch adjustment.\n\n## Reference documentation\n- [Supplementary manual. Sequential design of RNA-seq experiments](./references/DesignRNASeq.md)\n- [Manual for the R casper package](./references/casper.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-casper",
+    "description": "Bioconductor-casper quantifies isoform expression and performs experimental design for RNA-seq data using Bayesian models. Use when user asks to estimate transcript-level expression, simulate RNA-seq data for power analysis, or analyze differential isoform usage.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/casper.html"
+  }
+}

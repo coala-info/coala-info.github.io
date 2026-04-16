@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mcbiclust",
+  "category": "bioconductor",
+  "name": "bioconductor-mcbiclust",
+  "description": "bioconductor-mcbiclust performs massively correlating biclustering analysis to identify gene sets that are highly correlated across subsets of samples in large-scale transcriptomic data. Use when user asks to find biclusters based on gene correlation patterns, identify co-regulation phenotypes, or classify samples into groups based on bicluster regulation.",
+  "overview": "MCbiclust is an R package designed to identify large-scale biclusters in transcriptomic data. Unlike traditional biclustering that looks for similar expression levels, MCbiclust identifies subsets of genes that are highly correlated (or anti-correlated) across a subset of samples. This is particularly useful for identifying co-regulation patterns and \"forking\" phenotypes in cancer datasets or other complex biological systems.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MCbiclust.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MCbiclust"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MCbiclust.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mcbiclust\n\nname: bioconductor-mcbiclust\ndescription: Massively correlating biclustering analysis for large-scale gene expression data. Use this skill to find biclusters where features (genes) are highly correlated across a subset of samples, perform gene set enrichment on correlation patterns, and classify samples into \"forks\" based on bicluster regulation.\n\n# bioconductor-mcbiclust\n\n## Overview\n\nMCbiclust is an R package designed to identify large-scale biclusters in transcriptomic data. Unlike traditional biclustering that looks for similar expression levels, MCbiclust identifies subsets of genes that are highly correlated (or anti-correlated) across a subset of samples. This is particularly useful for identifying co-regulation patterns and \"forking\" phenotypes in cancer datasets or other complex biological systems.\n\n## Core Workflow\n\n### 1. Finding a Bicluster Seed\nThe process begins by finding a small \"seed\" of samples where the chosen gene set (e.g., mitochondrial genes) shows maximum correlation.\n\n```r\nlibrary(MCbiclust)\n\n# gem: gene expression matrix (rows=genes, cols=samples)\n# seed.size: number of samples in the initial seed\n# iterations: number of stochastic search steps\nset.seed(123)\nmy_seed <- FindSeed(gem = CCLE.mito, \n                    seed.size = 10, \n                    iterations = 10000)\n\n# Calculate the correlation score (alpha) for a seed\nscore <- CorScoreCalc(CCLE.mito, my_seed)\n```\n\n### 2. Selecting Highly Correlated Genes\nIdentify which genes within your initial set contribute most strongly to the correlation pattern.\n\n```r\n# cuts: number of groups for hierarchical clustering\nhicor_genes <- HclustGenesHiCor(CCLE.mito, my_seed, cuts = 8)\n```\n\n### 3. Calculating the Correlation Vector (CV)\nExpand the pattern to the entire dataset to see how all genes correlate with the identified bicluster pattern.\n\n```r\n# gem.part: subset matrix used for seed finding\n# gem.all: full expression matrix\ncor_vec <- CVEval(gem.part = CCLE.mito, \n                  gem.all = CCLE_small, \n                  seed = my_seed, \n                  splits = 10)\n```\n\n### 4. Sample Sorting and PCA\nOrder all samples based on how well they fit the correlation pattern and summarize the pattern using the first principal component (PC1).\n\n```r\n# Sort samples\nsorted_samples <- SampleSort(CCLE.mito[as.numeric(hicor_genes),], \n                             seed = my_seed)\n\n# Calculate PC1 vector for the ordering\npc1_vec <- PC1VecFun(top.gem = CCLE.mito[as.numeric(hicor_genes),], \n                     seed.sort = sorted_samples, \n                     n = 10)\n\n# Align PC1 so positive values correspond to positive CV genes\npc1_vec <- PC1Align(gem = CCLE_small, \n                    pc1 = pc1_vec, \n                    sort.order = sorted_samples, \n                    cor.vec = cor_vec, \n                    bic = my_bic)\n```\n\n### 5. Thresholding and Classification\nDefine the boundaries of the bicluster and classify samples into \"Upper\", \"Lower\", or \"Uncorrelated\" forks.\n\n```r\n# Determine which genes and samples are in the bicluster\nmy_bic <- ThresholdBic(cor.vec = cor_vec, \n                       sort.order = sorted_samples, \n                       pc1 = pc1_vec, \n                       samp.sig = 0.05)\n\n# Classify samples for plotting\nfork_status <- ForkClassifier(pc1_vec, samp.num = length(my_bic[[2]]))\n```\n\n## Analysis of Multiple Runs\nBecause MCbiclust is stochastic, it is recommended to run it multiple times to find distinct patterns.\n\n1. Run `FindSeed` and `CVEval` multiple times (e.g., 100 runs).\n2. Combine correlation vectors into a matrix.\n3. Use `SilhouetteClustGroups(multi_cv_matrix)` to identify the number of distinct correlation patterns found.\n4. Use `CVPlot()` to visualize the different patterns.\n\n## Functional Enrichment\nMCbiclust includes a built-in Mann-Whitney U test for Gene Ontology (GO) enrichment based on the Correlation Vector.\n\n```r\ngse_results <- GOEnrichmentAnalysis(gene.names = row.names(CCLE_small), \n                                    gene.values = cor_vec, \n                                    sig.rate = 0.05)\n```\n\n## Key Tips\n- **Computational Cost**: `SampleSort` is computationally expensive. For large datasets, consider using `sort.length` to only sort the top samples or run on a high-performance cluster.\n- **Gene Limits**: `FindSeed` is not efficient for >1000 genes. Always use a biologically relevant subset (e.g., a specific pathway or organelle gene set) for the initial seed finding.\n- **Absolute Correlation**: The correlation score $\\alpha$ uses absolute values, meaning the bicluster can contain both highly correlated and highly anti-correlated genes.\n\n## Reference documentation\n- [Introduction to MCbiclust](./references/MCbiclust_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mcbiclust",
+    "description": "bioconductor-mcbiclust performs massively correlating biclustering analysis to identify gene sets that are highly correlated across subsets of samples in large-scale transcriptomic data. Use when user asks to find biclusters based on gene correlation patterns, identify co-regulation phenotypes, or classify samples into groups based on bicluster regulation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MCbiclust.html"
+  }
+}

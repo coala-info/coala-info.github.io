@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ivygapse",
+  "category": "bioconductor",
+  "name": "bioconductor-ivygapse",
+  "description": "This package provides a SummarizedExperiment container for accessing and analyzing RNA-seq data and metadata from the Ivy Glioblastoma Atlas Project. Use when user asks to access glioblastoma FPKM values, retrieve tumor anatomical metadata, or perform differential expression analysis on Ivy-GAP datasets.",
+  "overview": "The `ivygapSE` package provides a `SummarizedExperiment` container for the Ivy Glioblastoma Atlas Project (Ivy-GAP) dataset. It includes RNA-seq FPKM values for 270 samples across 42 donors, integrated with detailed metadata regarding tumor anatomy, sub-block details, and molecular subtypes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ivygapSE.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ivygapse/overview",
+  "github": "N/A",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ivygapSE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ivygapSE.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ivygapse/overview",
+    "github": "N/A",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ivygapse\n\nname: bioconductor-ivygapse\ndescription: Access and analyze the Ivy Glioblastoma Atlas Project (Ivy-GAP) data. Use when working with glioblastoma expression data (FPKM), tumor metadata, and anatomical structure annotations from the Ivy-GAP project. Supports differential expression analysis and structural classification of tumor sub-blocks.\n\n# bioconductor-ivygapse\n\n## Overview\nThe `ivygapSE` package provides a `SummarizedExperiment` container for the Ivy Glioblastoma Atlas Project (Ivy-GAP) dataset. It includes RNA-seq FPKM values for 270 samples across 42 donors, integrated with detailed metadata regarding tumor anatomy, sub-block details, and molecular subtypes.\n\n## Core Data Access\nLoad the package and the primary dataset:\n\n```r\nlibrary(ivygapSE)\ndata(ivySE)\n# View the SummarizedExperiment object\nivySE\n```\n\nThe `ivySE` object contains:\n- **Assays**: `fpkm` (expression values).\n- **RowData**: Gene IDs, symbols, and genomic coordinates.\n- **ColData**: Sample-level metadata including `tumor_id`, `structure_acronym`, and BAM links.\n- **Metadata**: Project README, tumor-level details, and sub-block-level details.\n\n## Metadata Exploration\nAccess specific tables for donors and tumor sub-blocks:\n\n```r\n# Get tumor-level details (N=42)\ntd = tumorDetails(ivySE)\n\n# Get sub-block-level details (N=946)\nsb = subBlockDetails(ivySE)\n\n# View project README\ncat(metadata(ivySE)$README, sep=\"\\n\")\n```\n\n## RNA-seq Sample Analysis\nSamples are often categorized by their anatomical structure or measurement objective.\n\n### Filtering by Structure\nUse the `structure_acronym` in `colData` to identify sample origins (e.g., CT: Cellular Tumor, LE: Leading Edge, IT: Infiltrating Tumor):\n\n```r\n# Extract structural basis\nstruc = as.character(colData(ivySE)$structure_acronym)\nbasis = vapply(strsplit(struc, \"-\"), function(x) x[1], character(1))\ntable(basis)\n```\n\n### Integrating Molecular Subtypes\nMolecular subtypes are stored in `tumorDetails` and can be mapped back to the expression samples:\n\n```r\nmoltype = tumorDetails(ivySE)$molecular_subtype\nnames(moltype) = tumorDetails(ivySE)$tumor_name\nivySE$moltype = factor(moltype[ivySE$tumor_name])\n```\n\n## Differential Expression (DE)\nThe package provides pre-computed results and supports custom `limma` workflows.\n\n### Using Pre-computed Results\nRetrieve moderated test statistics for reference histology comparisons:\n\n```r\nlibrary(limma)\nebout = getRefLimma()\n# View top genes for a specific contrast (e.g., CT vs CT-mvp)\ntopTable(ebout, coef=2)\n```\n\n### Custom DE Workflow\nPerform DE analysis on specific subsets, such as \"reference histology\" samples:\n\n```r\n# Subset to reference histology\nrefex = ivySE[, grep(\"reference\", ivySE$structure_acronym)]\nrefmat = assay(refex)\n\n# Create design matrix (e.g., by molecular subtype)\ntydes = model.matrix(~moltype, data=as.data.frame(colData(refex)))\n\n# Model with duplicate correlation for tumor_id (random effect)\nblock = factor(refex$tumor_id)\ndd = duplicateCorrelation(refmat, tydes, block=block)\nfit = lmFit(refmat, tydes, correlation=dd$consensus)\nfit = eBayes(fit)\ntopTable(fit)\n```\n\n## Structural Classification\nUse expression data to classify samples into structural types (e.g., using Random Forest):\n\n```r\nlibrary(randomForest)\nlibrary(genefilter)\n\n# Filter for high-variance genes\niqrs = rowIQRs(assay(refex))\ninds = which(iqrs > quantile(iqrs, .5))\n\n# Train classifier\nrf1 = randomForest(x=t(assay(refex[inds,])), \n                   y=factor(refex$structure_acronym), \n                   importance=TRUE)\nprint(rf1)\nvarImpPlot(rf1)\n```\n\n## Reference documentation\n- [ivygapSE](./references/ivygapSE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ivygapse",
+    "description": "This package provides a SummarizedExperiment container for accessing and analyzing RNA-seq data and metadata from the Ivy Glioblastoma Atlas Project. Use when user asks to access glioblastoma FPKM values, retrieve tumor anatomical metadata, or perform differential expression analysis on Ivy-GAP datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ivygapSE.html"
+  }
+}

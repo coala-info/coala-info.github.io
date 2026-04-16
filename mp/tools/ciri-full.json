@@ -1,0 +1,45 @@
+{
+  "id": "ciri-full",
+  "category": "CLI",
+  "name": "ciri-full",
+  "description": "CIRI-full is a bioinformatics suite used to reconstruct the full-length internal structure and quantify isoforms of circular RNAs. Use when user asks to reconstruct full-length circRNA sequences, identify reverse overlap features, or quantify circRNA isoforms from paired-end RNA-seq data.",
+  "overview": "CIRI-full is a specialized bioinformatics suite designed to reconstruct the complete internal structure of circular RNAs. While standard tools often only identify the back-spliced junction, CIRI-full utilizes \"Reverse Overlap\" (RO) features from paired-end reads to resolve the full-length sequence and quantify different isoforms within a single circRNA locus. Use this skill to navigate the multi-step workflow involving BWA, CIRI2, and CIRI-AS, or to execute the automated CIRI-full pipeline.",
+  "homepage": "https://ciri-cookbook.readthedocs.io/en/latest/CIRI-full.html",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ciri-full/overview",
+  "github": "https://github.com/bioinfo-biols/CIRI-full",
+  "conda_downloads": "979",
+  "conda_downloads_num": 979,
+  "last_updated": "2025-07-31",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ciri-full_bwa"
+    ],
+    "description": "alignment via Burrows-Wheeler transformation",
+    "docker_image": "quay.io/biocontainers/ciri-full:2.1.2--hdfd78af_1",
+    "homepage": "https://ciri-cookbook.readthedocs.io/en/latest/CIRI-full.html",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ciri-full/overview",
+    "github": "https://github.com/bioinfo-biols/CIRI-full",
+    "conda_downloads": "979",
+    "last_updated": "2025-07-31",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ciri-full_bwa.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ciri-full\n\n## Overview\nCIRI-full is a specialized bioinformatics suite designed to reconstruct the complete internal structure of circular RNAs. While standard tools often only identify the back-spliced junction, CIRI-full utilizes \"Reverse Overlap\" (RO) features from paired-end reads to resolve the full-length sequence and quantify different isoforms within a single circRNA locus. Use this skill to navigate the multi-step workflow involving BWA, CIRI2, and CIRI-AS, or to execute the automated CIRI-full pipeline.\n\n## Core Workflows\n\n### 1. Automated Pipeline\nThe simplest way to run the full analysis. It automatically handles the integration of CIRI2, CIRI-AS, and CIRI-full modules.\n\n**Prerequisites:** `bwa` must be in your `$PATH`.\n\n```bash\njava -jar CIRI-full.jar Pipeline \\\n  -1 reads_1.fq.gz \\\n  -2 reads_2.fq.gz \\\n  -r reference.fa \\\n  -a annotation.gtf \\\n  -d ./output_dir \\\n  -o sample_prefix \\\n  -t 8\n```\n\n### 2. Step-by-Step Manual Execution\nUse this approach if you need to fine-tune specific modules or have already run CIRI2/CIRI-AS.\n\n#### Step A: RO1 (Identify Reverse Overlap)\nIdentifies 5'-RO features and merges paired-end reads into long single-end reads.\n```bash\njava -jar CIRI-full.jar RO1 -1 r1.fq -2 r2.fq -o sample_ro1\n```\n*Tip: Adjust `-minM` (default 13) if you have very short reads or specific overlap requirements.*\n\n#### Step B: BWA Alignment of RO Reads\nYou must align the merged reads from RO1 before proceeding to RO2.\n```bash\nbwa mem -T 19 -t 8 reference.fa sample_ro1_ro1.fq > sample_ro1.sam\n```\n\n#### Step C: RO2 (Filter Authentic RO Reads)\nScreens for authentic circular features based on the alignment.\n```bash\njava -jar CIRI-full.jar RO2 \\\n  -r reference.fa \\\n  -s sample_ro1.sam \\\n  -l <read_length> \\\n  -o sample_ro2\n```\n\n#### Step D: Merge (Final Reconstruction)\nCombines RO2 results with CIRI-AS output to generate the final `.anno` file.\n```bash\njava -jar CIRI-full.jar Merge \\\n  -c prefix.ciri \\\n  -as prefix_jav.list \\\n  -ro sample_ro2_info.list \\\n  -r reference.fa \\\n  -a annotation.gtf \\\n  -o final_results\n```\n\n### 3. Visualization and Quantification (CIRI-vis)\nGenerates PDF visualizations of isoforms and FASTA sequences of reconstructed circRNAs.\n\n```bash\njava -jar CIRI-vis.jar \\\n  -i final_results_merge_circRNA_detail.anno \\\n  -l library_length.txt \\\n  -r reference.fa \\\n  -d ./vis_output \\\n  -min 10\n```\n\n## Expert Tips & Best Practices\n- **Read Length Consistency**: CIRI-full requires paired-end reads to be of equal length for the RO1 module to function correctly.\n- **BWA Parameters**: When aligning for CIRI-full, always use `bwa mem -T 19`. This specific score threshold is critical for capturing the split-reads necessary for circRNA detection.\n- **Memory Management**: For large datasets, ensure the Java Heap Size is sufficient (e.g., `java -Xmx16G -jar ...`).\n- **Output Interpretation**: The `prefix_merge_circRNA_detail.anno` is the primary output. It clusters reads by BSJ position and provides the estimated coverage for each reconstructed isoform.\n\n## Reference documentation\n- [CIRI-full Cookbook Documentation](./references/ciri-cookbook_readthedocs_io_en_latest_CIRI-full.html.md)\n- [CIRI-full Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_ciri-full_overview.md)",
+  "skill_front_matter": {
+    "name": "ciri-full",
+    "description": "CIRI-full is a bioinformatics suite used to reconstruct the full-length internal structure and quantify isoforms of circular RNAs. Use when user asks to reconstruct full-length circRNA sequences, identify reverse overlap features, or quantify circRNA isoforms from paired-end RNA-seq data.",
+    "homepage": "https://ciri-cookbook.readthedocs.io/en/latest/CIRI-full.html"
+  }
+}

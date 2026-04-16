@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sigar",
+  "category": "bioconductor",
+  "name": "bioconductor-sigar",
+  "description": "This tool performs integrative statistical analysis of multi-platform genomic data, specifically focusing on the relationship between DNA copy number alterations and gene expression levels. Use when user asks to match features across genomic platforms, visualize joint copy number and expression profiles, perform gene-wise cis-effect testing, or model regional co-expression using random coefficients.",
+  "overview": "The `sigaR` package provides tools for the integrative analysis of multi-platform genomic data. It specifically focuses on the relationship between DNA copy number alterations (CNA) and mRNA expression levels. Key capabilities include matching features across platforms, detecting cis-effects (where copy number changes drive expression), modeling regional co-expression using random coefficients, and assessing pathway-level associations using information-theoretic measures like entropy and mutual ",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/sigaR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sigaR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/sigaR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sigar\n\nname: bioconductor-sigar\ndescription: Statistical analysis for integrative genomics in R. Use this skill to integrate DNA copy number (aCGH) and gene expression data, including feature matching, joint visualization, gene-wise cis-effect testing, regional random coefficients modeling, and pathway-level mutual information analysis.\n\n## Overview\nThe `sigaR` package provides tools for the integrative analysis of multi-platform genomic data. It specifically focuses on the relationship between DNA copy number alterations (CNA) and mRNA expression levels. Key capabilities include matching features across platforms, detecting cis-effects (where copy number changes drive expression), modeling regional co-expression using random coefficients, and assessing pathway-level associations using information-theoretic measures like entropy and mutual information.\n\n## Core Workflows\n\n### 1. Data Preparation and Matching\nIntegrative analysis requires aligning features (genes/clones) from different platforms based on genomic coordinates.\n\n```R\nlibrary(sigaR)\ndata(pollackCN16) # cghCall object\ndata(pollackGE16) # ExpressionSet object\n\n# Order objects genomically\npollackCN16 <- cghCall2order(pollackCN16, chr=1, bpstart=2)\npollackGE16 <- ExpressionSet2order(pollackGE16, chr=1, bpstart=2)\n\n# Match features based on distance\nmatchIDs <- matchCGHcall2ExpressionSet(pollackCN16, pollackGE16, \n                                        CNchr=1, CNbpstart=2, CNbpend=3, \n                                        GEchr=1, GEbpstart=2, GEbpend=3, \n                                        method = \"distance\")\n\n# Subset to matched features\npollackCN16 <- cghCall2subset(pollackCN16, matchIDs[,1])\npollackGE16 <- ExpressionSet2subset(pollackGE16, matchIDs[,2])\n```\n\n### 2. Joint Visualization\nVisualize the relationship between copy number and expression across samples or within individual profiles.\n\n```R\n# Simultaneous heatmaps\nCNGEheatmaps(pollackCN16, pollackGE16, location = \"mode\", colorbreaks = \"equiquantiles\")\n\n# Overlaid profiles for a specific sample (e.g., sample index 23)\nprofilesPlot(pollackCN16, pollackGE16, 23)\n```\n\n### 3. Gene-wise Cis-effect Analysis\nIdentify individual genes where DNA copy number changes significantly influence expression levels.\n\n```R\n# 1. Pre-test and tune to select informative genes\ngenes2test <- cisEffectTune(pollackCN16, pollackGE16, \"wmw\", \n                            nGenes = 100, nPerm = 250, minCallProbMass = 0.10)\n\n# 2. Perform the test (univariate Wilcoxon-Mann-Whitney)\ncisTestResults <- cisEffectTest(pollackCN16, pollackGE16, genes2test, 1,\n                                \"univariate\", \"wmw\", nPerm = 10000)\n\n# 3. View results\ncisEffectTable(cisTestResults, number=10, sort.by=\"p.value\")\n```\n\n### 4. Regional Random Coefficients Model\nModel regional co-expression where a set of contiguous genes share a DNA copy number signature.\n\n```R\n# Identify features in a region\nfeatureNo <- 240\nids <- getSegFeatures(featureNo, pollackCN16)\n\n# Prepare data\nY <- t(exprs(pollackGE16)[ids,]) # Expression (centered)\nY <- sweep(Y, 2, apply(Y, 2, mean))\nX <- matrix(as.numeric(segmented(pollackCN16)[featureNo,]), ncol=1) # Segmented CN\nR <- matrix(1, ncol=1) # Constraints\n\n# Estimate model\nRCMresult <- RCMestimation(Y, X, R)\nsummary(RCMresult)\n\n# Test for shared effect\nRCMtestResult <- RCMtest(Y, X, R, testType=\"II\")\nsummary(RCMtestResult)\n```\n\n### 5. Pathway and Entropy Analysis\nAssess associations within gene sets (pathways) using Mutual Information (MI).\n\n```R\nX <- t(copynumber(pollackCN16))\nY <- t(exprs(pollackGE16))\n\n# Calculate Mutual Information\nmi_val <- hdMI(Y, X, method=\"knn\")\n\n# Test significance of association\nMItestResults <- mutInfTest(Y, X, nPerm=100, method=\"knn\")\nsummary(MItestResults)\n```\n\n## Tips and Best Practices\n- **Statistical Units**: Choose the appropriate unit (Gene, Region, or Pathway) based on the biological question.\n- **Data Types**: `sigaR` functions handle different types of CN data (normalized, segmented, or called). Ensure the `method` parameter in tests matches the data type (e.g., \"wmw\" for call probabilities).\n- **Filtering**: Use `cisEffectTune` to remove genes with low variation or unbalanced call probabilities to increase statistical power and reduce FDR.\n- **Directionality**: The package assumes a concordant relationship (CN gain leads to expression increase) and allows incorporating these constraints in the Random Coefficients Model.\n\n## Reference documentation\n- [sigaR](./references/sigaR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sigar",
+    "description": "This tool performs integrative statistical analysis of multi-platform genomic data, specifically focusing on the relationship between DNA copy number alterations and gene expression levels. Use when user asks to match features across genomic platforms, visualize joint copy number and expression profiles, perform gene-wise cis-effect testing, or model regional co-expression using random coefficients.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/sigaR.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-apeglm",
+  "category": "bioconductor",
+  "name": "bioconductor-apeglm",
+  "description": "This tool calculates empirical Bayes shrinkage estimators for effect sizes in generalized linear models using a heavy-tailed Cauchy prior. Use when user asks to shrink log fold changes, calculate posterior effect size estimates, or compute s-values for RNA-seq and other genomic data.",
+  "overview": "`apeglm` provides a robust method for shrinking effect size estimates (like log2 fold changes) towards zero, which is particularly useful for genes with low counts or high dispersion. It uses a heavy-tailed Cauchy prior to provide better shrinkage than normal-based priors. While it can be used standalone, it is most commonly accessed via the `DESeq2` package.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/apeglm.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-apeglm/overview",
+  "github": "N/A",
+  "conda_downloads": "360.0K",
+  "conda_downloads_num": 360000,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "apeglm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/apeglm.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-apeglm/overview",
+    "github": "N/A",
+    "conda_downloads": "360.0K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-apeglm\n\nname: bioconductor-apeglm\ndescription: Approximate Posterior Estimation for Generalized Linear Models (GLM). Use this skill to calculate empirical Bayes shrinkage estimators for effect sizes (Log Fold Changes) in RNA-seq and other GLM-based genomic data. It is primarily used as the default shrinkage method in DESeq2's lfcShrink function to provide more accurate effect size estimates and false sign rate (FSR) statistics.\n\n## Overview\n`apeglm` provides a robust method for shrinking effect size estimates (like log2 fold changes) towards zero, which is particularly useful for genes with low counts or high dispersion. It uses a heavy-tailed Cauchy prior to provide better shrinkage than normal-based priors. While it can be used standalone, it is most commonly accessed via the `DESeq2` package.\n\n## Typical Workflow with DESeq2\nThe most efficient way to use `apeglm` is through the `lfcShrink` wrapper in `DESeq2`.\n\n```R\nlibrary(DESeq2)\n# Assuming dds has been run through DESeq()\n# Check available coefficients\nresultsNames(dds)\n\n# Apply apeglm shrinkage to a specific coefficient\n# Note: apeglm requires the 'coef' argument, not 'contrast'\nres <- lfcShrink(dds, coef=\"condition_treated_vs_untreated\", type=\"apeglm\")\n```\n\n## Standalone Usage\nIf using `apeglm` outside of `DESeq2`, you must manually prepare the model matrix, MLE estimates, and dispersions. Note that `apeglm` works on the natural log scale, whereas `DESeq2` typically uses log2.\n\n### Negative Binomial Data\nFor RNA-seq counts, use the optimized C++ implementations for speed.\n\n```R\nlibrary(apeglm)\n\n# Prepare inputs\nx <- model.matrix(design(dds), colData(dds))\nparam <- dispersions(dds)\n# Convert DESeq2 MLE to natural log scale\nmle <- log(2) * cbind(res$log2FoldChange, res$lfcSE)\noffset <- matrix(log(sizeFactors(dds)), ncol=ncol(dds), nrow=nrow(dds), byrow=TRUE)\n\n# Run apeglm with the fast C++ interface (nbinomCR)\nfit <- apeglm(Y=assay(dds), x=x, log.lik=NULL, param=param, \n              coef=ncol(x), mle=mle, offset=offset, method=\"nbinomCR\")\n\n# Results are in fit$map (coefficients) and fit$sd (posterior SD)\n# Convert back to log2 for standard reporting\napeglm_lfc <- log2(exp(1)) * fit$map[, ncol(x)]\n```\n\n### Beta-Binomial Data (e.g., Allele-Specific Expression)\nFor ratio data, `apeglm` supports beta-binomial likelihoods.\n\n```R\n# x: model matrix, ase.cts: success counts, cts: total counts\n# theta.hat: estimated dispersion\nparam <- cbind(theta.hat, cts)\nfit <- apeglm(Y=ase.cts, x=x, log.lik=NULL, param=param,\n              coef=2, method=\"betabinCR\")\n```\n\n## Interpreting Results\n- **MAP (Maximum A Posteriori):** The shrunken effect size estimates.\n- **s-value:** Proposed by Stephens (2016), these bound the aggregate False Sign Rate (FSR). An s-value of 0.005 is a common stringent threshold.\n- **FSR (Local False Sign Rate):** The probability that the sign of the estimate is incorrect.\n- **Thresholding:** You can specify a `threshold` (on the natural log scale) to calculate the probability of \"false-sign-or-small\" (FSOS) events.\n\n## Tips and Best Practices\n1. **Scale Conversion:** Always remember that `apeglm` internal functions use natural logs. Multiply log2 values by `log(2)` before input, and multiply `apeglm` outputs by `log2(exp(1))` for log2 results.\n2. **Method Selection:** \n   - `nbinomCR`: Best for Negative Binomial (RNA-seq) when posterior SD is needed.\n   - `nbinomC`: Fastest if only MAP coefficients are needed.\n   - `betabinCR`: Best for Beta-Binomial (ASE/Ratios).\n3. **DESeq2 Integration:** When using `lfcShrink(type=\"apeglm\")`, the coefficient must be specified by `coef` (index or name from `resultsNames(dds)`). It does not support the `contrast` character vector syntax.\n\n## Reference documentation\n- [Effect size estimation with apeglm](./references/apeglm.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-apeglm",
+    "description": "This tool calculates empirical Bayes shrinkage estimators for effect sizes in generalized linear models using a heavy-tailed Cauchy prior. Use when user asks to shrink log fold changes, calculate posterior effect size estimates, or compute s-values for RNA-seq and other genomic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/apeglm.html"
+  }
+}

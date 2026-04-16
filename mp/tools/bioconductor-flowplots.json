@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-flowplots",
+  "category": "bioconductor",
+  "name": "bioconductor-flowplots",
+  "description": "The flowPlots package provides tools for the graphical display and statistical analysis of gated ICS flow cytometry data. Use when user asks to visualize group comparisons of profile data, compute polyfunctional degree statistics, or generate ternary and boxplots with embedded p-values.",
+  "overview": "The `flowPlots` package is designed for the graphical display and statistical analysis of gated ICS flow cytometry data. It specializes in comparing groups (e.g., Adults vs. Neonates) across various data representations:\n- **Profile Data**: Percentages of all possible marker combinations.\n- **Marginal Data**: Percentages of cells positive for each individual marker.\n- **PFD Data**: Polyfunctional degree (number of markers expressed simultaneously).\n- **PFD Parts**: The specific composition of co",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/flowPlots.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowplots/overview",
+  "github": "N/A",
+  "conda_downloads": "24.8K",
+  "conda_downloads_num": 24800,
+  "last_updated": "2026-02-04",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "flowPlots"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowPlots.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowplots/overview",
+    "github": "N/A",
+    "conda_downloads": "24.8K",
+    "last_updated": "2026-02-04",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-flowplots\n\n## Overview\nThe `flowPlots` package is designed for the graphical display and statistical analysis of gated ICS flow cytometry data. It specializes in comparing groups (e.g., Adults vs. Neonates) across various data representations:\n- **Profile Data**: Percentages of all possible marker combinations.\n- **Marginal Data**: Percentages of cells positive for each individual marker.\n- **PFD Data**: Polyfunctional degree (number of markers expressed simultaneously).\n- **PFD Parts**: The specific composition of combinations within a PFD level.\n\n## Core Workflows\n\n### 1. Data Preparation with StackedData\nIf starting with raw \"stacked\" data (where marker combinations are rows), use the `StackedData` class to compute summary statistics.\n\n```r\nlibrary(flowPlots)\ndata(adultsNeonates)\n\n# Initialize object\nsData <- new(\"StackedData\", stackedData = adultsNeonates)\n\n# Define markers and compute marker matrix\nmarkerNames <- c(\"TNFa\", \"IL6\", \"IL12\", \"IFNa\")\nmarkers(sData) <- computeMarkers(markerNames, includeAllNegativeRow = TRUE)\n\n# Compute summary data slots\nbyVars <- c(\"stim\", \"concGroup\", \"cell\")\nprofileData(sData) <- computeProfileData(sData, byVars, \"id\", \"percentAll\", \"group\")\nmarginalData(sData) <- computeMarginalData(sData, byVars, \"id\", \"percentAll\", \"group\")\npfdData(sData) <- computePFDData(sData, byVars, \"id\", \"percentAll\", \"group\")\npfdPartsData(sData) <- computePFDPartsData(sData, byVars, \"id\", \"percentAll\", \"group\")\n```\n\n### 2. Creating Group Comparison Boxplots\nThe `GroupListBoxplot` function is the primary tool for visualization. It automatically performs statistical tests (Wilcoxon Rank Sum for 2 groups, Kruskal-Wallis for >2 groups) and embeds p-values in the plot.\n\n```r\n# 1. Prepare a list of data frames (one per group) using helper\n# profileDataSubset should contain columns for combinations and a 'group' column\ngroupDataList <- makeDataList(profileDataSubset, \"group\", 1:16)\n\n# 2. Generate labels (optional but recommended for profile data)\ndata(markerMatrix)\nxTickLabels <- cbind(colnames(markerMatrix), t(markerMatrix))\n\n# 3. Plot\nGroupListBoxplot(groupDataList, \n                 xlabel = \"Marker Category\", \n                 ylabel = \"Percent of All Cells\",\n                 xAxisLabels = xTickLabels,\n                 legendGroupNames = c(\"Adults\", \"Neonates\"),\n                 pointColor = c(2, 4))\n```\n\n### 3. Ternary Plots for PFD Data\nUseful for visualizing the relationship between PFD1, PFD2, and PFD3+ categories.\n\n```r\nlibrary(vcd)\n# Prepare 3-column data (PFD1, PFD2, and sum of PFD3-4)\nternaryData <- makeTernaryData(pfdDataSubset, 1, 2, 3:4)\ncolnames(ternaryData) <- c(\"PFD1\", \"PFD2\", \"PFD3-4\")\n\nternaryplot(ternaryData, \n            col = as.numeric(pfdDataSubset$group) * 2,\n            main = \"Ternary Plot of PFD Data\")\n```\n\n### 4. Bar Plots for Profile Data\nVisualizes the composition of marker combinations across groups.\n\n```r\n# Prepare data for barplot\nbarplotData <- makeBarplotData(profileDataSubset, 1:16, groupVariableName = \"group\")\nbarColors <- gray(0:15/15)[16:1]\n\nbarplot(barplotData, col = barColors, main = \"Profile Composition\")\n```\n\n## Key Functions\n- `GroupListBoxplot()`: Main plotting function with integrated stats.\n- `makeDataList()`: Converts a data frame into a list format required by `GroupListBoxplot`.\n- `computeMarkers()`: Generates the binary matrix representing marker combinations.\n- `computePFDData()`: Calculates polyfunctional degree from stacked data.\n- `computeMarginalData()`: Calculates individual marker frequencies.\n\n## Tips for Success\n- **Sorting**: Ensure `stackedData` is sorted by subject and subset so that rows align correctly with the `markerMatrix`.\n- **Point Coloring**: `pointColor` can be a single value, a vector (by group), a matrix (group x category), or a list of matrices for individual subject tracking.\n- **PFD Parts**: When analyzing `pfdPartsData`, remember it is a list where each element corresponds to a PFD level (e.g., `[[1]]` for PFD=1, `[[2]]` for PFD=2).\n\n## Reference documentation\n- [flowPlots: An R Package for Analyzing Gated ICS Flow Cytometry Data](./references/flowPlots.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-flowplots",
+    "description": "The flowPlots package provides tools for the graphical display and statistical analysis of gated ICS flow cytometry data. Use when user asks to visualize group comparisons of profile data, compute polyfunctional degree statistics, or generate ternary and boxplots with embedded p-values.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowPlots.html"
+  }
+}

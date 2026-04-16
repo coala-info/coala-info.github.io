@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-prada",
+  "category": "bioconductor",
+  "name": "bioconductor-prada",
+  "description": "This tool provides specialized analysis of cell-based fluorescence assays and flow cytometry data. Use when user asks to perform automated gating using bivariate normal distributions, clean flow cytometry data, or integrate screening results into the cellHTS2 pipeline.",
+  "overview": "The `prada` package (Practical Analysis of DNA-chip/Cell-based Assays) provides tools for the specialized analysis of flow cytometry data. Its primary strengths include automated identification of cell populations using bivariate normal distributions and the ability to bridge flow cytometry outputs with high-throughput screening frameworks like `cellHTS2`.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/prada.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "prada"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/prada.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-prada\n\nname: bioconductor-prada\ndescription: Analysis of cell-based fluorescence assays, specifically flow cytometry (FACS) data. Use this skill to perform automated gating (fitting bivariate normal distributions), data cleaning, and integration of flow cytometry results into the cellHTS2 pipeline for high-throughput screening analysis.\n\n## Overview\n\nThe `prada` package (Practical Analysis of DNA-chip/Cell-based Assays) provides tools for the specialized analysis of flow cytometry data. Its primary strengths include automated identification of cell populations using bivariate normal distributions and the ability to bridge flow cytometry outputs with high-throughput screening frameworks like `cellHTS2`.\n\n## Core Workflows\n\n### 1. Automated Gating and Data Cleaning\nA common task is removing cell debris or conjugates from a population based on Forward Scatter (FSC) and Side Scatter (SSC).\n\n```r\nlibrary(prada)\n\n# Load FCS data\nsampdat <- readFCS(system.file(\"extdata\", \"fas-Bcl2-plate323-04-04.A01\", package=\"prada\"))\nfdat <- exprs(sampdat)\n\n# Fit a bivariate normal distribution to FSC and SSC\n# scalefac controls the size of the ellipse (higher = more inclusive)\nnfit <- fitNorm2(fdat[,\"FSC-H\"], fdat[,\"SSC-H\"], scalefac=2)\n\n# Visualize the fit and selection\nplotNorm2(nfit, selection=TRUE, ellipse=TRUE)\n\n# Extract the 'clean' data (points within the ellipse)\ncleanfdat <- fdat[nfit$sel, ]\n```\n\n### 2. Visualizing High-Density Scatter Plots\nFor datasets with thousands of points where standard scatter plots become unreadable:\n\n```r\n# Use smoothScatter for density-based visualization\nsmoothScatter(fdat[, c(\"FSC-H\", \"SSC-H\")], nrpoints=50)\n```\n\n### 3. Integrating with cellHTS2\n`prada` facilitates the transition from raw flow data to structured screening objects. This involves mapping plate lists and applying transformations (e.g., log-transforming odds ratios).\n\n```r\nlibrary(cellHTS2)\ndataPath <- system.file(\"extdata\", package = \"prada\")\n\n# Import plate data using a custom function to process prada-derived files\nx <- readPlateList(\"Platelist.txt\", \n                   name = \"ApoptosisScreen\", \n                   path = dataPath, \n                   importFun = function(file, path) {\n                     data <- read.delim(file, header=FALSE, as.is=TRUE)\n                     # Example: calculate negative log transformation\n                     return(list(data.frame(well=I(as.character(data[,2])), \n                                            val=-log10(data[,3])), \n                                 readLines(file)))\n                   })\n\n# Standard cellHTS2 workflow follows:\nx <- configure(x, confFile=\"Plateconf.txt\", descripFile=\"Description.txt\", path=dataPath)\nx <- annotate(x, file.path(dataPath, \"GeneIDs.txt\"))\n```\n\n## Key Functions\n\n- `readFCS()`: Reads Flow Cytometry Standard (FCS) files.\n- `fitNorm2()`: Fits a robust bivariate normal distribution to identify the main cell population.\n- `plotNorm2()`: Specialized plotting for the results of `fitNorm2`, showing the selection ellipse and outliers.\n- `smoothScatter()`: Produces a smoothed color density representation of a scatter plot.\n\n## Tips for Success\n\n- **Scalefac Tuning**: The `scalefac` parameter in `fitNorm2` is critical. A value of 2-3 is standard, but it should be adjusted based on the tightness of your specific cell population.\n- **Data Access**: Use `exprs()` on the object returned by `readFCS` to access the underlying numerical matrix for analysis.\n- **Integration**: When moving to `cellHTS2`, ensure your `importFun` correctly maps the well identifiers and applies necessary transformations to ensure symmetry around zero (like `-log10` for odds ratios).\n\n## Reference documentation\n\n- [Fitting a bivariate normal distribution to a 2D scatterplot](./references/norm2.md)\n- [Feeding the output of a flow cytometry assay into cellHTS2](./references/prada2cellHTS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-prada",
+    "description": "This tool provides specialized analysis of cell-based fluorescence assays and flow cytometry data. Use when user asks to perform automated gating using bivariate normal distributions, clean flow cytometry data, or integrate screening results into the cellHTS2 pipeline.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/prada.html"
+  }
+}

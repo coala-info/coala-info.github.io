@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-depmap",
+  "category": "bioconductor",
+  "name": "bioconductor-depmap",
+  "description": "The bioconductor-depmap package provides a framework for accessing and analyzing cancer dependency data from the Broad Institute in a tidy format. Use when user asks to access CRISPR, RNAi, or drug sensitivity datasets, retrieve cancer cell line metadata, or integrate genomic data for dependency analysis.",
+  "overview": "The `depmap` package provides a reproducible framework for accessing cancer dependency data. It transforms large-scale genomic datasets (CRISPR, RNAi, Proteomics, etc.) into a \"long\" tidy format, making them immediately compatible with `dplyr` and `ggplot2`. Data is retrieved via `ExperimentHub`, ensuring versioned and efficient access to the Broad Institute's DepMap releases.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/depmap.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-depmap/overview",
+  "github": "N/A",
+  "conda_downloads": "20.0K",
+  "conda_downloads_num": 20000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "depmap"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/depmap.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-depmap/overview",
+    "github": "N/A",
+    "conda_downloads": "20.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-depmap\n\n## Overview\n\nThe `depmap` package provides a reproducible framework for accessing cancer dependency data. It transforms large-scale genomic datasets (CRISPR, RNAi, Proteomics, etc.) into a \"long\" tidy format, making them immediately compatible with `dplyr` and `ggplot2`. Data is retrieved via `ExperimentHub`, ensuring versioned and efficient access to the Broad Institute's DepMap releases.\n\n## Core Workflows\n\n### 1. Loading Data\n\nThe package provides wrapper functions to load the most recent version of specific datasets.\n\n```r\nlibrary(depmap)\nlibrary(dplyr)\n\n# Load common datasets\nmetadata <- depmap_metadata()      # Cell line info (lineage, disease, etc.)\nmutation <- depmap_mutationCalls() # Mutation data\ncrispr   <- depmap_crispr()        # CRISPR (CERES) gene effect\nrnai     <- depmap_rnai()          # RNAi dependency scores\ntpm      <- depmap_TPM()           # RNAseq expression (log2(TPM+1))\ncn       <- depmap_copyNumber()    # WES copy number\ndrugs    <- depmap_drug_sensitivity() # Drug sensitivity scores\nproteic  <- depmap_proteomic()     # Mass spec proteomics\n```\n\n### 2. Accessing Specific Versions\n\nTo access older releases (e.g., 19Q1 vs 22Q2), use `ExperimentHub` queries.\n\n```r\nlibrary(ExperimentHub)\neh <- ExperimentHub()\nquery(eh, \"depmap\")\n\n# Retrieve by EH ID\nrnai_19Q1 <- eh[[\"EH2260\"]]\n```\n\n### 3. Data Integration and Analysis\n\nA typical workflow involves joining dependency data with metadata to filter by cancer type (lineage).\n\n```r\n# Find top dependencies in Soft Tissue Sarcoma\ntop_dep <- rnai %>%\n  select(depmap_id, gene_name, dependency) %>%\n  left_join(select(metadata, depmap_id, cell_line, primary_disease), by = \"depmap_id\") %>%\n  filter(primary_disease == \"Sarcoma\") %>%\n  arrange(dependency)\n\n# Correlation between Expression and Dependency\ntarget_gene <- \"RPL14\"\nanalysis_df <- tpm %>%\n  filter(gene_name == target_gene) %>%\n  select(depmap_id, expression) %>%\n  inner_join(filter(crispr, gene_name == target_gene), by = \"depmap_id\")\n\n# Plotting\nlibrary(ggplot2)\nggplot(analysis_df, aes(x = expression, y = dependency)) +\n  geom_point() +\n  geom_smooth(method = \"lm\") +\n  labs(title = paste(\"Expression vs CRISPR Dependency for\", target_gene))\n```\n\n### 4. Accessing Original Figshare Files\n\nIf you need the raw files provided by the DepMap project (not the tidied versions), use the `dmsets` and `dmget` functions.\n\n```r\n# List available datasets on Figshare\ndatasets <- dmsets()\n\n# Find specific files within a dataset (e.g., 22Q2)\nfiles <- dmfiles() %>% filter(dataset_id == 19700056)\n\n# Download and load a specific CSV\nfile_path <- dmfiles() %>% \n  filter(name == \"CRISPRGeneEffect.csv\") %>% \n  dmget()\n\nraw_data <- readr::read_csv(file_path)\n```\n\n## Tips and Best Practices\n\n- **Dependency Scores**: A highly negative score (typically < -1) indicates that the cell line is highly dependent on that gene for survival.\n- **Memory Management**: These datasets are very large (millions of rows). Use `dplyr::filter` and `dplyr::select` early in your pipeline to reduce memory overhead.\n- **Caching**: `ExperimentHub` and `dmget()` cache files locally. Use `dmCache()` to manage the local data directory.\n- **Gene Identifiers**: Most datasets include `gene_name` (Symbol) and `entrez_id`. Use `entrez_id` for the most reliable joining across different data types.\n\n## Reference documentation\n\n- [The depmap data](./references/depmap.md)\n- [Using the depmap data](./references/using_depmap.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-depmap",
+    "description": "The bioconductor-depmap package provides a framework for accessing and analyzing cancer dependency data from the Broad Institute in a tidy format. Use when user asks to access CRISPR, RNAi, or drug sensitivity datasets, retrieve cancer cell line metadata, or integrate genomic data for dependency analysis.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/depmap.html"
+  }
+}

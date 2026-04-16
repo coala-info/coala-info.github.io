@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dcats",
+  "category": "bioconductor",
+  "name": "bioconductor-dcats",
+  "description": "DCATS performs differential cell type abundance analysis for single-cell RNA-seq data while accounting for clustering uncertainty and misclassification. Use when user asks to detect changes in cell type proportions between conditions, account for cell type confusion using a similarity matrix, or perform differential composition analysis along continuous covariates.",
+  "overview": "DCATS (Differential Composition Analysis with Transformed Similarity) is an R package designed to detect differential cell type abundances in single-cell experiments. It addresses common challenges such as small sample sizes, high clustering uncertainty, and misclassification by using a beta-binomial generalized linear model (GLM) and a similarity matrix to correct for cell type confusion.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DCATS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dcats/overview",
+  "github": "N/A",
+  "conda_downloads": "1.7K",
+  "conda_downloads_num": 1700,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DCATS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DCATS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dcats/overview",
+    "github": "N/A",
+    "conda_downloads": "1.7K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dcats\n\nname: bioconductor-dcats\ndescription: Differential composition analysis for single-cell RNA-seq data using DCATS. Use this skill to detect changes in cell type abundances between conditions or along continuous covariates, while accounting for clustering uncertainty and misclassification errors.\n\n# bioconductor-dcats\n\n## Overview\n\nDCATS (Differential Composition Analysis with Transformed Similarity) is an R package designed to detect differential cell type abundances in single-cell experiments. It addresses common challenges such as small sample sizes, high clustering uncertainty, and misclassification by using a beta-binomial generalized linear model (GLM) and a similarity matrix to correct for cell type confusion.\n\n## Core Workflow\n\n### 1. Prepare Input Data\nDCATS requires a count matrix where rows are samples and columns are cell types, along with a design data frame.\n\n```r\nlibrary(DCATS)\n\n# Example count matrix (Samples x Cell Types)\nsim_count <- matrix(c(36, 35, 29, 271, 279, 250, 84, 87, 79), \n                    nrow = 3, byrow = TRUE)\ncolnames(sim_count) <- c(\"TypeA\", \"TypeB\", \"TypeC\")\n\n# Design matrix\nsim_design <- data.frame(condition = c(\"g1\", \"g1\", \"g2\"))\n```\n\n### 2. Estimate the Similarity Matrix\nThe similarity matrix represents the misclassification rates between cell types. DCATS provides three ways to generate this:\n\n*   **Uniform Confusion:** Assumes unbiased misclassification.\n    ```r\n    simil_mat <- create_simMat(K = 3, confuse_rate = 0.2)\n    ```\n*   **KNN-based:** Uses Seurat's KNN graph to estimate similarity based on neighborhood overlaps.\n    ```r\n    # Requires a Seurat Graph object and cell labels\n    knn_mat <- knn_simMat(seurat_obj@graphs$RNA_nn, seurat_obj$cell_type)\n    ```\n*   **SVM-based:** Uses a Support Vector Machine classifier on PCA/feature data to estimate confusion via cross-validation.\n    ```r\n    # Requires a data frame with features and a 'clusterRes' column\n    svm_mat <- svm_simMat(svm_dataframe)\n    ```\n\n### 3. Run Differential Abundance Analysis\nUse `dcats_GLM` to perform the statistical testing.\n\n```r\n# Basic GLM\nres <- dcats_GLM(sim_count, sim_design, similarity_mat = simil_mat)\n\n# Access results\nres$LRT_pvals  # P-values from Likelihood Ratio Test\nres$fdr        # Adjusted p-values (Benjamini-Hochberg)\nres$ceoffs     # Estimated coefficients (effect sizes)\n```\n\n### 4. Advanced Modeling Options\n\n*   **Controlling for Covariates:** Set `base_model = 'FULL'` to test a factor while controlling for others in the design matrix.\n*   **Global Dispersion:** To avoid overfitting on small clusters, estimate a global over-dispersion parameter ($\\phi$).\n    ```r\n    phi <- getPhi(sim_count, sim_design)\n    res <- dcats_GLM(sim_count, sim_design, similarity_mat = simil_mat, fix_phi = phi)\n    ```\n*   **Reference Cell Types:** Use specific cell types as a normalization baseline if they are known to be stable.\n    ```r\n    # Manual selection\n    res <- dcats_GLM(sim_count, sim_design, reference = c(\"TypeA\", \"TypeB\"))\n    \n    # Automatic detection of stable reference types\n    ref_obj <- detect_reference(sim_count, sim_design)\n    res <- dcats_GLM(sim_count, sim_design, reference = ref_obj$ordered_celltype[1:ref_obj$min_celltypeN])\n    ```\n\n## Tips for Success\n*   **Convergence Warnings:** Warnings regarding \"Optimization process code: 10\" are common with low replicate numbers and typically do not invalidate the results.\n*   **Similarity Matrix Importance:** If biological replicates are numerous and balanced, a uniform similarity matrix often suffices. For datasets with high clustering overlap, KNN or SVM-based matrices provide better correction.\n*   **Reference Selection:** When using `detect_reference`, always validate the suggested cell types against biological knowledge, as automatic selection is a heuristic.\n\n## Reference documentation\n- [Differential Composition Analysis with DCATS](./references/Intro_to_DCATS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dcats",
+    "description": "DCATS performs differential cell type abundance analysis for single-cell RNA-seq data while accounting for clustering uncertainty and misclassification. Use when user asks to detect changes in cell type proportions between conditions, account for cell type confusion using a similarity matrix, or perform differential composition analysis along continuous covariates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DCATS.html"
+  }
+}

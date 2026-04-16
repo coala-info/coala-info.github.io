@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-saturn",
+  "category": "bioconductor",
+  "name": "bioconductor-saturn",
+  "description": "satuRn is a Bioconductor package for differential transcript usage analysis in bulk and single-cell transcriptomics data. Use when user asks to perform differential transcript usage analysis, fit quasi-binomial models to transcript counts, or test for differential usage of exons and equivalence classes.",
+  "overview": "`satuRn` is a Bioconductor package designed for differential transcript usage (DTU) analysis. It models transcript usage profiles using a quasi-binomial generalized linear model (GLM), which provides a scalable and flexible framework for both bulk and single-cell transcriptomics. The package is feature-agnostic; it can perform differential usage analysis on transcripts, exons, or equivalence classes (TCCs), provided the input is structured as a `SummarizedExperiment`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/satuRn.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/statOmics/satuRn",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "satuRn"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/satuRn.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/statOmics/satuRn",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-saturn\n\n## Overview\n\n`satuRn` is a Bioconductor package designed for differential transcript usage (DTU) analysis. It models transcript usage profiles using a quasi-binomial generalized linear model (GLM), which provides a scalable and flexible framework for both bulk and single-cell transcriptomics. The package is feature-agnostic; it can perform differential usage analysis on transcripts, exons, or equivalence classes (TCCs), provided the input is structured as a `SummarizedExperiment`.\n\n## Core Workflow\n\n### 1. Data Preparation\n`satuRn` requires a `SummarizedExperiment` (or `SingleCellExperiment`) where:\n- **Assays**: Contains a count matrix (e.g., transcript-level counts).\n- **rowData**: Must contain columns `isoform_id` (the feature name) and `gene_id` (the grouping variable).\n- **colData**: Contains experimental design metadata.\n\n**Important**: You must filter out \"lonely\" features (genes with only one expressed isoform/exon) as they cannot exhibit differential usage.\n\n```r\nlibrary(satuRn)\nlibrary(SummarizedExperiment)\n\n# Example filtering and setup\n# Ensure rowData has 'isoform_id' and 'gene_id'\n# Remove transcripts that are the only isoform expressed for a gene\ntxInfo <- subset(txInfo, duplicated(gene_id) | duplicated(gene_id, fromLast = TRUE))\n\nsumExp <- SummarizedExperiment(\n    assays = list(counts = count_matrix),\n    colData = metadata,\n    rowData = txInfo\n)\n```\n\n### 2. Fitting Models (`fitDTU`)\nThe `fitDTU` function models the usage of each feature. It uses a formula interface similar to `lm` or `glm`.\n\n```r\nsumExp <- satuRn::fitDTU(\n    object = sumExp,\n    formula = ~ 0 + group_variable,\n    parallel = FALSE, # Set TRUE for large datasets\n    verbose = TRUE\n)\n```\n\n### 3. Testing for Differential Usage (`testDTU`)\nDefine contrasts using a contrast matrix (often created via `limma::makeContrasts`). `satuRn` provides both raw and empirical p-values. **Always prefer the empirical p-values** (`empirical_pval`) for downstream inference.\n\n```r\n# Create contrast matrix\nL <- limma::makeContrasts(\n    Contrast1 = GroupA - GroupB,\n    levels = design_matrix\n)\n\n# Perform test\nsumExp <- satuRn::testDTU(\n    object = sumExp,\n    contrasts = L,\n    diagplot1 = TRUE, # Check empirical null distribution\n    diagplot2 = TRUE  # Check adjusted test statistics\n)\n\n# Access results\nresults <- rowData(sumExp)[[\"fitDTUResult_Contrast1\"]]\n```\n\n### 4. Visualization (`plotDTU`)\nVisualize the usage profiles of top-ranked features or specific genes of interest.\n\n```r\nplots <- satuRn::plotDTU(\n    object = sumExp,\n    contrast = \"Contrast1\",\n    groups = list(cells_in_groupA, cells_in_groupB),\n    coefficients = list(c(1, 0), c(0, 1)), # Match design matrix columns\n    summaryStat = \"model\",\n    top.n = 3\n)\n# Display plots\nfor (p in plots) print(p)\n```\n\n## Advanced Usage\n\n### Equivalence Class-Level Analysis\nFor 10X Genomics data where transcript-level quantification is difficult, use equivalence classes (TCCs).\n- Use `fishpond::alevinEC` to import Alevin data.\n- Ensure `multigene = FALSE` to keep equivalence classes unique to a single gene.\n- The workflow remains identical to DTU once the `SummarizedExperiment` is created.\n\n### Exon-Level Analysis\nFor differential exon usage (DEU):\n- Import data using `DEXSeq` wrappers or similar tools.\n- Map `groupID` to `gene_id` and `featureID` to `isoform_id`.\n- Proceed with `fitDTU` and `testDTU`.\n\n### Gene-Level FDR Control\nTo control FDR at the gene level (rather than transcript level), post-process `satuRn` results with the `stageR` package. This involves a screening stage (gene-level) and a confirmation stage (transcript-level).\n\n## Reference documentation\n\n- [Main vignette: transcript-level analyses](./references/Vignette.md)\n- [Vignette for equivalence class-level analyses](./references/Vignette_eqclass.Rmd)\n- [Vignette for exon-level analyses](./references/Vignette_exon.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-saturn",
+    "description": "satuRn is a Bioconductor package for differential transcript usage analysis in bulk and single-cell transcriptomics data. Use when user asks to perform differential transcript usage analysis, fit quasi-binomial models to transcript counts, or test for differential usage of exons and equivalence classes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/satuRn.html"
+  }
+}

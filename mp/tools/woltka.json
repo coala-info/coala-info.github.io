@@ -1,0 +1,53 @@
+{
+  "id": "woltka",
+  "category": "CLI",
+  "name": "woltka",
+  "description": "Woltka transforms sequence alignments into taxonomic and functional feature abundance tables. Use when user asks to generate OGU tables, perform taxonomic profiling, conduct functional profiling through coordinate matching, or normalize and collapse feature tables.",
+  "overview": "Woltka is a versatile bioinformatics classifier designed to transform sequence alignments into feature abundance tables. It sits between the alignment step (e.g., Bowtie2, Minimap2) and the statistical analysis step. By mapping sequencing reads to reference genomes or genes and applying hierarchical classification systems, Woltka allows researchers to determine the taxonomic structure and functional potential of microbial communities. It is particularly optimized for use with the Web of Life (Wo",
+  "homepage": "https://github.com/qiyunzhu/woltka",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/woltka/overview",
+  "github": "https://github.com/qiyunzhu/woltka",
+  "conda_downloads": "5.6K",
+  "conda_downloads_num": 5600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "woltka_collapse",
+      "woltka_normalize",
+      "woltka_filter",
+      "woltka_merge",
+      "woltka_coverage"
+    ],
+    "description": "Collapse a profile by feature mapping and/or hierarchy.",
+    "docker_image": "quay.io/biocontainers/woltka:0.1.7--pyhdfd78af_0",
+    "homepage": "https://github.com/qiyunzhu/woltka",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/woltka/overview",
+    "github": "https://github.com/qiyunzhu/woltka",
+    "conda_downloads": "5.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "woltka_collapse.cwl",
+    "woltka_coverage.cwl",
+    "woltka_filter.cwl",
+    "woltka_merge.cwl",
+    "woltka_normalize.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# woltka\n\n## Overview\n\nWoltka is a versatile bioinformatics classifier designed to transform sequence alignments into feature abundance tables. It sits between the alignment step (e.g., Bowtie2, Minimap2) and the statistical analysis step. By mapping sequencing reads to reference genomes or genes and applying hierarchical classification systems, Woltka allows researchers to determine the taxonomic structure and functional potential of microbial communities. It is particularly optimized for use with the Web of Life (WoL) reference database but supports any custom classification system.\n\n## Core Workflows\n\n### 1. Generating OGU Tables\nThe simplest workflow generates an Operational Genomic Unit (OGU) table, which provides the highest possible resolution by counting reads mapped to specific reference genomes.\n\n```bash\nwoltka classify -i path/to/alignments -o table.biom\n```\n\n### 2. Taxonomic Profiling\nTo generate tables at specific taxonomic ranks (e.g., genus, species), provide a mapping file and a nodes file (hierarchy).\n\n```bash\nwoltka classify -i align_dir -m taxonomy/nodes.dmp -m taxonomy/names.dmp --rank species -o species_table.tsv\n```\n\n### 3. Functional Profiling (Coord-Match)\nWhen alignments are made against genomes, Woltka can \"match coordinates\" to functional annotations (ORFs/genes) without requiring a separate alignment against a gene database.\n\n```bash\nwoltka classify -i align_dir -c genes.coords -o function_table.biom\n```\n\n## Table Utilities\n\n### Collapsing Tables\nAggregate an existing table to a higher level (e.g., from genes to metabolic pathways).\n```bash\nwoltka collapse -i gene_table.biom -m gene_to_pathway.map -o pathway_table.biom\n```\n\n### Normalization\nConvert raw counts into relative abundances or normalize by gene length (RPK).\n```bash\n# Fractional normalization\nwoltka normalize -i table.biom -o normalized_table.biom\n\n# Length-based normalization (RPK)\nwoltka normalize -i table.biom -c gene_coords.txt -o rpk_table.biom\n```\n\n### Filtering and Merging\n*   **Filter**: Remove low-abundance features.\n    `woltka filter -i table.biom -p 0.01 -o filtered_table.biom` (removes features < 1% per sample).\n*   **Merge**: Combine multiple feature tables.\n    `woltka merge -i table1.biom -i table2.biom -o merged_table.biom`\n\n## Expert Tips and Best Practices\n\n*   **Input Optimization**: For Bowtie2 alignments, use the \"SHOGUN protocol\" parameters to ensure optimal sensitivity for metagenomics:\n    `-k 16 --np 1 --mp \"1,1\" --rdg \"0,1\" --rfg \"0,1\" --score-min \"L,0,-0.05\"`\n*   **Disk Space**: Woltka can read compressed alignment files (e.g., `.sam.gz`, `.sam.xz`) directly. Use the `--no-head` and `--no-unal` flags in your aligner to further reduce input file size.\n*   **Memory Management**: If processing extremely large datasets, use the `--chunk` parameter to control the number of sequences processed at once, which helps manage RAM usage.\n*   **Output Formats**: While BIOM is the default and recommended for QIIME 2, you can output plain TSV by specifying a `.tsv` extension in the `-o` parameter.\n*   **Excluding Sequences**: Use the `-x` or `--exclude` flag to filter out reads mapped to specific references, such as host genomes (human, mouse) or spike-ins.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| woltka collapse | Collapse a profile by feature mapping and/or hierarchy. |\n| woltka filter | Filter a profile by per-sample abundance. |\n| woltka normalize | Normalize a profile to fractions and/or by feature sizes. |\n| woltka_coverage | Calculate per-sample coverage of feature groups. |\n| woltka_merge | Merge multiple profiles into one profile. |\n\n## Reference documentation\n- [Woltka Main README](./references/github_com_qiyunzhu_woltka_blob_main_README.md)\n- [Sequence Alignment Guidelines](./references/github_com_qiyunzhu_woltka_blob_main_doc_align.md)\n- [OGU Analysis Tutorial](./references/github_com_qiyunzhu_woltka_blob_main_doc_ogu.md)\n- [Classification Methods](./references/github_com_qiyunzhu_woltka_blob_main_doc_classify.md)\n- [Functional Profiling (Ordinal Mapper)](./references/github_com_qiyunzhu_woltka_blob_main_doc_ordinal.md)",
+  "skill_front_matter": {
+    "name": "woltka",
+    "description": "Woltka transforms sequence alignments into taxonomic and functional feature abundance tables. Use when user asks to generate OGU tables, perform taxonomic profiling, conduct functional profiling through coordinate matching, or normalize and collapse feature tables.",
+    "homepage": "https://github.com/qiyunzhu/woltka"
+  }
+}

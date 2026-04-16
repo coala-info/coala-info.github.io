@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-plyinteractions",
+  "category": "bioconductor",
+  "name": "bioconductor-plyinteractions",
+  "description": "This tool provides a tidy interface for manipulating genomic interaction data in R using dplyr and plyranges-like syntax. Use when user asks to filter, mutate, group, or perform overlap analysis on Hi-C, ChIA-PET, or other paired genomic range datasets.",
+  "overview": "The `plyinteractions` package provides a \"tidy\" interface for `GInteractions` objects (from the `InteractionSet` package). It allows users to apply familiar `dplyr` verbs (like `filter`, `mutate`, `group_by`) and `plyranges` operations (like `stretch`, `anchor`, `find_overlaps`) directly to genomic interaction data. This is particularly useful for processing Hi-C, ChIA-PET, and other paired-end genomic datasets.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/plyinteractions.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/js2264/plyinteractions",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "plyinteractions"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/plyinteractions.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/js2264/plyinteractions",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-plyinteractions\n\nname: bioconductor-plyinteractions\ndescription: Comprehensive tidy manipulation of genomic interactions (GInteractions) using dplyr and plyranges-like syntax. Use when working with Hi-C, ChIA-PET, or other paired genomic range data in R to filter, mutate, group, or perform overlap analysis on interaction anchors.\n\n# bioconductor-plyinteractions\n\n## Overview\n\nThe `plyinteractions` package provides a \"tidy\" interface for `GInteractions` objects (from the `InteractionSet` package). It allows users to apply familiar `dplyr` verbs (like `filter`, `mutate`, `group_by`) and `plyranges` operations (like `stretch`, `anchor`, `find_overlaps`) directly to genomic interaction data. This is particularly useful for processing Hi-C, ChIA-PET, and other paired-end genomic datasets.\n\n## Core Workflows\n\n### 1. Importing Data\nConvert tabular data (from BEDPE or pairs files) into `GInteractions` objects.\n\n```r\nlibrary(plyinteractions)\n\n# From a data frame\ngi <- bedpe_df |>\n    as_ginteractions(\n        seqnames1 = V1, start1 = V2, end1 = V3, strand1 = V9,\n        seqnames2 = V4, start2 = V5, end2 = V6, strand2 = V10,\n        starts.in.df.are.0based = TRUE\n    )\n```\n\n### 2. Tidy Manipulation (dplyr verbs)\nYou can manipulate metadata and core genomic fields using standard verbs. Core fields for anchors are accessed by appending `1` or `2` (e.g., `start1`, `seqnames2`).\n\n```r\n# Filter for cis-interactions on a specific chromosome\ncis_chr1 <- gi |> \n  filter(seqnames1 == seqnames2, seqnames1 == \"chr1\")\n\n# Mutate to add interaction distance\ngi <- gi |> \n  mutate(dist = abs(start2 - start1))\n\n# Group and summarize\nstats <- gi |> \n  group_by(seqnames1) |> \n  summarize(count = n(), avg_dist = mean(dist))\n```\n\n### 3. Pinned Operations (plyranges verbs)\nTo use `plyranges` arithmetic (like `stretch` or `flank`), you must \"pin\" the interaction to one of the two anchors.\n\n```r\n# Pin the first anchor and stretch it by 500bp\npinned_gi <- gi |> \n  pin_by(\"first\") |> \n  stretch(500)\n\n# Use anchors to control stretching direction\nanchored_gi <- gi |> \n  pin_by(\"second\") |> \n  anchor_center() |> \n  stretch(1000)\n\n# Revert to standard GInteractions\nfinal_gi <- unpin(anchored_gi)\n```\n\n### 4. Overlap Analysis\nPerform overlaps between `GInteractions` (query) and `GRanges` (subject).\n\n```r\n# Find interactions where either anchor overlaps a promoter\noverlaps <- find_overlaps(gi, promoter_granges)\n\n# Find interactions where ONLY the pinned anchor overlaps\npinned_overlaps <- gi |> \n  pin_by(\"first\") |> \n  find_overlaps(promoter_granges)\n\n# Count overlaps and add as metadata\ngi <- gi |> \n  mutate(n_overlaps = count_overlaps(gi, feature_granges))\n```\n\n## Key Functions Reference\n\n| Function | Description |\n| :--- | :--- |\n| `as_ginteractions()` | Coerce data frames to GInteractions objects. |\n| `pin_by(\"first\"\\|\"second\")` | Target a specific anchor for range arithmetic. |\n| `anchors1()`, `anchors2()` | Extract GRanges for the first or second anchors. |\n| `mutate()`, `filter()`, `select()` | Standard dplyr verbs adapted for GInteractions. |\n| `group_by()`, `summarize()` | Aggregate data across interactions. |\n| `find_overlaps()` | Find overlaps between interactions and GRanges. |\n| `annotate()` | Overlap-based join to add metadata from a GRanges object. |\n\n## Tips and Best Practices\n*   **Naming Convention**: Always use the suffix `1` or `2` to refer to the first or second anchor's properties (e.g., `strand1`, `width2`).\n*   **Unpinning**: Remember to `unpin()` if you need to return to a standard `GInteractions` object for downstream Bioconductor tools that don't recognize the `PinnedGInteractions` class.\n*   **Strandness**: Overlap functions like `find_overlaps()` are unstranded by default. Use `find_overlaps_directed()` if strand information is required.\n*   **Metadata**: `select()` only operates on metadata columns unless `.drop_ranges = TRUE` is specified, which converts the output to a `DataFrame`.\n\n## Reference documentation\n- [plyinteractions](./references/plyinteractions.md)\n- [process_pairs](./references/process_pairs.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-plyinteractions",
+    "description": "This tool provides a tidy interface for manipulating genomic interaction data in R using dplyr and plyranges-like syntax. Use when user asks to filter, mutate, group, or perform overlap analysis on Hi-C, ChIA-PET, or other paired genomic range datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/plyinteractions.html"
+  }
+}

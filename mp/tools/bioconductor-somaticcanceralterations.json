@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-somaticcanceralterations",
+  "category": "bioconductor",
+  "name": "bioconductor-somaticcanceralterations",
+  "description": "This package provides access to curated somatic mutation data from TCGA studies in standardized Bioconductor formats. Use when user asks to retrieve somatic variants from TCGA, load cancer mutation datasets as GRanges objects, or analyze curated somatic callsets across different tumor types.",
+  "overview": "The `SomaticCancerAlterations` package provides a curated collection of somatic mutation data from The Cancer Genome Atlas (TCGA). It transforms raw mutation callsets (MAF files) into Bioconductor-standard `GRanges` objects, facilitating seamless integration with other genomic analysis tools.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/SomaticCancerAlterations.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SomaticCancerAlterations"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/SomaticCancerAlterations.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-somaticcanceralterations\n\nname: bioconductor-somaticcanceralterations\ndescription: Access and analyze somatic mutation callsets from TCGA studies. Use when working with cancer genomics data in R, specifically for retrieving curated somatic variants (SNPs, Indels) across various tumor types (GBM, LUAD, OV, etc.) and integrating them with GenomicRanges workflows.\n\n# bioconductor-somaticcanceralterations\n\n## Overview\n\nThe `SomaticCancerAlterations` package provides a curated collection of somatic mutation data from The Cancer Genome Atlas (TCGA). It transforms raw mutation callsets (MAF files) into Bioconductor-standard `GRanges` objects, facilitating seamless integration with other genomic analysis tools.\n\nKey features:\n- Access to multiple TCGA studies (e.g., Glioblastoma, Lung Adenocarcinoma, Ovarian Cancer).\n- Standardized genomic coordinates (NCBI 37/hg19).\n- Metadata for study-level information (sequencing platform, sample size).\n- Integration with `GenomicRanges` for spatial queries and overlaps.\n\n## Core Workflow\n\n### 1. Discover Available Data\nUse `scaListDatasets()` to see available study IDs and `scaMetadata()` to view study details.\n\n```r\nlibrary(SomaticCancerAlterations)\n\n# List available study IDs\nids <- scaListDatasets()\n\n# View metadata (Cancer Type, Sequencer, Sample Count, etc.)\nmeta <- scaMetadata()\nhead(meta)\n```\n\n### 2. Load Datasets\nLoad one or more datasets using `scaLoadDatasets()`. You can choose to keep them as a list or merge them into a single object.\n\n```r\n# Load a single dataset (returns GRanges)\nov <- scaLoadDatasets(\"ov_tcga\")\n\n# Load multiple datasets as a GRangesList\nmulti <- scaLoadDatasets(c(\"gbm_tcga\", \"luad_tcga\"))\n\n# Load and merge multiple datasets into one GRanges object\nmerged <- scaLoadDatasets(c(\"gbm_tcga\", \"luad_tcga\"), merge = TRUE)\n```\n\n### 3. Explore Mutation Data\nThe data is stored as a `GRanges` object. Metadata columns (`mcols`) contain critical information like gene symbols and mutation types.\n\n```r\n# View the first few mutations\nhead(ov)\n\n# Tabulate mutation types\ntable(ov$Variant_Classification)\n\n# Identify most frequently mutated genes\nhead(sort(table(ov$Hugo_Symbol), decreasing = TRUE))\n```\n\n### 4. Genomic Queries\nSince the data is in `GRanges` format, you can subset mutations by specific genomic regions.\n\n```r\nlibrary(GenomicRanges)\n\n# Define a region of interest (e.g., TP53 locus on Chr 17)\ntp53_region <- GRanges(\"17\", IRanges(7571720, 7590863))\n\n# Subset mutations overlapping this region\ntp53_muts <- subsetByOverlaps(ov, tp53_region)\n\n# Analyze variants in this region across studies\ntable(tp53_muts$Variant_Classification)\n```\n\n## Common Analysis Patterns\n\n### Calculating Mutation Fractions\nTo determine the percentage of patients in a study harboring a mutation in a specific region:\n\n```r\n# Function to calculate fraction of mutated patients\ncalc_mut_fraction <- function(gr) {\n    # Get total patients from study metadata\n    total_patients <- metadata(gr)$Number_Patients\n    # Count unique patients with mutations in the current GRanges\n    mutated_patients <- length(unique(gr$Patient_ID))\n    return(mutated_patients / total_patients)\n}\n\n# Apply to a list of studies\nfractions <- sapply(multi, function(x) {\n    region_hits <- subsetByOverlaps(x, tp53_region)\n    calc_mut_fraction(region_hits)\n})\n```\n\n### Cross-Study Comparisons\nWhen using `merge = TRUE`, the `Dataset` column allows you to group and compare mutation profiles across different cancer types.\n\n```r\nmerged_data <- scaLoadDatasets(scaListDatasets(), merge = TRUE)\n\n# Compare mutation counts for a specific gene across all TCGA studies\ngene_counts <- table(merged_data$Hugo_Symbol, merged_data$Dataset)\ntp53_counts <- gene_counts[\"TP53\", ]\n```\n\n## Usage Tips\n- **Genome Build**: Data is consistently mapped to NCBI 37 (hg19). Ensure your reference objects (e.g., TxDb) match this build.\n- **Metadata Access**: Use `metadata(gr)` on a loaded dataset to access study-specific information like the number of patients and sequencing center.\n- **Filtering**: Use standard `mcols()` filtering to remove \"Silent\" mutations if focusing only on functional alterations: `ov[ov$Variant_Classification != \"Silent\"]`.\n\n## Reference documentation\n\n- [SomaticCancerAlterations](./references/SomaticCancerAlterations-html.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-somaticcanceralterations",
+    "description": "This package provides access to curated somatic mutation data from TCGA studies in standardized Bioconductor formats. Use when user asks to retrieve somatic variants from TCGA, load cancer mutation datasets as GRanges objects, or analyze curated somatic callsets across different tumor types.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/SomaticCancerAlterations.html"
+  }
+}

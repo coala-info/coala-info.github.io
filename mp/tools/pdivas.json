@@ -1,0 +1,47 @@
+{
+  "id": "pdivas",
+  "category": "CLI",
+  "name": "pdivas",
+  "description": "PDIVAS is a machine learning tool designed to predict the pathogenicity of deep-intronic variants that cause aberrant splicing. Use when user asks to predict the impact of deep-intronic mutations, calculate pathogenicity scores for splicing variants, or convert PDIVAS VCF outputs into TSV format.",
+  "overview": "PDIVAS (Pathogenicity Predictor for Deep-Intronic Variants causing Aberrant Splicing) is a specialized machine learning tool designed to identify deleterious variants located deep within introns. While most variant effect predictors focus on coding regions or canonical splice sites, PDIVAS uses a random forest algorithm to evaluate the likelihood that a deep-intronic mutation will disrupt normal gene expression via aberrant splicing. It integrates scores from SpliceAI, MaxEntScan, and ConSplice ",
+  "homepage": "https://github.com/shiro-kur/PDIVAS",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pdivas/overview",
+  "github": "https://github.com/shiro-kur/PDIVAS",
+  "conda_downloads": "1.9K",
+  "conda_downloads_num": 1900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pdivas_predict",
+      "pdivas_vcf2tsv"
+    ],
+    "description": "Add PDIVAS annotation to a VCF file and predict deep-intronic variants.",
+    "docker_image": "quay.io/biocontainers/pdivas:1.2.0--pyh7e72e81_0",
+    "homepage": "https://github.com/shiro-kur/PDIVAS",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pdivas/overview",
+    "github": "https://github.com/shiro-kur/PDIVAS",
+    "conda_downloads": "1.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pdivas_predict.cwl",
+    "pdivas_vcf2tsv.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pdivas\n\n## Overview\n\nPDIVAS (Pathogenicity Predictor for Deep-Intronic Variants causing Aberrant Splicing) is a specialized machine learning tool designed to identify deleterious variants located deep within introns. While most variant effect predictors focus on coding regions or canonical splice sites, PDIVAS uses a random forest algorithm to evaluate the likelihood that a deep-intronic mutation will disrupt normal gene expression via aberrant splicing. It integrates scores from SpliceAI, MaxEntScan, and ConSplice to provide a unified pathogenicity metric.\n\n## Installation and Environment Setup\n\nPDIVAS requires a specific environment due to its dependencies on older versions of scikit-learn and specialized splicing predictors.\n\n1. **Create the Environment**:\n   ```bash\n   conda create -n PDIVAS -c bioconda -c conda-forge spliceai tensorflow==2.6.2 pdivas bcftools vcfanno\n   ```\n\n2. **Custom SpliceAI Requirement**: PDIVAS requires a customized version of SpliceAI's output module to function correctly. If running the full pipeline, you must replace the default SpliceAI files with the customized versions found in the PDIVAS repository.\n\n## Core Workflows\n\n### 1. Fast Annotation (Precomputed Scores)\nFor variants in known Mendelian disease genes (approx. 4,500 genes), use the precomputed score files to avoid heavy computational overhead.\n\n```bash\n# Use vcfanno with a configuration file pointing to the precomputed PDIVAS VCF\nvcfanno -lua custom.lua conf.toml input.vcf > annotated_output.vcf\n```\n\n### 2. Full Prediction Pipeline\nWhen analyzing variants not covered by precomputed files, follow this sequence:\n\n**Step A: Preprocessing**\nEnsure the VCF is biallelic.\n```bash\nbcftools norm -m - multi_allelic.vcf > biallelic.vcf\n```\n\n**Step B: Feature Generation**\nRun VEP with the MaxEntScan and ConSplice plugins, followed by the customized SpliceAI.\n```bash\n# SpliceAI command for PDIVAS features\nspliceai -I vep_annotated.vcf -O features_ready.vcf -R hg38.fa -A grch38 -D 300 -M 1\n```\n\n**Step C: PDIVAS Prediction**\n```bash\npdivas predict -I features_ready.vcf -O final_predictions.vcf.gz -F off\n```\n\n## CLI Reference and Best Practices\n\n### pdivas predict\nThe primary command for calculating pathogenicity scores.\n- `-I`: Input VCF (must contain SpliceAI, MaxEntScan, and ConSplice annotations).\n- `-O`: Output VCF.\n- `-F`: Filtering mode. \n    - `off` (default): Outputs all variants.\n    - `on`: Outputs only deep-intronic variants that received a PDIVAS score.\n\n### pdivas vcf2tsv\nConverts the VCF output into a readable TSV format, which is essential for downstream manual review as it handles multi-gene annotations by creating one line per gene.\n```bash\npdivas vcf2tsv -I final_predictions.vcf.gz -O final_report.tsv\n```\n\n## Expert Tips\n- **Score Interpretation**: PDIVAS scores range from 0.000 to 1.000. Higher values indicate a higher probability of pathogenicity.\n- **Scope Limitations**: PDIVAS is optimized for protein-coding genes on autosomes and the X chromosome. Variants on the Y chromosome or in non-coding RNA genes may return `out_of_scope`.\n- **Handling Exceptions**: \n    - `wo_annots`: Indicates the variant lacked the required input features (SpliceAI/MaxEntScan/ConSplice) for a prediction.\n    - `out_of_scope`: Indicates the variant is outside the genomic regions PDIVAS was trained to evaluate.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| pdivas predict | Add PDIVAS annotation to a VCF file and predict deep-intronic variants. |\n| pdivas vcf2tsv | Convert PDIVAS annotated VCF files to TSV format |\n\n## Reference documentation\n- [PDIVAS Main Documentation](./references/github_com_shiro-kur_PDIVAS.md)\n- [PDIVAS README and Usage](./references/github_com_shiro-kur_PDIVAS_blob_main_README.md)",
+  "skill_front_matter": {
+    "name": "pdivas",
+    "description": "PDIVAS is a machine learning tool designed to predict the pathogenicity of deep-intronic variants that cause aberrant splicing. Use when user asks to predict the impact of deep-intronic mutations, calculate pathogenicity scores for splicing variants, or convert PDIVAS VCF outputs into TSV format.",
+    "homepage": "https://github.com/shiro-kur/PDIVAS"
+  }
+}

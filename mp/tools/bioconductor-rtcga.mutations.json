@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rtcga.mutations",
+  "category": "bioconductor",
+  "name": "bioconductor-rtcga.mutations",
+  "description": "This package provides somatic mutation data from various cancer cohorts for use in the RTCGA analysis workflow. Use when user asks to load TCGA mutation datasets, merge and filter somatic mutations, perform survival analysis based on mutation status, or visualize mutations alongside gene expression data.",
+  "overview": "The `RTCGA.mutations` package is a data-only experiment package providing somatic mutation information from the Broad GDAC Firehose. It contains Mutation Annotation Format (MAF) data for various cancer cohorts, processed into a tidy format compatible with the `RTCGA` workflow. This skill facilitates loading these datasets and using them alongside `RTCGA` visualization and analysis tools.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RTCGA.mutations.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RTCGA/RTCGA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RTCGA.mutations"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RTCGA.mutations.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RTCGA/RTCGA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rtcga.mutations\n\n## Overview\nThe `RTCGA.mutations` package is a data-only experiment package providing somatic mutation information from the Broad GDAC Firehose. It contains Mutation Annotation Format (MAF) data for various cancer cohorts, processed into a tidy format compatible with the `RTCGA` workflow. This skill facilitates loading these datasets and using them alongside `RTCGA` visualization and analysis tools.\n\n## Loading Mutation Data\nDatasets are named using the convention `[COHORT].mutations`. To use them, you must load both the data package and the core `RTCGA` package.\n\n```r\nlibrary(RTCGA)\nlibrary(RTCGA.mutations)\n\n# List available mutation datasets\ndata(package = \"RTCGA.mutations\")\n\n# Load specific cohorts (e.g., Breast Cancer and Ovarian Cancer)\ndata(BRCA.mutations)\ndata(OV.mutations)\n```\n\n## Common Workflows\n\n### 1. Merging and Filtering Mutations\nUse `mutationsTCGA()` to combine multiple mutation datasets and filter for specific genes or tissue types.\n\n```r\nlibrary(dplyr)\n\n# Combine cohorts and filter for TP53 mutations in primary tumor samples (barcode suffix \"01\")\ntp53_mutations <- mutationsTCGA(BRCA.mutations, OV.mutations) %>%\n  filter(Hugo_Symbol == \"TP53\") %>%\n  filter(substr(bcr_patient_barcode, 14, 15) == \"01\") %>%\n  mutate(bcr_patient_barcode = substr(bcr_patient_barcode, 1, 12))\n```\n\n### 2. Survival Analysis by Mutation Status\nIntegrate mutation data with clinical data from `RTCGA.clinical` to perform Kaplan-Meier survival analysis.\n\n```r\nlibrary(RTCGA.clinical)\n\n# 1. Get survival data\nsurvival_data <- survivalTCGA(BRCA.clinical, OV.clinical, extract.cols = \"admin.disease_code\")\n\n# 2. Join with mutation status\nsurvival_mut_status <- survival_data %>%\n  left_join(tp53_mutations, by = \"bcr_patient_barcode\") %>%\n  mutate(TP53_Status = ifelse(!is.na(Variant_Classification), \"Mutant\", \"Wild-type\"))\n\n# 3. Plot Kaplan-Meier curves\nkmTCGA(survival_mut_status, \n       explanatory.names = c(\"TP53_Status\", \"admin.disease_code\"),\n       pval = TRUE)\n```\n\n### 3. Visualizing Mutations with Expression Data\nCompare gene expression levels (from `RTCGA.rnaseq`) between mutated and wild-type samples using boxplots.\n\n```r\nlibrary(RTCGA.rnaseq)\n\n# Extract expression for a gene (e.g., MET)\nexpr_data <- expressionsTCGA(BRCA.rnaseq, OV.rnaseq, extract.cols = \"MET|4233\") %>%\n  rename(cohort = dataset, MET = `MET|4233`) %>%\n  mutate(bcr_patient_barcode = substr(bcr_patient_barcode, 1, 12))\n\n# Join and plot\nexpr_mut_join <- expr_data %>%\n  left_join(tp53_mutations, by = \"bcr_patient_barcode\") %>%\n  mutate(TP53 = ifelse(!is.na(Variant_Classification), \"Mut\", \"WILD\"))\n\nboxplotTCGA(expr_mut_join, x = \"cohort\", y = \"log1p(MET)\", fill = \"TP53\")\n```\n\n## Tips for Mutation Data\n- **Barcodes**: TCGA barcodes in mutation files are often longer than the 12-character patient ID. Use `substr(barcode, 1, 12)` for joining with clinical data and `substr(barcode, 1, 15)` for joining with expression data.\n- **Sample Types**: Always filter by the 14th and 15th character of the barcode to ensure you are analyzing \"01\" (Primary Solid Tumor) vs \"11\" (Normal Tissue).\n- **Missing Data**: If a patient is in the clinical dataset but not the mutation dataset, they are typically considered \"Wild-type\" or \"No Mutation Found\" for the specific gene of interest.\n\n## Reference documentation\n- [Quick Data Download Guide](./references/Data_Download.Rmd)\n- [RTCGA package workflow](./references/RTCGA_Workflow.Rmd)\n- [Visualizations](./references/Visualizations.Rmd)\n- [Using RTCGA package to download mutations data](./references/downloading_mutations_datasets.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rtcga.mutations",
+    "description": "This package provides somatic mutation data from various cancer cohorts for use in the RTCGA analysis workflow. Use when user asks to load TCGA mutation datasets, merge and filter somatic mutations, perform survival analysis based on mutation status, or visualize mutations alongside gene expression data.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RTCGA.mutations.html"
+  }
+}

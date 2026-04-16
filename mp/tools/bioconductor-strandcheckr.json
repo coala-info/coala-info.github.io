@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-strandcheckr",
+  "category": "bioconductor",
+  "name": "bioconductor-strandcheckr",
+  "description": "This tool performs quality control and filtering of strand-specific RNA-seq data to identify and remove double-stranded DNA contamination. Use when user asks to assess strand-specificity, quantify DNA contamination in BAM files, or filter out reads originating from genomic DNA.",
+  "overview": "`strandCheckR` is a Bioconductor package designed to identify and filter DNA contamination in strand-specific RNA-seq data. It uses a sliding window approach across the genome to calculate the proportion of reads mapping to the positive and negative strands. In high-quality strand-specific RNA-seq, windows should show a strong bias toward one strand (near 0% or 100% positive proportion). Windows showing a ~50% distribution suggest double-stranded DNA contamination.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/strandCheckR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/UofABioinformaticsHub/strandCheckR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "strandCheckR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/strandCheckR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/UofABioinformaticsHub/strandCheckR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-strandcheckr\n\nname: bioconductor-strandcheckr\ndescription: Quality control and filtering for strand-specific RNA-seq data to detect and remove double-stranded DNA contamination. Use this skill when you need to assess strand-specificity, quantify DNA contamination in RNA-seq BAM files, or filter out reads originating from genomic DNA.\n\n# bioconductor-strandcheckr\n\n## Overview\n\n`strandCheckR` is a Bioconductor package designed to identify and filter DNA contamination in strand-specific RNA-seq data. It uses a sliding window approach across the genome to calculate the proportion of reads mapping to the positive and negative strands. In high-quality strand-specific RNA-seq, windows should show a strong bias toward one strand (near 0% or 100% positive proportion). Windows showing a ~50% distribution suggest double-stranded DNA contamination.\n\n## Core Workflow\n\n### 1. Quantify Strand Information\nThe primary function `getStrandFromBamFile` scans BAM files and returns a DataFrame with strand counts per window.\n\n```r\nlibrary(strandCheckR)\n\n# Define BAM files (must be sorted and indexed)\nbam_files <- c(\"sample1.bam\", \"sample2.bam\")\n\n# Get strand info (default window = 1000bp, step = 100bp)\nwin_info <- getStrandFromBamFile(bam_files, sequences = \"chr1\")\n```\n\n### 2. Integrate Annotations\nTo distinguish between coding regions and intergenic regions, intersect the windows with a GRanges object (e.g., from a TxDb).\n\n```r\nlibrary(TxDb.Hsapiens.UCSC.hg38.knownGene)\nannot <- transcripts(TxDb.Hsapiens.UCSC.hg38.knownGene)\n\n# Ensure sequence names match (e.g., adding 'chr' if necessary)\nwin_info <- intersectWithFeature(\n    windows = win_info, \n    annotation = annot, \n    overlapCol = \"OverlapTranscript\"\n)\n```\n\n### 3. Visualizing Contamination\nUse `plotHist` to view the distribution of positive strand proportions. A peak at 0.5 indicates DNA contamination.\n\n```r\n# Plot histogram of strand proportions\nplotHist(win_info, groupBy = \"File\", normalizeBy = \"File\")\n\n# Heatmap version for comparing many samples\nplotHist(win_info, groupBy = \"File\", heatmap = TRUE)\n\n# Plot read count vs positive proportion to determine filtering thresholds\nplotWin(win_info, groupBy = \"File\")\n```\n\n### 4. Filtering DNA Contamination\nThe `filterDNA` function removes reads from windows that do not meet a specific strand-specificity threshold.\n\n```r\n# Filter a BAM file and save the result\n# threshold = 0.7 means windows must have >70% or <30% of reads on one strand\nfiltered_win <- filterDNA(\n    file = \"sample.bam\", \n    destination = \"sample.filtered.bam\",\n    threshold = 0.7,\n    getWin = TRUE\n)\n```\n\n## Key Functions and Parameters\n\n- `getStrandFromBamFile()`:\n    - `window`: Length of sliding window (default 1000).\n    - `step`: Step size (default 100).\n    - `minMaxCoverage`: Filter windows with low coverage.\n    - `pairedExp`: Set to `TRUE` for paired-end data.\n- `plotHist()`:\n    - `split`: Groups windows by coverage levels (default: <10, 10-100, 100-1000, >1000).\n- `filterDNA()`:\n    - `threshold`: The proportion threshold (0.5 to 1) to decide if a window is \"single-stranded\".\n    - `keepRanges`: A GRanges object of regions to protect from filtering regardless of strand ratio.\n\n## Reference documentation\n\n- [An Introduction To strandCheckR](./references/strandCheckR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-strandcheckr",
+    "description": "This tool performs quality control and filtering of strand-specific RNA-seq data to identify and remove double-stranded DNA contamination. Use when user asks to assess strand-specificity, quantify DNA contamination in BAM files, or filter out reads originating from genomic DNA.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/strandCheckR.html"
+  }
+}

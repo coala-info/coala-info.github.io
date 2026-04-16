@@ -1,0 +1,49 @@
+{
+  "id": "bwa-meme",
+  "category": "CLI",
+  "name": "bwa-meme",
+  "description": "BWA-MEME is a high-performance genomic alignment tool that uses machine learning emulation to accelerate the seeding phase of sequence mapping. Use when user asks to index a reference genome, train a learned-index model, or align DNA reads to a reference with high throughput.",
+  "overview": "BWA-MEME (Burrows-Wheeler Aligner with Machine learning Emulation) is a high-performance genomic alignment tool that replaces the traditional FM-index with a Learned-index (P-RMI). It is designed for researchers and bioinformaticians who require BWA-MEM2 compatibility and output identity but seek higher throughput on standard CPU architectures. By utilizing a machine learning approach for the seeding phase, it achieves significantly faster processing without requiring specialized hardware like G",
+  "homepage": "https://github.com/kaist-ina/BWA-MEME",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bwa-meme/overview",
+  "github": "https://github.com/kaist-ina/BWA-MEME",
+  "conda_downloads": "16.0K",
+  "conda_downloads_num": 16000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bwa-meme_index",
+      "bwa-meme_mem",
+      "bwa-meme_build_rmis_dna.sh"
+    ],
+    "description": "Build an index for a FASTA file using various BWT construction algorithms, including MEME.",
+    "docker_image": "quay.io/biocontainers/bwa-meme:1.0.6--hdcf5f25_2",
+    "homepage": "https://github.com/kaist-ina/BWA-MEME",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bwa-meme/overview",
+    "github": "https://github.com/kaist-ina/BWA-MEME",
+    "conda_downloads": "16.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bwa-meme_build_rmis_dna.sh.cwl",
+    "bwa-meme_index.cwl",
+    "bwa-meme_mem.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bwa-meme\n\n## Overview\n\nBWA-MEME (Burrows-Wheeler Aligner with Machine learning Emulation) is a high-performance genomic alignment tool that replaces the traditional FM-index with a Learned-index (P-RMI). It is designed for researchers and bioinformaticians who require BWA-MEM2 compatibility and output identity but seek higher throughput on standard CPU architectures. By utilizing a machine learning approach for the seeding phase, it achieves significantly faster processing without requiring specialized hardware like GPUs or FPGAs.\n\n## Core Workflow\n\n### 1. Indexing the Reference\nBuild the initial index using the `meme` algorithm. This process generates the suffix array required for the subsequent training step.\n\n```bash\n# Recommended: Use at least 8-32 threads for human genome\nbwa-meme index -a meme <reference.fasta> -t <threads>\n```\n\n### 2. Training the P-RMI Model\nAfter indexing, you must train the Learned-index model. This step is unique to BWA-MEME and is required for the acceleration features.\n\n```bash\n# Requires Rust/Cargo if building from source\nbuild_rmis_dna.sh <reference.fasta>\n```\n*Note: For a human reference, this typically takes ~15 minutes and requires ~64GB of RAM.*\n\n### 3. Performing Alignment\nTo enable the machine learning emulation and speed improvements, you must include the `-7` flag.\n\n```bash\nbwa-meme mem -7 -t <threads> <reference.fasta> <reads_1.fastq> <reads_2.fastq> -o <output.sam>\n```\n\n## Expert Tips and Configuration\n\n### Memory Mode Selection\nBWA-MEME can be compiled or executed in different modes to fit available system memory. Use the `version` command to check the current mode.\n\n| Mode | Index Size (Human) | Description |\n| :--- | :--- | :--- |\n| **Mode 1** | ~38GB | Minimal memory footprint; useful for systems with <64GB RAM. |\n| **Mode 2** | ~88GB | Intermediate acceleration. |\n| **Mode 3** | ~118GB | Full acceleration; fastest seeding throughput. |\n\nTo switch modes, you must use the specific binary (e.g., `bwa-meme_mode1`) or recompile with the `MODE` variable:\n```bash\nmake clean\nmake -j<threads> MODE=1\n```\n\n### Performance Optimization\n- **Thread Scaling**: For Whole Genome Sequencing (WGS) on human data with >32 threads, ensure the system has 140-192 GB RAM to handle the memory overhead of full acceleration.\n- **SAM Compatibility**: BWA-MEME is a drop-in replacement for BWA-MEM2. If your pipeline requires identical results to `bwa mem 0.7.17`, BWA-MEME is the preferred high-speed alternative.\n- **Pipes**: Integrate with `samtools` to save disk space and improve I/O:\n  ```bash\n  bwa-meme mem -7 -t 32 ref.fa reads.fq | samtools view -Sb - > output.bam\n  ```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| build_rmis_dna.sh | Learned-index training script for BWA-MEME. For human reference, training requires around 15 minutes and 64GB memory. |\n| bwa-meme index | Build an index for a FASTA file using various BWT construction algorithms, including MEME. |\n| bwa-meme mem | BWA-MEME (bwa-mem2) alignment tool using learned or ERT indexes for seeding. |\n\n## Reference documentation\n- [BWA-MEME README](./references/github_com_kaist-ina_BWA-MEME_blob_master_README.md)\n- [P-RMI Training Script](./references/github_com_kaist-ina_BWA-MEME_blob_master_build_rmis_dna.sh.md)\n- [Makefile Configuration](./references/github_com_kaist-ina_BWA-MEME_blob_master_Makefile.md)",
+  "skill_front_matter": {
+    "name": "bwa-meme",
+    "description": "BWA-MEME is a high-performance genomic alignment tool that uses machine learning emulation to accelerate the seeding phase of sequence mapping. Use when user asks to index a reference genome, train a learned-index model, or align DNA reads to a reference with high throughput.",
+    "homepage": "https://github.com/kaist-ina/BWA-MEME"
+  }
+}

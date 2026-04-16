@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methimpute",
+  "category": "bioconductor",
+  "name": "bioconductor-methimpute",
+  "description": "Bioconductor-methimpute performs methylation status calling and missing value imputation for DNA methylation data using Hidden Markov Models. Use when user asks to call methylation status, impute missing methylation values, or estimate context-specific conversion rates in BS-seq data.",
+  "overview": "The `methimpute` package implements a binomial HMM to call methylation status. Unlike simple binomial tests, it borrows information from neighboring cytosines to improve accuracy and impute status for sites with zero coverage. It supports separate-context models (CG, CHG, CHH treated independently) and interacting-context models (considering correlations between different contexts).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/methimpute.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "methimpute"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methimpute.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methimpute\n\nname: bioconductor-methimpute\ndescription: Methylation status calling and imputation using Hidden Markov Models (HMM). Use this skill when analyzing DNA methylation data (BS-seq) to call methylation status (Methylated/Unmethylated) for individual cytosines or binned data, especially when imputation of missing values or context-specific conversion rates are required.\n\n## Overview\n\nThe `methimpute` package implements a binomial HMM to call methylation status. Unlike simple binomial tests, it borrows information from neighboring cytosines to improve accuracy and impute status for sites with zero coverage. It supports separate-context models (CG, CHG, CHH treated independently) and interacting-context models (considering correlations between different contexts).\n\n## Core Workflow\n\n### 1. Data Import and Preparation\n\nThe package requires data containing cytosine positions, sequence context, and counts (methylated vs. total).\n\n```R\nlibrary(methimpute)\n\n# Import from BSSeeker format\nfile <- system.file(\"extdata\", \"arabidopsis_bsseeker.txt.gz\", package=\"methimpute\")\nbsseeker.data <- importBSSeeker(file)\n\n# Inflate methylome to include all genomic cytosines (required for HMM imputation)\nfasta.file <- system.file(\"extdata\", \"arabidopsis_sequence.fa.gz\", package=\"methimpute\")\ncytosine.positions <- extractCytosinesFromFASTA(fasta.file, contexts = c('CG','CHG','CHH'))\nmethylome <- inflateMethylome(bsseeker.data, cytosine.positions)\n```\n\n### 2. Estimating Correlation Parameters\n\nBefore calling methylation, you must estimate how methylation correlates over distance.\n\n```R\n# For separate contexts\ndistcor <- distanceCorrelation(methylome, separate.contexts = TRUE)\nfit <- estimateTransDist(distcor)\n\n# For interacting contexts (single HMM for all contexts)\ndistcor.int <- distanceCorrelation(methylome, separate.contexts = FALSE)\nfit.int <- estimateTransDist(distcor.int)\n```\n\n### 3. Methylation Status Calling\n\nChoose between the separate-context model (faster, robust for low coverage) or the interacting-context model (more accurate with sufficient data).\n\n```R\n# Separate-context model\nmodel <- callMethylationSeparate(data = methylome, transDist = fit$transDist)\n\n# Interacting-context model\nmodel.int <- callMethylation(data = methylome, transDist = fit.int$transDist)\n\n# Binned data (e.g., 100bp bins)\nbinnedMethylome <- binMethylome(methylome, binsize = 100, contexts = c('total','CG'))\nbinnedModel <- callMethylation(data = binnedMethylome$CG)\n```\n\n## Interpreting Results\n\nThe output is a `GRanges` object with several metadata columns:\n- `status`: The called methylation state (Methylated/Unmethylated).\n- `posteriorMax`: Confidence score (0 to 1). High confidence is typically >= 0.98.\n- `rc.meth.lvl`: Recalibrated methylation level based on the HMM.\n- `counts`: Original methylated and total read counts.\n\nTo extract bisulfite conversion rates:\n```R\n# Conversion rate = 1 - emission probability of Unmethylated state\n1 - model$params$emissionParams$Unmethylated\n```\n\n## Visualization and Export\n\n```R\n# Diagnostic plots\nplotConvergence(model)\nplotTransitionProbs(model)\nplotHistogram(model, total.counts = 10)\n\n# Enrichment analysis (e.g., around genes)\ndata(arabidopsis_genes)\nplotEnrichment(model$data, annotation=arabidopsis_genes, range = 2000)\n\n# Export to TSV\nexportMethylome(model, filename = \"results.tsv\")\n```\n\n## Tips\n- **Imputation**: `methimpute` automatically assigns a status to cytosines with 0 reads. Check `posteriorMax` to distinguish these; imputed sites usually have lower confidence than covered sites.\n- **Model Selection**: Use `callMethylationSeparate` if you observe that CHH/CHG contexts are incorrectly \"bleeding\" into CG patterns due to very low coverage.\n- **Memory**: For large genomes, ensure you have sufficient RAM when inflating the methylome to include all cytosine positions.\n\n## Reference documentation\n- [Methylation status calling with METHimpute](./references/methimpute.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-methimpute",
+    "description": "Bioconductor-methimpute performs methylation status calling and missing value imputation for DNA methylation data using Hidden Markov Models. Use when user asks to call methylation status, impute missing methylation values, or estimate context-specific conversion rates in BS-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methimpute.html"
+  }
+}

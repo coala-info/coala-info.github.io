@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cssp",
+  "category": "bioconductor",
+  "name": "bioconductor-cssp",
+  "description": "This tool performs statistical power analysis for ChIP-seq data using a Bayesian framework to model bin-level read counts. Use when user asks to estimate ChIP-seq power, fit local Poisson models for background estimation, or determine required sequencing depths for specific false discovery rate and fold-change thresholds.",
+  "overview": "CSSP (ChIP-Seq Statistical Power) provides a Bayesian framework for modeling bin-level read counts in ChIP-seq experiments. It accounts for genome sequence features like mappability and GC-content to estimate the local background and calculate the statistical power of the experiment under various sequencing depths and thresholds.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CSSP.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CSSP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CSSP.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cssp\n\nname: bioconductor-cssp\ndescription: Statistical power analysis for ChIP-seq data using the CSSP package. Use this skill to estimate ChIP-seq power, fit local Poisson models for bin-level read counts, and determine required sequencing depths for specific FDR and fold-change thresholds.\n\n## Overview\n\nCSSP (ChIP-Seq Statistical Power) provides a Bayesian framework for modeling bin-level read counts in ChIP-seq experiments. It accounts for genome sequence features like mappability and GC-content to estimate the local background and calculate the statistical power of the experiment under various sequencing depths and thresholds.\n\n## Workflow\n\n### 1. Data Preparation\n\nCSSP requires bin-level data for ChIP, Input, Mappability (M), and GC-content (GC).\n\n**Method A: Using `readBinFile`**\nLoad pre-computed text files into a data frame.\n```r\nlibrary(CSSP)\ndat <- readBinFile(type = c(\"chip\", \"input\", \"M\", \"GC\"),\n                   fileName = c(\"chip.txt\", \"input.txt\", \"map.txt\", \"gc.txt\"))\n```\n\n**Method B: Using `tag2bin` and `createBinData`**\nConvert read alignments (from packages like SPP) to bin-level counts.\n```r\n# Convert tags to bins\ndat_chip <- tag2bin(tagdat_chip, binS = 100, fragL = 100)\ndat_input <- tag2bin(tagdat_input, binS = 100, fragL = 100)\n\n# Merge with M, GC, and N (optional) files into a BinData object\nbindata <- createBinData(dat_chip, dat_input, \n                         mfile = \"map_\", gcfile = \"gc_\", nfile = \"n_\",\n                         m.suffix = \".txt\", gc.suffix = \".txt\", n.suffix = \".txt\")\n```\n\n### 2. Fitting the CSSP Model\n\nFit the model using Minimum Distance Estimation (MDE) to estimate parameters like `e0` (proportion of background reads).\n\n```r\n# Standard fit\nsampleFit <- cssp.fit(bindata, ngc = 2)\n\n# For large datasets, use gridding to speed up computation\nsampleFit.grid <- cssp.fit(bindata, useGrid = TRUE, nsize = 5000)\n\n# For low sequencing depth, consider zero-inflated models\nsampleFit.zi <- cssp.fit(bindata, nonpa = TRUE, zeroinfl = TRUE)\n```\n\n### 3. Power Computation\n\nCalculate power based on a specific sequencing depth (`x`), False Discovery Rate (`qval`), and minimum fold change (`fold`).\n\n```r\n# Calculate power at current sequencing depth\npower <- cssp.power(fit = sampleFit, x = sampleFit@lambday, qval = 0.05, fold = 2)\n\n# Estimate power across a range of sequencing depths (e.g., 20% to 100%)\ndepths <- seq(0.2, 1, by = 0.2) * sampleFit@lambday\npower_curve <- sapply(depths, function(d) {\n  cssp.power(fit = sampleFit, x = d, fold = 2, useC = TRUE)\n})\n```\n\n### 4. Supplementary Analysis\n\n**Estimating Thresholds from Peak Callers:**\nIf using results from another peak caller, use `bindcount` or `peakcount` to estimate the fold change and count thresholds used by that tool.\n\n```r\n# For peak intervals\ncounts <- peakcount(tagdat_chip, tagdat_input, peakpos = peak_intervals, fragL = 100)\n\n# Calculate empirical thresholds\nthr_fold <- min(counts$chip / counts$input) * (sampleFit@lambdax / sampleFit@lambday / sampleFit@e0)\nthr_count <- min(counts$chip)\n```\n\n## Tips and Interpretation\n\n- **Model Diagnostics:** Check the fit by plotting the p-value distribution. A good fit should show a uniform distribution for p-values in the range specified by `p1` and `p2`.\n  `plot(sampleFit@pvalue, seq(0, 1, length = length(sampleFit@pvalue)))`\n- **GC Content:** For deeply sequenced data, use `ngc=2`. For low depth, use `ngc=0` to avoid ill-defined model matrices.\n- **Minimum Count:** Use `qBBT` to estimate appropriate `min.count` thresholds based on intensity percentiles of the Poisson processes.\n  `fit.tail <- qBBT(fit = sampleFit, prob = 0.99, depth = sampleFit@lambday)`\n\n## Reference documentation\n\n- [CSSP: ChIP-Seq Statistical Power](./references/cssp.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cssp",
+    "description": "This tool performs statistical power analysis for ChIP-seq data using a Bayesian framework to model bin-level read counts. Use when user asks to estimate ChIP-seq power, fit local Poisson models for background estimation, or determine required sequencing depths for specific false discovery rate and fold-change thresholds.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CSSP.html"
+  }
+}

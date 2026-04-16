@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mspurity",
+  "category": "bioconductor",
+  "name": "bioconductor-mspurity",
+  "description": "The msPurity package evaluates precursor ion purity and processes LC-MS/MS or DIMS data for metabolomics. Use when user asks to calculate precursor purity scores, link fragmentation spectra to XCMS features, average MS/MS spectra, or perform spectral matching for metabolite annotation.",
+  "overview": "The `msPurity` package is designed for the automated evaluation of precursor ion purity in mass spectrometry-based metabolomics. It assesses the contribution of a targeted precursor within an isolation window, helping to identify \"chimeric\" MS/MS spectra. Beyond purity assessment, it provides a comprehensive workflow for LC-MS/MS and DIMS data, including feature mapping (with XCMS), spectral averaging, and spectral matching against SQLite-based libraries (e.g., MoNA, MassBank).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/msPurity.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/computational-metabolomics/msPurity",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "msPurity"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msPurity.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/computational-metabolomics/msPurity",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mspurity\n\nname: bioconductor-mspurity\ndescription: Expert guidance for the msPurity R package to assess precursor ion purity, process LC-MS/MS and DIMS data, and perform spectral matching. Use this skill when users need to calculate precursor purity scores, link fragmentation spectra to XCMS features, average MS/MS spectra, or perform metabolite annotation using spectral libraries.\n\n# bioconductor-mspurity\n\n## Overview\nThe `msPurity` package is designed for the automated evaluation of precursor ion purity in mass spectrometry-based metabolomics. It assesses the contribution of a targeted precursor within an isolation window, helping to identify \"chimeric\" MS/MS spectra. Beyond purity assessment, it provides a comprehensive workflow for LC-MS/MS and DIMS data, including feature mapping (with XCMS), spectral averaging, and spectral matching against SQLite-based libraries (e.g., MoNA, MassBank).\n\n## Core Workflows\n\n### 1. Precursor Purity Assessment (purityA)\nThe `purityA` class is the primary entry point for acquired MS/MS data. It calculates the ratio of the precursor intensity to the total intensity in the isolation window.\n\n```r\nlibrary(msPurity)\nmzML_files <- list.files(\"path/to/mzML\", full.names = TRUE)\n\n# Calculate purity for all MS/MS scans\npa <- purityA(mzML_files)\n\n# Access purity results\nhead(pa@puritydf)\n```\n\n### 2. LC-MS/MS Workflow with XCMS\nTo link fragmentation spectra to chromatographic features, `msPurity` integrates with `xcms`.\n\n```r\n# 1. Process with XCMS (v3+)\nlibrary(xcms)\n# ... [XCMS peak picking and grouping] ...\n# xcmsObj is an XCMSnExp object\n\n# 2. Link fragmentation to features\npa <- frag4feature(pa = pa, xcmsObj = xcmsObj)\n\n# 3. Filter and Average Spectra\npa <- filterFragSpectra(pa)\npa <- averageAllFragSpectra(pa) # Or use averageIntra/Inter for more control\n```\n\n### 3. Spectral Matching and Annotation\n`msPurity` uses SQLite databases for spectral matching. You can create a query database from your experiment and match it against a library.\n\n```r\n# 1. Create query database\ntd <- tempdir()\nq_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'query.sqlite')\n\n# 2. Perform spectral matching\n# Matches against default library or user-specified library\nresult <- spectralMatching(q_dbPth, q_xcmsGroups = c(1, 2, 3))\n\n# 3. View results\n# xcmsMatchedResults contains annotations linked to XCMS features\nhead(result$xcmsMatchedResults)\n```\n\n### 4. Anticipated Purity (purityX and purityD)\nUse these classes to predict purity for features where MS/MS has not yet been acquired, useful for prioritizing targets for future DDA/DIA runs.\n\n*   **purityX**: For LC-MS features (requires an `xcmsSet`).\n*   **purityD**: For DIMS data (Direct Infusion Mass Spectrometry).\n\n```r\n# DIMS Example\nppDIMS <- purityD(file_df, mzML = TRUE)\nppDIMS <- averageSpectra(ppDIMS)\nppDIMS <- dimsPredictPurity(ppDIMS)\n```\n\n## Key Functions and Parameters\n- `purityA()`: Main constructor. Use `iwNorm = TRUE` and `iwNormFun` (e.g., `iwNormGauss()`) if the instrument's isolation efficiency is known.\n- `frag4feature()`: Maps MS/MS scans to XCMS features based on m/z and RT windows.\n- `averageAllFragSpectra()`: Consolidates multiple fragmentation scans for a single feature into a representative spectrum.\n- `createMSP()`: Exports processed fragmentation spectra to MSP format for use in other software (e.g., NIST, MS-DIAL).\n- `spectralMatching()`: Calculates Dot Product Cosine (DPC), Reverse DPC, and Composite DPC scores.\n\n## Tips for Success\n- **XCMS Compatibility**: `msPurity` works with both older `xcmsSet` objects and newer `XCMSnExp` objects. For `purityX`, you may need to cast `XCMSnExp` using `as(obj, \"xcmsSet\")`.\n- **Isolation Windows**: Ensure the isolation window offsets in `purityA` match your instrument settings (e.g., +/- 0.5 Da).\n- **Database Schema**: The SQLite databases created by `msPurity` follow a specific schema. Refer to the spectral database vignette for details on table relationships (e.g., `s_peak_meta`, `c_peaks`).\n\n## Reference documentation\n- [LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS](./references/msPurity-lcmsms-data-processing-and-spectral-matching-vignette.md)\n- [msPurity spectral database schema](./references/msPurity-spectral-database-vignette.md)\n- [Using msPurity for Precursor Ion Purity Assessments, Data Processing and Metabolite Annotation](./references/msPurity-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mspurity",
+    "description": "The msPurity package evaluates precursor ion purity and processes LC-MS/MS or DIMS data for metabolomics. Use when user asks to calculate precursor purity scores, link fragmentation spectra to XCMS features, average MS/MS spectra, or perform spectral matching for metabolite annotation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msPurity.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-beadarrayusecases",
+  "category": "bioconductor",
+  "name": "bioconductor-beadarrayusecases",
+  "description": "This package provides workflows and example datasets for the analysis of Illumina BeadArray gene expression data. Use when user asks to process raw bead-level data, perform spatial quality assessment, normalize summarized BeadStudio output, or conduct differential expression analysis.",
+  "overview": "The `BeadArrayUseCases` package provides example datasets and workflows for the analysis of Illumina BeadArray technology. It serves as a comprehensive guide for using `beadarray`, `limma`, and `GEOquery` to handle various Illumina data formats, from raw pixel-level images to summarized expression matrices.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/BeadArrayUseCases.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beadarrayusecases/overview",
+  "github": "N/A",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BeadArrayUseCases"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/BeadArrayUseCases.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beadarrayusecases/overview",
+    "github": "N/A",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-beadarrayusecases\n\nname: bioconductor-beadarrayusecases\ndescription: Analysis of Illumina BeadArray gene expression data using the BeadArrayUseCases package. Use this skill to process raw bead-level data (.bab, .txt, .tif), summarized BeadStudio/GenomeStudio output, and public GEO datasets. It includes workflows for quality assessment (BASH, HULK), normalization (neqc), and differential expression analysis using limma.\n\n# bioconductor-beadarrayusecases\n\n## Overview\nThe `BeadArrayUseCases` package provides example datasets and workflows for the analysis of Illumina BeadArray technology. It serves as a comprehensive guide for using `beadarray`, `limma`, and `GEOquery` to handle various Illumina data formats, from raw pixel-level images to summarized expression matrices.\n\n## Core Workflows\n\n### 1. Bead-Level Data Analysis\nUse this workflow when you have raw files (TIFFs, .locs, or .bab) and want to perform spatial quality control.\n\n```r\nlibrary(beadarray)\nlibrary(BeadArrayUseCases)\n\n# Locate and read data\nchipPath <- system.file(\"extdata/Chips\", package = \"BeadArrayUseCases\")\nsampleSheetFile <- paste0(chipPath, \"/sampleSheet.csv\")\ndata <- readIllumina(dir = chipPath, sampleSheet = sampleSheetFile, illuminaAnnotation = \"Humanv3\")\n\n# Quality Assessment\nboxplot(data, transFun = logGreenChannelTransform)\nimageplot(data, array = 1) # Visualizing spatial artifacts\n\n# Spatial Artifact Management (BASH)\n# Identifies and masks clusters of outliers\nBASHoutput <- BASH(data, array = 1)\ndata <- setWeights(data, wts = BASHoutput$wts, array = 1)\n\n# Gradient Correction (HULK)\nHULKoutput <- HULK(data, array = 1, transFun = logGreenChannelTransform)\ndata <- insertBeadData(data, array = 1, data = HULKoutput, what = \"GrnHulk\")\n\n# Summarization to ExpressionSetIllumina\ndatasumm <- summarize(BLData = data)\n```\n\n### 2. Summarized Data (BeadStudio/GenomeStudio)\nUse this workflow for data exported from Illumina's software.\n\n```r\nlibrary(limma)\n\n# Read BeadStudio output\n# Requires the sample probe profile and optionally the control profile\nmaqc <- read.ilmn(files = \"AsuragenMAQC-probe-raw.txt\", \n                 ctrlfiles = \"AsuragenMAQC-controls.txt\")\n\n# Background correction and normalization (NEQC)\n# This performs normexp background correction using negative controls\nmaqc.norm <- neqc(maqc)\n\n# Filtering based on probe quality (requires annotation package)\nlibrary(illuminaHumanv2.db)\nqual <- unlist(mget(rownames(maqc.norm), illuminaHumanv2PROBEQUALITY, ifnotfound = NA))\nmaqc.filt <- maqc.norm[qual %in% c(\"Perfect\", \"Good\"), ]\n```\n\n### 3. Differential Expression Analysis\nStandard `limma` pipeline adapted for BeadArray objects.\n\n```r\n# Setup design matrix\ngroup <- factor(c(\"UHRR\", \"UHRR\", \"UHRR\", \"Brain\", \"Brain\", \"Brain\"))\ndesign <- model.matrix(~ 0 + group)\ncolnames(design) <- levels(group)\n\n# Empirical array weights to down-weight poor quality arrays\naw <- arrayWeights(maqc.filt, design)\n\n# Linear modeling\nfit <- lmFit(maqc.filt, design, weights = aw)\ncontr <- makeContrasts(UHRR - Brain, levels = design)\nfit2 <- contrasts.fit(fit, contr)\nfit2 <- eBayes(fit2)\n\n# Results\ntopTable(fit2)\n```\n\n### 4. Public Data (GEO)\nRetrieve and process data directly from the Gene Expression Omnibus.\n\n```r\nlibrary(GEOquery)\ngse <- getGEO(\"GSE5350\")[[1]]\n\n# Remove batch effects (e.g., different processing sites)\nsites <- pData(gse)$site # hypothetical column\nexprs(gse) <- removeBatchEffect(exprs(gse), batch = sites)\n```\n\n## Key Functions and Tips\n- `suggestAnnotation(data)`: Use this if the chip type is unknown; it compares IDs against known Illumina platforms.\n- `calculateDetection(datasumm)`: Calculates detection p-values for summarized data based on negative control distributions.\n- `poscontPlot(data, array = 1)`: Plots intensities of internal controls (Biotin, Housekeeping) to verify hybridization and staining.\n- **Memory Management**: Bead-level data is RAM-intensive. Process in batches or use the compressed `.bab` format via `BeadDataPackR`.\n- **Probe Quality**: Always filter \"Bad\" or \"No match\" probes using the `PROBEQUALITY` mapping in Bioconductor `.db` packages to reduce false positives from non-specific hybridization.\n\n## Reference documentation\n- [BeadArray expression analysis using Bioconductor](./references/BeadArrayUseCases.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-beadarrayusecases",
+    "description": "This package provides workflows and example datasets for the analysis of Illumina BeadArray gene expression data. Use when user asks to process raw bead-level data, perform spatial quality assessment, normalize summarized BeadStudio output, or conduct differential expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/BeadArrayUseCases.html"
+  }
+}

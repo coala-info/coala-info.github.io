@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-motifrg",
+  "category": "bioconductor",
+  "name": "bioconductor-motifrg",
+  "description": "This tool discovers discriminative DNA motifs in high-throughput sequencing data by comparing foreground and background sequence sets. Use when user asks to identify over-represented motifs, perform discriminative motif discovery, or refine motifs using logistic regression and IUPAC degenerate letters.",
+  "overview": "The `motifRG` package provides a framework for discriminative motif discovery. Unlike tools that model genomic background distributions, `motifRG` identifies motifs that best distinguish a foreground dataset (e.g., ChIP-seq binding sites) from a background dataset (e.g., non-binding regions or genomic null models). It uses an exhaustive n-mer search followed by iterative refinement using IUPAC degenerate letters and logistic regression to measure statistical significance.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/motifRG.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "motifRG"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/motifRG.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-motifrg\n\nname: bioconductor-motifrg\ndescription: Discover and analyze discriminative motifs in high-throughput sequencing data (e.g., ChIP-seq). Use this skill when needing to identify over-represented DNA motifs by comparing a foreground sequence set (peaks) against a background set (control) using logistic regression and IUPAC refinement.\n\n# bioconductor-motifrg\n\n## Overview\n\nThe `motifRG` package provides a framework for discriminative motif discovery. Unlike tools that model genomic background distributions, `motifRG` identifies motifs that best distinguish a foreground dataset (e.g., ChIP-seq binding sites) from a background dataset (e.g., non-binding regions or genomic null models). It uses an exhaustive n-mer search followed by iterative refinement using IUPAC degenerate letters and logistic regression to measure statistical significance.\n\n## Core Workflow\n\n### 1. Motif Discovery from FASTA Files\nThe simplest entry point is using FASTA files for foreground and background sequences.\n\n```r\nlibrary(motifRG)\n\n# Find motifs comparing foreground to background\nMD.motifs <- findMotifFasta(\n  fg.file = \"path/to/foreground.fa\",\n  bg.file = \"path/to/background.fa\",\n  max.motif = 3,   # Number of motifs to find\n  enriched = TRUE  # Search for enriched (vs depleted) motifs\n)\n```\n\n### 2. Motif Discovery from Genomic Coordinates\nIf you have coordinates (e.g., from a BED file or GRanges object), use `getSequence` with a `BSgenome` object.\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Extract sequences\nfg.seq <- getSequence(fg.ranges, genome = Hsapiens)\nbg.seq <- getSequence(bg.ranges, genome = Hsapiens)\n\n# Discover motifs\nmotifs <- findMotifFgBg(fg.seq, bg.seq, enriched = TRUE)\n```\n\n### 3. Refining Results and Handling Bias\nChIP-seq data often contains GC bias or varying peak widths that can lead to false positives.\n\n*   **Narrowing Peaks:** Focus on the center of peaks to increase signal-to-noise.\n*   **GC Correction:** Pass GC content as a covariate (`other.data`).\n*   **Weighting:** Weight sequences by peak intensity.\n\n```r\n# Example: Refined search with GC and weights\n# 1. Create category vector (1 for fg, 0 for bg)\ncategory <- c(rep(1, length(fg.seq)), rep(0, length(bg.seq)))\n\n# 2. Calculate GC bins\nall.seq <- append(fg.seq, bg.seq)\ngc <- as.integer(cut(letterFrequency(all.seq, \"CG\", as.prob=TRUE), \n                 c(-1, 0.4, 0.45, 0.5, 0.55, 0.6, 2)))\n\n# 3. Run discovery with covariates\nrefined.motifs <- findMotif(\n  all.seq, \n  category, \n  other.data = gc, \n  weights = c(fg.weights, rep(1, length(bg.seq))),\n  max.motif = 5,\n  enriched = TRUE\n)\n```\n\n### 4. PWM Refinement and Extension\nMotifs found by `findMotif` are often short seeds. Use EM-like algorithms to extend them into full Position Weight Matrices (PWM).\n\n```r\n# Refine a specific motif match from the results\nseed_pattern <- motifs$motifs[[1]]@match$pattern\npwm.match <- refinePWMMotif(seed_pattern, fg.seq)\n\n# Automatically extend the motif into flanking regions\npwm.extended <- refinePWMMotifExtend(seed_pattern, fg.seq)\n\n# Visualize\nlibrary(seqLogo)\nseqLogo(pwm.extended$model$prob)\nplotMotif(pwm.extended$match$pattern)\n```\n\n## Visualization and Reporting\n\n`motifRG` provides tools to summarize discovered motifs in tables or plots.\n\n*   **Summary Table:** `motifLatexTable(motifs, prefix=\"my_analysis\")` generates a summary of consensus sequences, scores, and fold-enrichment.\n*   **Plotting:** `plotMotif(motifs$motifs[[1]]@match$pattern)` visualizes the alignment of matches.\n\n## Tips for Success\n*   **Control Selection:** The choice of background is critical. If possible, use a control dataset with a similar GC distribution and genomic context (e.g., promoters vs. intergenic) to the foreground.\n*   **Peak Width:** If peaks are very wide (>500bp), sub-select the central 200bp to improve the specificity of the discovered motifs.\n*   **IUPAC Codes:** The package uses IUPAC degenerate letters (e.g., R for A/G, Y for C/T) during the refinement step to capture biological variability.\n\n## Reference documentation\n- [motifRG](./references/motifRG.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-motifrg",
+    "description": "This tool discovers discriminative DNA motifs in high-throughput sequencing data by comparing foreground and background sequence sets. Use when user asks to identify over-represented motifs, perform discriminative motif discovery, or refine motifs using logistic regression and IUPAC degenerate letters.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/motifRG.html"
+  }
+}

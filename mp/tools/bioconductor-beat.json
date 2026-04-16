@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-beat",
+  "category": "bioconductor",
+  "name": "bioconductor-beat",
+  "description": "This tool performs statistical modeling and quantification of DNA methylation and epimutations from bisulfite sequencing data. Use when user asks to model methylation states, adjust for bisulfite conversion biases, or identify epimutation rates between single-cell samples and a reference.",
+  "overview": "The `BEAT` (Bisulfite Epimutation Analysis Tool) package is designed to process count data from Bisulfite sequencing. It groups single CG positions into genomic regions to handle low-coverage data (common in single-cell experiments) and applies a binomial mixture model to adjust for experimental biases like incomplete bisulfite conversion (false positives) and sequencing errors (false negatives).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BEAT.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beat/overview",
+  "github": "N/A",
+  "conda_downloads": "44.6K",
+  "conda_downloads_num": 44600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BEAT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BEAT.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beat/overview",
+    "github": "N/A",
+    "conda_downloads": "44.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-beat\n\nname: bioconductor-beat\ndescription: Statistical modeling and quantification of DNA methylation and epimutations from Bisulfite Sequencing (BS-Seq) data. Use this skill when analyzing methylated and unmethylated counts at CG positions to determine regional methylation status and epimutation rates (changes between a reference and single-cell samples).\n\n# bioconductor-beat\n\n## Overview\n\nThe `BEAT` (Bisulfite Epimutation Analysis Tool) package is designed to process count data from Bisulfite sequencing. It groups single CG positions into genomic regions to handle low-coverage data (common in single-cell experiments) and applies a binomial mixture model to adjust for experimental biases like incomplete bisulfite conversion (false positives) and sequencing errors (false negatives).\n\n## Workflow and Core Functions\n\n### 1. Data Preparation\nInput data must be a CSV file per sample with columns: `chr`, `pos`, `meth`, and `unmeth`.\nFiles should be named `<samplename>.positions.csv`.\n\n```r\nlibrary(BEAT)\n# Example of reading raw position data\nlocalpath <- system.file('extdata', package = 'BEAT')\npositions <- read.csv(file.path(localpath, \"sample.positions.csv\"))\n```\n\n### 2. Configuration with `makeParams`\nDefine the experimental parameters and sample metadata.\n\n*   **sampNames**: Vector of sample names.\n*   **convrates**: Bisulfite conversion rates (e.g., 1 - non-CpG methylation rate).\n*   **is.reference**: Logical vector identifying the reference sample (usually a multi-cell population).\n*   **pminus**: False negative rate (default ~0.2).\n*   **regionSize**: Size of genomic windows for pooling (e.g., 10000).\n*   **minCounts**: Minimum reads required per region for analysis.\n\n```r\nsampNames <- c('reference', 'sample')\nis.reference <- c(TRUE, FALSE)\nconvrates <- c(0.8, 0.5) # 1 - pplus\n\nparams <- makeParams(localpath, sampNames, convrates, is.reference, \n                     pminus = 0.2, regionSize = 10000, minCounts = 5)\n```\n\n### 3. Pooling Positions into Regions\nGroup individual CG sites into regions to increase statistical power.\n\n```r\npositions_to_regions(params)\n# Generates <samplename>.regions.<size>.<min>.RData files\n```\n\n### 4. Statistical Modeling\nCompute corrected methylation rates and states using the Bayesian model.\n\n```r\ngenerate_results(params)\n# Generates <samplename>.results.<pminus>.<pplus>.RData files\n# Results include 'methstate' (1: methylated, -1: unmethylated, 0: ambiguous)\n# and 'methest' (estimated methylation level).\n```\n\n### 5. Epimutation Calling\nCompare the sample against the reference to identify sites that changed status.\n\n```r\nepiCalls <- epimutation_calls(params)\n\n# Access results\n# epiCalls$methSites: Regions unmethylated in ref, methylated in sample\n# epiCalls$demethSites: Regions methylated in ref, unmethylated in sample\n```\n\n## Key Parameters and Interpretation\n\n*   **Methylation States**:\n    *   `1`: Highly methylated ($P(r > 0.7) > 0.75$).\n    *   `-1`: Sparsely methylated ($P(r < 0.3) > 0.75$).\n    *   `0`: Ambiguous.\n*   **Epimutation Rates**: Calculated as the frequency of status changes (e.g., Methylating Epimutation Rate = count of $0 \\to 1$ or $-1 \\to 1$ transitions relative to shared regions).\n*   **Bias Correction**: The model uses `pplus` (1 - conversion rate) and `pminus` to adjust the likelihood of observed counts $k$ out of $n$ reads.\n\n## Reference documentation\n\n- [Quantification of DNA Methylation and Epimutations from Bisulfite Sequencing Data – the BEAT package](./references/BEAT.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-beat",
+    "description": "This tool performs statistical modeling and quantification of DNA methylation and epimutations from bisulfite sequencing data. Use when user asks to model methylation states, adjust for bisulfite conversion biases, or identify epimutation rates between single-cell samples and a reference.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BEAT.html"
+  }
+}

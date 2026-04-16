@@ -1,0 +1,51 @@
+{
+  "id": "panfeed",
+  "category": "CLI",
+  "name": "panfeed",
+  "description": "panfeed is a k-mer streaming tool that anchors genomic variation to specific gene clusters in bacterial pangenomes for association studies. Use when user asks to generate k-mer presence/absence patterns, perform fine-mapping of GWAS hits, or visualize k-mer associations within gene clusters.",
+  "overview": "panfeed is a specialized k-mer streaming tool that processes bacterial pangenomes one gene cluster at a time. Unlike global de Bruijn graph approaches, panfeed anchors k-mers to specific gene clusters, which reduces computational artifacts in repetitive regions and makes the resulting GWAS hits much easier to interpret and visualize. It transforms annotated assemblies (GFF3) and pangenome matrices into k-mer tables, providing both presence/absence patterns for discovery and base-resolution mappi",
+  "homepage": "https://github.com/microbial-pangenomes-lab/panfeed",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/panfeed/overview",
+  "github": "https://github.com/microbial-pangenomes-lab/panfeed",
+  "conda_downloads": "6.3K",
+  "conda_downloads_num": 6300,
+  "last_updated": "2025-12-16",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "panfeed",
+      "panfeed_panfeed-get-clusters",
+      "panfeed_panfeed-get-kmers",
+      "panfeed_panfeed-plot"
+    ],
+    "description": "Get gene cluster specific k-mers from a set of bacterial genomes",
+    "docker_image": "quay.io/biocontainers/panfeed:1.7.2--pyhdfd78af_0",
+    "homepage": "https://github.com/microbial-pangenomes-lab/panfeed",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/panfeed/overview",
+    "github": "https://github.com/microbial-pangenomes-lab/panfeed",
+    "conda_downloads": "6.3K",
+    "last_updated": "2025-12-16",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "panfeed.cwl",
+    "panfeed_panfeed-get-clusters.cwl",
+    "panfeed_panfeed-get-kmers.cwl",
+    "panfeed_panfeed-plot.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# panfeed\n\n## Overview\npanfeed is a specialized k-mer streaming tool that processes bacterial pangenomes one gene cluster at a time. Unlike global de Bruijn graph approaches, panfeed anchors k-mers to specific gene clusters, which reduces computational artifacts in repetitive regions and makes the resulting GWAS hits much easier to interpret and visualize. It transforms annotated assemblies (GFF3) and pangenome matrices into k-mer tables, providing both presence/absence patterns for discovery and base-resolution mapping for fine-mapping.\n\n## Workflow and CLI Patterns\n\n### The Two-Pass Strategy\nTo optimize storage and speed, always use the two-pass approach.\n\n**Pass 1: Discovery**\nGenerate the unique k-mer presence/absence patterns for the entire pangenome.\n```bash\npanfeed -g gff_folder/ -p gene_presence_absence.csv -o discovery_out --upstream 100 --downstream 100 --compress --cores 8\n```\n*   **-g**: Directory containing `SAMPLE.gff` files (must include nucleotide sequences at the end).\n*   **-p**: The pangenome matrix from Roary, Panaroo, or ggCaller.\n*   **--upstream/--downstream**: Captures non-coding variation surrounding the gene.\n\n**Pass 2: Fine-Mapping**\nAfter running GWAS (e.g., with pyseer) and identifying significant hits, extract the relevant clusters and re-run panfeed to get positional data.\n```bash\n# 1. Extract significant clusters (threshold e.g., 1E-7)\npanfeed-get-clusters -a pyseer_results.tsv -p discovery_out/kmers_to_hashes.stv.gz -t 1E-7 > target_genes.txt\n\n# 2. Run second pass for positional mapping\npanfeed -g gff_folder/ -p gene_presence_absence.csv -o fine_mapping_out --genes target_genes.txt --upstream 100 --downstream 100 --compress\n```\n\n### Annotation and Visualization\nOnce the second pass is complete, merge the association statistics with the positional k-mer data to create interpretable plots.\n\n```bash\n# Annotate k-mers with association stats\npanfeed-get-kmers -a pyseer_results.tsv -p discovery_out/kmers_to_hashes.tsv.gz -k fine_mapping_out/kmers.tsv.gz | gzip > annotated_kmers.tsv.gz\n\n# Generate plots (Significance, Sequence, and Hybrid)\npanfeed-plot -k annotated_kmers.tsv.gz -p phenotype_data.tsv --phenotype-column MY_TRAIT\n```\n\n## Expert Tips and Best Practices\n*   **Input Formatting**: Ensure sample names in your GFF filenames (`SAMPLE.gff`) exactly match the column headers in your `gene_presence_absence.csv`.\n*   **Missing Genes**: Use `--consider-missing` if you want the k-mer patterns to explicitly differentiate between a missing k-mer within a gene and the entire gene cluster being absent.\n*   **Large Datasets**: For datasets with thousands of samples, provide a \"file-of-files\" to `-g` (a text file containing paths to GFFs) instead of a directory path to avoid shell argument limits and filesystem latency.\n*   **Memory Management**: panfeed is efficient because it streams by cluster, but increasing `--cores` will increase memory usage linearly.\n*   **Separate Fastas**: If your GFF3 files do not contain the `##FASTA` section, provide the sequences separately using `-f fasta_folder/`.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| panfeed | Get gene cluster specific k-mers from a set of bacterial genomes |\n| panfeed-get-clusters | Indicate which genes clusters have significantly associated patterns |\n| panfeed-get-kmers | Annotate association results with positional information |\n| panfeed-plot | Plot association results from panfeed |\n\n## Reference documentation\n- [panfeed README and Quick Start](./references/github_com_microbial-pangenomes-lab_panfeed_blob_main_README.md)\n- [panfeed Overview](./references/anaconda_org_channels_bioconda_packages_panfeed_overview.md)",
+  "skill_front_matter": {
+    "name": "panfeed",
+    "description": "panfeed is a k-mer streaming tool that anchors genomic variation to specific gene clusters in bacterial pangenomes for association studies. Use when user asks to generate k-mer presence/absence patterns, perform fine-mapping of GWAS hits, or visualize k-mer associations within gene clusters.",
+    "homepage": "https://github.com/microbial-pangenomes-lab/panfeed"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rontotools",
+  "category": "bioconductor",
+  "name": "bioconductor-rontotools",
+  "description": "This tool performs pathway enrichment and impact analysis by incorporating gene significance and fold changes into signaling network topologies. Use when user asks to download KEGG pathway graphs, execute Pathway-Express or Primary Dis-regulation algorithms, and identify significantly impacted biological pathways.",
+  "overview": "ROntoTools is an R package for functional profiling of high-throughput data. Its flagship tool, Pathway-Express, goes beyond simple Over-Representation Analysis (ORA) by considering the topology of signaling pathways, including the type, position, and magnitude of gene interactions. It also supports Primary Dis-regulation analysis to account for upstream signaling effects.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ROntoTools.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ROntoTools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ROntoTools.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rontotools\n\nname: bioconductor-rontotools\ndescription: Perform pathway enrichment and impact analysis using the ROntoTools package. Use this skill to download KEGG pathway graphs, incorporate gene significance (p-values) and fold changes into signaling network analysis, and execute Pathway-Express (PE) or Primary Dis-regulation (pDis) algorithms to identify significantly impacted biological pathways.\n\n## Overview\nROntoTools is an R package for functional profiling of high-throughput data. Its flagship tool, Pathway-Express, goes beyond simple Over-Representation Analysis (ORA) by considering the topology of signaling pathways, including the type, position, and magnitude of gene interactions. It also supports Primary Dis-regulation analysis to account for upstream signaling effects.\n\n## Core Workflow\n\n### 1. Prepare Pathway Graphs\nDownload and weight KEGG pathways for a specific organism (e.g., \"hsa\" for human).\n\n```r\nlibrary(ROntoTools)\nlibrary(graph)\n\n# Download KEGG pathways (use updateCache = TRUE for latest data)\nkpg <- keggPathwayGraphs(\"hsa\", verbose = FALSE)\n\n# Get pathway names for better reporting\nkpn <- keggPathwayNames(\"hsa\")\n\n# Set edge weights based on interaction type (e.g., activation vs inhibition)\nkpg <- setEdgeWeights(kpg, edgeTypeAttr = \"subtype\", \n                      edgeWeightByType = list(activation = 1, inhibition = -1, \n                                              expression = 1, repression = -1),\n                      defaultWeight = 0)\n```\n\n### 2. Prepare Experimental Data\nInput data should be named vectors where names are Entrez IDs.\n\n```r\n# fc: named vector of log fold changes\n# pv: named vector of p-values\n# ref: character vector of all genes measured in the experiment (background)\n\n# Filter for differentially expressed genes (DEGs)\ndeg_fc <- fc[pv <= 0.05]\ndeg_pv <- pv[pv <= 0.05]\n```\n\n### 3. Set Node Weights\nIncorporate gene significance into the pathway graphs using `alphaMLG` (log-based) or `alpha1MR` (linear-based).\n\n```r\n# Apply significance weights to the pathway list\nkpg <- setNodeWeights(kpg, weights = alphaMLG(deg_pv), defaultWeight = 1)\n```\n\n### 4. Run Pathway Analysis\nExecute Pathway-Express (PE) or Primary Dis-regulation (pDis).\n\n```r\n# Pathway-Express\npeRes <- pe(x = deg_fc, graphs = kpg, ref = ref, nboot = 200)\n\n# Primary Dis-regulation\npDisRes <- pDis(x = deg_fc, graphs = kpg, ref = ref, nboot = 200)\n```\n\n### 5. Summarize and Visualize Results\nExtract a ranked table of pathways and visualize the impact.\n\n```r\n# Generate summary table\nresTable <- Summary(peRes, pathNames = kpn, order.by = \"pComb\")\nhead(resTable)\n\n# Global plot (pAcc vs pORA)\nplot(peRes)\n\n# Visualize a specific pathway's perturbation propagation\n# Requires Rgraphviz\np <- peRes@pathways[[\"path:hsa04110\"]] # Example: Cell Cycle\ng <- layoutGraph(p@map, layoutType = \"dot\")\nedgeRenderInfo(g) <- peEdgeRenderInfo(p)\nnodeRenderInfo(g) <- peNodeRenderInfo(p)\nrenderGraph(g)\n```\n\n## Tips for Success\n- **Entrez IDs**: Ensure your gene identifiers are Entrez IDs (e.g., \"hsa:1029\"), as KEGG pathways use this format.\n- **Bootstrapping**: The `nboot` parameter affects p-value precision. Use a low value (200) for testing and a higher value (1000+) for publication-quality results.\n- **Edge Weights**: Customizing `edgeWeightByType` allows you to model specific biological assumptions about how signals propagate (e.g., treating \"phosphorylation\" as an activation).\n- **Missing Genes**: Genes in your `fc` vector that are not in the pathway graph are ignored; genes in the graph not in your `fc` vector are treated as having zero change.\n\n## Reference documentation\n- [ROntoTools: The R Onto-Tools suite](./references/rontotools.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rontotools",
+    "description": "This tool performs pathway enrichment and impact analysis by incorporating gene significance and fold changes into signaling network topologies. Use when user asks to download KEGG pathway graphs, execute Pathway-Express or Primary Dis-regulation algorithms, and identify significantly impacted biological pathways.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ROntoTools.html"
+  }
+}

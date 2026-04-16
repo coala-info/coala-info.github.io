@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-deco",
+  "category": "bioconductor",
+  "name": "bioconductor-deco",
+  "description": "The deco package decomposes heterogeneity in large omic datasets to identify sample subclasses and feature outliers using recurrent-sampling differential analysis and non-symmetrical correspondence analysis. Use when user asks to identify sample subclasses, find features marking specific categories, perform recurrent-sampling differential analysis, or calculate h-statistics to rank features in omic data.",
+  "overview": "The `deco` package provides a computational framework to explore and decompose heterogeneity in large omic datasets. It is particularly effective for identifying sample subclasses and features that mark specific categories or outliers within a cohort. The workflow consists of two primary steps:\n1.  **RDA (Recurrent-sampling Differential Analysis):** A subsampling strategy that uses `limma` to identify differential events across many combinations of samples.\n2.  **NSCA (Non-Symmetrical Correspond",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/deco.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deco/overview",
+  "github": "https://github.com/fjcamlab/deco",
+  "conda_downloads": "19.5K",
+  "conda_downloads_num": 19500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "deco"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/deco.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deco/overview",
+    "github": "https://github.com/fjcamlab/deco",
+    "conda_downloads": "19.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-deco\n\n## Overview\n\nThe `deco` package provides a computational framework to explore and decompose heterogeneity in large omic datasets. It is particularly effective for identifying sample subclasses and features that mark specific categories or outliers within a cohort. The workflow consists of two primary steps:\n1.  **RDA (Recurrent-sampling Differential Analysis):** A subsampling strategy that uses `limma` to identify differential events across many combinations of samples.\n2.  **NSCA (Non-Symmetrical Correspondence Analysis):** A multivariate technique that integrates differential events into a common relational space, producing an **h-statistic** used for ranking features and stratifying samples.\n\n## Installation\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"deco\")\n```\n\n## Typical Workflow\n\n### 1. Data Preparation\nInput data should be a normalized expression matrix (features as rows, samples as columns).\n- **Microarrays:** Use RMA or `normalizeBetweenArrays`.\n- **RNA-seq:** Use `voom` (logCPMs) or log-scaled RPKM/FPKM/TPM.\n\n```r\nlibrary(deco)\ndata(ALCLdata)\n# Extract matrix from SummarizedExperiment\nexp_matrix <- assay(ALCL)\n# Define classes for supervised analysis\nclasses <- colData(ALCL)$Alk.positivity\n```\n\n### 2. Recurrent-sampling Differential Analysis (RDA)\nUse `decoRDA` to generate an incidence matrix of differential events.\n\n```r\n# Supervised (Binary) Analysis\nsub_binary <- decoRDA(data = exp_matrix, \n                      classes = classes, \n                      q.val = 0.01, \n                      iterations = 1000, \n                      control = \"pos\")\n\n# Unsupervised Analysis (no classes provided)\nsub_uns <- decoRDA(data = exp_matrix, \n                   q.val = 0.05, \n                   iterations = 1000)\n```\n\n### 3. Non-Symmetrical Correspondence Analysis (NSCA)\nUse `decoNSCA` to calculate the h-statistic and identify subclasses.\n\n```r\n# Parallel processing setup (optional)\nlibrary(BiocParallel)\nbpparam <- MulticoreParam()\n\ndeco_results <- decoNSCA(sub = sub_binary, \n                         v = 80, \n                         method = \"ward.D\", \n                         bpparam = bpparam)\n```\n\n### 4. Interpreting Results\nExtract statistics and subclass memberships from the `deco` object.\n\n```r\n# Get feature rankings and h-statistics\nres_table <- featureTable(deco_results)\n\n# Get sample subclass assignments\n# For supervised, check Control and Case slots\nsubclasses <- NSCAcluster(deco_results)$Case$samplesSubclass\n\n# Summary of the analysis\nsummary(deco_results)\n```\n\n## Visualization and Reporting\n\n- **Full Report:** `decoReport(deco_results, sub_binary, pdf.file = \"Report.pdf\")` generates a comprehensive PDF.\n- **H-statistic Heatmap:** `plotHeatmapH(deco_results)` visualizes the biclustering of features and samples.\n- **Feature Profiles:** `plotDECOProfile(deco_results, id = \"GENE_ID\", data = exp_matrix)` shows raw expression vs. h-statistic for specific features.\n- **Gaining H:** `plotGainingH(deco_results, data = exp_matrix, ids = \"GENE_ID\")` compares original data dispersion against h-statistic stratification.\n\n## Tips for Success\n- **Parallelization:** RDA is computationally intensive. Always use `BiocParallel` parameters (`bpparam`) for large datasets.\n- **Annotation:** Set `annot = TRUE` and provide `id.type` (e.g., \"ENSEMBL\", \"SYMBOL\") if you want the package to handle feature mapping via `Homo.sapiens`.\n- **Sex Chromosomes:** If your cohort has a gender imbalance, use `rm.xy = TRUE` in `decoRDA` to prevent sex-linked genes from driving the stratification.\n- **Subsampling Size (r):** If `r` is NULL, the package calculates an optimal size. For very small cohorts, you may need to manually adjust this.\n\n## Reference documentation\n- [DECO: DEcomposing heterogeneous Cohorts using Omic profiling data](./references/DECO.Rmd)\n- [DECO Vignette](./references/DECO.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-deco",
+    "description": "The deco package decomposes heterogeneity in large omic datasets to identify sample subclasses and feature outliers using recurrent-sampling differential analysis and non-symmetrical correspondence analysis. Use when user asks to identify sample subclasses, find features marking specific categories, perform recurrent-sampling differential analysis, or calculate h-statistics to rank features in omic data.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/deco.html"
+  }
+}

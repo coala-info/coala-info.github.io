@@ -1,0 +1,47 @@
+{
+  "id": "evofr",
+  "category": "CLI",
+  "name": "evofr",
+  "description": "evofr is a Python framework for analyzing evolutionary dynamics and estimating the relative fitness of genetic variants using Bayesian inference. Use when user asks to estimate growth advantages, fit multinomial logistic regression models to sequence counts, or forecast viral lineage frequencies.",
+  "overview": "`evofr` is a specialized Python framework for analyzing the evolutionary dynamics of genetic variants. It provides a structured workflow for processing sequence count data, fitting multinomial logistic regression (MLR) or renewal models using Bayesian inference (via JAX and NumPyro), and generating forecasts. It is particularly effective for estimating relative fitness (growth advantage) between competing viral lineages or bacterial strains.",
+  "homepage": "https://github.com/blab/evofr",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/evofr/overview",
+  "github": "https://github.com/blab/evofr",
+  "conda_downloads": "54.3K",
+  "conda_downloads_num": 54300,
+  "last_updated": "2026-02-12",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "evofr_prepare-data",
+      "evofr_run-model"
+    ],
+    "description": "Prepare data for evofr analysis using a configuration file and optional overrides.",
+    "docker_image": "quay.io/biocontainers/evofr:0.2.0--pyhdfd78af_0",
+    "homepage": "https://github.com/blab/evofr",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/evofr/overview",
+    "github": "https://github.com/blab/evofr",
+    "conda_downloads": "54.3K",
+    "last_updated": "2026-02-12",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "evofr_prepare-data.cwl",
+    "evofr_run-model.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# evofr\n\n## Overview\n`evofr` is a specialized Python framework for analyzing the evolutionary dynamics of genetic variants. It provides a structured workflow for processing sequence count data, fitting multinomial logistic regression (MLR) or renewal models using Bayesian inference (via JAX and NumPyro), and generating forecasts. It is particularly effective for estimating relative fitness (growth advantage) between competing viral lineages or bacterial strains.\n\n## Core Workflow\n\n### 1. Data Specification\nUse `ef.DataSpec` subclasses to format raw data for the models. The most common entry point is `VariantFrequencies`.\n\n```python\nimport pandas as pd\nimport evofr as ef\n\n# Load data (expects columns like 'date', 'location', 'variant', 'sequences')\nraw_data = pd.read_csv(\"variant_counts.tsv\", sep=\"\\t\")\n\n# pivot=\"C\" sets variant 'C' as the reference (fitness = 0)\ndata_spec = ef.VariantFrequencies(raw_data, pivot=\"C\")\n```\n\n### 2. Model Selection\nChoose a model based on the complexity of the evolutionary process:\n*   `MultinomialLogisticRegression(tau)`: Simple fitness estimation. Requires `tau` (generation time).\n*   `HierMLR`: For multi-location or hierarchical datasets.\n*   `RenewalModel`: For more complex epidemiological dynamics involving case counts and transmission.\n\n```python\n# tau is the generation time used to convert relative fitness to growth advantage\nmodel = ef.MultinomialLogisticRegression(tau=4.2)\n```\n\n### 3. Inference\n`evofr` uses NumPyro for inference. `InferNUTS` (No-U-Turn Sampler) is the standard for high-quality posterior samples.\n\n```python\n# Define sampler settings\ninference = ef.InferNUTS(num_samples=1000, num_warmup=1000)\n\n# Fit the model to the data spec\nposterior = inference.fit(model, data_spec)\n```\n\n### 4. Forecasting and Visualization\nPost-inference, you can project frequencies forward and visualize results using the `plotting` module.\n\n```python\n# Forecast 50 days into the future\nforecast_days = 50\nposterior.samples = model.forecast_frequencies(posterior.samples, forecast_days)\n\n# Plotting growth advantages\nfrom evofr.plotting import GrowthAdvantagePlot\nimport matplotlib.pyplot as plt\n\nfig, ax = plt.subplots()\nGrowthAdvantagePlot(posterior).plot(ax=ax)\n```\n\n## Expert Tips\n*   **Pivot Selection**: Always choose a stable, well-sampled variant as your `pivot`. The growth advantages of all other variants will be relative to this reference.\n*   **Generation Time (`tau`)**: The accuracy of the \"Growth Advantage\" estimate depends heavily on providing a biologically realistic `tau`. If `tau` is unknown, the model still estimates relative fitness, but the scale of the growth advantage will change.\n*   **Handling Results**: Use `posterior.save_posterior(\"results.pkl\")` to serialize the `PosteriorHandler` object. This preserves both the samples and the original data spec for later analysis.\n*   **SVI for Speed**: If MCMC is too slow for large datasets, use `ef.InferSVI` or `ef.InferMAP` for faster, approximate inference.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| evofr prepare-data | Prepare data for evofr analysis using a configuration file and optional overrides. |\n| evofr run-model | Run an evofr model using a configuration file and optional data overrides. |\n\n## Reference documentation\n- [Getting started with evofr](./references/blab_github_io_evofr_notebooks_example_mlr.html.md)\n- [evofr.data package](./references/blab_github_io_evofr_source_evofr.data.html.md)\n- [evofr.models package](./references/blab_github_io_evofr_source_evofr.models.html.md)\n- [evofr.plotting package](./references/blab_github_io_evofr_source_evofr.plotting.html.md)",
+  "skill_front_matter": {
+    "name": "evofr",
+    "description": "evofr is a Python framework for analyzing evolutionary dynamics and estimating the relative fitness of genetic variants using Bayesian inference. Use when user asks to estimate growth advantages, fit multinomial logistic regression models to sequence counts, or forecast viral lineage frequencies.",
+    "homepage": "https://github.com/blab/evofr"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-graphpac",
+  "category": "bioconductor",
+  "name": "bioconductor-graphpac",
+  "description": "This tool identifies clusters of mutated amino acids in protein tertiary structures by reordering 3D coordinates into a 1D space using graph theory and the Traveling Salesman Problem. Use when user asks to find non-random mutational clusters in 3D protein structures, map protein coordinates to a 1D sequence using graph-based reordering, or identify statistically significant mutation clusters in multi-domain proteins.",
+  "overview": "GraphPAC (Graph Theoretical Identification of Mutated Amino Acid Clusters in Proteins) is an R package designed to identify mutational clusters by mapping a protein's 3D structure onto a 1D space. It achieves this by solving the Traveling Salesman Problem (TSP) to find the shortest path between amino acids in 3D space. Once reordered, the Nonrandom Mutation Clustering (NMC) algorithm is applied to identify statistically significant clusters.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/GraphPAC.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-graphpac/overview",
+  "github": "N/A",
+  "conda_downloads": "35.1K",
+  "conda_downloads_num": 35100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GraphPAC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/GraphPAC.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-graphpac/overview",
+    "github": "N/A",
+    "conda_downloads": "35.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-graphpac\n\nname: bioconductor-graphpac\ndescription: Identify clusters of mutated amino acids in protein tertiary structures using graph theory and the Traveling Salesman Problem (TSP). Use this skill when analyzing somatic mutation data to find non-random clusters that are close in 3D space but may be distant in 1D sequence.\n\n# bioconductor-graphpac\n\n## Overview\n\nGraphPAC (Graph Theoretical Identification of Mutated Amino Acid Clusters in Proteins) is an R package designed to identify mutational clusters by mapping a protein's 3D structure onto a 1D space. It achieves this by solving the Traveling Salesman Problem (TSP) to find the shortest path between amino acids in 3D space. Once reordered, the Nonrandom Mutation Clustering (NMC) algorithm is applied to identify statistically significant clusters.\n\nThis package is a companion to `iPAC` but uses graph theory instead of MultiDimensional Scaling (MDS), making it particularly effective for proteins with multiple domains connected by flexible linkers.\n\n## Core Workflow\n\n### 1. Data Preparation\nTo use GraphPAC, you require three components:\n- **Positional Data**: 3D coordinates (X, Y, Z) for each amino acid (usually from PDB/CIF files).\n- **Mutational Data**: A matrix where rows are samples and columns are amino acid positions (1 if mutated, 0 otherwise).\n- **Canonical Sequence**: The protein sequence (usually from UniProt/Fasta).\n\n```R\nlibrary(GraphPAC)\n\n# 1. Get Positions (using iPAC helper functions)\n# CIF <- \"path/to/file.cif\"\n# Fasta <- \"path/to/fasta.fasta\"\n# KRAS.Positions <- get.Positions(CIF, Fasta, \"A\")\n\n# 2. Load Mutation Data\ndata(KRAS.Mutations) \n# Ensure column names are V1, V2, ..., Vm\n```\n\n### 2. Identifying Clusters\nThe primary function is `GraphClust`. It reorders the protein and identifies clusters in one step.\n\n```R\n# Run clustering using a TSP insertion method\n# Options: \"nearest_insertion\", \"farthest_insertion\", \"cheapest_insertion\", \"arbitrary_insertion\"\nmy.clusters <- GraphClust(\n  mutations = KRAS.Mutations,\n  position.matrix = KRAS.Positions$Positions,\n  insertion.type = \"cheapest_insertion\",\n  alpha = 0.05,\n  MultComp = \"Bonferroni\"\n)\n```\n\n### 3. Interpreting Results\nThe output object contains several key elements:\n- `Remapped`: Clusters found after graph-based reordering.\n- `OriginalCulled`: Clusters found linearly, excluding amino acids missing 3D data.\n- `Original`: Clusters found by the original NMC algorithm (sequence only).\n- `candidate.path`: The specific order of amino acids determined by the TSP solver.\n- `path.distance`: Total distance (Angstroms) of the reordered path.\n\n## Visualization\n\n### Jump Plots (Linear)\nVisualizes the reordering of the protein. Colors represent the position in the remapped sequence.\n```R\nPlot.Protein.Linear(\n  my.clusters$candidate.path, \n  v.per.row = 25, \n  color.palette = \"heat\", \n  title = \"Protein Reordering\"\n)\n```\n\n### Interactive Circle Plots\nUses `igraph` and `tkplot` to show how the TSP path connects amino acids in a circular layout.\n```R\nPlot.Protein(\n  my.clusters$protein.graph, \n  my.clusters$candidate.path, \n  vertex.size = 5, \n  color.palette = \"heat\"\n)\n```\n\n## Comparison with iPAC\nTo compare the reordering efficiency between GraphPAC (TSP) and iPAC (MDS), use Kendall's Tau via the `RMallow` package:\n```R\nlibrary(RMallow)\ngraph.path <- my.clusters$candidate.path\nmds.path <- get.Remapped.Order(KRAS.Mutations, KRAS.Positions$Positions)\npath.matrix <- rbind(original = sort(graph.path), graph = graph.path, mds = mds.path)\nAllSeqDists(path.matrix)\n```\n\n## Tips\n- **Missing Data**: Amino acids without 3D coordinates are automatically removed from the `Remapped` and `OriginalCulled` analyses. Check `my.clusters$missing.positions` to see which were excluded.\n- **Insertion Methods**: \"cheapest_insertion\" is often a good balance between speed and path quality, but results may vary depending on protein complexity.\n- **Column Naming**: Ensure your mutation matrix columns follow the `V1, V2...Vm` convention required by the underlying NMC algorithm.\n\n## Reference documentation\n- [GraphPAC: Graph Theoretical Identification of Mutated Amino Acid Clusters in Proteins](./references/GraphPAC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-graphpac",
+    "description": "This tool identifies clusters of mutated amino acids in protein tertiary structures by reordering 3D coordinates into a 1D space using graph theory and the Traveling Salesman Problem. Use when user asks to find non-random mutational clusters in 3D protein structures, map protein coordinates to a 1D sequence using graph-based reordering, or identify statistically significant mutation clusters in multi-domain proteins.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/GraphPAC.html"
+  }
+}

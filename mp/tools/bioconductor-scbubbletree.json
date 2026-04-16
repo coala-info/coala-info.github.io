@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scbubbletree",
+  "category": "bioconductor",
+  "name": "bioconductor-scbubbletree",
+  "description": "The scBubbletree package visualizes large-scale scRNA-seq data by grouping cells into clusters and organizing them into a hierarchical tree structure. Use when user asks to cluster single-cell data into bubbles, generate hierarchical tree visualizations of cell clusters, calculate bootstrap support for cluster relationships, or annotate bubbletrees with gene expression and metadata.",
+  "overview": "The `scBubbletree` package provides a workflow for visualizing large-scale scRNA-seq data by grouping transcriptionally similar cells into \"bubbles\" (clusters) and organizing them into a hierarchical tree. This approach offers a transparent, quantitative alternative to standard 2D embeddings like UMAP or t-SNE, allowing for better interpretation of cluster relationships and robustness through bootstrap support.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scBubbletree.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/snaketron/scBubbletree",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scBubbletree"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scBubbletree.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/snaketron/scBubbletree",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scbubbletree\n\n## Overview\n\nThe `scBubbletree` package provides a workflow for visualizing large-scale scRNA-seq data by grouping transcriptionally similar cells into \"bubbles\" (clusters) and organizing them into a hierarchical tree. This approach offers a transparent, quantitative alternative to standard 2D embeddings like UMAP or t-SNE, allowing for better interpretation of cluster relationships and robustness through bootstrap support.\n\n## Typical Workflow\n\n### 1. Data Preparation\nThe package is agnostic to the upstream pipeline but requires a low-dimensional projection matrix (e.g., PCA embeddings).\n\n```r\nlibrary(scBubbletree)\n\n# A: matrix with n cells (rows) and f features (columns, e.g., PCA)\n# m: metadata dataframe for cells\n# e: matrix of normalized gene expressions\ndata(\"d_ccl\", package = \"scBubbletree\")\nA <- d_ccl$A \n```\n\n### 2. Determining Clustering Resolution\nBefore clustering, identify the optimal number of clusters ($k$) or resolution ($r$).\n\n*   **For Louvain ($r$):** Use `get_r()` to calculate Gap statistics.\n    ```r\n    b_r <- get_r(x = A, rs = 10^seq(-4, 0.5, by = 0.5), B_gap = 5)\n    # Look for the \"elbow\" in the Gap curve\n    ```\n*   **For k-means ($k$):** Use `get_k()`.\n    ```r\n    b_k <- get_k(x = A, ks = 1:10, B_gap = 5)\n    ```\n\n### 3. Generating the Bubbletree\nThis step performs clustering and hierarchical grouping simultaneously. It uses bootstrapping to calculate branch support.\n\n*   **Using Louvain:**\n    ```r\n    l <- get_bubbletree_graph(x = A, r = 0.1, B = 300, N_eff = 200)\n    plot(l$tree)\n    ```\n*   **Using k-means:**\n    ```r\n    k <- get_bubbletree_kmeans(x = A, k = 5, B = 300)\n    ```\n*   **Using External Clustering:** If you already have cluster assignments (e.g., from Seurat or PAM), use `get_bubbletree_dummy()`.\n    ```r\n    d <- get_bubbletree_dummy(x = A, cs = my_clusters, B = 200)\n    ```\n\n### 4. Visualization and Annotation\nAdorn the bubbletree with cell features using `patchwork` for layout.\n\n*   **Categorical Features (e.g., Cell Lines):**\n    ```r\n    # integrate_vertical = TRUE shows distribution of a feature across bubbles\n    w1 <- get_cat_tiles(btd = l, f = m$cell_line, integrate_vertical = TRUE)\n    l$tree | w1$plot\n    ```\n*   **Numeric Features (e.g., Gene Expression):**\n    ```r\n    # Heatmap of means\n    w3 <- get_num_tiles(btd = l, fs = e, summary_function = \"mean\")\n    # Violin plots of distributions\n    w4 <- get_num_violins(btd = l, fs = e)\n    (l$tree | w3$plot | w4$plot)\n    ```\n*   **Individual Cell Features:**\n    ```r\n    g_cell <- get_num_cell_tiles(btd = l, f = e[, \"ALDH1A1\"])\n    l$tree | g_cell$plot\n    ```\n\n### 5. Quality Metrics\n*   **Gini Impurity:** Quantify cluster purity based on labels.\n    ```r\n    # GI close to 0 indicates high purity\n    gini_results <- get_gini(labels = m$cell_line, clusters = l$cluster)\n    ```\n*   **Comparison:** Compare two different bubbletree topologies (e.g., Louvain vs k-means).\n    ```r\n    cp <- compare_bubbletrees(btd_1 = l, btd_2 = k)\n    plot(cp$comparison)\n    ```\n\n## Tips for Success\n*   **Bootstrap Support:** Red labels on tree branches indicate robustness (0 to B). Low values suggest unstable cluster relationships.\n*   **Bubble Size:** Radii scale linearly with the number of cells in that cluster.\n*   **Matrix Input:** Ensure the input matrix `x` is the reduced dimension space (PCA/LSI), not the raw count matrix, to ensure computational efficiency.\n\n## Reference documentation\n- [User_manual.md](./references/User_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scbubbletree",
+    "description": "The scBubbletree package visualizes large-scale scRNA-seq data by grouping cells into clusters and organizing them into a hierarchical tree structure. Use when user asks to cluster single-cell data into bubbles, generate hierarchical tree visualizations of cell clusters, calculate bootstrap support for cluster relationships, or annotate bubbletrees with gene expression and metadata.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scBubbletree.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-precisetadhub",
+  "category": "bioconductor",
+  "name": "bioconductor-precisetadhub",
+  "description": "This package provides pre-trained Random Forest models for predicting TAD and loop boundaries at base-level resolution. Use when user asks to load pre-trained models for TAD boundary prediction, retrieve chromatin loop models, or access genomic data for preciseTAD analysis.",
+  "overview": "`preciseTADhub` is a Bioconductor ExperimentData package providing 84 pre-trained Random Forest (RF) models. These models are designed to work in conjunction with the `preciseTAD` package to predict TAD and loop boundaries at base-level resolution. Each model was trained using specific combinations of cell lines (GM12878, K562), ground truth callers (Arrowhead, Peakachu), and resolutions (5kb, 10kb), using a leave-one-chromosome-out strategy.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/preciseTADhub.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/dozmorovlab/preciseTADhub",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "preciseTADhub"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/preciseTADhub.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/dozmorovlab/preciseTADhub",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-precisetadhub\n\n## Overview\n\n`preciseTADhub` is a Bioconductor ExperimentData package providing 84 pre-trained Random Forest (RF) models. These models are designed to work in conjunction with the `preciseTAD` package to predict TAD and loop boundaries at base-level resolution. Each model was trained using specific combinations of cell lines (GM12878, K562), ground truth callers (Arrowhead, Peakachu), and resolutions (5kb, 10kb), using a leave-one-chromosome-out strategy.\n\n## Core Workflow\n\n### 1. Initialization and Querying\nTo use the pre-trained models, you must initialize `ExperimentHub` and query for the `preciseTADhub` resources.\n\n```r\nlibrary(ExperimentHub)\nlibrary(preciseTADhub)\nlibrary(preciseTAD)\n\nhub <- ExperimentHub()\nmyfiles <- query(hub, \"preciseTADhub\")\n```\n\n### 2. Loading a Pre-trained Model\nUse the `readEH()` wrapper function to retrieve a specific model based on the chromosome to be predicted (the holdout), the cell line, and the ground truth caller.\n\n**Parameters for `readEH()`:**\n- `chr`: The holdout chromosome (e.g., \"CHR22\").\n- `cl`: Cell line (\"GM12878\" or \"K562\").\n- `gt`: Ground truth caller (\"Arrowhead\" for TADs, \"Peakachu\" for loops).\n- `source`: The queried hub object.\n\n```r\n# Example: Load model for CHR22, GM12878, using Arrowhead at 5kb\nmodel_data <- readEH(chr = \"CHR22\", \n                     cl = \"GM12878\", \n                     gt = \"Arrowhead\", \n                     source = myfiles)\n```\n\n### 3. Preparing Genomic Predictors\nThe models require specific Transcription Factor Binding Site (TFBS) data as predictors: CTCF, RAD21, SMC3, and ZNF143. These should be provided as a named `GRangesList`.\n\n```r\ndata(\"tfbsList\")\n# Filter for required predictors and rename for the model\ntfbs_filt <- tfbsList[names(tfbsList) %in% c(\"Gm12878-Ctcf-Broad\", \n                                            \"Gm12878-Rad21-Haib\",\n                                            \"Gm12878-Smc3-Sydh\",\n                                            \"Gm12878-Znf143-Sydh\")]\nnames(tfbs_filt) <- c(\"Ctcf\", \"Rad21\", \"Smc3\", \"Znf143\")\n```\n\n### 4. Predicting Boundaries\nPass the loaded model to the `tadModel` argument of the `preciseTAD()` function.\n\n```r\nset.seed(123)\nprediction <- preciseTAD(\n  genomicElements.GR = tfbs_filt,\n  featureType         = \"distance\",\n  CHR                 = \"CHR22\",\n  chromCoords         = list(18000000, 19000000),\n  tadModel            = model_data,\n  threshold           = 1.0,\n  DBSCAN_params       = list(30000, 3)\n)\n```\n\n## Model Metadata and Naming\nFiles in the hub follow the naming convention: `i_j_k_l.rds`\n- `i`: Holdout chromosome (CHR1 to CHR22).\n- `j`: Cell line (GM12878, K562).\n- `k`: Resolution (5kb, 10kb).\n- `l`: Ground truth caller (Arrowhead, Peakachu).\n\nEach loaded object is a list containing:\n1. `train`: The `caret` RF model object.\n2. `importance`: A data frame of variable importance for the predictors.\n\n## Tips for Success\n- **Resolution Match**: Ensure your genomic predictors and the `preciseTAD` parameters align with the resolution of the pre-trained model (e.g., use 5kb models for high-resolution base-level mapping).\n- **Chromosome Selection**: Always select the model where the chromosome you are currently analyzing was the \"holdout\" during training to ensure unbiased prediction.\n- **Memory Management**: `ExperimentHub` caches downloads locally. If you encounter issues, check your local BiocFileCache.\n\n## Reference documentation\n- [Predicting TAD/loop boundaries using pre-trained models provided by preciseTADhub](./references/preciseTADhub.Rmd)\n- [preciseTADhub Documentation](./references/preciseTADhub.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-precisetadhub",
+    "description": "This package provides pre-trained Random Forest models for predicting TAD and loop boundaries at base-level resolution. Use when user asks to load pre-trained models for TAD boundary prediction, retrieve chromatin loop models, or access genomic data for preciseTAD analysis.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/preciseTADhub.html"
+  }
+}

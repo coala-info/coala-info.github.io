@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-xtrasnplocs.hsapiens.dbsnp144.grch38",
+  "category": "bioconductor",
+  "name": "bioconductor-xtrasnplocs.hsapiens.dbsnp144.grch38",
+  "description": "This Bioconductor package provides genomic coordinates and allele information for non-single-base substitutions in the human genome based on NCBI dbSNP Build 144 and GRCh38. Use when user asks to retrieve locations for human in-dels or microsatellites, query extra SNP data by RefSNP ID, or access non-standard variant information for GRCh38.",
+  "overview": "The `XtraSNPlocs.Hsapiens.dbSNP144.GRCh38` package is a Bioconductor annotation data package containing \"extra\" molecular variations for the human genome (GRCh38.p2). Unlike the standard `SNPlocs` packages which only contain single-base substitutions (class \"snp\"), this package provides data for:\n- In-dels (insertions/deletions)\n- Heterozygous variations\n- Microsatellites\n- Named-loci\n- Mixed and multinucleotide polymorphisms (MNPs)",
+  "homepage": "https://bioconductor.org/packages/release/data/annotation/html/XtraSNPlocs.Hsapiens.dbSNP144.GRCh38.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "XtraSNPlocs.Hsapiens.dbSNP144.GRCh38"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/XtraSNPlocs.Hsapiens.dbSNP144.GRCh38.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-xtrasnplocs.hsapiens.dbsnp144.grch38\n\nname: bioconductor-xtrasnplocs.hsapiens.dbsnp144.grch38\ndescription: Access and query extra SNP locations (non-single-base substitutions like in-dels, microsatellites, and mixed variants) for Homo sapiens from NCBI dbSNP Build 144 mapped to GRCh38. Use this skill when you need to retrieve genomic coordinates, RefSNP IDs, and allele information for human variants that are NOT standard single-nucleotide polymorphisms (SNPs).\n\n# bioconductor-xtrasnplocs.hsapiens.dbsnp144.grch38\n\n## Overview\n\nThe `XtraSNPlocs.Hsapiens.dbSNP144.GRCh38` package is a Bioconductor annotation data package containing \"extra\" molecular variations for the human genome (GRCh38.p2). Unlike the standard `SNPlocs` packages which only contain single-base substitutions (class \"snp\"), this package provides data for:\n- In-dels (insertions/deletions)\n- Heterozygous variations\n- Microsatellites\n- Named-loci\n- Mixed and multinucleotide polymorphisms (MNPs)\n\nThe data is based on NCBI dbSNP Build 144 and is mapped to chromosomes 1-22, X, Y, and MT.\n\n## Basic Usage\n\n### Loading the Data\nTo use the package, load the library and assign the main object to a variable for easier access.\n\n```r\nlibrary(XtraSNPlocs.Hsapiens.dbSNP144.GRCh38)\nsnps <- XtraSNPlocs.Hsapiens.dbSNP144.GRCh38\n```\n\n### Inspecting the Dataset\nUse `snpcount()` to see the distribution of extra SNPs across sequences.\n\n```r\nsnpcount(snps)\n```\n\n### Querying by Sequence Name\nRetrieve variants for specific chromosomes using `snpsBySeqname()`. Note that sequence names in this package typically use the \"ch\" prefix (e.g., \"ch1\", \"chMT\").\n\n```r\n# Get RefSNP ID and alleles for chromosome 22 and Mitochondrial DNA\nmy_snps <- snpsBySeqname(snps, c(\"ch22\", \"chMT\"), columns=c(\"RefSNP_id\", \"alleles\"))\n```\n\n### Querying by RefSNP ID\nIf you have specific rsIDs, use `snpsById()`.\n\n```r\nrsids <- c(\"rs367617508\", \"rs398104919\", \"rs3831697\")\nmy_snps_info <- snpsById(snps, rsids, columns=c(\"RefSNP_id\", \"alleles\"))\n```\n\n## Common Workflows\n\n### Harmonizing Sequence Styles\nWhen working with other Bioconductor objects (like `BSgenome`), you must ensure the `seqlevelsStyle` matches (e.g., \"UCSC\" vs \"NCBI\").\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\ngenome <- BSgenome.Hsapiens.UCSC.hg38\n\n# Change style of the SNP object to match the genome\nseqlevelsStyle(my_snps) <- seqlevelsStyle(genome)\ngenome(my_snps) <- \"hg38\"\n```\n\n### Extracting Reference Alleles\nSince this package provides the variant alleles but not explicitly the reference allele in a separate column, you can extract it using a `BSgenome` object.\n\n```r\n# Extract reference sequence at the variant locations\nref_alleles <- getSeq(genome, my_snps)\n\n# Handle empty strings (often representing deletions in this context)\nref_alleles[ref_alleles == \"\"] <- \"-\"\n\n# Add to metadata columns\nmcols(my_snps)$ref_allele <- ref_alleles\n```\n\n### Parsing Alleles\nThe `alleles` column is returned as a character string (e.g., \"A/G\" or \"-/T\"). To compare them programmatically, split the strings.\n\n```r\nall_alleles <- mcols(my_snps)$alleles\nallele_list <- CharacterList(strsplit(all_alleles, \"/\", fixed=TRUE))\n```\n\n## Tips\n- **Memory Efficiency**: The package uses an on-disk representation. Querying specific chromosomes or IDs is more memory-efficient than loading the entire dataset.\n- **Class Filtering**: Remember that this package *excludes* class \"snp\". If you cannot find a specific rsID here, it is likely a single-base substitution and can be found in `SNPlocs.Hsapiens.dbSNP144.GRCh38`.\n- **Coordinate System**: The positions are 1-based.\n\n## Reference documentation\n- [XtraSNPlocs.Hsapiens.dbSNP144.GRCh38 Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-xtrasnplocs.hsapiens.dbsnp144.grch38",
+    "description": "This Bioconductor package provides genomic coordinates and allele information for non-single-base substitutions in the human genome based on NCBI dbSNP Build 144 and GRCh38. Use when user asks to retrieve locations for human in-dels or microsatellites, query extra SNP data by RefSNP ID, or access non-standard variant information for GRCh38.",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/XtraSNPlocs.Hsapiens.dbSNP144.GRCh38.html"
+  }
+}

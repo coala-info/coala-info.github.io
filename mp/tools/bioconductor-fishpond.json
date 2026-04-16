@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fishpond",
+  "category": "bioconductor",
+  "name": "bioconductor-fishpond",
+  "description": "The fishpond package performs differential analysis of RNA-seq data using inferential replicates to account for quantification uncertainty. Use when user asks to perform transcript-level differential expression, analyze differential transcript usage, or detect allelic imbalance using the Swish algorithm.",
+  "overview": "The `fishpond` package provides methods for differential analysis of RNA-seq data, primarily through the **Swish** algorithm. Unlike traditional methods that use point estimates of counts, Swish utilizes inferential replicates (bootstraps or Gibbs samples) to account for uncertainty in transcript-level quantification. It is particularly effective for transcript-level differential expression, differential transcript usage (DTU), and allelic imbalance (SEESAW workflow).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/fishpond.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fishpond/overview",
+  "github": "N/A",
+  "conda_downloads": "31.1K",
+  "conda_downloads_num": 31100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fishpond"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fishpond.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fishpond/overview",
+    "github": "N/A",
+    "conda_downloads": "31.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fishpond\n\n## Overview\n\nThe `fishpond` package provides methods for differential analysis of RNA-seq data, primarily through the **Swish** algorithm. Unlike traditional methods that use point estimates of counts, Swish utilizes inferential replicates (bootstraps or Gibbs samples) to account for uncertainty in transcript-level quantification. It is particularly effective for transcript-level differential expression, differential transcript usage (DTU), and allelic imbalance (SEESAW workflow).\n\n## Core Workflow: Swish for Differential Expression\n\nThe standard workflow for bulk RNA-seq involves importing data via `tximeta`, scaling, filtering, and testing.\n\n```r\nlibrary(tximeta)\nlibrary(fishpond)\n\n# 1. Import data (requires Salmon output with inferential replicates)\nse <- tximeta(coldata)\n\n# 2. Scaling and Filtering\ny <- scaleInfReps(se)\ny <- labelKeep(y)\ny <- y[mcols(y)$keep, ]\n\n# 3. Statistical Testing (Swish)\n# x: the condition variable in colData\nset.seed(1)\ny <- swish(y, x=\"condition\")\n\n# 4. Access Results\nres <- mcols(y) # Contains log2FC, pvalue, qvalue\n```\n\n### Key Parameters for `swish()`\n- `x`: The primary condition variable.\n- `pair`: Column name for paired/matched samples (e.g., `pair=\"subject_id\"`).\n- `cov`: Secondary covariate for batch correction or interaction tests.\n- `interaction`: Set to `TRUE` to test if the effect of `x` varies across `cov`.\n- `fast`: Set `fast=1` for paired designs to use a faster one-sample z-score statistic.\n\n## Allelic Imbalance (SEESAW)\n\nFor allelic expression analysis, `fishpond` compares counts between two alleles (e.g., maternal vs. paternal) within the same sample.\n\n```r\n# Import allelic counts (requires specific Salmon diploid transcriptome output)\ny <- importAllelicCounts(coldata, a1=\"alt\", a2=\"ref\", format=\"wide\", tx2gene=tx2gene)\n\n# Filter features with no allelic information\nn <- ncol(y)/2\nrep1a1 <- assay(y, \"infRep1\")[,y$allele == \"a1\"]\nrep1a2 <- assay(y, \"infRep1\")[,y$allele == \"a2\"]\ny <- y[rowSums(abs(rep1a1 - rep1a2) < 1) < n, ]\n\n# Run Swish for Global Allelic Imbalance\ny <- labelKeep(y)\ny <- swish(y, x=\"allele\", pair=\"sample\")\n```\n\n## Single-Cell Analysis (Alevin)\n\nFor scRNA-seq data from Alevin, `fishpond` can use inferential mean and variance to generate pseudo-replicates, saving memory.\n\n```r\n# Import Alevin data without loading full replicates\nsce <- tximeta(files, type=\"alevin\", dropInfReps=TRUE)\n\n# Generate pseudo-replicates (e.g., 20)\nsce <- makeInfReps(sce, num=20)\n\n# Scale and test\nsce <- scaleInfReps(sce, lengthCorrect=FALSE)\nsce <- swish(sce, x=\"cluster_label\")\n```\n\n## Visualization Functions\n\n- `plotInfReps(y, idx, x)`: Plots the inferential replicates for a specific feature (index or name).\n- `plotMASwish(y)`: Generates an MA plot highlighting significant features.\n- `plotAllelicHeatmap(y, idx)`: Heatmap of allelic ratios.\n- `plotAllelicGene(y, gene, db)`: Genomic context plot of allelic/isoform proportions (requires Gviz).\n\n## Tips for Success\n- **Seed Setting**: Always use `set.seed()` before `swish()` as permutations and tie-breaking involve randomness.\n- **Factor Levels**: Ensure the reference level of your condition factor is set correctly (the first level is the reference).\n- **Gene-level Analysis**: Use `tximeta::summarizeToGene(se)` before running the Swish workflow to perform gene-level inference.\n- **DTU**: Use `isoformProportions(y)` after scaling to transform counts into proportions for differential transcript usage testing.\n\n## Reference documentation\n- [Allelic expression analysis with Salmon and Swish](./references/allelic.md)\n- [Swish: differential expression accounting for inferential uncertainty](./references/swish.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fishpond",
+    "description": "The fishpond package performs differential analysis of RNA-seq data using inferential replicates to account for quantification uncertainty. Use when user asks to perform transcript-level differential expression, analyze differential transcript usage, or detect allelic imbalance using the Swish algorithm.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fishpond.html"
+  }
+}

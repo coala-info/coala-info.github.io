@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pdinfobuilder",
+  "category": "bioconductor",
+  "name": "bioconductor-pdinfobuilder",
+  "description": "This tool builds custom R annotation packages for Affymetrix and NimbleGen microarrays to be used with the Bioconductor oligo package. Use when user asks to create platform design annotation packages, build custom microarray annotation from raw design files, or generate seed objects for Affymetrix and NimbleGen platforms.",
+  "overview": "The `pdInfoBuilder` package is used to create \"Platform Design\" (PD) annotation packages. These packages are essential for processing high-density microarray data using the `oligo` package. While many annotation packages are available on Bioconductor, `pdInfoBuilder` allows users to build their own when using custom arrays or when specific versions of design files are required.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/pdInfoBuilder.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pdInfoBuilder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pdInfoBuilder.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pdinfobuilder\n\nname: bioconductor-pdinfobuilder\ndescription: Building annotation packages (Platform Design Info) for use with the Bioconductor 'oligo' package. Use this skill when you need to create custom R annotation packages for Affymetrix (Expression, SNP, Tiling, Exon, Gene) or NimbleGen (Expression, Tiling) microarrays from raw design files like CDF, PGF, CLF, NDF, and BPMAP.\n\n# bioconductor-pdinfobuilder\n\n## Overview\n\nThe `pdInfoBuilder` package is used to create \"Platform Design\" (PD) annotation packages. These packages are essential for processing high-density microarray data using the `oligo` package. While many annotation packages are available on Bioconductor, `pdInfoBuilder` allows users to build their own when using custom arrays or when specific versions of design files are required.\n\n## Core Workflow\n\nThe general process involves creating a \"Seed\" object containing metadata and file paths, then passing that seed to `makePdInfoPackage`.\n\n### 1. Identify Required Files\nThe files needed depend on the array type:\n*   **Affymetrix Expression:** CDF, CEL (for geometry), and Probe Sequence (TAB).\n*   **Affymetrix Exon/Gene ST:** PGF, CLF, and Probeset Annotation (CSV).\n*   **Affymetrix SNP:** CDF, SNP Annotation (CSV), and Probe Sequence (TAB).\n*   **Affymetrix Tiling:** BPMAP and CEL (for geometry).\n*   **NimbleGen Expression:** NDF and XYS.\n*   **NimbleGen Tiling:** NDF, POS, and XYS.\n\n### 2. Create a Seed Object\nInitialize the appropriate seed class for your platform.\n\n```r\nlibrary(pdInfoBuilder)\n\n# Example for Affymetrix Gene ST\nseed <- new(\"AffyGenePDInfoPkgSeed\",\n            pgfFile = \"HuGene-1_0-st-v1.r4.pgf\",\n            clfFile = \"HuGene-1_0-st-v1.r4.clf\",\n            probeFile = \"HuGene-1_0-st-v1.na27.2.hg18.probeset.csv\",\n            author = \"Your Name\",\n            email = \"user@example.com\",\n            biocViews = \"AnnotationData\",\n            genomebuild = \"NCBI Build 36\",\n            organism = \"Human\",\n            species = \"Homo Sapiens\")\n\n# Example for NimbleGen Expression\nseed <- new(\"NgsExpressionPDInfoPkgSeed\",\n            ndfFile = \"HG18_60mer_expr.ndf\",\n            xysFile = \"sample.xys\",\n            author = \"Your Name\",\n            biocViews = \"AnnotationData\",\n            organism = \"Human\",\n            species = \"Homo Sapiens\")\n```\n\n### 3. Build the Package\nRun the builder function to generate the package directory.\n\n```r\nmakePdInfoPackage(seed, destDir = \".\")\n```\n\n### 4. Install the Package\nThe output of `makePdInfoPackage` is a source R package. You must install it to use it with `oligo`.\n\n```r\n# From R\ninstall.packages(\"./pd.hugene.1.0.st.v1\", repos = NULL, type = \"source\")\n```\n\n## Platform Specific Seeds\n\n| Platform | Seed Class | Key Arguments |\n| :--- | :--- | :--- |\n| Affy Expression | `AffyExpressionPDInfoPkgSeed` | `cdfFile`, `celFile`, `tabSeqFile` |\n| Affy Exon ST | `AffyExonPDInfoPkgSeed` | `pgfFile`, `clfFile`, `probeFile` |\n| Affy Gene ST | `AffyGenePDInfoPkgSeed` | `pgfFile`, `clfFile`, `probeFile` |\n| Affy SNP | `AffySNPPDInfoPkgSeed2` | `cdfFile`, `csvAnnoFile`, `csvSeqFile` |\n| Affy Tiling | `AffyTilingPDInfoPkgSeed` | `bpmapFile`, `celFile` |\n| NimbleGen Expr | `NgsExpressionPDInfoPkgSeed` | `ndfFile`, `xysFile` |\n| NimbleGen Tiling| `NgsTilingPDInfoPkgSeed` | `ndfFile`, `xysFile`, `posFile` |\n\n## Tips and Troubleshooting\n*   **Memory Requirements:** Building packages for large arrays (like SNP 6.0 or Tiling) can be RAM-intensive. Ensure at least 4-8GB of RAM is available.\n*   **Column Names:** If the builder fails to find required columns in CSV files, it will suggest names. Rename your CSV columns to match these suggestions.\n*   **CRLMM Support:** For Human Affymetrix SNP arrays, it is highly recommended to use the pre-built Bioconductor packages, as they contain specific calibration data for the CRLMM algorithm that custom-built packages lack.\n*   **CEL/XYS Files:** The intensity files (CEL/XYS) provided to the seed are used only as templates to determine the physical geometry (rows/columns) of the array.\n\n## Reference documentation\n- [Building Annotation Packages with pdInfoBuilder](./references/BuildingPDInfoPkgs.md)\n- [Building a PDInfo Package for an Affymetrix Mapping Chip](./references/howto-AffymetrixMapping.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pdinfobuilder",
+    "description": "This tool builds custom R annotation packages for Affymetrix and NimbleGen microarrays to be used with the Bioconductor oligo package. Use when user asks to create platform design annotation packages, build custom microarray annotation from raw design files, or generate seed objects for Affymetrix and NimbleGen platforms.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pdInfoBuilder.html"
+  }
+}

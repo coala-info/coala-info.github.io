@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-normqpcr",
+  "category": "bioconductor",
+  "name": "bioconductor-normqpcr",
+  "description": "This tool provides functions for the normalization and analysis of RT-qPCR data, including reference gene selection and relative quantification. Use when user asks to normalize qPCR data, select stable reference genes using geNorm or NormFinder, combine technical replicates, or calculate delta-delta Cq values.",
+  "overview": "The `NormqPCR` package provides a comprehensive suite of tools for the normalization and analysis of real-time quantitative RT-PCR data. It extends the `ReadqPCR` package's `qPCRBatch` objects to facilitate workflows including data cleaning (handling NAs and technical replicates), reference gene selection (geNorm and NormFinder), and relative quantification (delta-delta Cq and NRQs).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NormqPCR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NormqPCR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NormqPCR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-normqpcr\n\nname: bioconductor-normqpcr\ndescription: Functions for normalization of RT-qPCR data, including technical replicate combination, handling undetermined values, and selecting stable reference genes using geNorm and NormFinder algorithms. Use this skill when analyzing qPCR data in R, specifically for calculating 2^-deltaCq and 2^-delta-deltaCq values.\n\n## Overview\nThe `NormqPCR` package provides a comprehensive suite of tools for the normalization and analysis of real-time quantitative RT-PCR data. It extends the `ReadqPCR` package's `qPCRBatch` objects to facilitate workflows including data cleaning (handling NAs and technical replicates), reference gene selection (geNorm and NormFinder), and relative quantification (delta-delta Cq and NRQs).\n\n## Core Workflow\n\n### 1. Data Preprocessing\nBefore normalization, raw Cq values often require cleaning and aggregation.\n\n*   **Combine Technical Replicates**: Use `combineTechReps` to average replicates (suffixed with `_TechRep.n`) into a single value per feature.\n    ```r\n    combinedBatch <- combineTechReps(qPCRBatch)\n    ```\n*   **Handle Undetermined Values**:\n    *   `replaceAboveCutOff(batch, newVal = NA, cutOff = 35)`: Set high Cq values to NA.\n    *   `replaceNAs(batch, newNA = 40)`: Replace NAs with a specific cycle number.\n    *   `makeAllNewVal(batch, contrastM, sampleMaxM, newVal = NA)`: Filter detectors based on a maximum number of allowed NAs per sample group.\n\n### 2. Selecting Reference Genes\nThe package implements two gold-standard algorithms to find the most stable housekeeping genes (HKGs).\n\n*   **geNorm**: Ranks genes by stability measure $M$ and calculates pairwise variation $V$.\n    ```r\n    res <- selectHKs(qPCRBatch, method = \"geNorm\", Symbols = featureNames(qPCRBatch), minNrHK = 2)\n    # Vand02 recommends a V cut-off of 0.15\n    ```\n*   **NormFinder**: Uses a model-based approach to estimate intra- and inter-group variation.\n    ```r\n    # Requires a group factor from phenoData\n    groups <- pData(qPCRBatch)$Classification\n    res <- selectHKs(qPCRBatch, method = \"NormFinder\", group = groups, Symbols = featureNames(qPCRBatch))\n    ```\n\n### 3. Normalization Methods\n\n#### Delta Cq ($\\Delta Cq$)\nNormalizes detectors within a sample by subtracting the HKG value.\n```r\n# Single or multiple HKGs (uses arithmetic mean of HKGs)\nhkgs <- c(\"Actb\", \"Gapdh\")\nnormBatch <- deltaCq(qPCRBatch = batch, hkgs = hkgs, calc = \"arith\")\n```\n\n#### Delta-Delta Cq ($2^{-\\Delta\\Delta Cq}$)\nCalculates relative expression between two groups (case vs. control).\n```r\n# Requires a contrast matrix (1 for sample presence, 0 for absence)\ncontM <- cbind(case = c(1,1,0,0), control = c(0,0,1,1))\nrownames(contM) <- sampleNames(batch)\n\nresults <- deltaDeltaCq(qPCRBatch = batch, \n                        hkgs = \"Actb\", \n                        contrastM = contM, \n                        case = \"case\", \n                        control = \"control\",\n                        paired = TRUE) # Use paired=FALSE for separate well methods\n```\n\n#### Normalized Relative Quantities (NRQs)\nA more advanced method accounting for individual gene efficiencies.\n```r\n# Requires efficiency values to be set in the qPCRBatch object\neffs(batch) <- efficiency_matrix\nresNRQ <- ComputeNRQs(batch, hkgs = c(\"gene1\", \"gene2\"))\n```\n\n## Tips for Success\n*   **Object Compatibility**: `NormqPCR` relies on `qPCRBatch` objects from the `ReadqPCR` package. Ensure data is loaded via `read.qPCR` or `read.taqman` first.\n*   **Log Transformation**: Most functions include a `log` parameter. If your data is already on a log scale (like raw Cq values), ensure `log = TRUE` (default) is handled correctly; if using transformed values, check the documentation for the specific function's expectation.\n*   **Geometric vs. Arithmetic**: When combining multiple housekeeping genes, the geometric mean is generally preferred for $2^{-\\Delta Cq}$ values, while the arithmetic mean is used for raw Cq values.\n\n## Reference documentation\n- [NormqPCR](./references/NormqPCR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-normqpcr",
+    "description": "This tool provides functions for the normalization and analysis of RT-qPCR data, including reference gene selection and relative quantification. Use when user asks to normalize qPCR data, select stable reference genes using geNorm or NormFinder, combine technical replicates, or calculate delta-delta Cq values.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NormqPCR.html"
+  }
+}

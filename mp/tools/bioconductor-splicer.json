@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-splicer",
+  "category": "bioconductor",
+  "name": "bioconductor-splicer",
+  "description": "bioconductor-splicer classifies alternative splicing events and predicts the coding potential and nonsense-mediated decay susceptibility of RNA-seq transcript isoforms. Use when user asks to identify splicing classes like exon skipping or intron retention, annotate premature termination codons, or analyze transcript data from Cufflinks and GRanges objects.",
+  "overview": "spliceR is a Bioconductor package designed for the downstream analysis of RNA-seq isoform data. It transforms transcript-level assemblies into classified alternative splicing events and provides functional annotations regarding coding potential. It primarily operates on a `SpliceRList` object, which contains transcript and exon features.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/spliceR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spliceR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/spliceR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-splicer\n\nname: bioconductor-splicer\ndescription: Expert guidance for the spliceR R package to classify alternative splicing events and predict coding potential (NMD/PTC) from RNA-seq data. Use this skill when analyzing transcript isoforms from Cufflinks (via cummeRbund) or generic GRanges objects to identify splicing classes (ESI, MESI, ISI, A5/A3, ATSS/ATTS, MEE) and annotate nonsense-mediated decay (NMD) susceptibility.\n\n## Overview\n\nspliceR is a Bioconductor package designed for the downstream analysis of RNA-seq isoform data. It transforms transcript-level assemblies into classified alternative splicing events and provides functional annotations regarding coding potential. It primarily operates on a `SpliceRList` object, which contains transcript and exon features.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nData can be imported from Cufflinks or created manually from GRanges.\n\n**From Cufflinks (via cummeRbund):**\n```R\nlibrary(spliceR)\nlibrary(cummeRbund)\n\n# Ensure the GTF used for Cufflinks is provided to readCufflinks\ncuffDB <- readCufflinks(dir=\"path/to/cuffdiff_out\", gtf=\"transcripts.gtf\", genome=\"hg19\")\n\n# Convert to SpliceRList\n# fixCufflinksAnnotationProblem=TRUE (default) corrects gene expression for multi-gene cuff-ids\ncuffDB_spliceR <- prepareCuff(cuffDB)\n```\n\n**From Generic GRanges:**\nYou must provide two `GRanges` objects: `transcript_features` (with metadata columns like `spliceR.isoform_id`, `spliceR.gene_id`) and `exon_features`.\n```R\nmySpliceRList <- SpliceRList(\n  transcript_features = knownGeneTranscripts,\n  exon_features = knownGeneExons,\n  assembly_id = \"hg19\",\n  source = \"granges\",\n  conditions = c(\"Control\", \"Treatment\")\n)\n```\n\n### 2. Filtering (Optional but Recommended)\nPre-filtering removes low-confidence or non-expressed transcripts to speed up processing.\n```R\ncuffDB_spliceR_filtered <- preSpliceRFilter(\n  cuffDB_spliceR,\n  filters = c(\"expressedIso\", \"isoOK\", \"expressedGenes\", \"geneOK\")\n)\n```\n\n### 3. Alternative Splicing Classification\nThe `spliceR()` function identifies splicing events.\n*   `compareTo=\"preTranscript\"`: Compares isoforms to a hypothetical pre-RNA (union of all exons).\n*   `compareTo=\"sample_name\"`: Compares isoforms to the major isoform of a specific sample.\n\n```R\nmySpliceRList <- spliceR(\n  cuffDB_spliceR_filtered,\n  compareTo = \"preTranscript\",\n  filters = c(\"expressedGenes\", \"isoOK\", \"isoClass\"),\n  useProgressBar = FALSE\n)\n```\n\n### 4. PTC and NMD Annotation\nAnnotate transcripts for Premature Termination Codons (PTC) and susceptibility to Nonsense Mediated Decay (NMD).\n```R\n# 1. Get CDS information from UCSC\nucscCDS <- getCDS(selectedGenome=\"hg19\", repoName=\"UCSC\")\n\n# 2. Load the corresponding BSgenome\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# 3. Annotate PTC\n# PTCDistance=50 is the standard rule (STOP > 50nt from last junction)\nmySpliceRList <- annotatePTC(\n  mySpliceRList, \n  cds = ucscCDS, \n  bsgenome = Hsapiens, \n  PTCDistance = 50\n)\n```\n\n## Visualization and Export\n\n### Plotting Splicing Events\nGenerate Venn diagrams comparing splicing events across conditions.\n```R\n# Plot average number of transcripts per gene\nmySpliceRList <- spliceRPlot(mySpliceRList, evaluate=\"nr_transcript_pr_gene\")\n\n# Plot specific AS types (e.g., Exon Skipping Inclusion - ESI)\nmySpliceRList <- spliceRPlot(mySpliceRList, evaluate=\"mean_AS_transcript\", asType=\"ESI\")\n```\n\n### Exporting to GTF\nExport results for viewing in genome browsers (IGV/UCSC). Transcripts are color-coded by expression.\n```R\ngenerateGTF(\n  mySpliceRList, \n  filters = c(\"geneOK\", \"isoOK\", \"expressedIso\"),\n  scoreMethod = \"local\" # Scores relative to highest expressed isoform in gene\n)\n```\n\n## Key Splicing Classes\n*   **ESI/MESI**: Single/Multiple Exon Skipping or Inclusion.\n*   **ISI**: Intron Retention/Inclusion.\n*   **A5/A3**: Alternative 5' or 3' splice sites.\n*   **ATSS/ATTS**: Alternative Transcription Start/Termination Sites.\n*   **MEE**: Mutually Exclusive Exons.\n\n## Reference documentation\n- [spliceR: An R package for classification of alternative splicing and prediction of coding potential from RNA-seq data](./references/spliceR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-splicer",
+    "description": "bioconductor-splicer classifies alternative splicing events and predicts the coding potential and nonsense-mediated decay susceptibility of RNA-seq transcript isoforms. Use when user asks to identify splicing classes like exon skipping or intron retention, annotate premature termination codons, or analyze transcript data from Cufflinks and GRanges objects.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/spliceR.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-somascan.db",
+  "category": "bioconductor",
+  "name": "bioconductor-somascan.db",
+  "description": "This tool provides biological annotations and identifier mapping for SomaLogic SomaScan proteomic assay data. Use when user asks to map SomaScan SeqIds to gene symbols, Entrez IDs, or UniProt IDs, filter probes by menu version, or add protein target names to data frames.",
+  "overview": "The `SomaScan.db` package is a Bioconductor annotation resource for SomaLogic's proteomic platform. It functions as a SQLite-based mapping between SomaScan-specific identifiers (`SeqIds`, referred to as `PROBEID` in the database) and standard biological identifiers. It follows the standard `AnnotationDbi` interface, making it compatible with common R workflows for genomic and proteomic data annotation.",
+  "homepage": "https://bioconductor.org/packages/release/data/annotation/html/SomaScan.db.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/SomaLogic/SomaScan.db",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SomaScan.db"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/SomaScan.db.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/SomaLogic/SomaScan.db",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-somascan.db\n\nname: bioconductor-somascan.db\ndescription: Provides biological annotations for SomaLogic SomaScan assay data. Use this skill to map SomaScan SeqIds (Probe IDs) to gene symbols, Entrez IDs, UniProt IDs, and biological pathways (GO, KEGG). It supports menu-specific filtering (e.g., 5k, 7k, v4.0, v4.1) and adding protein target full names to data frames.\n\n# bioconductor-somascan.db\n\n## Overview\nThe `SomaScan.db` package is a Bioconductor annotation resource for SomaLogic's proteomic platform. It functions as a SQLite-based mapping between SomaScan-specific identifiers (`SeqIds`, referred to as `PROBEID` in the database) and standard biological identifiers. It follows the standard `AnnotationDbi` interface, making it compatible with common R workflows for genomic and proteomic data annotation.\n\n## Core Workflows\n\n### 1. Initialization and Metadata\nLoad the library to expose the `SomaScan.db` object.\n```r\nlibrary(SomaScan.db)\n\n# View database metadata\nSomaScan.db\n\n# Get species information\nspecies(SomaScan.db)\ntaxonomyId(SomaScan.db)\n```\n\n### 2. Querying the Database\nUse the five standard `AnnotationDbi` methods: `keys()`, `keytypes()`, `columns()`, `select()`, and `mapIds()`.\n\n#### Listing Available Keys and Columns\n```r\n# List available key types (e.g., PROBEID, SYMBOL, UNIPROT)\nkeytypes(SomaScan.db)\n\n# List available annotation columns\ncolumns(SomaScan.db)\n\n# Retrieve all SeqIds (PROBEIDs)\nall_seqids <- keys(SomaScan.db, keytype = \"PROBEID\")\n```\n\n#### Using `select` for Data Frames\n`select` returns a data frame and is best for multi-column retrieval.\n```r\n# Map SeqIds to Gene Symbols and Entrez IDs\nmy_keys <- c(\"10000-28\", \"10001-7\")\nres <- select(SomaScan.db, \n              keys = my_keys, \n              columns = c(\"SYMBOL\", \"ENTREZID\", \"GENENAME\"), \n              keytype = \"PROBEID\")\n```\n\n#### Using `mapIds` for Vectors\n`mapIds` returns a named vector. Use `multiVals` to handle 1:many mappings.\n```r\n# Get a simple mapping of SeqId to Symbol\nsyms <- mapIds(SomaScan.db, \n               keys = my_keys, \n               column = \"SYMBOL\", \n               keytype = \"PROBEID\", \n               multiVals = \"first\")\n```\n\n### 3. Menu-Specific Filtering\nSomaScan menus change over time (e.g., 5k/v4.0, 7k/v4.1, 11k/v5.0). You can filter queries by menu version.\n```r\n# Retrieve only IDs present in the 5k menu\nmenu_5k <- select(SomaScan.db, \n                  keys = keys(SomaScan.db), \n                  columns = \"PROBEID\", \n                  menu = \"5k\")\n\n# Access the somascan_menu list object directly\nnames(somascan_menu)\nv4_ids <- somascan_menu$v4.0\n```\n\n### 4. Adding Protein Target Names\nThe package includes a specific utility to append the \"Target Full Name\" (descriptive protein name) to an existing data frame.\n```r\n# The data frame must contain a 'PROBEID' column\nannotated_df <- addTargetFullName(res)\n```\n\n### 5. Advanced Mapping (Reverse Lookups)\nYou can search for SeqIds using gene aliases or symbols.\n```r\n# Find SeqIds associated with a gene alias\nselect(SomaScan.db, \n       keys = \"CASC4\", \n       keytype = \"ALIAS\", \n       columns = c(\"SYMBOL\", \"PROBEID\"))\n```\n\n## Tips and Best Practices\n- **PROBEID**: In this package, `PROBEID` is the internal name for SomaScan `SeqIds`.\n- **1:Many Mappings**: Annotations like GO terms or KEGG pathways often have multiple entries per SeqId. Requesting these alongside 1:1 mappings (like SYMBOL) will \"balloon\" the resulting data frame. Query GO/PATH columns separately.\n- **Regex Searching**: Use the `pattern` argument in `keys()` or `match = TRUE` in `select()` to find gene families (e.g., `keys(SomaScan.db, keytype=\"SYMBOL\", pattern=\"IL17\")`).\n- **Integration**: Combine `SomaScan.db` with `GO.db` or `KEGGREST` for detailed pathway descriptions, as `SomaScan.db` only stores the IDs.\n\n## Reference documentation\n- [Introduction to SomaScan.db](./references/SomaScan-db.md)\n- [Advanced Exploration of the SomaScan Menu](./references/advanced_usage_examples.md)\n- [Example ADAT Workflow](./references/example_adat_workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-somascan.db",
+    "description": "This tool provides biological annotations and identifier mapping for SomaLogic SomaScan proteomic assay data. Use when user asks to map SomaScan SeqIds to gene symbols, Entrez IDs, or UniProt IDs, filter probes by menu version, or add protein target names to data frames.",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/SomaScan.db.html"
+  }
+}

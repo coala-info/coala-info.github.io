@@ -1,0 +1,43 @@
+{
+  "id": "perl-mce-shared",
+  "category": "perl",
+  "name": "perl-mce-shared",
+  "description": "This tool provides a high-performance parallel computing framework for Perl that manages persistent worker pools and shared data structures. Use when user asks to parallelize log parsing, process data sequences in chunks, or implement cross-platform multi-core computations.",
+  "overview": "The Many-Core Engine (MCE) for Perl provides a high-performance parallel computing framework that utilizes a bank-queuing model. Unlike traditional approaches that might fork a new process for every data element, MCE maintains a persistent pool of workers and efficiently chunks data from an input stream to available workers. This skill helps you implement parallelized log parsing, sequence processing, and mathematical computations while managing the nuances of cross-platform execution (Unix vs. ",
+  "homepage": "https://github.com/marioroy/mce-perl",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-mce-shared/overview",
+  "github": "https://github.com/marioroy/mce-perl",
+  "conda_downloads": "25.3K",
+  "conda_downloads_num": 25300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perl-mce-shared"
+    ],
+    "description": "FAIL to generate CWL: perl-mce-shared not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/perl-mce-shared:1.893--pl5321hdfd78af_0",
+    "homepage": "https://github.com/marioroy/mce-perl",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-mce-shared/overview",
+    "github": "https://github.com/marioroy/mce-perl",
+    "conda_downloads": "25.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# perl-mce-shared\n\n## Overview\n\nThe Many-Core Engine (MCE) for Perl provides a high-performance parallel computing framework that utilizes a bank-queuing model. Unlike traditional approaches that might fork a new process for every data element, MCE maintains a persistent pool of workers and efficiently chunks data from an input stream to available workers. This skill helps you implement parallelized log parsing, sequence processing, and mathematical computations while managing the nuances of cross-platform execution (Unix vs. Windows).\n\n## Installation\n\nInstall the shared data extension via Conda or from source:\n\n```bash\n# Via Conda (Bioconda channel)\nconda install bioconda::perl-mce-shared\n\n# From Source\nperl Makefile.PL\nmake\nmake test\nmake install\n```\n\n## Core API Patterns\n\n### Basic Worker Pool\nUse the Core API for fine-grained control over worker counts and specific user functions.\n\n```perl\nuse MCE;\n\nmy $mce = MCE->new(\n    max_workers => 8,\n    user_func => sub {\n        my ($mce) = @_;\n        $mce->say(\"Worker \" . $mce->wid . \" is processing\");\n    }\n);\n\n$mce->run();\n```\n\n### Parallel Loop with Chunking\n`MCE::Loop` is ideal for processing arrays or files. Chunking improves performance by reducing IPC (Inter-Process Communication) overhead.\n\n```perl\nuse MCE::Loop;\n\nMCE::Loop->init(\n    max_workers => 8,\n    chunk_size  => 1000\n);\n\nmce_loop {\n    my ($mce, $chunk_ref, $chunk_id) = @_;\n    foreach my $item (@$chunk_ref) {\n        # Process item\n        MCE->gather($item) if $item =~ /pattern/;\n    }\n} @input_data;\n```\n\n## High-Utility Patterns\n\n### Parallel File Parsing (Slurp IO)\nFor massive log files, use `use_slurpio` to read chunks of the file into memory for workers to process.\n\n```perl\nuse MCE::Loop;\n\nMCE::Loop->init(\n    max_workers  => 8,\n    use_slurpio  => 1,\n    chunk_size   => '2M' # 2MB chunks\n);\n\nmy @results = mce_loop_f {\n    my ($mce, $slurp_ref, $chunk_id) = @_;\n    # Process the scalar reference $$slurp_ref\n    if ($$slurp_ref =~ /critical_error/m) {\n        MCE->gather(\"Found in chunk $chunk_id\");\n    }\n} \"large_log_file.log\";\n```\n\n### Sequence Processing\nUse `MCE::Flow` for numerical sequences or bounds-only processing to minimize memory usage.\n\n```perl\nuse MCE::Flow;\n\n# bounds_only => 1 sends [begin, end] instead of the full sequence\nMCE::Flow->init(max_workers => 4, bounds_only => 1, chunk_size => 10000);\n\nmce_flow_s sub {\n    my ($beg, $end) = @{ $_[0] };\n    for my $i ($beg .. $end) {\n        # Perform calculation\n    }\n}, 1, 1000000;\n```\n\n## Expert Tips & Best Practices\n\n*   **Windows Compatibility**: Performance on Windows can degrade significantly when using memory-mapped file handles (`open my $fh, '<', \\$slurp_ref`) with more than 4 workers. Use regex-based line splitting (`while ($$slurp_ref =~ /([^\\n]+\\n)/mg)`) as a fallback for better scaling on Windows.\n*   **Data Gathering**: Always use `MCE->gather()` to collect results from workers. It handles the serialization and synchronization required to return data to the manager process safely.\n*   **Serialization**: MCE prefers `Sereal` for performance. If `Sereal::Encoder` and `Sereal::Decoder` (v3.015+) are installed, MCE will use them automatically; otherwise, it falls back to `Storable`.\n*   **Worker Persistence**: MCE workers persist across the lifecycle of the object. Avoid spawning new MCE instances inside loops; instead, use `init` or reuse the object to prevent process creation overhead.\n\n## Reference documentation\n- [Many-Core Engine for Perl Overview](./references/github_com_marioroy_mce-perl.md)\n- [perl-mce-shared Bioconda Package](./references/anaconda_org_channels_bioconda_packages_perl-mce-shared_overview.md)",
+  "skill_front_matter": {
+    "name": "perl-mce-shared",
+    "description": "This tool provides a high-performance parallel computing framework for Perl that manages persistent worker pools and shared data structures. Use when user asks to parallelize log parsing, process data sequences in chunks, or implement cross-platform multi-core computations.",
+    "homepage": "https://github.com/marioroy/mce-perl"
+  }
+}

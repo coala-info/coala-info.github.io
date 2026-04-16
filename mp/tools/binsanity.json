@@ -1,0 +1,53 @@
+{
+  "id": "binsanity",
+  "category": "CLI",
+  "name": "binsanity",
+  "description": "BinSanity transforms metagenomic assemblies into putative genomes using unsupervised clustering based on coverage profiles and sequence composition. Use when user asks to bin metagenomic contigs, generate coverage profiles from BAM files, or refine genomic bins using tetranucleotide frequencies and GC content.",
+  "overview": "BinSanity is a suite of scripts designed to transform metagenomic assemblies into putative genomes through unsupervised clustering. Unlike many binners that require a pre-defined number of clusters (k), BinSanity utilizes Affinity Propagation (AP), a deterministic algorithm that identifies \"exemplars\" within the data to form clusters naturally.",
+  "homepage": "https://github.com/edgraham/BinSanity",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/binsanity/overview",
+  "github": "https://github.com/edgraham/BinSanity",
+  "conda_downloads": "57.1K",
+  "conda_downloads_num": 57100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "binsanity_Binsanity-profile",
+      "binsanity_Binsanity-wf",
+      "binsanity_Binsanity-lc",
+      "binsanity_Binsanity2-beta",
+      "binsanity_Binsanity-refine"
+    ],
+    "description": "Binsanity-profile is used to generate coverage files for input to BinSanity. This uses Featurecounts to generate a a coverage profile and transforms data for input into Binsanity, Binsanity-refine, and Binsanity-wf",
+    "docker_image": "quay.io/biocontainers/binsanity:0.5.4--pyh5e36f6f_0",
+    "homepage": "https://github.com/edgraham/BinSanity",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/binsanity/overview",
+    "github": "https://github.com/edgraham/BinSanity",
+    "conda_downloads": "57.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "binsanity_Binsanity-lc.cwl",
+    "binsanity_Binsanity-profile.cwl",
+    "binsanity_Binsanity-refine.cwl",
+    "binsanity_Binsanity-wf.cwl",
+    "binsanity_Binsanity2-beta.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# binsanity\n\n## Overview\n\nBinSanity is a suite of scripts designed to transform metagenomic assemblies into putative genomes through unsupervised clustering. Unlike many binners that require a pre-defined number of clusters (k), BinSanity utilizes Affinity Propagation (AP), a deterministic algorithm that identifies \"exemplars\" within the data to form clusters naturally. \n\nThe tool employs a biphasic workflow: it initially clusters contigs based on coverage profiles across multiple samples and subsequently refines these clusters using tetranucleotide frequencies and GC content. This separation of coverage and composition metrics helps minimize the impact of horizontal gene transfer or varying evolutionary pressures on binning accuracy.\n\n## Core Workflow and CLI Usage\n\n### 1. Generating Coverage Profiles\nBefore binning, you must generate a coverage profile from your alignment files (BAM).\n- **Tool**: `Binsanity-profile`\n- **Function**: Uses `featureCounts` to calculate contig coverage across samples.\n- **Requirement**: Requires the assembly FASTA and sorted BAM files.\n\n### 2. Executing the Binning Workflow\nFor most standard datasets, use the automated workflow script.\n- **Command**: `Binsanity-wf`\n- **Process**: Runs `Binsanity` (coverage-based) followed by `Binsanity-refine` (composition-based) sequentially.\n\n### 3. Handling Large Assemblies\nAffinity Propagation is memory-intensive and scales linearly with the number of similarities. For assemblies exceeding 75,000–100,000 contigs:\n- **Tool**: `Binsanity-lc` or `Binsanity2-beta`.\n- **Strategy**: These tools use K-means to subset contigs into smaller groups based on coverage before applying the more intensive AP algorithm.\n- **Tip**: Use `Binsanity2-beta` for modern datasets as it merges the workflows and automatically triggers K-means subsetting for assemblies larger than 75,000 contigs.\n\n### 4. Post-Binning Evaluation and Sorting\nAfter generating bins and running CheckM for quality assessment:\n- **Command**: `checkm_analysis -checkM <checkm_qa_output> -f .fna`\n- **Function**: Automatically sorts bins into subdirectories based on quality:\n    - **High Completion**: >95% complete (<10% redundancy) or >80% complete (<5% redundancy).\n    - **Low Completion**: <50% complete (<2% redundancy).\n    - **High Redundancy**: Bins failing the contamination/redundancy thresholds.\n\n## Expert Tips and Best Practices\n\n- **Deterministic Results**: Because Affinity Propagation is deterministic, running the same command on the same dataset will yield identical results, unlike K-means which varies by initialization.\n- **Memory Management**: If you encounter a `MemoryError` or \"Unable to allocate GiB\" error, your assembly is too large for the standard `Binsanity` script. Switch to `Binsanity-lc` or increase the contig length cutoff during assembly/preprocessing to reduce the total contig count.\n- **Refinement Parameters**: `Binsanity-refine` can optionally incorporate the coverage profile again during the composition phase. This is recommended if the initial coverage-based clusters appear over-split.\n- **Evaluation**: If you have a \"gold standard\" or reference set for your environment, use `bin_evaluation` to calculate Precision, Recall, and V-measure (the harmonic mean of precision and recall) to tune your parameters.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| Binsanity-lc | Binsanity-lc is a workflow script that will subset assemblies larger than 100,000 contigs using coverage prior to running Binsanity and Binsanity-refine sequentially. |\n| Binsanity-lc | Binsanity2 is a workflow script that will subset assemblies using kmeans and subsequently binning the resultant clusters of contigs using coverage and affinity propagation (AP) followed by a compositional based refinement. |\n| Binsanity-profile | Binsanity-profile is used to generate coverage files for input to BinSanity. This uses Featurecounts to generate a a coverage profile and transforms data for input into Binsanity, Binsanity-refine, and Binsanity-wf |\n| Binsanity-refine | Binsanity-refine uses combined coverage and composition (in the form of tetramer frequencies and GC%) to cluster contigs. The published workflow uses this to refine bins initially clustered soley on coverage. Binsanity-refine can be used as a stand alone script if you don't have more than 2 sample replicates |\n| Binsanity-wf | Binsanity-wf is a workflow script that runs Binsanity and Binsanity-refine sequentially. |\n\n## Reference documentation\n- [BinSanity Wiki Home](./references/github_com_edgraham_BinSanity_wiki.md)\n- [Bin Evaluation and CheckM Analysis](./references/github_com_edgraham_BinSanity_wiki_Bin-Evaluation.md)\n- [FAQ and Memory Requirements](./references/github_com_edgraham_BinSanity_wiki_FAQ.md)",
+  "skill_front_matter": {
+    "name": "binsanity",
+    "description": "BinSanity transforms metagenomic assemblies into putative genomes using unsupervised clustering based on coverage profiles and sequence composition. Use when user asks to bin metagenomic contigs, generate coverage profiles from BAM files, or refine genomic bins using tetranucleotide frequencies and GC content.",
+    "homepage": "https://github.com/edgraham/BinSanity"
+  }
+}

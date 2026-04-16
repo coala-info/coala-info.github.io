@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sigspack",
+  "category": "bioconductor",
+  "name": "bioconductor-sigspack",
+  "description": "SigsPack is an R package for analyzing mutational signatures by transforming VCF files into mutational catalogues and estimating signature exposures. Use when user asks to convert VCF files to mutational profiles, normalize catalogues for different sequencing targets, estimate signature exposures using quadratic programming, or perform bootstrapping to assess estimate reliability.",
+  "overview": "SigsPack is an R package designed for the analysis of mutational signatures. It allows users to transform VCF files into mutational catalogues, estimate signature exposures using quadratic programming, and assess the reliability of these estimates through bootstrapping. A key feature is its ability to normalize mutational catalogues to account for differences in tri-nucleotide frequencies between different sequencing targets (like exome vs. whole genome) and reference signature sets.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SigsPack.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/bihealth/SigsPack",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SigsPack"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SigsPack.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/bihealth/SigsPack",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sigspack\n\n## Overview\n\nSigsPack is an R package designed for the analysis of mutational signatures. It allows users to transform VCF files into mutational catalogues, estimate signature exposures using quadratic programming, and assess the reliability of these estimates through bootstrapping. A key feature is its ability to normalize mutational catalogues to account for differences in tri-nucleotide frequencies between different sequencing targets (like exome vs. whole genome) and reference signature sets.\n\n## Core Workflows\n\n### 1. Data Preparation\nConvert VCF files into a 96-trinucleotide mutational profile.\n\n```r\nlibrary(SigsPack)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Load VCF and convert to mutational catalogue (96x1 matrix)\nsample_cat <- vcf2mut_cat(\n  vcf_path = \"path/to/sample.vcf.gz\",\n  genome = BSgenome.Hsapiens.UCSC.hg19\n)\n```\n\n### 2. Normalization\nIf your data comes from exome sequencing but you are using whole-genome reference signatures (like COSMIC), you must normalize the frequencies.\n\n```r\n# Get context frequencies for genome and exome (using a BED file)\ngenome_freq <- get_context_freq(BSgenome.Hsapiens.UCSC.hg19)\nexome_freq <- get_context_freq(BSgenome.Hsapiens.UCSC.hg19, \"exome_regions.bed\")\n\n# Normalize the sample\n# Note: SigsPack::normalize returns frequencies, not counts\nnorm_cat <- SigsPack::normalize(sample_cat, exome_freq, genome_freq)\n```\n\n### 3. Signature Exposure Estimation\nEstimate the weights of signatures in a sample. The package includes `cosmicSigs` as a default reference.\n\n```r\ndata(\"cosmicSigs\")\n\n# Estimate using a specific subset of signatures (recommended for better fit)\n# If using normalized frequencies, multiply by total mutations to get counts\ntotal_muts <- sum(sample_cat)\nexposures <- signature_exposure(total_muts * norm_cat, sig_set = c(1, 5, 10, 13))\n\n# View results\nprint(exposures$exposures)\n```\n\n### 4. Bootstrapping and Summarization\nAssess the stability of signature estimates by resampling the mutational catalogue.\n\n```r\n# Generate 1000 bootstrapped replicates\n# 'm' is the number of mutations to sample (usually the original total)\nreps <- bootstrap_mut_catalogues(n = 1000, original = norm_cat, m = total_muts)\n\n# Summarize and plot the distribution of exposures\nreport <- summarize_exposures(reps)\n# This returns a table with original exposure, min, max, and quartiles\n```\n\n### 5. Synthetic Data Generation\nCreate synthetic catalogues for testing or benchmarking.\n\n```r\n# Create 5 catalogues with 1000 mutations each using signatures 1 and 5\nsynthetic <- create_mut_catalogues(\n  n = 5, \n  m = 1000, \n  P = cosmicSigs, \n  sig_set = c(1, 5)\n)\n```\n\n## Tips and Best Practices\n\n- **Normalization is Critical**: Always ensure the tri-nucleotide \"space\" of your sample matches the signature matrix. COSMIC signatures are typically genome-relative.\n- **Signature Selection**: Using the entire COSMIC matrix (30+ signatures) can lead to overfitting. If prior biological knowledge exists, use the `sig_set` parameter to restrict the analysis to relevant signatures.\n- **Input Format**: Most functions expect a 96-row matrix where rows represent the standard 96 tri-nucleotide contexts (A[C>A]A, etc.).\n- **Scaling**: Since `normalize()` returns frequencies, remember to scale by the original mutation count (`sum(sample)`) before passing to `signature_exposure()` or `bootstrap_mut_catalogues()` if count-based statistics are required.\n\n## Reference documentation\n\n- [Introduction to SigsPack](./references/SigsPack.md)\n- [SigsPack Vignette Source](./references/SigsPack.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-sigspack",
+    "description": "SigsPack is an R package for analyzing mutational signatures by transforming VCF files into mutational catalogues and estimating signature exposures. Use when user asks to convert VCF files to mutational profiles, normalize catalogues for different sequencing targets, estimate signature exposures using quadratic programming, or perform bootstrapping to assess estimate reliability.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SigsPack.html"
+  }
+}

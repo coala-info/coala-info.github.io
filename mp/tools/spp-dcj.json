@@ -1,0 +1,53 @@
+{
+  "id": "spp-dcj",
+  "category": "CLI",
+  "name": "spp-dcj",
+  "description": "spp-dcj implements an Integer Linear Program algorithm to minimize genome rearrangement distances across a phylogeny for genomes with unique and duplicated markers. Use when user asks to generate ILP formulations for genome rearrangements, compute heuristic warm-starts for solvers, extract resolved ancestral adjacencies, or visualize predicted genomic adjacencies.",
+  "overview": "The `spp-dcj` tool implements an Integer Linear Program (ILP) based algorithm to minimize genome rearrangement distances across a phylogeny. It is specifically designed for \"natural\" genomes that include conserved, unique, and duplicated markers. The workflow typically involves generating an ILP formulation, optionally computing a heuristic warm-start, solving the optimization problem via Gurobi, and then extracting and visualizing the resolved ancestral adjacencies.",
+  "homepage": "https://github.com/codialab/spp-dcj",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/spp-dcj/overview",
+  "github": "https://github.com/codialab/spp-dcj",
+  "conda_downloads": "295",
+  "conda_downloads_num": 295,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spp-dcj_heuristic",
+      "spp-dcj_ilp",
+      "spp-dcj_sol2adj",
+      "spp-dcj_newick2table",
+      "spp-dcj_draw"
+    ],
+    "description": "heuristic",
+    "docker_image": "quay.io/biocontainers/spp-dcj:2.0.0--pyh7e72e81_0",
+    "homepage": "https://github.com/codialab/spp-dcj",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/spp-dcj/overview",
+    "github": "https://github.com/codialab/spp-dcj",
+    "conda_downloads": "295",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "spp-dcj_draw.cwl",
+    "spp-dcj_heuristic.cwl",
+    "spp-dcj_ilp.cwl",
+    "spp-dcj_newick2table.cwl",
+    "spp-dcj_sol2adj.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# spp-dcj\n\n## Overview\nThe `spp-dcj` tool implements an Integer Linear Program (ILP) based algorithm to minimize genome rearrangement distances across a phylogeny. It is specifically designed for \"natural\" genomes that include conserved, unique, and duplicated markers. The workflow typically involves generating an ILP formulation, optionally computing a heuristic warm-start, solving the optimization problem via Gurobi, and then extracting and visualizing the resolved ancestral adjacencies.\n\n## Core Workflow and CLI Patterns\n\n### 1. Input Preparation\nEnsure your input files follow the required tabular formats:\n- **Phylogeny (`tree.txt`)**: A two-column table: `#Child Parent`.\n- **Adjacencies (`adjacencies.txt`)**: A seven-column table: `#Species Gene_1 Ext_1 Species Gene_2 Ext_2 Weight`.\n- **ID Map (`idmap.txt`)**: Mapping of gene identifiers.\n\n### 2. Generate the ILP\nThe primary step is creating the optimization model. The `-a` parameter controls the objective function weight (typically set to 1).\n\n```bash\nspp-dcj ilp -a 1 -m idmap.txt tree.txt adjacencies.txt > model.ilp\n```\n\n### 3. Heuristic Warm-Starting (Recommended)\nFor complex phylogenies, providing an initial feasible solution significantly speeds up the Gurobi solver.\n\n```bash\nspp-dcj heuristic -a 1 tree.txt adjacencies.txt idmap.txt > initial_sol.sol\n```\n\n### 4. Solving with Gurobi\n`spp-dcj` relies on the external `gurobi_cl` solver. You must have Gurobi installed and licensed.\n\n```bash\n# With warm start\ngurobi_cl InputFile=initial_sol.sol ResultFile=solution.sol model.ilp\n\n# Without warm start\ngurobi_cl ResultFile=solution.sol model.ilp\n```\n\n### 5. Extracting Results\nConvert the solver's `.sol` output back into a readable adjacency format.\n\n```bash\nspp-dcj sol2adj solution.sol idmap.txt > resolved_adjacencies.txt\n```\n\n### 6. Visualization\nGenerate a PDF visualization comparing candidate and predicted adjacencies.\n\n```bash\nspp-dcj draw -i resolved_adjacencies.txt adjacencies.txt > visualization.pdf\n```\n\n## Expert Tips and Best Practices\n- **Objective Weighting**: The `-a` parameter in `ilp` and `heuristic` commands balances the DCJ operations against indels. Adjust this if your biological model assumes a higher or lower cost for rearrangements relative to segment gains/losses.\n- **Solver Performance**: If the ILP takes too long to converge, always ensure you are using the `heuristic` command to generate a warm start. Additionally, you can pass Gurobi-specific parameters (like `TimeLimit` or `MIPGap`) to `gurobi_cl` to get a \"good enough\" solution within a fixed timeframe.\n- **Marker Uniquifying**: If your dataset uses specific separators between gene families and unique identifiers, use the appropriate parameters (if available in your version) to ensure markers are parsed correctly.\n- **Dependency Check**: Ensure `networkx` and `matplotlib` are updated in your environment, as `spp-dcj draw` relies on these for graph processing and rendering.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| spp-dcj draw | Draws candidate adjacencies of the genomes in the phylogeny. |\n| spp-dcj ilp | Solves the Double-Cut-and-Join problem using Integer Linear Programming. |\n| spp-dcj newick2table | Converts a Newick tree to a table format. |\n| spp-dcj sol2adj | Converts a GUROBI solution file to an adjacency list representation. |\n| spp-dcj_heuristic | heuristic |\n\n## Reference documentation\n- [SPP-DCJ GitHub README](./references/github_com_codialab_spp-dcj_blob_main_README.md)\n- [Project Configuration and Dependencies](./references/github_com_codialab_spp-dcj_blob_main_pyproject.toml.md)",
+  "skill_front_matter": {
+    "name": "spp-dcj",
+    "description": "spp-dcj implements an Integer Linear Program algorithm to minimize genome rearrangement distances across a phylogeny for genomes with unique and duplicated markers. Use when user asks to generate ILP formulations for genome rearrangements, compute heuristic warm-starts for solvers, extract resolved ancestral adjacencies, or visualize predicted genomic adjacencies.",
+    "homepage": "https://github.com/codialab/spp-dcj"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-csar",
+  "category": "bioconductor",
+  "name": "bioconductor-csar",
+  "description": "CSAR provides a statistical framework for identifying protein-DNA binding sites from ChIP-seq data by calculating enrichment scores and FDR-based thresholds. Use when user asks to calculate nucleotide-level hits, identify significant enrichment windows, call peaks, or map peaks to genomic features.",
+  "overview": "CSAR (ChIP-Seq Analyzer in R) provides a robust statistical framework for identifying protein-DNA binding sites. It accounts for DNA fragment size by virtually extending reads and requires enrichment support from both strands to minimize PCR artifacts. The workflow involves calculating nucleotide-level \"hits,\" scoring enrichment against a control, identifying significant windows, and mapping these regions to genomic features (genes).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CSAR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CSAR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CSAR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-csar\n\n## Overview\n\nCSAR (ChIP-Seq Analyzer in R) provides a robust statistical framework for identifying protein-DNA binding sites. It accounts for DNA fragment size by virtually extending reads and requires enrichment support from both strands to minimize PCR artifacts. The workflow involves calculating nucleotide-level \"hits,\" scoring enrichment against a control, identifying significant windows, and mapping these regions to genomic features (genes).\n\n## Core Workflow\n\n### 1. Data Preparation and Hit Calculation\nConvert mapped reads into nucleotide-level hit counts. CSAR expects a data frame with columns: `pos` (position), `strand` (+/-), and `chr` (chromosome).\n\n```r\nlibrary(CSAR)\ndata(\"CSAR-dataset\")\n\n# Calculate hits for sample and control\n# chrL is the length of the chromosome; file is the prefix for saved results\nnhitsS <- mappedReads2Nhits(sampleSEP3_test, file=\"sample\", chr=\"CHR1\", chrL=10000)\nnhitsC <- mappedReads2Nhits(controlSEP3_test, file=\"control\", chr=\"CHR1\", chrL=10000)\n```\n\n### 2. Enrichment Scoring\nCalculate the read-enrichment score. This function normalizes the sample to the control and applies a Poisson test or ratio-based scoring.\n\n```r\n# 'times' scales the score for integer storage\ntest <- ChIPseqScore(control=nhitsC, sample=nhitsS, file=\"test_score\", times=10000)\n```\n\n### 3. Peak Calling and Visualization\nIdentify significant windows and export data for genome browsers.\n\n```r\n# Identify candidate enriched regions (windows)\nwin <- sigWin(test)\n\n# Export to WIG format for IGV/UCSC\nscore2wig(test, file=\"output.wig\", times=10000)\n```\n\n### 4. Functional Annotation\nMap identified peaks to gene annotations (GFF/GTF format).\n\n```r\n# Calculate distance to nearest genes\ndist <- distance2Genes(win=win, gff=TAIR8_genes_test)\n\n# Identify genes associated with peaks\ngenes <- genesWithPeaks(dist)\n```\n\n### 5. FDR Thresholding via Permutation\nTo determine a statistically sound cutoff, use permutations to estimate the null distribution of scores.\n\n```r\n# Run permutations (nn = permutation ID)\npermutatedWinScores(nn=1, sample=sampleSEP3_test, control=controlSEP3_test, \n                    fileOutput=\"perm\", chr=\"CHR1\", chrL=10000)\n\n# Load null distribution and calculate threshold for a specific FDR\nnulldist <- getPermutatedWinScores(file=\"perm\", nn=1:2)\nthreshold <- getThreshold(winscores=values(win)$score, permutatedScores=nulldist, FDR=0.05)\n```\n\n## Key Functions Reference\n\n- `mappedReads2Nhits`: Converts read coordinates to per-nucleotide hit counts.\n- `ChIPseqScore`: Main scoring function comparing sample and control.\n- `sigWin`: Extracts contiguous regions (peaks) above a score threshold.\n- `permutatedWinScores`: Generates null distribution data by swapping sample/control labels.\n- `getThreshold`: Calculates the score cutoff required to achieve a target False Discovery Rate.\n- `distance2Genes` / `genesWithPeaks`: Utilities for genomic context and gene-level summaries.\n\n## Tips for Success\n\n- **Memory Management**: CSAR saves intermediate results to disk (e.g., `.CSARNhits`, `.CSARScore`). Ensure you have write permissions in the working directory.\n- **Fragment Size**: The algorithm virtually extends reads to 300bp by default (standard ChIP fragment size).\n- **Strand Consistency**: CSAR is conservative; it calculates enrichment for both strands independently and takes the minimum, which effectively filters out many PCR-induced artifacts.\n- **Permutations**: For publication-quality results, run a higher number of permutations (e.g., `nn=1:10` or more) to get a stable FDR estimate.\n\n## Reference documentation\n\n- [An Introduction to the CSAR Package](./references/CSAR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-csar",
+    "description": "CSAR provides a statistical framework for identifying protein-DNA binding sites from ChIP-seq data by calculating enrichment scores and FDR-based thresholds. Use when user asks to calculate nucleotide-level hits, identify significant enrichment windows, call peaks, or map peaks to genomic features.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CSAR.html"
+  }
+}

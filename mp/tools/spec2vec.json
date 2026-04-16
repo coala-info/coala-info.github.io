@@ -1,0 +1,43 @@
+{
+  "id": "spec2vec",
+  "category": "library",
+  "name": "spec2vec",
+  "description": "Spec2Vec calculates spectral similarity by treating mass spectrometry fragments as words in a sentence using natural language processing algorithms. Use when user asks to calculate spectral similarity scores, train a Word2Vec model on mass spectrometry data, or identify chemically related molecules in metabolomics datasets.",
+  "overview": "Spec2Vec is a spectral similarity measure that treats mass spectrometry fragments and neutral losses as \"words\" within a \"sentence\" (the spectrum). By leveraging Word2Vec-based natural language processing algorithms, it learns the structural relationships between fragments across large datasets. This allows the tool to identify chemically related molecules even if they do not share identical peak patterns, making it significantly more robust than traditional rule-based similarity scores for comp",
+  "homepage": "https://github.com/iomega/spec2vec",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/spec2vec/overview",
+  "github": "https://github.com/iomega/spec2vec",
+  "conda_downloads": "5.6K",
+  "conda_downloads_num": 5600,
+  "last_updated": "2025-11-13",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spec2vec"
+    ],
+    "description": "FAIL to generate CWL: spec2vec not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/spec2vec:0.9.1--pyhdfd78af_0",
+    "homepage": "https://github.com/iomega/spec2vec",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/spec2vec/overview",
+    "github": "https://github.com/iomega/spec2vec",
+    "conda_downloads": "5.6K",
+    "last_updated": "2025-11-13",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# spec2vec\n\n## Overview\nSpec2Vec is a spectral similarity measure that treats mass spectrometry fragments and neutral losses as \"words\" within a \"sentence\" (the spectrum). By leveraging Word2Vec-based natural language processing algorithms, it learns the structural relationships between fragments across large datasets. This allows the tool to identify chemically related molecules even if they do not share identical peak patterns, making it significantly more robust than traditional rule-based similarity scores for complex metabolomics analysis.\n\n## Installation and Setup\nThe recommended installation method is via Conda to ensure all dependencies (like `rdkit` for filtering) are correctly managed.\n\n```bash\nconda create --name spec2vec python=3.13\nconda activate spec2vec\nconda install --channel bioconda --channel conda-forge spec2vec\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nSpec2Vec works in tandem with `matchms`. Spectra must be cleaned and filtered before being converted into documents.\n\n```python\nfrom matchms.importing import load_from_mgf\nfrom matchms.filtering.default_pipelines import DEFAULT_FILTERS\nfrom matchms import SpectrumProcessor\n\n# Load and clean spectra\nspectra = list(load_from_mgf(\"data.mgf\"))\nprocessor = SpectrumProcessor(DEFAULT_FILTERS)\nspectra_cleaned, _ = processor.process_spectra(spectra)\nspectra_cleaned = [s for s in spectra_cleaned if s is not None]\n```\n\n### 2. Document Conversion\nConvert spectra into `SpectrumDocument` objects. This process bins peaks into \"words\" based on their m/z ratio.\n\n```python\nfrom spec2vec import SpectrumDocument\n\n# n_decimals=2 is the standard for most Spec2Vec applications\nreference_documents = [SpectrumDocument(s, n_decimals=2) for s in spectra_cleaned]\n```\n\n### 3. Model Training\nYou can train a new model on your specific dataset to capture unique fragment relationships.\n\n```python\nfrom spec2vec.model_building import train_new_word2vec_model\n\nmodel_file = \"my_spec2vec_model.model\"\nmodel = train_new_word2vec_model(reference_documents, iterations=[10, 20, 30], filename=model_file, workers=2)\n```\n\n### 4. Similarity Scoring\nUse a trained model to calculate similarity between query spectra and a reference library.\n\n```python\nimport gensim\nfrom spec2vec import Spec2Vec\nfrom matchms import calculate_scores\n\n# Load pre-trained model\nmodel = gensim.models.Word2Vec.load(\"my_spec2vec_model.model\")\n\n# Initialize similarity function\nspec2vec_similarity = Spec2Vec(model=model, \n                               intensity_weighting_power=0.5, \n                               allowed_missing_percentage=5.0)\n\n# Calculate scores\nscores = calculate_scores(reference_documents, query_spectra_cleaned, spec2vec_similarity)\n```\n\n## Expert Tips and Best Practices\n- **Peak Binning**: The `n_decimals` parameter in `SpectrumDocument` is critical. Using 2 decimals (e.g., \"peak@100.39\") is the standard for general-purpose models.\n- **Missing Peaks**: When using a model on data it wasn't trained on, always set `allowed_missing_percentage`. This prevents the score from being heavily penalized by fragments the model has never seen.\n- **Intensity Weighting**: The `intensity_weighting_power` (default 0.5) balances the importance of fragment intensity versus the presence of the fragment itself.\n- **Gensim Compatibility**: As of version 0.9.0, Spec2Vec requires `gensim >= 4.4.0`. If loading very old models, ensure your environment matches the training version or follow Gensim's migration guides.\n\n## Reference documentation\n- [Spec2Vec GitHub Repository](./references/github_com_iomega_spec2vec.md)\n- [Spec2Vec Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_spec2vec_overview.md)",
+  "skill_front_matter": {
+    "name": "spec2vec",
+    "description": "Spec2Vec calculates spectral similarity by treating mass spectrometry fragments as words in a sentence using natural language processing algorithms. Use when user asks to calculate spectral similarity scores, train a Word2Vec model on mass spectrometry data, or identify chemically related molecules in metabolomics datasets.",
+    "homepage": "https://github.com/iomega/spec2vec"
+  }
+}

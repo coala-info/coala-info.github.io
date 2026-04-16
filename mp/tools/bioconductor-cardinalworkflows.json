@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cardinalworkflows",
+  "category": "bioconductor",
+  "name": "bioconductor-cardinalworkflows",
+  "description": "This package provides example datasets and standardized workflows for mass spectrometry imaging analysis using the Cardinal framework. Use when user asks to perform supervised classification, unsupervised spatial segmentation, or class comparison to find differentially abundant peaks.",
+  "overview": "The `CardinalWorkflows` package provides example datasets and standardized workflows for the `Cardinal` MSI analysis framework. This skill guides the execution of three primary MSI analysis types: supervised classification (predicting tissue types), unsupervised segmentation (discovering chemical regions), and class comparison (finding differentially abundant peaks).",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/CardinalWorkflows.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CardinalWorkflows"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/CardinalWorkflows.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cardinalworkflows\n\n## Overview\nThe `CardinalWorkflows` package provides example datasets and standardized workflows for the `Cardinal` MSI analysis framework. This skill guides the execution of three primary MSI analysis types: supervised classification (predicting tissue types), unsupervised segmentation (discovering chemical regions), and class comparison (finding differentially abundant peaks).\n\n## Typical Workflows\n\n### 1. Data Loading and Pre-processing\nMost workflows begin by loading example data and performing peak processing to reduce the high-dimensional spectral data into a manageable set of features.\n\n```r\nlibrary(Cardinal)\nlibrary(CardinalWorkflows)\n\n# Load example data (e.g., \"rcc\", \"pig206\", or \"cardinal\")\nmse <- CardinalWorkflows::exampleMSIData(\"rcc\")\n\n# Standard Pre-processing Pipeline\nmse_peaks <- mse |>\n    normalize(method=\"tic\") |>\n    peakProcess(SNR=3, sampleSize=0.1, tolerance=0.5, units=\"mz\")\n```\n\n### 2. Unsupervised Segmentation (SSC)\nUse Spatial Shrunken Centroids (SSC) to find regions with distinct chemical profiles without prior labeling.\n\n- **Key Parameters**: `r` (neighborhood radius), `k` (max clusters), `s` (shrinkage/sparsity).\n- **Selection**: Higher `s` values result in sparser models (fewer peaks used). Choose the highest `s` that still preserves known morphology.\n\n```r\n# Run segmentation\nset.seed(1)\nssc_results <- spatialShrunkenCentroids(mse_peaks, r=2, k=8, s=2^(1:6))\n\n# Visualize results\nimage(ssc_results, i=5) # Plot a specific model from the ResultsList\nimage(ssc_results[[5]], type=\"class\") # Plot cluster assignments\n```\n\n### 3. Supervised Classification\nUsed when you have labeled training data (e.g., \"Normal\" vs \"Cancer\") and want to build a predictive model.\n\n- **Cross-Validation**: Use `crossValidate` to ensure the model generalizes. Folds should typically be based on independent biological replicates (runs/samples), not individual pixels.\n- **Evaluation**: Check `MacroRecall` and `MacroPrecision` in the CV results.\n\n```r\n# Cross-validation using 'run' as the fold\ncv_results <- crossValidate(spatialShrunkenCentroids,\n    x=mse_peaks, y=mse_peaks$diagnosis, r=1, s=2^(1:5),\n    folds=run(mse_peaks))\n\n# Plot predicted classes\nimage(cv_results, i=4)\n```\n\n### 4. Class Comparison (Testing)\nFind peaks differentially abundant between conditions using biological replicates.\n\n- **Spatial-DGMM**: Use `spatialDGMM` to summarize spatial segments independently for each sample before testing to avoid pixel-level autocorrelation bias.\n- **Filtering**: Non-specific filtering (e.g., by variance) is often used to reduce the number of tests.\n\n```r\n# Segment peaks independently per sample\ndgmm_fit <- spatialDGMM(mse_peaks, r=1, k=3, groups=mse_peaks$samples)\n\n# Test for differences between conditions\n# (Requires means-based or segmentation-based testing functions in Cardinal)\n```\n\n## Interpreting Results\n- **t-statistics**: In SSC, positive t-statistics indicate a peak is higher in that segment/class relative to the global mean; negative indicates it is lower.\n- **Top Features**: Use `topFeatures()` to extract the most important *m/z* values for a specific class or segment.\n\n```r\n# Get top peaks for a specific model\ntop_peaks <- topFeatures(ssc_results[[5]])\nsubset(top_peaks, class == \"cancer\" & statistic > 0)\n```\n\n## Reference documentation\n- [Classification of MS imaging experiments with Cardinal](./references/MSI-classification.md)\n- [Segmentation of MS imaging experiments with Cardinal](./references/MSI-segmentation.md)\n- [Class comparison for MSI experiments with Cardinal](./references/MSI-testing.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cardinalworkflows",
+    "description": "This package provides example datasets and standardized workflows for mass spectrometry imaging analysis using the Cardinal framework. Use when user asks to perform supervised classification, unsupervised spatial segmentation, or class comparison to find differentially abundant peaks.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/CardinalWorkflows.html"
+  }
+}

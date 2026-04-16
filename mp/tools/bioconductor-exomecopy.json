@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-exomecopy",
+  "category": "bioconductor",
+  "name": "bioconductor-exomecopy",
+  "description": "This tool detects copy number variants in exome sequencing data using a hidden Markov model. Use when user asks to identify CNVs, normalize read counts using positional covariates, or segment genomic regions into copy counts without paired control samples.",
+  "overview": "The `exomeCopy` package implements a Hidden Markov Model (HMM) to identify CNVs in targeted sequencing data (like exome-seq). It is particularly useful when paired control samples are unavailable. The model uses negative binomial emission distributions and accounts for positional covariates such as GC-content, range width, and background read depth (calculated from a pool of samples) to simultaneously normalize and segment the genome.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/exomeCopy.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-exomecopy/overview",
+  "github": "N/A",
+  "conda_downloads": "60.2K",
+  "conda_downloads_num": 60200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "exomeCopy"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/exomeCopy.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-exomecopy/overview",
+    "github": "N/A",
+    "conda_downloads": "60.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-exomecopy\n\nname: bioconductor-exomecopy\ndescription: Detect copy number variants (CNVs) in exome sequencing data using a hidden Markov model (HMM). Use this skill when you need to normalize read counts using positional covariates (GC-content, background read depth) and segment genomic regions into constant copy counts without requiring paired tumor/normal samples.\n\n# bioconductor-exomecopy\n\n## Overview\n\nThe `exomeCopy` package implements a Hidden Markov Model (HMM) to identify CNVs in targeted sequencing data (like exome-seq). It is particularly useful when paired control samples are unavailable. The model uses negative binomial emission distributions and accounts for positional covariates such as GC-content, range width, and background read depth (calculated from a pool of samples) to simultaneously normalize and segment the genome.\n\n## Core Workflow\n\n### 1. Data Preparation\nStore genomic ranges, read counts, and covariates in a `GRanges` or `RangedData` object.\n\n```R\nlibrary(exomeCopy)\nlibrary(Rsamtools)\n\n# 1. Define target regions (from BED)\ntarget.df <- read.delim(\"targets.bed\", header = FALSE)\ntarget <- GRanges(seqnames = target.df[,1], \n                  ranges = IRanges(start = target.df[,2] + 1, end = target.df[,3]))\n\n# 2. Subdivide large ranges (optional but recommended for HMM)\ntarget.sub <- subdivideGRanges(target, s = 100)\n\n# 3. Count reads from BAM files\ncounts <- countBamInGRanges(bam.file, target.sub)\n```\n\n### 2. Covariate Generation\nThe model requires covariates to account for technical biases.\n\n```R\n# GC Content\ncounts$GC <- getGCcontent(target.sub, reference.fasta)\ncounts$GC.sq <- counts$GC^2\n\n# Background Read Depth (using a vector of sample names)\ncounts$bg <- generateBackground(sample.names, counts, median)\ncounts$log.bg <- log(counts$bg + 0.1)\ncounts$width <- width(counts)\n```\n\n### 3. Running the HMM\nRun `exomeCopy` on a per-chromosome basis for a specific sample.\n\n```R\n# S: possible copy states (e.g., 0 to 4)\n# d: expected copy number (2 for autosomes)\nfit <- exomeCopy(counts[seqnames(counts) == \"chr1\"], \n                 sample.name = \"sample1\", \n                 X.names = c(\"log.bg\", \"GC\", \"GC.sq\", \"width\"), \n                 S = 0:4, d = 2)\n```\n\n### 4. Result Extraction and Visualization\nCompile segments and filter for potential CNVs.\n\n```R\n# Get segments\nsegments <- copyCountSegments(fit)\n\n# Filter for non-diploid regions (where d=2)\ncnvs <- segments[segments$copy.count != 2, ]\n\n# Plotting the fit\nplot(fit, col = c(\"red\", \"orange\", \"black\", \"deepskyblue\", \"blue\"))\n```\n\n## Key Functions\n\n- `subdivideGRanges()`: Breaks long exons into smaller, uniform bins (default ~100bp) to improve HMM resolution.\n- `countBamInGRanges()`: Efficiently counts read starts in targets; requires indexed BAMs.\n- `generateBackground()`: Creates a baseline by normalizing and averaging (median) read depths across multiple control samples.\n- `exomeCopy()`: The main HMM fitting function. Returns an `ExomeCopy` object.\n- `compileCopyCountSegments()`: Helper to aggregate results from a list of `ExomeCopy` objects (e.g., across multiple chromosomes or samples).\n\n## Tips for Success\n\n- **Chromosome Handling**: Always run `exomeCopy` on one chromosome at a time. Use `lapply` or loops to process the whole genome.\n- **Sex Chromosomes**: For male samples on ChrX/ChrY, set the expected copy number `d = 1`.\n- **Filtering**: Use the `nranges` (number of bins in a segment) and `log.odds` columns from `copyCountSegments` to filter out noisy, short-range calls. A common threshold is `nranges > 5`.\n- **Input Sorting**: Ensure your `GRanges` objects are sorted and reduced (`reduce(target)`) before counting to avoid overlapping ranges.\n\n## Reference documentation\n- [exomeCopy](./references/exomeCopy.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-exomecopy",
+    "description": "This tool detects copy number variants in exome sequencing data using a hidden Markov model. Use when user asks to identify CNVs, normalize read counts using positional covariates, or segment genomic regions into copy counts without paired control samples.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/exomeCopy.html"
+  }
+}

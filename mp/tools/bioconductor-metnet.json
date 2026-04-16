@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metnet",
+  "category": "bioconductor",
+  "name": "bioconductor-metnet",
+  "description": "MetNet infers metabolic networks from untargeted high-resolution mass spectrometry data by combining structural transformations and statistical associations. Use when user asks to infer metabolic networks, identify biochemical transformations from m/z differences, calculate statistical associations between features, or integrate spectral similarity into network construction.",
+  "overview": "MetNet is a Bioconductor package designed to bridge the gap between raw mass spectrometry features and biological pathways. It constructs metabolic networks by combining two layers of information:\n1.  **Structural Layer:** Identifies potential biochemical transformations (e.g., hydroxylation, glycosylation) based on precise m/z differences between features.\n2.  **Statistical Layer:** Infers relationships based on feature intensity patterns across samples using various algorithms (Pearson, Spearm",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MetNet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MetNet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetNet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metnet\n\nname: bioconductor-metnet\ndescription: Infer metabolic networks from untargeted high-resolution mass spectrometry (MS) data. Use this skill to create adjacency matrices based on structural properties (m/z differences/transformations) and statistical associations (correlation, LASSO, Random Forest, GGM). It is compatible with xcms/CAMERA output and supports consensus network construction and spectral similarity integration.\n\n## Overview\nMetNet is a Bioconductor package designed to bridge the gap between raw mass spectrometry features and biological pathways. It constructs metabolic networks by combining two layers of information:\n1.  **Structural Layer:** Identifies potential biochemical transformations (e.g., hydroxylation, glycosylation) based on precise m/z differences between features.\n2.  **Statistical Layer:** Infers relationships based on feature intensity patterns across samples using various algorithms (Pearson, Spearman, LASSO, Random Forest, etc.).\n\nThe package centers around the `AdjacencyMatrix` class, which extends `SummarizedExperiment` to store multiple network layers and metadata.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a matrix-like object where rows are features and columns are samples. It must contain an `\"mz\"` column.\n```r\nlibrary(MetNet)\ndata(\"x_test\", package = \"MetNet\")\nx_test <- as.matrix(x_test)\n# Quantitative data (intensities)\nx_int <- x_test[, 3:ncol(x_test)]\n```\n\n### 2. Structural Network Inference\nDefine a search space of biochemical transformations and match them against m/z differences.\n```r\n# Define transformations: group, formula, mass (numeric), and optionally rt shift\ntransformations <- data.frame(\n    group = c(\"Hydroxylation\", \"Acetylation\"),\n    mass = c(15.9949, 42.0105),\n    rt = c(\"-\", \"-\") # Expected RT shift\n)\n\nstruct_adj <- structural(x = x_test, transformation = transformations, \n                         ppm = 10, directed = FALSE)\n\n# Optional: Refine with Retention Time (RT) correction\nstruct_adj <- rtCorrection(am = struct_adj, x = x_test, \n                           transformation = transformations, var = \"group\")\n```\n\n### 3. Statistical Network Inference\nCalculate associations using one or more models.\n```r\n# Supported models: \"pearson\", \"spearman\", \"lasso\", \"randomForest\", \"clr\", \"aracne\", \"bayes\", \"ggm\"\nstat_adj <- statistical(x_int, model = c(\"pearson\", \"spearman\"))\n\n# Threshold to create a consensus unweighted matrix\n# Types: \"threshold\" (fixed value), \"top1\", \"top2\", \"mean\" (rank-based)\nargs_thr <- list(filter = \"abs(pearson_coef) > 0.95 & pearson_pvalue <= 0.05\")\nstat_adj_thr <- threshold(am = stat_adj, type = \"threshold\", args = args_thr)\n```\n\n### 4. Integrating Spectral Similarity\nIf MS2 data is available, incorporate spectral similarity (e.g., from the `Spectra` package).\n```r\n# ms2_similarity is a list of similarity matrices\nspect_adj <- addSpectralSimilarity(am_structural = struct_adj, \n                                   ms2_similarity = list(\"ndotproduct\" = adj_spec))\n```\n\n### 5. Combining Layers\nMerge the structural and statistical evidence into a final consensus network.\n```r\n# am_statistical must be a thresholded AdjacencyMatrix\ncomb_adj <- combine(am_structural = struct_adj, am_statistical = stat_adj_thr)\n```\n\n## Visualization and Export\nMetNet objects can be converted to standard R formats for downstream analysis.\n```r\n# Convert to data frame for filtering\ndf <- as.data.frame(comb_adj)\n\n# Convert to igraph for visualization\nlibrary(igraph)\nadj_mat <- assay(comb_adj, \"combine_binary\")\ng <- graph_from_adjacency_matrix(adj_mat, mode = \"undirected\")\nplot(g)\n```\n\n## Key Functions\n- `structural()`: Creates adjacency based on m/z differences.\n- `statistical()`: Computes weighted associations using various statistical frameworks.\n- `threshold()`: Converts weighted statistical matrices into binary consensus matrices.\n- `combine()`: Intersects structural and statistical matrices.\n- `rtCorrection()`: Filters structural links based on expected retention time shifts.\n- `mz_summary()` / `mz_vis()`: Summarize and visualize the distribution of identified transformations.\n\n## Reference documentation\n- [MetNet: Inferring metabolic networks from untargeted high-resolution mass spectrometry data](./references/MetNet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metnet",
+    "description": "MetNet infers metabolic networks from untargeted high-resolution mass spectrometry data by combining structural transformations and statistical associations. Use when user asks to infer metabolic networks, identify biochemical transformations from m/z differences, calculate statistical associations between features, or integrate spectral similarity into network construction.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetNet.html"
+  }
+}

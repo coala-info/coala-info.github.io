@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bandle",
+  "category": "bioconductor",
+  "name": "bioconductor-bandle",
+  "description": "BANDLE is a Bioconductor package for comparative spatial proteomics that identifies protein translocation between two experimental conditions. Use when user asks to perform differential localization analysis, fit Gaussian Processes to organelle niches, or quantify uncertainty in protein subcellular movement using MCMC sampling.",
+  "overview": "BANDLE is a Bioconductor package designed for comparative spatial proteomics. It uses an integrative semi-supervised functional mixture model to determine the probability that a protein changes its subcellular localisation between two conditions. It builds upon the TAGM model by incorporating Gaussian Processes (GPs) to model organelle niches and Markov-chain Monte-Carlo (MCMC) to quantify uncertainty in both localisation and translocation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/bandle.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bandle/overview",
+  "github": "https://github.com/ococrook/bandle",
+  "conda_downloads": "5.5K",
+  "conda_downloads_num": 5500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bandle"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bandle.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bandle/overview",
+    "github": "https://github.com/ococrook/bandle",
+    "conda_downloads": "5.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bandle\n\n## Overview\nBANDLE is a Bioconductor package designed for comparative spatial proteomics. It uses an integrative semi-supervised functional mixture model to determine the probability that a protein changes its subcellular localisation between two conditions. It builds upon the TAGM model by incorporating Gaussian Processes (GPs) to model organelle niches and Markov-chain Monte-Carlo (MCMC) to quantify uncertainty in both localisation and translocation.\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be stored as `MSnSet` objects. For differential analysis, you need two sets of replicates (Control and Treatment).\n\n```r\nlibrary(bandle)\nlibrary(pRoloc)\n\n# Ensure common features across all replicates\n# objects is a list of MSnSets (e.g., 3 control, 3 treatment)\nmsn_list <- commonFeatureNames(list(ctrl1, ctrl2, ctrl3, trt1, trt2, trt3))\n\n# Split back into conditions\ncontrol <- msn_list[1:3]\ntreatment <- msn_list[4:6]\n```\n\n### 2. Fitting Gaussian Processes (GPs)\nBefore running the main model, fit GPs to the marker profiles to define the niche boundaries.\n\n```r\n# Fit GPs for each replicate\ngpParams <- lapply(msn_list, function(x) fitGPmaternPC(x))\n\n# Visualize the fit for a specific replicate\nplotGPmatern(msn_list[[1]], params = gpParams[[1]])\n```\n\n### 3. Setting Priors\nDefine the Dirichlet prior on mixing weights. The diagonal represents the belief that proteins stay in the same compartment; off-diagonal terms represent the belief in translocation.\n\n```r\nK <- length(getMarkerClasses(msn_list[[1]]))\n# Small off-diagonal values (e.g., 0.001) imply translocations are rare\ndirPrior <- diag(rep(1, K)) + matrix(0.001, nrow = K, ncol = K)\n\n# Check prior predictive distribution\npredDirPrior <- prior_pred_dir(object = msn_list[[1]], dirPrior = dirPrior, q = 15)\n```\n\n### 4. Running BANDLE\nExecute the MCMC sampling. In production, use `numIter = 10000` and `numChains >= 4`.\n\n```r\nbandleres <- bandle(objectCond1 = control,\n                    objectCond2 = treatment,\n                    numIter = 1000, \n                    burnin = 500,\n                    thin = 1,\n                    gpParams = gpParams,\n                    numChains = 4,\n                    dirPrior = dirPrior)\n```\n\n### 5. Convergence Diagnostics\nAssess if the MCMC chains have reached a stationary distribution.\n\n```r\n# Gelman diagnostics (should be < 1.2)\ncalculateGelman(bandleres)\n\n# Trace and density plots for outliers\nplotOutliers(bandleres)\n```\n\n### 6. Processing and Predicting\nSummarize the MCMC samples and append results to the `MSnSet` objects.\n\n```r\n# Populate summary slots\nbandleres <- bandleProcess(bandleres)\n\n# Append predictions to MSnSets\nres_list <- bandlePredict(control, treatment, params = bandleres)\nres_ctrl <- res_list[[1]][[1]] # First replicate of control with results\n```\n\n## Key Functions and Interpretation\n\n### Differential Localisation Probability\nThe primary output is the `bandle.differential.localisation` score (0 to 1).\n```r\n# Extract probabilities\ndiff_probs <- fData(res_ctrl)$bandle.differential.localisation\n\n# Estimate Expected False Discovery Rate (EFDR)\nEFDR(diff_probs, threshold = 0.95)\n```\n\n### Visualizing Translocations\nUse alluvial or chord diagrams to see where proteins moved.\n```r\n# Plot all movements\nplotTranslocations(bandleres)\n\n# Plot movements for high-confidence movers only\nmovers <- which(fData(res_ctrl)$bandle.differential.localisation > 0.95)\nplotTranslocations(res_list, fcol = \"bandle.allocation\")\n```\n\n### Uncertainty Quantification\nUse bootstrapping or binomial sampling to see the confidence intervals for translocation.\n```r\nboot_res <- bootstrapdiffLocprob(params = bandleres, top = 50)\nboxplot(t(boot_res), las = 2, main = \"Uncertainty in Translocation\")\n```\n\n## Reference documentation\n- [Vignette 1: Getting Started with BANDLE](./references/v01-getting-started.md)\n- [Vignette 2: A workflow for analysing differential localisation](./references/v02-workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bandle",
+    "description": "BANDLE is a Bioconductor package for comparative spatial proteomics that identifies protein translocation between two experimental conditions. Use when user asks to perform differential localization analysis, fit Gaussian Processes to organelle niches, or quantify uncertainty in protein subcellular movement using MCMC sampling.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bandle.html"
+  }
+}

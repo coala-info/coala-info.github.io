@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ribodipa",
+  "category": "bioconductor",
+  "name": "bioconductor-ribodipa",
+  "description": "RiboDiPA identifies differential ribosome occupancy patterns along transcripts by analyzing the positional distribution of ribosome-protected fragments. Use when user asks to identify shifts in ribosome distribution, map RPFs to P-sites, perform differential pattern testing, or visualize ribosome occupancy tracks.",
+  "overview": "RiboDiPA (Ribosome Differential Pattern Analysis) is a bioinformatics pipeline for analyzing the positional distribution of ribosomes along transcripts. Unlike standard differential expression which measures total abundance, RiboDiPA identifies shifts in ribosome occupancy patterns. The workflow involves mapping RPFs to P-sites, binning counts to handle data sparsity, and performing statistical inference using a negative binomial distribution.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RiboDiPA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RiboDiPA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RiboDiPA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ribodipa\n\n## Overview\n\nRiboDiPA (Ribosome Differential Pattern Analysis) is a bioinformatics pipeline for analyzing the positional distribution of ribosomes along transcripts. Unlike standard differential expression which measures total abundance, RiboDiPA identifies shifts in ribosome occupancy patterns. The workflow involves mapping RPFs to P-sites, binning counts to handle data sparsity, and performing statistical inference using a negative binomial distribution.\n\n## Core Workflow\n\n### 1. Prepare Class Labels\nDefine the experimental design using a data frame. The `comparison` column must use `1` for the reference/control and `2` for the treatment.\n\n```r\nclasslabel <- data.frame(\n    condition = c(\"mutant\", \"mutant\", \"wildtype\", \"wildtype\"),\n    comparison = c(2, 2, 1, 1)\n)\nrownames(classlabel) <- c(\"mutant1\", \"mutant2\", \"wildtype1\", \"wildtype2\")\n```\n\n### 2. The Wrapper Function (Quick Start)\nUse `RiboDiPA()` to run the entire pipeline (mapping, binning, and testing) in one step.\n\n```r\n# bam_path: vector of BAM files; gtf_path: path to GTF file\nresult <- RiboDiPA(bam_path, gtf_path, classlabel, cores = 2)\n# View top significant genes\nhead(result$gene[order(result$gene$qvalue), ])\n```\n\n### 3. Step-by-Step Analysis\n\n#### P-site Mapping\nMap RPFs to P-site positions. Use `psite.mapping = \"auto\"` to let the package calculate offsets based on start codons, or provide a custom offset matrix.\n\n```r\ndata.psite <- psiteMapping(bam_file_list = bam_path, gtf_file = gtf_path, psite.mapping = \"auto\")\n```\n\n#### Data Binning\nAggregate P-site counts into bins. Adaptive binning (`bin.width = 0`) is recommended for sparse Ribo-seq data.\n\n```r\n# Adaptive binning (default)\ndata.binned <- dataBinning(data = data.psite$coverage, bin.width = 0)\n\n# Single-codon resolution (fixed width)\ndata.codon <- dataBinning(data = data.psite$coverage, bin.width = 1)\n```\n\n#### Differential Pattern Testing\nPerform the statistical test. The $T$-value (0 to 1) indicates the magnitude of the pattern shift.\n\n```r\nresult.pst <- diffPatternTest(data = data.binned, classlabel = classlabel, method = c('gtxr', 'qvalue'))\n```\n\n## Visualization\n\n### Plotting Tracks\nVisualize P-site counts or binned data for specific genes.\n\n```r\n# Plot per-nucleotide P-site tracks\nplotTrack(data = data.psite, genes.list = c(\"GENE_ID\"))\n\n# Plot binned data with significant bins highlighted\nplotTest(result = result.pst, genes.list = c(\"GENE_ID\"), threshold = 0.05)\n```\n\n### Genome Browser Integration\nGenerate `GRanges` objects for visualization in `igvR`.\n\n```r\n# Generate tracks for IGV\ntracks.bin <- binTrack(data = result.pst, exon.anno = data.psite$exons)\n```\n\n## Key Parameters and Tips\n\n- **Cores**: Most functions support a `cores` argument. If left unspecified, the package uses `parallel::detectCores()`.\n- **T-value**: Use the $T$-value to prioritize genes. A high $T$-value indicates a large structural difference in ribosome distribution, even if $q$-values are similar.\n- **Exon Binning**: For higher organisms with complex splicing, use `diffPatternTestExon()` to treat exons as the fundamental bins for testing.\n- **GTF Consistency**: Ensure the GTF file matches the reference genome used for BAM alignment exactly.\n\n## Reference documentation\n- [RiboDiPA](./references/RiboDiPA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ribodipa",
+    "description": "RiboDiPA identifies differential ribosome occupancy patterns along transcripts by analyzing the positional distribution of ribosome-protected fragments. Use when user asks to identify shifts in ribosome distribution, map RPFs to P-sites, perform differential pattern testing, or visualize ribosome occupancy tracks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RiboDiPA.html"
+  }
+}

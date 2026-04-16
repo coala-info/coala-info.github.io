@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-intomics",
+  "category": "bioconductor",
+  "name": "bioconductor-intomics",
+  "description": "bioconductor-intomics infers regulatory networks by integrating multi-omics data and biological prior knowledge using Bayesian networks and MCMC. Use when user asks to integrate gene expression, DNA methylation, and copy number variation data, infer regulatory relationships, or estimate empirical biological knowledge.",
+  "overview": "IntOMICS is a Bayesian network framework designed to integrate multiple omics modalities—specifically Gene Expression (GE), DNA Methylation (METH), and Copy Number Variation (CNV). It uses an automatically tuned MCMC algorithm to estimate model parameters and \"empirical biological knowledge\" (empB), which complements existing biological priors. The resulting networks provide insights into the flow of genetic information, where nodes represent different molecular features and edges represent regu",
+  "homepage": "https://bioconductor.org/packages/3.17/bioc/html/IntOMICS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-intomics/overview",
+  "github": "https://github.com/anna-pacinkova/IntOMICS",
+  "conda_downloads": "2.7K",
+  "conda_downloads_num": 2700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IntOMICS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.17/bioc/html/IntOMICS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-intomics/overview",
+    "github": "https://github.com/anna-pacinkova/IntOMICS",
+    "conda_downloads": "2.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-intomics\n\nname: bioconductor-intomics\ndescription: Infer regulatory networks by integrating multi-omics data (Gene Expression, DNA Methylation, Copy Number Variation) and biological prior knowledge using Bayesian networks and MCMC. Use this skill when analyzing multi-modal biological datasets to identify regulatory relationships and estimate empirical biological knowledge.\n\n## Overview\n\nIntOMICS is a Bayesian network framework designed to integrate multiple omics modalities—specifically Gene Expression (GE), DNA Methylation (METH), and Copy Number Variation (CNV). It uses an automatically tuned MCMC algorithm to estimate model parameters and \"empirical biological knowledge\" (empB), which complements existing biological priors. The resulting networks provide insights into the flow of genetic information, where nodes represent different molecular features and edges represent regulatory influences.\n\n## Typical Workflow\n\n### 1. Data Preparation\nInput data should be organized into a `MultiAssayExperiment` or a named `list`.\n*   **GE**: Gene expression matrix (samples x features).\n*   **CNV**: Copy number variation matrix (optional).\n*   **METH**: DNA methylation beta-values matrix (optional).\n*   **PK**: Data frame of known interactions (columns: `src_entrez`, `dest_entrez`, `edge_type` [\"present\" or \"missing\"]).\n*   **TFtargs**: Logical matrix of Transcription Factor (columns) and target (rows) interactions.\n*   **layers_def**: Data frame defining the hierarchy (GE is typically layer 2, CNV/METH are layer 1).\n\n### 2. Preprocessing with `omics_module`\nThis function filters methylation probes (if `lm_METH = TRUE`), defines the biological prior matrix, and computes BGe scores for parent set configurations.\n\n```r\nOMICS_mod_res <- omics_module(\n  omics = omics_data,\n  PK = PK_df,\n  layers_def = layers_def_df,\n  TFtargs = TFtarg_mat,\n  annot = meth_annotation_list,\n  gene_annot = gene_id_conversion_table,\n  lm_METH = TRUE,\n  r_squared_thres = 0.3\n)\n```\n\n### 3. MCMC Simulation with `bn_module`\nInfers the network structure. Note: This is computationally intensive. For production, use higher `burn_in` and `thin` values.\n\n```r\n# Recommended for production: burn_in = 100000, thin = 500\nBN_mod_res <- bn_module(\n  burn_in = 5000, \n  thin = 50,\n  OMICS_mod_res = OMICS_mod_res,\n  minseglen = 50\n)\n```\n\n### 4. Diagnostics and Edge Weighting\nEvaluate MCMC convergence and extract edge frequencies.\n\n```r\n# Check convergence\ntrace_plots(mcmc_res = BN_mod_res, burn_in = 1000, thin = 50)\n\n# Calculate weights\nres_weighted <- edge_weights(\n  mcmc_res = BN_mod_res,\n  burn_in = 1000,\n  thin = 50,\n  edge_freq_thres = 0.5 # Filter for reliable edges\n)\n```\n\n### 5. Visualization\nGenerate the final network structure.\n\n```r\nweighted_net_res <- weighted_net(\n  cpdag_weights = res_weighted,\n  gene_annot = gene_annot,\n  PK = PK,\n  OMICS_mod_res = OMICS_mod_res,\n  gene_ID = \"gene_symbol\",\n  B_prior_mat_weighted = B_prior_mat_weighted(BN_mod_res)\n)\n\nggraph_weighted_net(weighted_net_res)\n```\n\n## Key Functions and Parameters\n\n*   `omics_module()`: Essential first step. Use `woPKGE_belief` (default 0.5) to set the strength of belief for interactions without prior knowledge.\n*   `bn_module()`: The core MCMC engine. Returns an object containing estimated beta (hyperparameter), empirical prior matrix, and CPDAGs.\n*   `edge_weights()`: Converts MCMC samples into edge frequencies. Use `edge_freq_thres` to control network sparsity.\n*   `emp_b_heatmap()`: Visualizes the difference between the initial biological prior and the empirical knowledge learned from the data.\n*   `dens_edge_weights()`: Plots the distribution of edge weights to help determine an appropriate threshold.\n\n## Tips for Success\n\n1.  **Sample Alignment**: Ensure samples are in the exact same order across all input matrices (GE, CNV, METH).\n2.  **Prior Knowledge**: While IntOMICS can run without it, providing a `PK` data frame significantly improves the biological relevance of the inferred network.\n3.  **MCMC Convergence**: Always inspect `trace_plots`. If the beta values or edge frequencies are not stable, increase the `burn_in` and `thin` parameters.\n4.  **Node Naming**: In visualizations, GE nodes are typically uppercase, CNV nodes are lowercase, and METH nodes use probe IDs.\n\n## Reference documentation\n- [IntOMICS tutorial](./references/IntOMICS_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-intomics",
+    "description": "bioconductor-intomics infers regulatory networks by integrating multi-omics data and biological prior knowledge using Bayesian networks and MCMC. Use when user asks to integrate gene expression, DNA methylation, and copy number variation data, infer regulatory relationships, or estimate empirical biological knowledge.",
+    "homepage": "https://bioconductor.org/packages/3.17/bioc/html/IntOMICS.html"
+  }
+}

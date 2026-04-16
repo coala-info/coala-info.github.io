@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-asurat",
+  "category": "bioconductor",
+  "name": "bioconductor-asurat",
+  "description": "\"ASURAT performs multifaceted analysis of single-cell transcriptomes by transforming gene expression data into functional feature matrices called Sign-by-Sample Matrices. Use when user asks to create sign-by-sample matrices, characterize cells through biological entities like metabolic pathways or cell types, and identify significant biological signs for cell clusters.\"",
+  "overview": "ASURAT is a Bioconductor package for the multifaceted analysis of single-cell transcriptomes. Unlike standard workflows that cluster cells based on gene expression alone, ASURAT transforms gene expression data into functional feature matrices called **Sign-by-Sample Matrices (SSMs)**. These \"signs\" represent biological entities such as cell types, metabolic pathways, or biological processes. This approach allows for simultaneous characterization of cells from multiple biological perspectives (e.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ASURAT.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-asurat/overview",
+  "github": "N/A",
+  "conda_downloads": "5.8K",
+  "conda_downloads_num": 5800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ASURAT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ASURAT.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-asurat/overview",
+    "github": "N/A",
+    "conda_downloads": "5.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-asurat\n\n## Overview\n\nASURAT is a Bioconductor package for the multifaceted analysis of single-cell transcriptomes. Unlike standard workflows that cluster cells based on gene expression alone, ASURAT transforms gene expression data into functional feature matrices called **Sign-by-Sample Matrices (SSMs)**. These \"signs\" represent biological entities such as cell types, metabolic pathways, or biological processes. This approach allows for simultaneous characterization of cells from multiple biological perspectives (e.g., identifying a cell by its type, its signaling activity, and its metabolic state).\n\n## Workflow and Core Functions\n\n### 1. Data Preparation and Preprocessing\nASURAT works with `SingleCellExperiment` (SCE) objects. It requires a \"centered\" assay where gene expression is mean-centered across samples.\n\n```r\nlibrary(ASURAT)\nlibrary(SingleCellExperiment)\n\n# Add quality control metadata (nReads, nGenes, percMT)\nsce <- add_metadata(sce = sce, mitochondria_symbol = \"^MT-\")\n\n# Filter variables and samples\nsce <- remove_variables(sce, min_nsamples = 10)\nsce <- remove_samples(sce, min_nReads = 5000, max_percMT = 10)\nsce <- remove_variables_second(sce, min_meannReads = 0.05)\n\n# Normalization and Centering\nassay(sce, \"logcounts\") <- log(assay(sce, \"counts\") + 1)\nmat <- assay(sce, \"logcounts\")\nassay(sce, \"centered\") <- sweep(mat, 1, apply(mat, 1, mean), FUN = \"-\")\n```\n\n### 2. Sign Analysis Setup\nYou must load external databases (Cell Ontology, MSigDB, GO, KEGG) to define the biological signs.\n\n```r\n# Compute gene-gene correlation matrix (Spearman)\nmat_c <- t(as.matrix(assay(sce, \"centered\")))\ncormat <- cor(mat_c[sample(rownames(mat_c), 1000), ], method = \"spearman\")\n\n# Load and format database (example: GO)\nmetadata(sce)$sign <- human_GO[[\"BP\"]] \n```\n\n### 3. Creating Signs\nSigns are created by clustering genes within functional sets based on their correlation profiles.\n\n*   **`remove_signs()`**: Filters biological terms by gene set size.\n*   **`cluster_genesets()`**: Decomposes gene sets into Strongly Correlated (SCG), Variably Correlated (VCG), and Weakly Correlated (WCG) groups.\n*   **`create_signs()`**: Finalizes sign definitions based on correlation strength.\n\n```r\nsce <- remove_signs(sce, min_ngenes = 2, max_ngenes = 1000)\nsce <- cluster_genesets(sce, cormat = cormat, th_posi = 0.30, th_nega = -0.30)\nsce <- create_signs(sce, min_cnt_strg = 2, min_cnt_vari = 2)\n```\n\n### 4. Sign-by-Sample Matrix (SSM) Generation\nThe SSM contains \"sign scores\" which represent the activity of a biological term in a specific cell.\n\n```r\n# Create the SSM\nsce_ssm <- makeSignMatrix(sce, weight_strg = 0.5, weight_vari = 0.5)\n```\n\n### 5. Clustering and Downstream Analysis\nOnce the SSM is created, you can use standard tools like `Seurat` or `Rtsne` for clustering and visualization, treating sign scores like expression values.\n\n*   **`compute_sepI_all()`**: Identifies \"significant signs\" (markers) for clusters using the Separation Index (sepI), ranging from -1 to 1.\n*   **`plot_multiheatmaps()`**: Visualizes multiple SSMs (e.g., Cell Type, GO, KEGG) and gene expression simultaneously.\n\n```r\n# Identify marker signs\nsce_ssm <- compute_sepI_all(sce = sce_ssm, labels = colData(sce_ssm)$seurat_clusters)\n\n# Multi-layered heatmap\nplot_multiheatmaps(ssm_list = list(CellType = assay(sce_ssm, \"counts\")), \n                   gem_list = list(GeneExpr = assay(altExp(sce), \"counts\")),\n                   nrand_samples = 100)\n```\n\n## Tips for Success\n*   **Parameter Tuning**: The thresholds `th_posi` and `th_nega` in `cluster_genesets()` are critical. Typical values range between 0.15 and 0.4.\n*   **Redundancy**: Use `remove_signs_redundant()` for GO terms to collapse semantically similar biological processes using a similarity matrix.\n*   **Seurat Integration**: Use `Seurat::as.Seurat(sce, counts = \"counts\", data = \"counts\")` to leverage Seurat's community detection clustering on the SSM.\n*   **Memory**: For large datasets, compute the correlation matrix (`cormat`) on a random subset of cells (e.g., 1000-2000) to save time and memory.\n\n## Reference documentation\n- [ASURAT](./references/ASURAT.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-asurat",
+    "description": "ASURAT performs multifaceted analysis of single-cell transcriptomes by transforming gene expression data into functional feature matrices called Sign-by-Sample Matrices. Use when user asks to create sign-by-sample matrices, characterize cells through biological entities like metabolic pathways or cell types, and identify significant biological signs for cell clusters.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ASURAT.html"
+  }
+}

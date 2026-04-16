@@ -1,0 +1,53 @@
+{
+  "id": "difcover",
+  "category": "CLI",
+  "name": "difcover",
+  "description": "DifCover identifies genomic regions with significant read coverage differences between two samples aligned to the same reference using a window-stretching approach. Use when user asks to identify differential coverage regions, compare read depth between BAM files, or perform circular binary segmentation on coverage ratios.",
+  "overview": "DifCover is a bioinformatics pipeline designed to identify genomic regions where the read coverage of one sample significantly differs from another when aligned to the same reference. It utilizes a unique \"window stretching\" method, where windows are defined by a fixed number of \"valid\" bases rather than a fixed genomic length. This approach allows the tool to bridge across under-represented fragments (low coverage) and over-represented repetitive regions, providing a more accurate comparison in",
+  "homepage": "https://github.com/timnat/DifCover",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/difcover/overview",
+  "github": "https://github.com/timnat/DifCover",
+  "conda_downloads": "1.2K",
+  "conda_downloads_num": 1200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "difcover_run_difcover.sh",
+      "difcover_from_bams_to_unionbed.sh",
+      "difcover_from_unionbed_to_ratio_per_window_CC0",
+      "difcover_from_ratio_per_window__to__DNAcopy_output.sh",
+      "difcover_from_DNAcopyout_to_p_fragments.sh"
+    ],
+    "description": "Stage 1",
+    "docker_image": "quay.io/biocontainers/difcover:3.0.1--h9948957_2",
+    "homepage": "https://github.com/timnat/DifCover",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/difcover/overview",
+    "github": "https://github.com/timnat/DifCover",
+    "conda_downloads": "1.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "difcover_from_DNAcopyout_to_p_fragments.sh.cwl",
+    "difcover_from_bams_to_unionbed.sh.cwl",
+    "difcover_from_ratio_per_window__to__DNAcopy_output.sh.cwl",
+    "difcover_from_unionbed_to_ratio_per_window_CC0.cwl",
+    "difcover_run_difcover.sh.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# difcover\n\n---\n\n## Overview\nDifCover is a bioinformatics pipeline designed to identify genomic regions where the read coverage of one sample significantly differs from another when aligned to the same reference. It utilizes a unique \"window stretching\" method, where windows are defined by a fixed number of \"valid\" bases rather than a fixed genomic length. This approach allows the tool to bridge across under-represented fragments (low coverage) and over-represented repetitive regions, providing a more accurate comparison in complex or fragmented genomes.\n\n## Installation and Setup\nBefore running the pipeline, ensure `BEDTOOLS`, `SAMTOOLS`, `AWK`, and the R package `DNAcopy` are in your PATH.\n\n1.  **Compile the C++ component**:\n    Navigate to the `dif_cover_scripts` directory and run `make` to compile the `from_unionbed_to_ratio_per_window_CC0` binary.\n2.  **Permissions**:\n    Ensure all shell scripts are executable: `chmod +x *.sh`.\n\n## Core Workflow\nThe pipeline can be executed using the `run_difcover.sh` wrapper or stage-by-stage for fine-tuned parameter control.\n\n### Stage 1: BAM to UnionBed\nConverts two coordinate-sorted BAM files into a single coverage file.\n```bash\n./from_bams_to_unionbed.sh sample1.bam sample2.bam\n```\n*   **Output**: `sample1_sample2.unionbedcv` and `ref.length.Vk1s_sorted`.\n\n### Stage 2: Stretched Window Calculation\nThis is the core logic where coverage ratios are calculated using \"valid\" bases.\n```bash\n./from_unionbed_to_ratio_per_window_CC0 sample1_sample2.unionbedcv a A b B v l\n```\n*   **a / A**: Minimum and maximum coverage thresholds for Sample 1.\n*   **b / B**: Minimum and maximum coverage thresholds for Sample 2.\n*   **v**: Target number of valid bases per window (e.g., 1000).\n*   **l**: Minimum window size (total bases) to output.\n*   **Logic**: A base is \"valid\" if it is not a repeat (below max thresholds) and has sufficient data (above min thresholds in at least one sample).\n\n### Stage 3: DNAcopy Segmentation\nNormalizes the ratios and performs circular binary segmentation.\n```bash\n./from_ratio_per_window__to__DNAcopy_output.sh <ratio_file> AC\n```\n*   **AC (Adjustment Coefficient)**: Used to normalize samples if their modal coverages differ. Set to 1.0 if samples are already balanced.\n\n### Stage 4: Extracting Significant Fragments\nExtracts the final regions of interest based on an enrichment threshold.\n```bash\n./from_DNAcopyout_to_p_fragments.sh <dnacopy_file> P\n```\n*   **P**: Enrichment score threshold. A value of `P=2` typically identifies regions where Sample 1 coverage is ~4x higher than Sample 2.\n\n## Expert Tips\n*   **Handling Zero Coverage**: If Sample 2 has zero coverage in a window, the tool uses a continuity correction (CC0) representing 0.5 reads to avoid division by zero.\n*   **Fragmented Assemblies**: If working with highly fragmented scaffolds, the \"stretched window\" approach is superior to `bedtools` or `sambamba` because it prevents small gaps from artificially inflating or deflating coverage ratios.\n*   **Parameter Tuning**: For highly contiguous genomes, you can combine adjacent windows with similar ratios to generate larger consensus regions for downstream analysis.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| difcover_from_ratio_per_window__to__DNAcopy_output.sh | Converts ratio per window files to DNAcopy output format. |\n| difcover_from_unionbed_to_ratio_per_window_CC0 | Calculates the ratio of coverage per window between two samples from a unionbed file. |\n| difcover_run_difcover.sh | Stage 1 |\n| from_DNAcopyout_to_p_fragments.sh | Converts DNAcopy output to p fragments, filtering intervals based on enrichment scores. |\n| from_bams_to_unionbed.sh | Calculates coverage for BAM files using BEDTOOLS and SAMTOOLS. The main output reports coverage for input samples in corresponding columns for each bed interval. Additional files report coverage for each sample separately. |\n\n## Reference documentation\n- [DifCover GitHub Home](./references/github_com_timnat_DifCover.md)\n- [DifCover Wiki](./references/github_com_timnat_DifCover_wiki.md)",
+  "skill_front_matter": {
+    "name": "difcover",
+    "description": "DifCover identifies genomic regions with significant read coverage differences between two samples aligned to the same reference using a window-stretching approach. Use when user asks to identify differential coverage regions, compare read depth between BAM files, or perform circular binary segmentation on coverage ratios.",
+    "homepage": "https://github.com/timnat/DifCover"
+  }
+}

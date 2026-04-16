@@ -1,0 +1,57 @@
+{
+  "id": "alevin-fry",
+  "category": "CLI",
+  "name": "alevin-fry",
+  "description": "Alevin-fry is a high-performance suite of tools for the rapid and memory-efficient processing of single-cell sequencing data. Use when user asks to identify valid cell barcodes, collate read records, or perform gene quantification for single-cell RNA-seq and RNA velocity analysis.",
+  "overview": "Alevin-fry is a high-performance suite of tools designed for the rapid, accurate, and memory-efficient processing of single-cell sequencing data. It serves as the successor to the original `alevin` tool, offering significantly improved speed and reduced memory footprints. The tool operates on Reduced Alignment Data (RAD) files, performing three primary tasks: identifying valid cell barcodes (permit listing), grouping read records by these barcodes (collation), and estimating molecule counts per ",
+  "homepage": "https://github.com/COMBINE-lab/alevin-fry",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/alevin-fry/overview",
+  "github": "https://github.com/COMBINE-lab/alevin-fry",
+  "conda_downloads": "51.2K",
+  "conda_downloads_num": 51200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "alevin-fry_generate-permit-list",
+      "alevin-fry_collate",
+      "alevin-fry_quant",
+      "alevin-fry_infer",
+      "alevin-fry_convert",
+      "alevin-fry_view",
+      "alevin-fry_atac"
+    ],
+    "description": "Generate a permit list of barcodes from a RAD file",
+    "docker_image": "quay.io/biocontainers/alevin-fry:0.11.2--ha6fb395_0",
+    "homepage": "https://github.com/COMBINE-lab/alevin-fry",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/alevin-fry/overview",
+    "github": "https://github.com/COMBINE-lab/alevin-fry",
+    "conda_downloads": "51.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "alevin-fry_atac.cwl",
+    "alevin-fry_collate.cwl",
+    "alevin-fry_convert.cwl",
+    "alevin-fry_generate-permit-list.cwl",
+    "alevin-fry_infer.cwl",
+    "alevin-fry_quant.cwl",
+    "alevin-fry_view.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# alevin-fry\n\n## Overview\n\nAlevin-fry is a high-performance suite of tools designed for the rapid, accurate, and memory-efficient processing of single-cell sequencing data. It serves as the successor to the original `alevin` tool, offering significantly improved speed and reduced memory footprints. The tool operates on Reduced Alignment Data (RAD) files, performing three primary tasks: identifying valid cell barcodes (permit listing), grouping read records by these barcodes (collation), and estimating molecule counts per gene (quantification). It is particularly powerful for \"USA mode\" quantification, which tracks spliced, unspliced, and ambiguous transcripts separately for RNA velocity and nuclear processing studies.\n\n## Core Workflow and CLI Patterns\n\nThe standard pipeline consists of three sequential commands. All commands assume you have already generated a RAD file using `piscem` or `salmon alevin`.\n\n### 1. Generate Permit List\nIdentify \"true\" cells from the background noise.\n\n*   **Using a known whitelist (e.g., 10x Genomics):**\n    `alevin-fry generate-permit-list --input <alevin_dir> --output-dir <output_dir> --unfiltered-pl <whitelist.txt> --expected-ori fw`\n*   **Automatic detection (Knee method):**\n    `alevin-fry generate-permit-list --input <alevin_dir> --output-dir <output_dir> --knee-distance --expected-ori fw`\n*   **Forced cell count:**\n    `alevin-fry generate-permit-list --input <alevin_dir> --output-dir <output_dir> --force-cells 5000 --expected-ori fw`\n\n### 2. Collate\nGroup the RAD file records by the corrected cellular barcodes determined in the previous step.\n\n`alevin-fry collate -i <output_dir> -r <alevin_dir> -t <threads>`\n\n*   **Expert Tip:** If memory is limited, use `-m <max_records>` to reduce the number of records held in RAM during collation (default is 30M).\n*   **Compression:** Use `--compress` to save disk space; it uses Snappy compression and is generally fast enough not to bottleneck the pipeline.\n\n### 3. Quantification\nGenerate the final count matrix.\n\n`alevin-fry quant -i <output_dir> -m <tg_map.tsv> -t <threads> -r <strategy> -o <quant_dir>`\n\n*   **Resolution Strategies (`-r`):**\n    *   `cr-like`: Mimics Cell Ranger (most common).\n    *   `cr-like-em`: Uses EM to resolve multi-mapping reads (more accurate for overlapping genes).\n    *   `parsimony-gene`: Robust to misannotation; projects transcripts to genes before graph construction.\n*   **USA Mode:** To enable Spliced/Unspliced/Ambiguous counting, provide a 3-column `tg_map` (Target, Gene, S/U status). This is required for RNA velocity.\n\n## Expert Tips and Best Practices\n\n*   **Mapper Choice:** Prefer `piscem` over `salmon` for the initial mapping step. It is faster and uses significantly less memory.\n*   **Orientation:** Always verify `--expected-ori`. For most 10x Chromium v2/v3 data, this is `fw`.\n*   **Output Formats:** Alevin-fry outputs Matrix Market (`.mtx`) files by default. Use the `quants_mat_rows.txt` (barcodes) and `quants_mat_cols.txt` (genes) to label your matrix in downstream tools like Seurat or Scanpy.\n*   **scATAC-seq:** Use the `alevin-fry atac` sub-command suite (specifically `generate-permit-list` and `sort`) to process scATAC-seq RAD files into sorted BED files for peak calling.\n*   **Bootstrapping:** For differential expression tools that account for mapping uncertainty (like `swish`), use `-b <num_bootstraps>` during the `quant` step.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| alevin-fry atac | subcommand for processing scATAC-seq RAD files |\n| alevin-fry collate | Collate a RAD file by corrected cell barcode |\n| alevin-fry convert | Convert a BAM file to a RAD file |\n| alevin-fry generate-permit-list | Generate a permit list of barcodes from a RAD file |\n| alevin-fry infer | Perform inference on equivalence class count data |\n| alevin-fry quant | Quantify expression from a collated RAD file |\n| alevin-fry view | View the contents of a RAD file |\n\n## Reference documentation\n\n- [Getting Started](./references/alevin-fry_readthedocs_io_en_latest_getting_started.html.md)\n- [Quantification Details](./references/alevin-fry_readthedocs_io_en_latest_quant.html.md)\n- [Permit List Generation](./references/alevin-fry_readthedocs_io_en_latest_generate_permit_list.html.md)\n- [Collation Command](./references/alevin-fry_readthedocs_io_en_latest_collate.html.md)\n- [scATAC-seq (atac) Command](./references/alevin-fry_readthedocs_io_en_latest_atac.html.md)",
+  "skill_front_matter": {
+    "name": "alevin-fry",
+    "description": "Alevin-fry is a high-performance suite of tools for the rapid and memory-efficient processing of single-cell sequencing data. Use when user asks to identify valid cell barcodes, collate read records, or perform gene quantification for single-cell RNA-seq and RNA velocity analysis.",
+    "homepage": "https://github.com/COMBINE-lab/alevin-fry"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-simulatorz",
+  "category": "bioconductor",
+  "name": "bioconductor-simulatorz",
+  "description": "This tool generates realistic simulations of genomic data and performs cross-study validation for predictive modeling. Use when user asks to resample genomic datasets, balance covariate distributions, simulate survival outcomes, or perform training and validation of prediction algorithms across independent datasets.",
+  "overview": "The `simulatorZ` package provides a framework for simulating genomic data collections based on real reference datasets. It is particularly useful for investigating the performance of risk prediction algorithms across independent studies. It supports `ExpressionSet` and `SummarizedExperiment` objects and implements a three-step resampling scheme: set-level bootstrap, patient-level bootstrap, and parametric survival time simulation using Cox models.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/simulatorZ.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/zhangyuqing/simulatorZ",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "simulatorZ"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/simulatorZ.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/zhangyuqing/simulatorZ",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-simulatorz\n\nname: bioconductor-simulatorz\ndescription: Generate realistic simulations of genomic data (ExpressionSet or SummarizedExperiment) and perform cross-study validation (CSV) for predictive modeling. Use this skill when you need to: (1) Resample genomic datasets using non-parametric or parametric bootstrap, (2) Balance covariate distributions across simulated sets, (3) Simulate time-to-event (survival) outcomes based on real experimental data, or (4) Perform training and validation of prediction algorithms across independent datasets.\n\n## Overview\n\nThe `simulatorZ` package provides a framework for simulating genomic data collections based on real reference datasets. It is particularly useful for investigating the performance of risk prediction algorithms across independent studies. It supports `ExpressionSet` and `SummarizedExperiment` objects and implements a three-step resampling scheme: set-level bootstrap, patient-level bootstrap, and parametric survival time simulation using Cox models.\n\n## Core Workflows\n\n### 1. Data Simulation\n\nThe primary function for simulation is `simData()`. It performs non-parametric bootstrap resampling.\n\n```r\nlibrary(simulatorZ)\n\n# Basic two-step bootstrap (samples datasets, then samples patients)\nsim_results <- simData(esets_list, n.samples = 500)\n\n# One-step bootstrap (samples patients from each original dataset without resampling sets)\nsim_results <- simData(esets_list, n.samples = 500, type = \"one-step\")\n\n# Accessing simulated objects\nsimulated_esets <- sim_results$obj\n```\n\n### 2. Balancing Covariates\n\nTo ensure simulated datasets have similar clinical characteristics (e.g., tumor stage) to the source population, use the `balance.variables` argument.\n\n```r\n# Balance the distribution of 'tumorstage' and 'grade'\nsim_balanced <- simData(esets_list, \n                        n.samples = 500, \n                        balance.variables = c(\"tumorstage\", \"grade\"))\n```\n\n### 3. Simulating Survival Outcomes\n\nTo generate realistic survival times, you must first extract a \"true model\" from reference data and then apply it to simulated features.\n\n```r\n# 1. Prepare response list (Surv objects)\ny_list <- lapply(esets_list, function(eset) {\n  Surv(eset$days_to_death, eset$vital_status == \"deceased\")\n})\n\n# 2. Fit the true model (using CoxBoost)\ntrue_mod <- getTrueModel(esets_list, y_list, parstep = 100)\n\n# 3. Simulate times for new data\nsim_with_time <- simTime(sim_results, y_list, true_mod)\n```\n\n### 4. The Driver Function\n\nFor a complete workflow (resampling + time simulation) in one call, use `simBootstrap()`.\n\n```r\n# Complete 3-step simulation\nsim_complete <- simBootstrap(esets_list, y_list, n.samples = 500, parstep = 100)\n```\n\n## Training and Validation\n\n### Cross-Study Validation (CSV)\n\nThe `zmatrix()` function automates the process of training on one dataset and validating on others using the C-index.\n\n```r\n# Generate a matrix of C-indices\n# Diagonal elements represent internal cross-validation\nz_results <- zmatrix(obj = esets_list, \n                     y.vars = y_list, \n                     fold = 3, \n                     trainingFun = plusMinus) # plusMinus is a built-in algorithm\n```\n\n### Manual Validation Example\n\n```r\n# Calculate C-index for a linear predictor (lp) against survival data (y)\nlibrary(Hmisc)\nc_index <- rcorr.cens(-predicted_lp, y_val)[1]\n```\n\n## Tips and Best Practices\n\n- **Feature Consistency**: When performing parametric bootstrap across multiple datasets, ensure all `ExpressionSet` objects contain the same features (rows). Use a cleaning function to find the intersection of `featureNames`.\n- **Discrete Covariates**: The balancing mechanism is designed for discrete variables. Continuous variables should be discretized before being passed to `balance.variables`.\n- **Algorithm Support**: While `plusMinus` is built-in, you can use other algorithms like `superpc` by manually extracting the simulated matrices (`exprs(sim_complete$obj[[1]])`).\n- **Object Types**: The package seamlessly handles both `Biobase::ExpressionSet` and `SummarizedExperiment::RangedSummarizedExperiment`.\n\n## Reference documentation\n\n- [simulatorZ-vignette](./references/simulatorZ-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-simulatorz",
+    "description": "This tool generates realistic simulations of genomic data and performs cross-study validation for predictive modeling. Use when user asks to resample genomic datasets, balance covariate distributions, simulate survival outcomes, or perform training and validation of prediction algorithms across independent datasets.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/simulatorZ.html"
+  }
+}

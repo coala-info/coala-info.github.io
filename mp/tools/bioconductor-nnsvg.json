@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nnsvg",
+  "category": "bioconductor",
+  "name": "bioconductor-nnsvg",
+  "description": "This tool identifies spatially variable genes in spatially-resolved transcriptomics data using scalable nearest-neighbor Gaussian processes. Use when user asks to identify genes with spatial expression patterns, rank spatially variable genes, or account for covariates like cell types and tissue domains in spatial transcriptomics datasets.",
+  "overview": "`nnSVG` is a Bioconductor package designed for the scalable identification of spatially variable genes (SVGs). It utilizes nearest-neighbor Gaussian processes and the BRISC algorithm to provide linear scaling with the number of spatial locations. Key features include the ability to rank SVGs by likelihood ratio statistics, account for known covariates (like cell types or tissue domains), and handle large-scale datasets with thousands of locations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/nnSVG.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/lmweber/nnSVG",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nnSVG"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nnSVG.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/lmweber/nnSVG",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nnsvg\n\nname: bioconductor-nnsvg\ndescription: Scalable identification of spatially variable genes (SVGs) in spatially-resolved transcriptomics data using nearest-neighbor Gaussian processes. Use this skill when analyzing SpatialExperiment objects to identify genes with spatial expression patterns, including analyses with covariates (spatial domains/cell types) or across multiple biological samples.\n\n# bioconductor-nnsvg\n\n## Overview\n\n`nnSVG` is a Bioconductor package designed for the scalable identification of spatially variable genes (SVGs). It utilizes nearest-neighbor Gaussian processes and the BRISC algorithm to provide linear scaling with the number of spatial locations. Key features include the ability to rank SVGs by likelihood ratio statistics, account for known covariates (like cell types or tissue domains), and handle large-scale datasets with thousands of locations.\n\n## Installation\n\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"nnSVG\")\n```\n\n## Standard Workflow\n\nThe typical workflow involves a `SpatialExperiment` (SPE) object.\n\n### 1. Data Preprocessing\nBefore running `nnSVG`, you must filter low-expressed genes and normalize the data.\n\n```R\nlibrary(nnSVG)\nlibrary(SpatialExperiment)\nlibrary(scran)\n\n# 1. Filter genes (removes mito and low-expressed genes)\nspe <- filter_genes(spe, filter_genes_ncounts = 3, filter_genes_pcspots = 0.5)\n\n# 2. Calculate logcounts (required for nnSVG)\nspe <- computeLibraryFactors(spe)\nspe <- logNormCounts(spe)\n```\n\n### 2. Running nnSVG\nRun the main function. For large datasets, `nnSVG` supports parallelization via `BiocParallel`.\n\n```R\nset.seed(123)\nspe <- nnSVG(spe)\n```\n\n### 3. Interpreting Results\nResults are stored in `rowData(spe)`. Key columns include:\n- `LR_stat`: Likelihood ratio statistic (higher = stronger spatial pattern).\n- `rank`: Ranking of genes from most to least spatially variable.\n- `pval` / `padj`: P-values and Benjamini-Hochberg adjusted p-values.\n- `prop_sv`: Proportion of spatial variance (effect size).\n\n```R\n# Identify significant SVGs (e.g., padj <= 0.05)\nsignificant_genes <- rowData(spe)[rowData(spe)$padj <= 0.05, ]\n\n# View top 10 ranked genes\ntop_genes <- rowData(spe)[order(rowData(spe)$rank)[1:10], ]\n```\n\n## Advanced Workflows\n\n### Analysis with Covariates\nTo identify SVGs within specific spatial domains or after accounting for cell-type composition, provide a model matrix `X`.\n\n```R\n# Create model matrix for cell types\nX <- model.matrix(~ colData(spe)$celltype)\n\n# Run nnSVG with covariates\nspe <- nnSVG(spe, X = X)\n```\n\n### Multiple Samples\nFor datasets with multiple capture areas or biological replicates:\n1. Run `nnSVG` on each sample individually.\n2. Combine results by averaging the ranks of the genes across samples.\n3. Filter for \"replicated\" SVGs that appear in the top ranks of multiple samples.\n\n## Troubleshooting and Tips\n\n- **Zero Counts**: `nnSVG` will throw an error (`dpotrf failed`) if genes or spots contain only zeros. Always use `filter_genes()` and check for empty rows/cols after subsetting.\n- **Minimum Spots**: A minimum of 100 spatial locations (spots) per sample/domain is recommended for reliable model fitting.\n- **Logcounts**: Ensure the input SPE object contains a `logcounts` assay; `nnSVG` operates on transformed data, not raw counts.\n- **Mitochondrial Genes**: By default, `filter_genes` removes mitochondrial genes. Set `filter_mito = FALSE` only if they are of specific biological interest for your spatial analysis.\n\n## Reference documentation\n\n- [nnSVG Tutorial](./references/nnSVG.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nnsvg",
+    "description": "This tool identifies spatially variable genes in spatially-resolved transcriptomics data using scalable nearest-neighbor Gaussian processes. Use when user asks to identify genes with spatial expression patterns, rank spatially variable genes, or account for covariates like cell types and tissue domains in spatial transcriptomics datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nnSVG.html"
+  }
+}

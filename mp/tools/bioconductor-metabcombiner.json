@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metabcombiner",
+  "category": "bioconductor",
+  "name": "bioconductor-metabcombiner",
+  "description": "metabCombiner aligns LC-MS metabolomics datasets from different chromatographic conditions using non-linear retention time mapping and feature grouping. Use when user asks to align metabolomics datasets, perform non-linear retention time mapping, merge untargeted LC-MS data from different batches, or calculate similarity scores for feature pair alignments.",
+  "overview": "`metabCombiner` is a Bioconductor package designed to align LC-MS metabolomics datasets acquired under different chromatographic conditions. It groups features by m/z, performs non-linear retention time mapping to account for chromatographic shifts, and calculates a similarity score (0-1) for feature pair alignments (FPAs). The workflow is particularly useful for merging untargeted metabolomics data from different batches or studies where elution orders are mostly preserved but absolute retentio",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/metabCombiner.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metabCombiner"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metabCombiner.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metabcombiner\n\n## Overview\n\n`metabCombiner` is a Bioconductor package designed to align LC-MS metabolomics datasets acquired under different chromatographic conditions. It groups features by m/z, performs non-linear retention time mapping to account for chromatographic shifts, and calculates a similarity score (0-1) for feature pair alignments (FPAs). The workflow is particularly useful for merging untargeted metabolomics data from different batches or studies where elution orders are mostly preserved but absolute retention times vary.\n\n## Typical Workflow\n\n### 1. Data Preparation (`metabData`)\nConvert raw data frames into `metabData` objects. This step handles column mapping, filtering, and abundance ranking (Q values).\n\n```r\nlibrary(metabCombiner)\n\n# Create metabData objects\n# samples: keyword for abundance columns; extra: metadata to preserve\np20 <- metabData(table = plasma20, mz = \"mz\", rt = \"rt\", \n                 id = \"identity\", adduct = \"adduct\", \n                 samples = \"CHEAR\", extra = c(\"Red\", \"POOL\"),\n                 rtmax = 17.25, duplicate = c(0.0025, 0.05))\n\np30 <- metabData(table = plasma30, samples = \"Red\", \n                 extra = c(\"CHEAR\", \"POOL\", \"Blank\"))\n```\n\n### 2. Initial Grouping (`metabCombiner`)\nGroup features by m/z across the two datasets. The `binGap` parameter defines the m/z tolerance for grouping.\n\n```r\n# xdata is usually the dataset with the longer RT range\np.combined <- metabCombiner(xdata = p30, ydata = p20, binGap = 0.0075)\n```\n\n### 3. RT Mapping (Anchors & Splines)\nIdentify high-confidence \"anchor\" points (mutually abundant features) to fit a non-linear RT mapping model.\n\n```r\n# 1. Select Anchors\np.combined <- selectAnchors(p.combined, windx = 0.03, windy = 0.02, \n                            tolQ = 0.3, tolmz = 0.003)\n\n# 2. Fit Model (GAM or LOESS)\n# k: basis dimension (flexibility); iterFilter: outlier removal iterations\nset.seed(100)\np.combined <- fit_gam(p.combined, k = seq(12, 20, 2), iterFilter = 2, family = \"gaussian\")\n\n# 3. Visualize the fit\nplot(p.combined, main = \"RT Mapping Fit\", xlab = \"Dataset X RT\", ylab = \"Dataset Y RT\")\n```\n\n### 4. Scoring and Labeling\nCalculate similarity scores for all potential pairs and label them for conflicts or removal.\n\n```r\n# A, B, C: weights for m/z, RT fit, and Q (abundance) deviations\np.combined <- calcScores(p.combined, A = 70, B = 15, C = 0.5)\n\n# Label rows to identify best matches and conflicts\n# method \"score\" compares top-ranked pairs; \"mzrt\" uses tolerances\nresults <- combinedTable(p.combined)\nresults <- labelRows(results, minScore = 0.5, maxRankX = 3, method = \"score\")\n```\n\n### 5. Exporting Results\nUse `write2file` to export a formatted report with gaps between m/z groups for easier manual inspection.\n\n```r\nwrite2file(results, file = \"Combined_Metabolomics_Table.txt\", sep = \"\\t\")\n```\n\n## Key Functions and Parameters\n\n- **`metabData()`**: Use `samples` and `extra` regex/keywords to distinguish between abundance data and metadata.\n- **`selectAnchors()`**: `windx`/`windy` control the search window for anchors. Smaller windows yield more anchors but potentially more noise.\n- **`fit_gam()` / `fit_loess()`**: Essential for RT alignment. Use `family = \"scat\"` for better outlier robustness at the cost of speed.\n- **`calcScores()`**: \n    - **A**: m/z weight (typically 50-120).\n    - **B**: RT weight (typically 5-15).\n    - **C**: Abundance weight (typically 0-1).\n- **`evaluateParams()`**: If you have known identities, use this to find optimal A, B, and C values.\n\n## Tips for Success\n\n1. **Dataset Order**: Assign the dataset with the shorter chromatographic run to `ydata` in the `metabCombiner` constructor.\n2. **RT Filtering**: Use `rtmin` and `rtmax` in `metabData` to exclude void volumes or wash-out periods where feature alignment is unreliable.\n3. **Conflict Resolution**: The `labelRows` function marks \"CONFLICT\" when multiple features in one dataset could match a single feature in the other. Inspect these manually in the output table.\n4. **Identity Matching**: If you have compound IDs, set `useID = TRUE` in `selectAnchors` and `fit_gam` to prioritize these known matches during model training.\n\n## Reference documentation\n- [Combine LC-MS Metabolomics Datasets with metabCombiner](./references/metabCombiner_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metabcombiner",
+    "description": "metabCombiner aligns LC-MS metabolomics datasets from different chromatographic conditions using non-linear retention time mapping and feature grouping. Use when user asks to align metabolomics datasets, perform non-linear retention time mapping, merge untargeted LC-MS data from different batches, or calculate similarity scores for feature pair alignments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metabCombiner.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-trena",
+  "category": "bioconductor",
+  "name": "bioconductor-trena",
+  "description": "The trena package provides a framework for inferring gene regulatory networks by using statistical solvers to identify transcription factors that explain the expression of a target gene. Use when user asks to infer gene regulatory networks, filter candidate transcription factors, or run ensemble feature selection models to identify gene regulators.",
+  "overview": "The `trena` package provides a framework for inferring gene regulatory networks. It operates by taking a target gene and a set of candidate regulators (transcription factors) and using various statistical \"solvers\" to determine which regulators best explain the expression of the target gene. The workflow typically involves data normalization, filtering candidate regulators to reduce the search space, and running feature selection models.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/trena.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "trena"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/trena.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-trena\n\n## Overview\nThe `trena` package provides a framework for inferring gene regulatory networks. It operates by taking a target gene and a set of candidate regulators (transcription factors) and using various statistical \"solvers\" to determine which regulators best explain the expression of the target gene. The workflow typically involves data normalization, filtering candidate regulators to reduce the search space, and running feature selection models.\n\n## Typical Workflow\n\n### 1. Data Preparation\nLoad the library and your expression matrix. It is highly recommended to transform skewed data (e.g., using `asinh` or `voom`) to normalize the mean-variance relationship.\n\n```r\nlibrary(trena)\n\n# Load expression matrix (rows = genes, cols = samples)\n# Example: mtx.asinh <- asinh(mtx.sub)\n```\n\n### 2. Filtering Candidate Regulators\nFiltering reduces the number of predictors, improving solver performance and biological relevance.\n\n*   **VarianceFilter**: Selects TFs with expression variance similar to the target gene.\n    ```r\n    vf <- VarianceFilter(mtx.assay = mtx.asinh, targetGene = \"MEF2C\", varSize = 0.5)\n    tfs <- getCandidates(vf)$tfs\n    ```\n*   **FootprintFilter**: Uses DNAse footprints and motif matching (requires database connections).\n    ```r\n    # Requires genome and project database URIs\n    ff <- FootprintFilter(genomeDB = genome.db.uri, footprintDB = project.db.uri, regions = gene.regions)\n    tbl.fp <- getCandidates(ff)[[1]]\n    \n    # Associate motifs with TFs using MotifDb\n    library(MotifDb)\n    tbl.tfs <- associateTranscriptionFactors(MotifDb, tbl.fp, source=\"MotifDb\", expand.rows=TRUE)\n    candidate.tfs <- unique(tbl.tfs$geneSymbol)\n    ```\n\n### 3. Running Solvers\nSolvers perform the actual feature selection. You can use individual methods or an ensemble approach.\n\n*   **Individual Solvers**: Supported methods include `LassoSolver`, `RidgeSolver`, `RandomForestSolver`, `PearsonSolver`, and `SpearmanSolver`.\n    ```r\n    solver <- LassoSolver(mtx.assay = mtx.asinh, \n                          targetGene = \"MEF2C\", \n                          candidateRegulators = candidate.tfs)\n    tbl.results <- run(solver)\n    ```\n\n*   **Ensemble Solver (Recommended)**: Combines multiple methods to provide a composite score.\n    ```r\n    ens.solver <- EnsembleSolver(mtx.assay = mtx.asinh, \n                                 targetGene = \"MEF2C\", \n                                 candidateRegulators = candidate.tfs,\n                                 solverNames = c(\"lasso\", \"ridge\", \"randomforest\", \"pearson\"))\n    tbl.ens <- run(ens.solver)\n    ```\n\n## Interpreting Results\n*   **Beta/Coefficients**: In LASSO/Ridge, non-zero beta values indicate the strength and direction of the regulation.\n*   **pcaMax**: In the Ensemble solver, this score quantifies the agreement between dissimilar solvers. High scores suggest high confidence.\n*   **concordance**: A \"voting\" metric (0-1) representing how many solvers identified the regulator as significant.\n*   **geneCutoff**: By default, the Ensemble solver returns the top 10% of regulators. Set `geneCutoff = 1.0` to see all candidates.\n\n## Tips\n*   **Seed Setting**: Always use `set.seed()` before running stochastic solvers like `RandomForestSolver` or `LassoSolver` (which uses cross-validation) for reproducibility.\n*   **Keep Metrics**: For `LassoSolver` and `RidgeSolver`, set `keep.metrics = TRUE` in the constructor to retrieve $R^2$ and lambda values.\n*   **Solver Choice**: Use LASSO for sparse models (few regulators) and Random Forest or Ensemble for a more comprehensive view of the regulatory landscape.\n\n## Reference documentation\n- [A Brief Introduction to TReNA](./references/TReNA_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-trena",
+    "description": "The trena package provides a framework for inferring gene regulatory networks by using statistical solvers to identify transcription factors that explain the expression of a target gene. Use when user asks to infer gene regulatory networks, filter candidate transcription factors, or run ensemble feature selection models to identify gene regulators.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/trena.html"
+  }
+}

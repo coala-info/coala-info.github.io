@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cardelino",
+  "category": "bioconductor",
+  "name": "bioconductor-cardelino",
+  "description": "This tool infers the clonal identity of single cells from scRNA-seq data by integrating somatic mutation information with clonal trees. Use when user asks to assign single cells to clones, perform de-novo clustering of cells based on mutations, or load variant count matrices from VCF files.",
+  "overview": "The `cardelino` package provides a Bayesian mixture model to probabilistically assign single cells to clones based on somatic mutation information extracted from scRNA-seq reads. It accounts for the inherent sparsity of scRNA-seq data and sequencing errors using a beta-binomial model. It can function in a \"supervised\" mode using a known clonal tree (configuration matrix) or a \"de-novo\" mode to cluster cells into a specified number of clones.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cardelino.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cardelino/overview",
+  "github": "https://github.com/single-cell-genetics/cardelino",
+  "conda_downloads": "4.3K",
+  "conda_downloads_num": 4300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cardelino"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cardelino.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cardelino/overview",
+    "github": "https://github.com/single-cell-genetics/cardelino",
+    "conda_downloads": "4.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cardelino\n\nname: bioconductor-cardelino\ndescription: Infer clonal identity of single cells from scRNA-seq data using somatic mutations and clonal trees. Use this skill when you need to assign single cells to clones, work with variant count matrices (A and D), or integrate clonal structures (e.g., from Canopy) with single-cell transcriptomic data.\n\n# bioconductor-cardelino\n\n## Overview\nThe `cardelino` package provides a Bayesian mixture model to probabilistically assign single cells to clones based on somatic mutation information extracted from scRNA-seq reads. It accounts for the inherent sparsity of scRNA-seq data and sequencing errors using a beta-binomial model. It can function in a \"supervised\" mode using a known clonal tree (configuration matrix) or a \"de-novo\" mode to cluster cells into a specified number of clones.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe model requires two primary matrices and an optional configuration matrix:\n- **A**: Variant x Cell matrix of integer counts (reads supporting the alternative/mutant allele).\n- **D**: Variant x Cell matrix of integer counts (total read coverage at the mutation site).\n- **Config** (Optional): Variant x Clone binary matrix (1 if mutation is present in clone, 0 otherwise).\n\n### 2. Loading Data from VCF\nYou can extract the A and D matrices directly from VCF files (e.g., from `cellsnp-lite` or `mpileup`):\n\n```r\nlibrary(cardelino)\n\n# Load from cellSNP VCF\nvcf_file <- \"path/to/cellSNP.cells.vcf.gz\"\ninput_data <- load_cellSNP_vcf(vcf_file)\n# Access matrices via input_data$A and input_data$D\n\n# Alternatively, use generic VCF reader\nvcf <- read_vcf(\"path/to/file.vcf.gz\")\ninput_data <- get_snp_matrices(vcf)\n```\n\n### 3. Clonal Assignment (With Tree)\nIf you have a clonal tree (e.g., from the `Canopy` package), use the `Z` matrix as the `Config`:\n\n```r\n# Run clone ID inference\n# Note: Increase min_iter/max_iter for production (default is usually sufficient)\nassignments <- clone_id(input_data$A, input_data$D, Config = tree$Z)\n\n# Assign cells to clones based on a posterior probability threshold (default > 0.5)\ndf_assignments <- assign_cells_to_clones(assignments$prob)\ntable(df_assignments$clone)\n```\n\n### 4. De-novo Clustering (Without Tree)\nIf no clonal tree is available, or for mitochondrial variation analysis:\n\n```r\n# Cluster into 3 clones de-novo\nassignments <- clone_id(input_data$A, input_data$D, Config = NULL, n_clone = 3)\n```\n\n## Visualization and Interpretation\n- **Probability Heatmap**: Visualize the confidence of cell assignments.\n  ```r\n  prob_heatmap(assignments$prob)\n  ```\n- **Variant-Cell Heatmap**: Show raw allele frequencies alongside assignments.\n  ```r\n  AF <- as.matrix(input_data$A / input_data$D)\n  vc_heatmap(AF, assignments$prob, Config)\n  ```\n- **Tree Plotting**: Visualize the input clonal structure.\n  ```r\n  plot_tree(tree, orient = \"v\")\n  ```\n\n## Tips for Success\n- **ID Matching**: Ensure the row names (variant IDs) of your `Config` matrix exactly match the row names of your `A` and `D` matrices.\n- **Convergence**: `clone_id` uses Gibbs sampling. Check the output for convergence messages. If it fails to converge, increase `max_iter`.\n- **Base Clone**: By default, `cardelino` assumes \"clone1\" is the base clone (no mutations). If using de-novo mode without a base clone, set `keep_base_clone = FALSE`.\n- **Mitochondrial Data**: For mtDNA, coverage is typically higher. Use `clone_id` on mtDNA variant matrices to identify sub-populations without nuclear somatic mutations.\n\n## Reference documentation\n- [Clone ID with cardelino](./references/vignette-cloneid.Rmd)\n- [Clone ID with cardelino (Markdown)](./references/vignette-cloneid.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cardelino",
+    "description": "This tool infers the clonal identity of single cells from scRNA-seq data by integrating somatic mutation information with clonal trees. Use when user asks to assign single cells to clones, perform de-novo clustering of cells based on mutations, or load variant count matrices from VCF files.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cardelino.html"
+  }
+}

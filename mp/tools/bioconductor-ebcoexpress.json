@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ebcoexpress",
+  "category": "bioconductor",
+  "name": "bioconductor-ebcoexpress",
+  "description": "This tool implements an empirical Bayesian framework to identify differentially co-expressed gene pairs in high-throughput genomic data. Use when user asks to identify gene pairs with varying correlation structures across biological conditions, calculate posterior probabilities for differential co-expression, or rank hub genes based on co-expression changes.",
+  "overview": "EBcoexpress implements an empirical Bayesian framework to identify differentially co-expressed (DC) gene pairs. Unlike standard differential expression (DE) which looks at mean changes, DC identifies changes in the correlation between genes across conditions. The package uses a mixture of Normals prior and a modified EM algorithm (TCA-ECM) to calculate posterior probabilities for various co-expression classes, providing FDR-controlled results.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EBcoexpress.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ebcoexpress/overview",
+  "github": "N/A",
+  "conda_downloads": "32.2K",
+  "conda_downloads_num": 32200,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EBcoexpress"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EBcoexpress.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ebcoexpress/overview",
+    "github": "N/A",
+    "conda_downloads": "32.2K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ebcoexpress\n\nname: bioconductor-ebcoexpress\ndescription: Empirical Bayesian analysis for identifying differential co-expression (DC) in high-throughput genomic data. Use this skill to identify gene pairs with varying correlation structures across biological conditions, perform meta-analysis across multiple studies, and visualize co-expression networks.\n\n# bioconductor-ebcoexpress\n\n## Overview\n\nEBcoexpress implements an empirical Bayesian framework to identify differentially co-expressed (DC) gene pairs. Unlike standard differential expression (DE) which looks at mean changes, DC identifies changes in the correlation between genes across conditions. The package uses a mixture of Normals prior and a modified EM algorithm (TCA-ECM) to calculate posterior probabilities for various co-expression classes, providing FDR-controlled results.\n\n## Typical Workflow\n\n### 1. Data Preparation\nThe package requires three primary inputs:\n*   **Expression Matrix**: An $m \\times n$ matrix (genes by samples). Data should be normalized (median correction recommended; avoid quantile normalization as it disrupts correlation).\n*   **Conditions Array**: A vector of length $n$ indicating the condition (e.g., `1, 1, 2, 2`).\n*   **Pattern Object**: Defines the Equivalent Co-expression (EC) and Differential Co-expression (DC) classes.\n\n```r\nlibrary(EBcoexpress)\nlibrary(EBarrays) # Required for ebPatterns\n\n# Example for 2 conditions\ntinyCond <- c(rep(1, 100), rep(2, 25))\ntinyPat <- ebPatterns(c(\"1,1\", \"1,2\"))\n```\n\n### 2. Calculate Correlation Matrix (D)\nGenerate the $p \\times K$ matrix of intra-group correlations for all $p = m(m-1)/2$ gene pairs.\n\n```r\n# useBWMC=TRUE uses robust biweight midcorrelation (recommended)\n# useBWMC=FALSE uses Pearson correlation (faster for large m)\nD <- makeMyD(expressionMatrix, tinyCond, useBWMC=TRUE)\n```\n\n### 3. Initialize Hyperparameters\nEstimate starting values for the EM algorithm using `Mclust`.\n\n```r\nset.seed(3)\n# For large p, use subsize = p/1000 to speed up initialization\ninitHP <- initializeHP(D, tinyCond, subsize = NULL)\n```\n\n### 4. Run EM Computations\nChoose between three versions of the TCA-ECM algorithm. The \"One-Step\" version is generally recommended for balancing speed and accuracy.\n\n```r\n# One-Step (Recommended)\noout <- ebCoexpressOneStep(D, tinyCond, tinyPat, initHP)\n\n# Full EM (Most rigorous)\nfout <- ebCoexpressFullTCAECM(D, tinyCond, tinyPat, initHP)\n\n# Zero-Step (Fastest, uses initial estimates only)\nzout <- ebCoexpressZeroStep(D, tinyCond, tinyPat, initHP)\n```\n\n### 5. Identify DC Pairs\nExtract posterior probabilities and apply a threshold.\n\n```r\n# Extract posterior probabilities (Column 1 is EC)\nprobEC <- oout$POSTPROBS[, 1]\nprobDC <- 1 - probEC\n\n# Soft thresholding for FDR control (e.g., 5% FDR)\nthreshold <- crit.fun(probEC, 0.05)\ndcPairs <- names(probDC)[probDC >= threshold]\n\n# Rank genes by how many DC pairs they participate in (Hub genes)\nhubs <- rankMyGenes(oout, thresh = 0.95)\n```\n\n## Meta-Analysis\nTo combine multiple studies, estimate hyperparameters for each study individually, then use `ebCoexpressMeta`.\n\n```r\nhpEstsList <- list(study1_out$MODEL$HPS, study2_out$MODEL$HPS)\nmetaResults <- ebCoexpressMeta(DList, conditionsList, tinyPat, hpEstsList)\n```\n\n## Visualization\n\n### Network Plots\nVisualize co-expression networks using `igraph` integration.\n\n```r\n# Show network for a subset of genes\nshowNetwork(geneNames, D, condFocus = 1, hidingThreshold = 0.3)\n```\n\n### Pairwise Expression\nPlot the expression of two genes against each other, colored by condition.\n\n```r\nshowPair(\"GeneA~GeneB\", expressionMatrix, tinyCond, useBWMC=TRUE)\n```\n\n## Important Considerations\n*   **Gene Limit**: Performance is quadratic $O(m^2)$. It is recommended to limit analysis to 10,000 genes or fewer.\n*   **Subsampling**: For large datasets, use the `subsize` option in EM functions to estimate hyperparameters on a subset of pairs (e.g., `subsize = p/1000`) to significantly reduce runtime with minimal impact on accuracy.\n*   **Diagnostics**: Use `priorDiagnostic(D, tinyCond, output, condition)` to check if the model fit matches the empirical distribution. If the fit is poor, consider manually initializing a more complex prior (increasing $G$).\n\n## Reference documentation\n- [EBcoexpressVignette](./references/EBcoexpressVignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ebcoexpress",
+    "description": "This tool implements an empirical Bayesian framework to identify differentially co-expressed gene pairs in high-throughput genomic data. Use when user asks to identify gene pairs with varying correlation structures across biological conditions, calculate posterior probabilities for differential co-expression, or rank hub genes based on co-expression changes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EBcoexpress.html"
+  }
+}

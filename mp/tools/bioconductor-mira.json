@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mira",
+  "category": "bioconductor",
+  "name": "bioconductor-mira",
+  "description": "This tool aggregates DNA methylation data across genomic region sets to infer regulatory activity based on methylation profiles. Use when user asks to aggregate methylation data across regions, generate methylation profiles, or calculate MIRA scores to predict transcription factor activity.",
+  "overview": "MIRA (Methylation-based Inference of Regulatory Activity) is a Bioconductor package that aggregates DNA methylation data across sets of genomic regions to infer regulatory activity. It operates on the principle that active genomic regions (where transcription factors bind) exhibit lower DNA methylation levels, creating a \"dip\" in the methylation profile. By quantifying the shape of this dip, MIRA provides a score representing the regulatory activity of specific biological annotations across diff",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MIRA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/databio/MIRA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MIRA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MIRA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/databio/MIRA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mira\n\nname: bioconductor-mira\ndescription: Infer regulatory activity from DNA methylation data using Methylation-based Inference of Regulatory Activity (MIRA). Use this skill to aggregate single-nucleotide resolution methylation data (RRBS/WGBS) across genomic region sets (ChIP-seq peaks, DHSs) to generate methylation profiles and MIRA scores for predicting transcription factor activity.\n\n# bioconductor-mira\n\n## Overview\nMIRA (Methylation-based Inference of Regulatory Activity) is a Bioconductor package that aggregates DNA methylation data across sets of genomic regions to infer regulatory activity. It operates on the principle that active genomic regions (where transcription factors bind) exhibit lower DNA methylation levels, creating a \"dip\" in the methylation profile. By quantifying the shape of this dip, MIRA provides a score representing the regulatory activity of specific biological annotations across different samples.\n\n## Core Workflow\n\n### 1. Data Preparation\nMIRA requires two main inputs:\n- **Methylation Data (BSDT):** A `data.table` (Bisulfite Data Table) per sample containing `chr`, `start`, and `methylProp` (0-1). Use `BSreadBiSeq` for Biseqmethcalling files or `SummarizedExperimentToDataTable` for other formats.\n- **Region Sets:** A `GRanges` or `GRangesList` object containing regions sharing a biological feature (e.g., Nrf1 binding sites).\n\n```r\nlibrary(MIRA)\nlibrary(data.table)\nlibrary(GenomicRanges)\n\n# Load methylation data\nbsdt <- fread(\"sample.bed\")\nsetNames(bsdt, c(\"chr\", \"start\", \"methylCount\", \"coverage\"))\n# Add methylProp column if missing\nbsdt[, methylProp := methylCount / coverage]\n\n# Load and format region sets\nregions <- fread(\"regions.bed\")\ngr <- GRanges(seqnames = regions$V1, ranges = IRanges(regions$V2, regions$V3))\n```\n\n### 2. Region Expansion\nMIRA scores depend on the contrast between the region center and its surroundings. Regions must be resized (typically to 1000-5000bp) to capture the \"shoulders\" of the methylation dip.\n\n```r\n# Resize regions to 4000bp centered on the original site\ngr_expanded <- resize(gr, width = 4000, fix = \"center\")\n```\n\n### 3. Aggregation (Profile Generation)\nThe `aggregateMethyl` function divides regions into bins and calculates the mean methylation per bin across all regions in the set.\n\n```r\n# Aggregate into 21 bins (odd number recommended for symmetry)\nbinned_data <- aggregateMethyl(BSDT = bsdt, GRList = gr_expanded, binNum = 21)\n```\n\n### 4. Scoring and Visualization\nThe `calcMIRAScore` function quantifies the dip. Higher scores indicate deeper dips and higher inferred regulatory activity.\n\n```r\n# Calculate MIRA score\nscore <- calcMIRAScore(binned_data, \n                       regionSetIDColName = \"featureID\", \n                       sampleIDColName = \"sampleName\")\n\n# Plot the profile\nplotMIRAProfiles(binned_data)\n```\n\n## Key Functions\n- `BSreadBiSeq()`: Reads methylation calls from Biseqmethcalling.\n- `SummarizedExperimentToDataTable()`: Converts `BSseq` or `BiSeq` objects to MIRA-compatible `data.table`.\n- `addMethPropCol()`: Adds the required `methylProp` column to a list of BSDTs.\n- `aggregateMethyl()`: The core engine for binning and aggregating methylation data.\n- `calcMIRAScore()`: Calculates the MIRA score (default is log-ratio of shoulders to center).\n- `plotMIRAProfiles()`: Generates ggplot2 visualizations of the aggregated methylation dips.\n- `plotMIRAScores()`: Visualizes scores across samples and features.\n\n## Practical Tips\n- **Bin Selection:** Use an odd number of bins (e.g., 11, 21) to ensure a clear center bin.\n- **Region Sizing:** If the dip in `plotMIRAProfiles` is too narrow or doesn't reach the edges, increase the `resize` width. If the dip is too small to see, decrease the width.\n- **Normalization:** For better comparison of shapes across samples with different global methylation levels, normalize by subtracting the minimum methylation value: `dt[, methylProp := methylProp - min(methylProp), by = .(featureID, sampleName)]`.\n- **Parallelization:** Use `lapply` or `mclapply` over a list of BSDTs to process multiple samples simultaneously.\n\n## Reference documentation\n- [Applying MIRA to a Biological Question](./references/BiologicalApplication.md)\n- [Getting Started with Methylation-based Inference of Regulatory Activity](./references/GettingStarted.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mira",
+    "description": "This tool aggregates DNA methylation data across genomic region sets to infer regulatory activity based on methylation profiles. Use when user asks to aggregate methylation data across regions, generate methylation profiles, or calculate MIRA scores to predict transcription factor activity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MIRA.html"
+  }
+}

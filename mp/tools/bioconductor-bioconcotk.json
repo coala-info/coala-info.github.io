@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bioconcotk",
+  "category": "bioconductor",
+  "name": "bioconductor-bioconcotk",
+  "description": "BiocOncoTK provides a unified interface for cancer genomics analysis by bridging Bioconductor objects with remote data sources like the TCGA PanCancer Atlas and CCLE. Use when user asks to query BigQuery-backed genomic resources, explore Oncotree ontologies, construct MultiAssayExperiments for integrative cancer research, or access curated single-cell RNA-seq datasets.",
+  "overview": "BiocOncoTK (Bioconductor OncoToolKit) provides a unified interface for cancer genomics analysis. It bridges Bioconductor objects (like SummarizedExperiment and MultiAssayExperiment) with large-scale remote data sources including Google BigQuery (ISB-CGC), pharmacogenomic databases, and single-cell archives.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/BiocOncoTK.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bioconcotk/overview",
+  "github": "N/A",
+  "conda_downloads": "22.5K",
+  "conda_downloads_num": 22500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BiocOncoTK"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/BiocOncoTK.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bioconcotk/overview",
+    "github": "N/A",
+    "conda_downloads": "22.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bioconcotk\n\nname: bioconductor-bioconcotk\ndescription: Expert guidance for the BiocOncoTK R package to analyze cancer genomics data. Use this skill when performing cancer-oriented research involving the TCGA PanCancer Atlas, CCLE (Cancer Cell Line Encyclopedia), TARGET, or CLUE.io platforms. It supports querying BigQuery-backed genomic resources, working with Oncotree ontologies, and accessing curated single-cell RNA-seq datasets (Patel, Darmanis) within the Bioconductor ecosystem.\n\n# bioconductor-bioconcotk\n\n## Overview\n\nBiocOncoTK (Bioconductor OncoToolKit) provides a unified interface for cancer genomics analysis. It bridges Bioconductor objects (like SummarizedExperiment and MultiAssayExperiment) with large-scale remote data sources including Google BigQuery (ISB-CGC), pharmacogenomic databases, and single-cell archives.\n\n## Core Workflows\n\n### 1. Ontology Exploration (Oncotree)\nUse `ontoProc` and `ontologyPlot` to visualize cancer types within the NCI Oncotree hierarchy.\n\n```r\nlibrary(ontoProc)\nlibrary(ontologyPlot)\noto = getOncotreeOnto()\n# Find a specific tag (e.g., Glioblastoma)\nglioTag = names(grep(\"Glioblastoma$\", oto$name, value=TRUE))\n# Get siblings and plot\nst = siblings_TAG(glioTag, oto, justSibs=FALSE)\nonto_plot(oto, slot(st, \"ontoTags\"))\n```\n\n### 2. PanCancer Atlas via BigQuery\nAccessing the PanCancer Atlas requires a Google Cloud Project billing ID set in the `CGC_BILLING` environment variable.\n\n**Connection and Data Retrieval:**\n```r\nlibrary(BiocOncoTK)\nlibrary(restfulSE)\n\n# Establish connection\npcbq = pancan_BQ() \n\n# Create a SummarizedExperiment for a specific assay and tumor\n# Use pancan_longname() to find correct table names\nrna_table = pancan_longname(\"rnaseq\")\n\nbrca_se = pancan_SE(pcbq, \n                    colDFilterValue = \"BRCA\", \n                    assayDataTableName = rna_table,\n                    assaySampleTypeCode = \"TP\") # TP = Primary Tumor, NT = Normal\n```\n\n**Sample Type Mapping:**\nCheck `BiocOncoTK::pancan_sampTypeMap` to decode sample type letters (e.g., \"TM\" for Metastatic, \"TR\" for Recurrent).\n\n### 3. MultiAssayExperiment Construction\nYou can combine multiple remote assays into a single `MultiAssayExperiment` for integrative analysis without downloading the full datasets.\n\n```r\nlibrary(MultiAssayExperiment)\n# Define assays (mRNA, Methylation, RPPA) using pancan_SE\n# Then wrap in MultiAssayExperiment\nmae = MultiAssayExperiment(\n  ExperimentList(rnaseq = BRCA_mrna, meth = BRCA_meth),\n  colData = clinDF\n)\n```\n\n### 4. CCLE and Pharmacogenomics\nQuery the Cancer Cell Line Encyclopedia for mutations and expression, then link to drug sensitivity.\n\n```r\n# Connect to CCLE dataset in BigQuery\ncon = DBI::dbConnect(bigrquery::bigquery(), project=\"isb-cgc\", dataset=\"ccle_201602_alpha\", billing=your_billing_id)\n\n# Filter for specific mutations (e.g., NRAS)\nmuts = con %>% tbl(\"Mutation_calls\") %>% \n       filter(Hugo_Symbol == \"NRAS\") %>% \n       as.data.frame()\n\n# Get expression for a gene (e.g., AHR)\nexpr = con %>% tbl(\"AffyU133_RMA_expression\") %>%\n       filter(HGNC_gene_symbol == \"AHR\") %>%\n       as.data.frame()\n```\n\n### 5. CLUE.io (L1000) Interface\nRequires an API key from clue.io set as `CLUE_KEY`.\n\n```r\n# Query for perturbagens targeting a specific protein\negfr_perts = query_clue(service=\"perts\", filter=list(where=list(target=\"EGFR\")))\n\n# Get signature metadata\nsig_info = query_clue(service=\"sigs\", filter=list(where=list(sig_id=\"some_sig_id\")))\n```\n\n### 6. Single-Cell Data Access\nAccess curated GBM datasets (Patel 2014 or Darmanis 2017).\n\n```r\n# Patel 2014 (In-memory)\npatelSE = loadPatel() \n\n# Darmanis 2017 (HDF5/DelayedArray - Out-of-memory)\ndarmSE = BiocOncoTK::darmGBMcls\n```\n\n## Tips and Best Practices\n- **Billing:** Always ensure `Sys.setenv(CGC_BILLING=\"your-project-id\")` is called before using `pancan_BQ()`.\n- **Table Names:** Use `pancan_longname()` with fuzzy matching (e.g., `pancan_longname(\"rppa\")`) to avoid typing long BigQuery table identifiers.\n- **Interactive Exploration:** Use `pancan_app()` to launch a Shiny interface for browsing PanCancer Atlas metadata.\n- **Memory Management:** When working with `darmGBMcls` or `restfulSE` objects, data is only fetched when `assay()` is called. Subset the object *before* calling `assay()` to minimize network transfer.\n\n## Reference documentation\n- [BiocOncoTK](./references/BiocOncoTK.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bioconcotk",
+    "description": "BiocOncoTK provides a unified interface for cancer genomics analysis by bridging Bioconductor objects with remote data sources like the TCGA PanCancer Atlas and CCLE. Use when user asks to query BigQuery-backed genomic resources, explore Oncotree ontologies, construct MultiAssayExperiments for integrative cancer research, or access curated single-cell RNA-seq datasets.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/BiocOncoTK.html"
+  }
+}

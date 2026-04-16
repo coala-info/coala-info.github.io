@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msqrob2",
+  "category": "bioconductor",
+  "name": "bioconductor-msqrob2",
+  "description": "bioconductor-msqrob2 provides a robust statistical framework for the analysis of label-free quantitative proteomics data. Use when user asks to analyze LFQ proteomics data, perform robust protein summarization, or conduct differential abundance testing using ridge regression.",
+  "overview": "`msqrob2` is a Bioconductor package designed for the analysis of label-free quantitative (LFQ) proteomics data. It addresses common challenges in proteomics, such as peptide-specific effects and context-sensitive missingness. The package provides a robust statistical framework that can either perform inference directly on peptide intensities or use a two-stage summarization strategy. The latter is generally preferred for its computational efficiency and ability to provide protein-level summaries",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/msqrob2.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/statOmics/msqrob2",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "msqrob2"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msqrob2.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/statOmics/msqrob2",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msqrob2\n\n## Overview\n\n`msqrob2` is a Bioconductor package designed for the analysis of label-free quantitative (LFQ) proteomics data. It addresses common challenges in proteomics, such as peptide-specific effects and context-sensitive missingness. The package provides a robust statistical framework that can either perform inference directly on peptide intensities or use a two-stage summarization strategy. The latter is generally preferred for its computational efficiency and ability to provide protein-level summaries for visualization.\n\n## Typical Workflow\n\n### 1. Data Import and Initialization\nData is typically managed using the `QFeatures` infrastructure. For MaxQuant output, identify the intensity columns and import the `peptides.txt` file.\n\n```r\nlibrary(QFeatures)\nlibrary(msqrob2)\n\n# Import MaxQuant peptide data\npeptides <- read.delim(\"peptides.txt\")\necols <- grep(\"Intensity\\\\.\", colnames(peptides))\npe <- readQFeatures(assayData = peptides, fnames = \"Sequence\", \n                    quantCols = ecols, name = \"peptideRaw\", sep = \"\\t\")\n\n# Convert 0 to NA for missing values\npe <- zeroIsNA(pe, \"peptideRaw\")\n```\n\n### 2. Preprocessing\nStandard preprocessing includes log transformation, filtering, and normalization.\n\n```r\n# Log transform\npe <- logTransform(pe, base = 2, i = \"peptideRaw\", name = \"peptideLog\")\n\n# Filter for unique proteins and remove decoys/contaminants\npe <- pe[rowData(pe[[\"peptideLog\"]])$Proteins %in% smallestUniqueGroups(rowData(pe[[\"peptideLog\"]])$Proteins), , ]\npe <- filterFeatures(pe, ~ Reverse != \"+\")\npe <- filterFeatures(pe, ~ Potential.contaminant != \"+\")\n\n# Filter for peptides observed in at least 2 samples\nrowData(pe[[\"peptideLog\"]])$nNonZero <- rowSums(assay(pe[[\"peptideLog\"]]) > 0, na.rm = TRUE)\npe <- filterFeatures(pe, ~ nNonZero >= 2)\n\n# Median centering normalization\npe <- normalize(pe, i = \"peptideLog\", name = \"peptideNorm\", method = \"center.median\")\n```\n\n### 3. Robust Summarization\nAggregate peptide-level data to protein-level data using robust summarization, which accounts for peptide-specific effects.\n\n```r\npe <- aggregateFeatures(pe, i = \"peptideNorm\", fcol = \"Proteins\", \n                        na.rm = TRUE, name = \"protein\")\n```\n\n### 4. Statistical Analysis\nModel the protein expression using `msqrob` and perform hypothesis testing with contrasts.\n\n```r\n# Model estimation (e.g., comparing conditions)\npe <- msqrob(object = pe, i = \"protein\", formula = ~condition)\n\n# Define contrast and test (e.g., Condition B vs Condition A)\nL <- makeContrast(\"conditionB = 0\", parameterNames = c(\"conditionB\"))\npe <- hypothesisTest(object = pe, i = \"protein\", contrast = L)\n```\n\n### 5. Advanced: Ridge Regression\nFor complex designs with multiple conditions, robust ridge regression can improve performance.\n\n```r\n# Note: For 2-group designs, drop the intercept to use ridge\npe <- msqrob(object = pe, i = \"protein\", formula = ~ -1 + condition, \n             modelColumnName = \"ridge\", ridge = TRUE)\n\nL_ridge <- makeContrast(\"ridgeconditionB - ridgeconditionA = 0\", \n                        c(\"ridgeconditionB\", \"ridgeconditionA\"))\npe <- hypothesisTest(object = pe, i = \"protein\", contrast = L_ridge, modelColumn = \"ridge\")\n```\n\n## Tips and Interpretation\n- **Missing Values**: `msqrob2` handles missing values naturally through its robust modeling. Do not impute data unless specifically required for a specific visualization.\n- **Parameter Names**: Use `getCoef(rowData(pe[[\"protein\"]])$msqrobModels[[1]])` to check the exact names of the model parameters before constructing contrasts.\n- **Visualization**: Significant results can be extracted from `rowData(pe[[\"protein\"]])$contrastName`. Use standard `ggplot2` for volcano plots or `heatmap()` for expression profiles of significant proteins.\n- **Peptide vs Protein**: While peptide-based workflows are available, the summarization-based workflow (using `aggregateFeatures` followed by `msqrob`) is the recommended default for most users.\n\n## Reference documentation\n- [Introduction to proteomics data analysis (Rmd)](./references/cptac.Rmd)\n- [Introduction to proteomics data analysis (Markdown)](./references/cptac.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msqrob2",
+    "description": "bioconductor-msqrob2 provides a robust statistical framework for the analysis of label-free quantitative proteomics data. Use when user asks to analyze LFQ proteomics data, perform robust protein summarization, or conduct differential abundance testing using ridge regression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msqrob2.html"
+  }
+}

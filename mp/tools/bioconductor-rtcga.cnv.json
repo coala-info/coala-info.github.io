@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rtcga.cnv",
+  "category": "bioconductor",
+  "name": "bioconductor-rtcga.cnv",
+  "description": "This tool provides access to and analysis of segmented Copy Number Variation data from The Cancer Genome Atlas. Use when user asks to load TCGA CNV datasets, analyze gene-specific copy number variations, or integrate CNV data with clinical and other multi-omic data types.",
+  "overview": "The `RTCGA.CNV` package is a data-experiment package providing segmented Copy Number Variation (CNV) data from the TCGA project. It is part of the `RTCGA` family of packages, which simplifies the process of downloading and integrating complex genomic data. The CNV data typically includes genomic coordinates (Chromosome, Start, End) and the `Segment_Mean` (log2 ratio of copy number).",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RTCGA.CNV.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RTCGA/RTCGA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RTCGA.CNV"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RTCGA.CNV.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RTCGA/RTCGA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rtcga.cnv\n\nname: bioconductor-rtcga.cnv\ndescription: Access and analyze Copy Number Variation (CNV) data from The Cancer Genome Atlas (TCGA). Use this skill to load pre-processed CNV datasets for various cancer cohorts, calculate gene-specific CNV scores, and integrate CNV data with other TCGA data types (clinical, mutations, RNASeq) for multi-omic analysis.\n\n## Overview\nThe `RTCGA.CNV` package is a data-experiment package providing segmented Copy Number Variation (CNV) data from the TCGA project. It is part of the `RTCGA` family of packages, which simplifies the process of downloading and integrating complex genomic data. The CNV data typically includes genomic coordinates (Chromosome, Start, End) and the `Segment_Mean` (log2 ratio of copy number).\n\n## Loading CNV Data\nDatasets are named using the convention `[COHORT].CNV`. To use them, you must load the package and the specific dataset of interest.\n\n```r\nlibrary(RTCGA.CNV)\n# List available datasets\ndata(package = \"RTCGA.CNV\")\n\n# Load a specific cohort (e.g., Breast Invasive Carcinoma)\ndata(BRCA.CNV)\nhead(BRCA.CNV)\n```\n\n## Typical Workflow: Gene-Specific CNV Analysis\nTo analyze a specific gene (e.g., MDM2), you must filter the segmented data based on the gene's genomic coordinates.\n\n### 1. Define a Region Search Function\nSince the data is segmented, you need to find segments that overlap with your gene of interest.\n\n```r\n# Example: MDM2 is on Chr 12, approx 69200000-69240000\nget_gene_cnv <- function(cohort_data, chr, start, stop) {\n  cohort_data[cohort_data$Chromosome == chr & \n              pmin(cohort_data$Start, cohort_data$End) <= stop & \n              pmax(cohort_data$Start, cohort_data$End) >= start, ]\n}\n\nmdm2_brca <- get_gene_cnv(BRCA.CNV, \"12\", 69200000, 69240000)\n```\n\n### 2. Interpret Segment Means\nThe `Segment_Mean` column represents $log_2(copy\\_number/2)$.\n*   **0**: Normal (2 copies)\n*   **> 0.58**: Potential Gain (approx. > 3 copies)\n*   **< -1**: Potential Loss (approx. < 1 copy)\n\n```r\n# Identify high-level amplifications (> 3 copies)\ncutoff <- log2(3/2) \nmdm2_brca$status <- ifelse(mdm2_brca$Segment_Mean > cutoff, \"Amplified\", \"Normal/Loss\")\n```\n\n## Integration with RTCGA Ecosystem\n`RTCGA.CNV` is most powerful when combined with the `RTCGA` base package for clinical or expression data.\n\n### Joining with Clinical Data\nUse the `bcr_patient_barcode` (or `Sample` column in CNV data) to join datasets. Note that CNV barcodes are often longer; use `substr()` to trim them to the 12-character patient ID.\n\n```r\nlibrary(RTCGA.clinical)\ndata(BRCA.clinical)\n\n# Standardize barcodes to 12 characters\nBRCA.CNV$Sample_Short <- substr(BRCA.CNV$Sample, 1, 12)\nBRCA.clinical$Patient_Short <- substr(BRCA.clinical$bcr_patient_barcode, 1, 12)\n\n# Merge\ncombined_data <- merge(BRCA.clinical, BRCA.CNV, \n                       by.x = \"Patient_Short\", by.y = \"Sample_Short\")\n```\n\n## Tips\n*   **Barcode Matching**: TCGA barcodes in CNV data often include sample/vial info (e.g., characters 14-15). \"01\" usually indicates primary tumor.\n*   **Multiple Segments**: A single gene might span multiple segments for one patient. You may need to aggregate (e.g., take the mean or max `Segment_Mean`) per patient.\n*   **Data Updates**: While `RTCGA.CNV` provides static snapshots, use the `RTCGA` package's `downloadTCGA` function to fetch the latest Firehose releases if needed.\n\n## Reference documentation\n- [Quick Data Download Guide](./references/Data_Download.Rmd)\n- [RTCGA package workflow](./references/RTCGA_Workflow.Rmd)\n- [Visualizations](./references/Visualizations.Rmd)\n- [How to download CNV data](./references/downloading_cnv_datasets.md)\n- [Frequency of MDM2 duplications](./references/frequency_of_cnv_for_mdm3.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rtcga.cnv",
+    "description": "This tool provides access to and analysis of segmented Copy Number Variation data from The Cancer Genome Atlas. Use when user asks to load TCGA CNV datasets, analyze gene-specific copy number variations, or integrate CNV data with clinical and other multi-omic data types.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RTCGA.CNV.html"
+  }
+}

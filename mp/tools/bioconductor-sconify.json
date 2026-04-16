@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sconify",
+  "category": "bioconductor",
+  "name": "bioconductor-sconify",
+  "description": "Sconify performs K-Nearest Neighbor statistics on high-dimensional cytometry data to compare biological conditions on a per-cell basis. Use when user asks to analyze CyTOF data, detect subtle shifts in marker expression, find the ideal k for imputation, or visualize neighborhood density and fold changes on a t-SNE map.",
+  "overview": "Sconify is a Bioconductor package designed for the analysis of high-dimensional cytometry data, specifically CyTOF. It uses K-Nearest Neighbor (KNN) statistics to compare biological conditions (e.g., basal vs. stimulated) on a per-cell basis. By treating each cell's neighborhood as a local sample, it allows for the detection of subtle shifts in marker expression and manifold density that might be missed by global clustering methods.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Sconify.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Sconify"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Sconify.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sconify\n\n## Overview\n\nSconify is a Bioconductor package designed for the analysis of high-dimensional cytometry data, specifically CyTOF. It uses K-Nearest Neighbor (KNN) statistics to compare biological conditions (e.g., basal vs. stimulated) on a per-cell basis. By treating each cell's neighborhood as a local sample, it allows for the detection of subtle shifts in marker expression and manifold density that might be missed by global clustering methods.\n\n## Core Workflow\n\n### 1. Pre-Processing\nThe initial step involves converting .fcs files into tidy data frames (tibbles) and selecting markers for KNN input (usually surface markers) and functional analysis (usually phospho-markers).\n\n```r\nlibrary(Sconify)\n\n# 1. Extract marker names to a CSV for manual selection/categorization\nbasal_file <- \"path/to/basal_condition.fcs\"\nGetMarkerNames(basal_file) \n\n# 2. Process multiple files (concatenation, subsampling, and transformation)\n# 'surface' is a vector of marker names used for KNN distance calculation\nfiles <- c(\"sample_basal.fcs\", \"sample_IL7.fcs\")\ncombined_data <- ProcessMultipleFiles(files = files, \n                                      input = surface_markers, \n                                      numcells = 20000)\n```\n\n### 2. Finding Ideal K\nThe choice of $k$ (number of neighbors) is a bias-variance tradeoff. Sconify provides a titration function to find the $k$ that minimizes imputation error.\n\n```r\nk_titration <- seq(10, 100, by = 10)\nideal_k_results <- ImputeTesting(k.titration = k_titration,\n                                 cells = combined_data,\n                                 input.markers = surface_markers,\n                                 test.markers = functional_markers)\n# Select the k at the local minimum of the output\n```\n\n### 3. The SCONE Workflow\nThis step calculates the KNN indices and computes the statistics (fold change and q-values) for the functional markers across conditions.\n\n```r\n# 1. Generate KNN indices and distances\nnn_matrix <- Fnn(cell.df = combined_data, \n                 input.markers = surface_markers, \n                 k = 30)\n\n# 2. Compute SCONE values (statistics per neighborhood)\nscone_results <- SconeValues(nn.matrix = nn_matrix,\n                             cell.data = combined_data,\n                             scone.markers = functional_markers,\n                             unstim = \"basal\")\n```\n\n### 4. Post-Processing and Visualization\nMerge the statistics back into the original data and visualize using t-SNE.\n\n```r\n# Merge results and run t-SNE\nfinal_data <- PostProcessing(scone.output = scone_results,\n                             cell.data = combined_data,\n                             input = surface_markers,\n                             tsne = TRUE)\n\n# Visualize a specific marker change on the t-SNE map\nTsneVis(final_data, \"pSTAT5.IL7.change\", \"IL-7 induced pSTAT5 Change\")\n\n# Visualize neighborhood density\nTsneVis(final_data, \"density\")\n```\n\n## Key Functions\n\n- `FcsToTibble()`: Converts a single FCS file to a tibble with optional asinh transformation.\n- `ProcessMultipleFiles()`: Concatenates files, adds a \"condition\" column, and performs optional quantile normalization.\n- `SplitFile()`: Splits a single file into two groups to create a synthetic \"control vs treated\" comparison.\n- `MakeHist()`: Plots the distribution of condition fractions per KNN to assess manifold overlap/technical variance.\n- `GetKnnDe()`: Calculates KNN density estimation (1 / average distance to neighbors).\n\n## Data Quality Assessment\nA primary use case for Sconify is checking if two replicates overlap correctly. In a perfect overlap of two equal-sized files, the fraction of cells from condition B in any neighborhood should follow a binomial distribution centered at 0.5.\n- **High Standard Deviation**: Indicates technical drift or biological manifold shifts.\n- **Ideal SD**: Approximately $0.5 / \\sqrt{k}$.\n\n## Reference documentation\n- [Assessing quality of CyTOF data with KNN](./references/DataQuality.md)\n- [Selection of the number of nearest neighbors](./references/FindingIdealK.md)\n- [Pre-Processing FCS files](./references/Step1.PreProcessing.md)\n- [The Scone Workflow](./references/Step2.TheSconeWorkflow.md)\n- [Post-Processing and Visualization](./references/Step3.PostProcessing.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sconify",
+    "description": "Sconify performs K-Nearest Neighbor statistics on high-dimensional cytometry data to compare biological conditions on a per-cell basis. Use when user asks to analyze CyTOF data, detect subtle shifts in marker expression, find the ideal k for imputation, or visualize neighborhood density and fold changes on a t-SNE map.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Sconify.html"
+  }
+}

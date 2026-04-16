@@ -1,0 +1,41 @@
+{
+  "id": "r-chord",
+  "category": "R",
+  "name": "r-chord",
+  "description": "This tool predicts Homologous Recombination Deficiency status and types from somatic mutation contexts using a random forest model. Use when user asks to predict HRD status, extract mutation signatures from VCF files, or classify samples as BRCA1-type or BRCA2-type deficient.",
+  "overview": "CHORD (Classifier of HOmologous Recombination Deficiency) is an R package that uses relative counts of somatic mutation contexts—specifically deletions with flanking microhomology and 1-100kb structural duplications—to predict HRD status. It distinguishes between BRCA1-type and BRCA2-type deficiency across pan-cancer datasets.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-chord\n\nname: r-chord\ndescription: Predict Homologous Recombination Deficiency (HRD) from somatic mutation contexts using the CHORD random forest model. Use this skill when you need to extract mutation signatures (SNVs, indels, SVs) and classify samples as HR-deficient (BRCA1-type or BRCA2-type) or HR-proficient.\n\n# r-chord\n\n## Overview\nCHORD (Classifier of HOmologous Recombination Deficiency) is an R package that uses relative counts of somatic mutation contexts—specifically deletions with flanking microhomology and 1-100kb structural duplications—to predict HRD status. It distinguishes between BRCA1-type and BRCA2-type deficiency across pan-cancer datasets.\n\n## Installation\nCHORD requires `mutSigExtractor` and `randomForest`.\n\n```R\n# Install dependencies\ninstall.packages('randomForest')\ninstall.packages('devtools')\ninstall.packages('BiocManager')\nBiocManager::install('BSgenome')\nBiocManager::install('BSgenome.Hsapiens.UCSC.hg19') # Default genome\n\n# Install CHORD and mutSigExtractor from GitHub\ndevtools::install_github('UMCUGenetics/mutSigExtractor')\ndevtools::install_github('UMCUGenetics/CHORD')\n```\n\n## Workflow: Predicting HRD\n\n### 1. Extract Mutation Contexts\nUse `extractSigsChord()` to generate the feature matrix required for prediction. You can provide VCF paths or R dataframes.\n\n**Using VCF files:**\n```R\nlibrary(CHORD)\n\ncontexts <- extractSigsChord(\n  vcf.snv = 'path/to/snv_and_indels.vcf.gz',\n  vcf.sv = 'path/to/svs.vcf.gz',\n  sv.caller = 'manta', # 'manta' or 'gridss'\n  sample.name = 'Sample_01'\n)\n```\n\n**Using Dataframes:**\nIf using custom parsers, provide dataframes with specific column orders:\n- **SNV/Indel:** `chrom`, `pos`, `ref`, `alt`\n- **SV:** `sv_type` (DEL, DUP, INV, TRA), `sv_len`\n\n```R\ncontexts <- extractSigsChord(\n  df.snv = my_snv_df,\n  df.sv = my_sv_df,\n  sample.name = 'Sample_01'\n)\n```\n\n### 2. Run Prediction\nPass the extracted contexts to `chordPredict()`.\n\n```R\n# Basic prediction\npredictions <- chordPredict(contexts)\n\n# Prediction with bootstrapping for stability (recommended for low mutational load)\npredictions <- chordPredict(contexts, do.bootstrap = TRUE)\n```\n\n## Interpreting Results\nThe output dataframe contains:\n- `p_hrd`: Probability of HR deficiency.\n- `p_BRCA1` / `p_BRCA2`: Probabilities of specific HRD types.\n- `hr_status`: 'HR_deficient' if `p_hrd` >= 0.5.\n- `hrd_type`: 'BRCA1_type' or 'BRCA2_type'.\n\n### Quality Control Requirements\n- **Indels:** Requires >= 50 indels for accurate HRD status.\n- **SVs:** Requires >= 30 SVs for accurate HRD subtyping (if HRD).\n- **MSI:** CHORD cannot be applied to Microsatellite Instable (MSI) samples (>14,000 indels).\n\n## Tips\n- **Reference Genomes:** The default is `BSgenome.Hsapiens.UCSC.hg19`. For hg38, load the library and set `ref.genome = BSgenome.Hsapiens.UCSC.hg38`.\n- **Filtering:** Ensure input variants are filtered for \"PASS\". Use the `vcf.filters` argument if your VCFs are unfiltered.\n- **Batch Processing:** For multiple samples, extract contexts individually, `rbind` them into a single matrix, and run `chordPredict` once on the merged matrix.\n\n## Reference documentation\n- [CHORD: Classifier of HOmologous Recombination Deficiency](./references/README.md)\n- [GitHub Articles](./references/articles.md)\n- [CHORD Home Page](./references/home_page.md)",
+  "skill_front_matter": {
+    "name": "r-chord",
+    "description": "This tool predicts Homologous Recombination Deficiency status and types from somatic mutation contexts using a random forest model. Use when user asks to predict HRD status, extract mutation signatures from VCF files, or classify samples as BRCA1-type or BRCA2-type deficient.",
+    "homepage": "https://cran.r-project.org/web/packages/chord/index.html"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "pyjess",
+  "category": "CLI",
+  "name": "pyjess",
+  "description": "pyjess is a high-performance Python library for identifying 3D structural motifs in proteins using the JESS template matching algorithm. Use when user asks to search for catalytic sites, perform 3D template matching on protein structures, or identify geometric arrangements of residues.",
+  "overview": "pyjess is a high-performance Python library providing Cython bindings for the JESS algorithm, a 3D template matching software for protein structures. It is primarily used to identify specific geometric arrangements of residues—such as catalytic sites—within a query protein structure. pyjess is optimized for speed (10x faster than the original JESS) and provides seamless integration with common structural biology libraries like BioPython, Gemmi, and Biotite.",
+  "homepage": "https://github.com/althonos/pyjess",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pyjess/overview",
+  "github": "https://github.com/althonos/pyjess",
+  "conda_downloads": "22.0K",
+  "conda_downloads_num": 22000,
+  "last_updated": "2025-12-25",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pyjess"
+    ],
+    "description": "PyJess - Optimized Python bindings to Jess, a 3D template matching software.",
+    "docker_image": "quay.io/biocontainers/pyjess:0.9.1--py310h1fe012e_0",
+    "homepage": "https://github.com/althonos/pyjess",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pyjess/overview",
+    "github": "https://github.com/althonos/pyjess",
+    "conda_downloads": "22.0K",
+    "last_updated": "2025-12-25",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pyjess.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pyjess\n\n## Overview\n\npyjess is a high-performance Python library providing Cython bindings for the JESS algorithm, a 3D template matching software for protein structures. It is primarily used to identify specific geometric arrangements of residues—such as catalytic sites—within a query protein structure. pyjess is optimized for speed (10x faster than the original JESS) and provides seamless integration with common structural biology libraries like BioPython, Gemmi, and Biotite.\n\n## Core Workflow\n\n### 1. Preparing Templates\nTemplates define the geometric constraints of the residues you are looking for. Load them from `.qry` files.\n\n```python\nimport pyjess\nfrom pathlib import Path\n\n# Load a single template\ntemplate = pyjess.Template.load(\"site_template.qry\", id=\"active_site_1\")\n\n# Load multiple templates for a batch search\ntemplate_paths = Path(\"templates/\").glob(\"*.qry\")\ntemplates = [pyjess.Template.load(p, id=p.stem) for p in template_paths]\n```\n\n### 2. Loading Query Structures\nMolecules can be loaded directly from PDB/mmCIF files or converted from other Python objects.\n\n```python\n# Direct load\nmol = pyjess.Molecule.load(\"protein.pdb\")\n\n# Conversion from BioPython\nfrom Bio.PDB import PDBParser\nstructure = PDBParser().get_structure(\"id\", \"protein.pdb\")\nmol = pyjess.Molecule.from_biopython(structure)\n\n# Conversion from Gemmi\nimport gemmi\nst = gemmi.read_structure(\"protein.pdb\")\nmol = pyjess.Molecule.from_gemmi(st[0])\n```\n\n### 3. Executing the Query\nInitialize the `Jess` engine with your templates and run the query against a molecule.\n\n```python\njess = pyjess.Jess(templates)\nquery = jess.query(\n    mol, \n    rmsd_threshold=2.0,      # Max RMSD for a hit\n    distance_cutoff=3.0,     # Distance constraint\n    max_dynamic_distance=3.0 # Flexibility allowance\n)\n\nfor hit in query:\n    print(f\"Match: {hit.template().id} in {hit.molecule().id}\")\n    print(f\"RMSD: {hit.rmsd:.3f}, Log E-value: {hit.log_evalue:.3f}\")\n```\n\n## Expert Tips and Best Practices\n\n### Parallel Processing\nThe `Jess.query` method is thread-safe once the `Jess` instance is initialized. Use a `ThreadPool` to process multiple molecules against the same set of templates efficiently.\n\n```python\nimport multiprocessing.pool\n\nmolecules = [pyjess.Molecule.load(p) for p in pdb_files]\nwith multiprocessing.pool.ThreadPool() as pool:\n    results = pool.map(jess.query, molecules)\n```\n\n### Handling Hits\n*   **Iterative Computation**: Hits are computed on-the-fly. If you only need the top hit, you can break the loop early to save time.\n*   **PDB Output**: You can export hits directly to PDB format for visualization in tools like PyMOL.\n    ```python\n    with open(\"hit.pdb\", \"w\") as f:\n        hit.dump(f, format=\"pdb\")\n    ```\n\n### Performance Tuning\n*   **Thresholds**: Lowering the `rmsd_threshold` significantly reduces the search space and increases speed, but may miss distant structural homologs.\n*   **Memory**: For very large datasets, load molecules one by one within the processing loop rather than pre-loading all into a list to conserve RAM.\n\n## Reference documentation\n- [pyjess Overview and API](./references/github_com_althonos_pyjess.md)\n- [Bioconda Installation](./references/anaconda_org_channels_bioconda_packages_pyjess_overview.md)",
+  "skill_front_matter": {
+    "name": "pyjess",
+    "description": "pyjess is a high-performance Python library for identifying 3D structural motifs in proteins using the JESS template matching algorithm. Use when user asks to search for catalytic sites, perform 3D template matching on protein structures, or identify geometric arrangements of residues.",
+    "homepage": "https://github.com/althonos/pyjess"
+  }
+}

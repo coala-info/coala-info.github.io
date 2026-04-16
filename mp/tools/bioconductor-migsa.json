@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-migsa",
+  "category": "bioconductor",
+  "name": "bioconductor-migsa",
+  "description": "bioconductor-migsa performs massive and integrative gene set analysis by combining singular enrichment and gene set enrichment methods across multiple experiments. Use when user asks to perform integrative functional analysis, run GSEA or SEA on multiple datasets simultaneously, or visualize gene set enrichment results across different omics experiments.",
+  "overview": "MIGSA is a Bioconductor package designed for massive and integrative gene set analysis. It allows researchers to evaluate multiple datasets (experiments) against large collections of gene sets (e.g., GO, KEGG) in a single, coherent framework. It integrates enhanced versions of SEA (dEnricher) and GSEA (mGSZ) to provide a comprehensive biological perspective. A key feature is its ability to handle \"big omics data\" by utilizing multicore architectures for speed and providing specialized visualizat",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MIGSA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MIGSA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MIGSA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-migsa\n\nname: bioconductor-migsa\ndescription: Massive and Integrative Gene Set Analysis (MIGSA) for R. Use this skill to perform integrative functional analysis (IFA) combining Singular Enrichment Analysis (SEA) and Gene Set Enrichment Analysis (GSEA) across multiple experiments and gene sets simultaneously. Supports microarray and RNA-seq data, provides optimized mGSZ performance, and includes visualization tools for multi-dataset comparison.\n\n# bioconductor-migsa\n\n## Overview\nMIGSA is a Bioconductor package designed for massive and integrative gene set analysis. It allows researchers to evaluate multiple datasets (experiments) against large collections of gene sets (e.g., GO, KEGG) in a single, coherent framework. It integrates enhanced versions of SEA (dEnricher) and GSEA (mGSZ) to provide a comprehensive biological perspective. A key feature is its ability to handle \"big omics data\" by utilizing multicore architectures for speed and providing specialized visualization methods for exploring results across many experiments.\n\n## Core Workflow\n\n### 1. Gene Set Preparation\nMIGSA uses `GeneSetCollection` objects from the `GSEABase` package. You can create your own or use MIGSA's helper functions.\n\n```r\nlibrary(MIGSA)\nlibrary(GSEABase)\n\n# Load GO terms (CC, BP, or MF)\nccGsets <- loadGo(\"CC\")\n\n# Download from Enrichr (e.g., KEGG, Reactome)\nkeggReact <- downloadEnrichrGeneSets(c(\"KEGG_2015\", \"Reactome_2015\"))\n# Note: downloadEnrichrGeneSets returns a list of GeneSetCollections\n```\n\n### 2. Defining Experiments (IGSAinput)\nEach experiment (e.g., a microarray study or RNA-seq dataset) must be wrapped in an `IGSAinput` object.\n\n```r\n# For Microarray (MAList or matrix)\n# fitOpts defines the experimental design (e.g., Basal vs Luminal A)\nfitOpts <- FitOptions(subtypes_vector) \nigsaInputMA <- IGSAinput(\n  name = \"Microarray_Exp\",\n  expr_data = myMAList,\n  fit_options = fitOpts,\n  sea_params = SEAparams(treat_lfc = 1.05) # Optional: set LFC threshold\n)\n\n# For RNA-seq (DGEList)\nigsaInputRNA <- IGSAinput(\n  name = \"RNAseq_Exp\",\n  expr_data = myDGEList,\n  fit_options = fitOpts\n)\n```\n\n### 3. Running the Analysis\nThe `MIGSA` function executes the integrative analysis across all provided experiments.\n\n```r\n# Run analysis on a list of experiments\nexperiments <- list(igsaInputMA, igsaInputRNA)\nmigsaRes <- MIGSA(experiments, geneSets = ccGsets)\n\n# To use multiple cores (highly recommended for large datasets)\nlibrary(BiocParallel)\n# MIGSA uses the registered BiocParallel backend\nregister(MulticoreParam(workers = 4))\nmigsaRes <- MIGSA(experiments, geneSets = ccGsets)\n```\n\n### 4. Fast GSEA with MIGSAmGSZ\nIf you only need the optimized GSEA component (mGSZ) without the full MIGSA integration:\n\n```r\n# geneExpr: matrix, gSets: list of gene sets, subtypes: factor/vector\nres <- MIGSAmGSZ(geneExpr, gSets, subtypes)\n```\n\n## Exploring and Visualizing Results\n\nMIGSA provides a `MIGSAres` object that acts like a data table but contains specialized methods.\n\n### Filtering and Summarizing\n```r\n# Set a p-value cutoff for enrichment (default is 0.01)\nbcMigsaRes <- setEnrCutoff(bcMigsaRes, 0.01)\n\n# Summary shows consensus across experiments\nsummary(bcMigsaRes)\n\n# Filter by specific genes of interest\nfilteredRes <- filterByGenes(bcMigsaRes, c(\"652\", \"2099\"))\n```\n\n### Visualization\n```r\n# Heatmap of enriched/not enriched gene sets across experiments\nmigsaHeatmap(bcMigsaRes)\n\n# Heatmap showing gene contribution to enrichment\ngenesHeatmap(bcMigsaRes, enrFilter = 6.4, gsFilter = 70)\n\n# Plot GO tree for specific results\nmigsaGoTree(tcgaExclusive, ont = \"BP\")\n\n# Barplot of genes that contribute most to enrichment\nmostEnrichedGenes <- genesBarplot(tcgaExclusive, gsFilter = 12.45)\n```\n\n## Tips for Success\n- **Gene IDs**: Ensure your expression data and gene sets use the same ID type (Entrez IDs are recommended and used by `loadGo`).\n- **Memory/Speed**: For large-scale analyses (e.g., 20k+ gene sets), always use `BiocParallel` to distribute the load.\n- **RNA-seq Pre-processing**: Filter low-count genes (e.g., mean < 15 counts per condition) before creating the `IGSAinput` to improve statistical power and speed.\n- **SEA Parameters**: Adjust `treat_lfc` in `SEAparams` to control the stringency of the Singular Enrichment Analysis component.\n\n## Reference documentation\n- [MIGSA: Massive and Integrative Gene Set Analysis](./references/MIGSA.md)\n- [MIGSA: Getting pbcmc datasets](./references/gettingPbcmcData.md)\n- [MIGSA: Getting TCGA datasets](./references/gettingTcgaData.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-migsa",
+    "description": "bioconductor-migsa performs massive and integrative gene set analysis by combining singular enrichment and gene set enrichment methods across multiple experiments. Use when user asks to perform integrative functional analysis, run GSEA or SEA on multiple datasets simultaneously, or visualize gene set enrichment results across different omics experiments.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MIGSA.html"
+  }
+}

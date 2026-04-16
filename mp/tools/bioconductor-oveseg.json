@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-oveseg",
+  "category": "bioconductor",
+  "name": "bioconductor-oveseg",
+  "description": "This tool detects tissue or cell-specific marker genes in multi-group datasets using the One Versus Everyone Subtype Exclusively-expressed Genes test. Use when user asks to identify genes uniquely expressed in one subtype, perform marker gene detection across multiple groups, or calculate subtype-specific p-values for transcriptomic and proteomic data.",
+  "overview": "OVESEG is a statistically-principled method for detecting marker genes (MGs) across multiple subtypes. Unlike standard differential expression which often compares two groups, OVESEG uses a \"One Versus Everyone\" approach. It employs a mixture null distribution model and a permutation scheme to assess the significance of genes that are exclusively upregulated in a specific subtype, even when non-marker genes exhibit complex expression patterns across other groups.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/OVESEG.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Lululuella/OVESEG",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "OVESEG"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/OVESEG.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Lululuella/OVESEG",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-oveseg\n\nname: bioconductor-oveseg\ndescription: Detect tissue/cell-specific marker genes (MGs) using the One Versus Everyone Subtype Exclusively-expressed Genes (OVESEG) test. Use this skill to identify genes uniquely expressed in one subtype compared to all others in multi-group datasets (Microarray, RNA-seq, Proteomics).\n\n## Overview\n\nOVESEG is a statistically-principled method for detecting marker genes (MGs) across multiple subtypes. Unlike standard differential expression which often compares two groups, OVESEG uses a \"One Versus Everyone\" approach. It employs a mixture null distribution model and a permutation scheme to assess the significance of genes that are exclusively upregulated in a specific subtype, even when non-marker genes exhibit complex expression patterns across other groups.\n\n## Data Preparation\n\nBefore running OVESEG, ensure your data meets these requirements:\n- **Transformation**: Data must be normally distributed (e.g., log2 for microarray/proteomics, logCPM for RNA-seq, logit2 for DNA methylation).\n- **Filtering**: Remove low-expressed molecules and any rows with missing values.\n- **Normalization**: Data should be normalized and batch-corrected.\n- **Format**: Input should be a matrix, `DataFrame`, or `SummarizedExperiment`.\n\n## Core Workflow\n\n### 1. Microarray or Log-transformed Data\nFor data where the mean-variance relationship is stable:\n\n```r\nlibrary(OVESEG)\nlibrary(BiocParallel)\n\n# y: expression matrix, group: factor of subtype labels\nrtest <- OVESEGtest(y, group, \n                    NumPerm = 999, \n                    BPPARAM = SnowParam())\n```\n\n### 2. RNA-seq Count Data\nFor RNA-seq, use `limma::voom` to handle the mean-variance relationship:\n\n```r\nlibrary(limma)\nlibrary(OVESEG)\n\n# count: raw count matrix\ndesign <- model.matrix(~0 + factor(group))\nyvoom <- voom(count, design)\n\nrtest <- OVESEGtest(yvoom$E, group, \n                    weights = yvoom$weights, \n                    NumPerm = 999,\n                    BPPARAM = SnowParam())\n```\n\n## Interpreting Results\n\nThe `OVESEGtest` function returns a list containing three types of p-values:\n- `pv.overall`: Significance of the gene being a marker for *any* subtype.\n- `pv.oneside`: Subtype-specific p-values for the most likely upregulated subtype.\n- `pv.multiside`: `pv.oneside` corrected for the number of subtypes (K) and truncated at 1.\n\n### Multiple Testing Correction\nAlways apply FDR control to the results:\n\n```r\n# Using fdrtool for q-values\nlibrary(fdrtool)\nqv.overall <- fdrtool(rtest$pv.overall, statistic=\"pvalue\", plot=FALSE)$qval\n```\n\n## Useful Intermediate Functions\n\n### Ranking Genes without Permutations\nIf p-values are not required, use `OVESEGtstat` to rank genes by their marker-gene potential:\n\n```r\ntstats <- OVESEGtstat(y, group)\n```\n\n### Analyzing Expression Patterns\nTo estimate the distribution of null hypothesis components or visualize upregulation patterns:\n\n```r\n# Posterior probabilities of null components\nppnull <- postProbNull(y, group)\n\n# Probability of a subtype being upregulated under the null\nnull_dist <- nullDistri(ppnull)\n\n# Ratios of all possible upregulation patterns (2^K - 1 patterns)\npatterns <- patternDistri(rtest)\n```\n\n## Tips\n- **Parallelization**: Use `BPPARAM` to speed up the permutation process, which is the most computationally intensive step.\n- **Variance Estimation**: By default, OVESEG uses `limma`'s empirical Bayes moderated variance (`alpha=\"moderated\"`). You can provide a specific constant `alpha` if needed.\n- **Filtering**: A common threshold for filtering is keeping genes where the maximum group mean exceeds a specific log-expression value (e.g., `log2(64)` for microarray).\n\n## Reference documentation\n- [OVESEG User Manual](./references/OVESEG.md)\n- [OVESEG Vignette](./references/OVESEG.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-oveseg",
+    "description": "This tool detects tissue or cell-specific marker genes in multi-group datasets using the One Versus Everyone Subtype Exclusively-expressed Genes test. Use when user asks to identify genes uniquely expressed in one subtype, perform marker gene detection across multiple groups, or calculate subtype-specific p-values for transcriptomic and proteomic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/OVESEG.html"
+  }
+}

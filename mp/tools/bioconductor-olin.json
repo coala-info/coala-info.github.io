@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-olin",
+  "category": "bioconductor",
+  "name": "bioconductor-olin",
+  "description": "This tool performs optimized local intensity-dependent normalization for two-color microarray data to correct spatial and intensity biases. Use when user asks to normalize two-channel microarrays, perform iterative local regression, or visualize spatial dye biases using MXY-plots.",
+  "overview": "The `OLIN` package provides advanced normalization schemes for two-channel microarray data. Unlike standard linear or global normalization, OLIN uses iterative local regression and generalized cross-validation (GCV) to optimize smoothing parameters, effectively removing non-linear intensity-dependent and spatial (location-dependent) artifacts.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/OLIN.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "OLIN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/OLIN.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-olin\n\nname: bioconductor-olin\ndescription: Optimized Local Intensity-dependent Normalization (OLIN) for two-color microarray data. Use this skill to identify and correct intensity-dependent and spatial dye biases using iterative local regression (LOCFIT) and model selection (GCV). It includes tools for visual inspection (MA-plots, MXY-plots), statistical assessment of normalization efficiency (ANOVA, permutation tests), and between-array scaling.\n\n# bioconductor-olin\n\n## Overview\n\nThe `OLIN` package provides advanced normalization schemes for two-channel microarray data. Unlike standard linear or global normalization, OLIN uses iterative local regression and generalized cross-validation (GCV) to optimize smoothing parameters, effectively removing non-linear intensity-dependent and spatial (location-dependent) artifacts.\n\n## Core Workflow\n\n### 1. Data Preparation and Inspection\nOLIN typically works with `marrayRaw` or `marrayNorm` objects from the `marray` package.\n\n```R\nlibrary(OLIN)\ndata(sw) # Example dataset (SW480/620)\n\n# Visual inspection of foreground/background\nfgbg.visu(sw[,3])\n\n# MA-plot for intensity bias\nplot(maA(sw[,3]), maM(sw[,3]), xlab=\"A\", ylab=\"M\")\n\n# MXY-plot for spatial bias (using row/column indices)\nmxy.plot(maM(sw)[,3], Ngc=maNgc(sw), Ngr=maNgr(sw), Nsc=maNsc(sw), Nsr=maNsr(sw))\n\n# MXY-plot using physical coordinates (if available)\n# mxy2.plot(maM(sw)[,3], X=sw.xy$X[,3], Y=sw.xy$Y[,3], ...)\n```\n\n### 2. Optimized Normalization (OLIN & OSLIN)\nThe `olin` function is the primary interface for both standard and scaled normalization.\n\n*   **OLIN**: Corrects for intensity and location bias.\n*   **OSLIN**: Performs OLIN followed by optimized scaling of the log-ratio (M) range across the array.\n\n```R\n# Standard OLIN normalization\n# X and Y are matrices of spot coordinates\nnorm.olin <- olin(sw[,3], X=sw.xy$X[,3], Y=sw.xy$Y[,3], iter=3)\n\n# OSLIN (with local scaling)\nnorm.oslin <- olin(sw[,3], X=sw.xy$X[,3], Y=sw.xy$Y[,3], OSLIN=TRUE)\n```\n\n**Key Parameters:**\n*   `alpha`: Vector of smoothing parameters to test (default: `seq(0.05, 1, 0.1)`).\n*   `scale`: Vector of scale parameters for spatial smoothing (X vs Y).\n*   `weights`: Used to exclude spots (e.g., controls) or focus on housekeeping genes.\n*   `genepix`: Set to `TRUE` if using GenePix quality weights where negative values indicate excluded spots.\n\n### 3. Between-Array Scaling\nTo adjust the distribution of M-values across multiple arrays in a batch:\n\n```R\n# Scale arrays to have equal variance, MAD, or quantiles\nsw.scaled <- bas(norm.olin, mode=\"var\") # Options: \"var\", \"mad\", \"qq\"\n```\n\n### 4. Assessing Normalization Efficiency\nUse statistical tests to verify that biases have been removed.\n\n*   **Correlation Analysis**: High correlation between a spot and its neighborhood indicates remaining bias.\n```R\n# Check intensity-dependent correlation\nMav <- ma.vector(maA(sw[,3]), maM(sw[,3]), av=\"median\", delta=50)\ncor(Mav, maM(sw[,3]), use=\"pairwise.complete.obs\")\n```\n\n*   **ANOVA Models**: Test for significant differences in M-means across intensity intervals, spatial blocks, pins, or plates.\n```R\nanovaint(norm.olin, index=1, N=10)      # Intensity bias\nanovaspatial(norm.olin, index=1, xN=8, yN=8) # Spatial bias\nanovapin(norm.olin, index=1)            # Pin/Print-tip bias\n```\n\n*   **Permutation Tests**: Non-parametric assessment of bias using False Discovery Rate (FDR).\n```R\n# Assess spatial bias significance\nFDR <- fdr.spatial(v2m(maM(sw)[,3], ...), delta=2, N=100)\nsigxy.plot(FDR$FDRp, FDR$FDRn, color.lim=c(-5,5))\n```\n\n## Usage Tips\n*   **Assumptions**: OLIN assumes most genes are not differentially expressed and are randomly spotted. If these are violated, increase the minimum `alpha` to prevent over-fitting.\n*   **Artifacts**: Localized artifacts (scratches, bubbles) should be flagged/masked using `sig.mask` before normalization, as local regression assumes a smooth bias.\n*   **Iterations**: Usually 2-3 iterations are sufficient for convergence.\n\n## Reference documentation\n- [Introduction to OLIN package](./references/OLIN.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-olin",
+    "description": "This tool performs optimized local intensity-dependent normalization for two-color microarray data to correct spatial and intensity biases. Use when user asks to normalize two-channel microarrays, perform iterative local regression, or visualize spatial dye biases using MXY-plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/OLIN.html"
+  }
+}

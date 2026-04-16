@@ -1,0 +1,59 @@
+{
+  "id": "kmcp",
+  "category": "CLI",
+  "name": "kmcp",
+  "description": "KMCP performs high-performance metagenomic profiling and pathogen detection using a k-mer-based pseudo-mapping approach. Use when user asks to compute k-mer sketches, build searchable genome indexes, search sequences against a database, or generate taxonomic abundance profiles.",
+  "overview": "KMCP is a high-performance tool designed for metagenomic analysis. It utilizes a \"pseudo-mapping\" approach where reference genomes are split into chunks and stored in an optimized Compact Bit-Sliced Signature index (COBS). This allows for a unique combination of k-mer similarity and genome coverage information, significantly reducing false-positive rates compared to traditional k-mer profilers. It is particularly effective for detecting pathogens in low-depth clinical samples and profiling viral",
+  "homepage": "https://github.com/shenwei356/kmcp",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/kmcp/overview",
+  "github": "https://github.com/shenwei356/kmcp",
+  "conda_downloads": "23.7K",
+  "conda_downloads_num": 23700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "kmcp_autocompletion",
+      "kmcp_compute",
+      "kmcp_index",
+      "kmcp_merge",
+      "kmcp_profile",
+      "kmcp_search",
+      "kmcp_utils",
+      "kmcp_version"
+    ],
+    "description": "Generate shell autocompletion script",
+    "docker_image": "quay.io/biocontainers/kmcp:0.9.4--h9ee0642_1",
+    "homepage": "https://github.com/shenwei356/kmcp",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/kmcp/overview",
+    "github": "https://github.com/shenwei356/kmcp",
+    "conda_downloads": "23.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "kmcp_autocompletion.cwl",
+    "kmcp_compute.cwl",
+    "kmcp_index.cwl",
+    "kmcp_merge.cwl",
+    "kmcp_profile.cwl",
+    "kmcp_search.cwl",
+    "kmcp_utils.cwl",
+    "kmcp_version.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# kmcp\n\n## Overview\n\nKMCP is a high-performance tool designed for metagenomic analysis. It utilizes a \"pseudo-mapping\" approach where reference genomes are split into chunks and stored in an optimized Compact Bit-Sliced Signature index (COBS). This allows for a unique combination of k-mer similarity and genome coverage information, significantly reducing false-positive rates compared to traditional k-mer profilers. It is particularly effective for detecting pathogens in low-depth clinical samples and profiling viral populations.\n\n## Core Workflow\n\nThe standard KMCP workflow consists of four primary stages: computing k-mers, indexing, searching, and profiling.\n\n### 1. Compute K-mers\nGenerate k-mer sketches from reference FASTA/Q files.\n```bash\n# Standard parameters for metagenomic profiling (k=21, 10 chunks)\nkmcp compute -k 21 --split-number 10 --split-overlap 150 \\\n    --in-dir genomes/ --out-dir genomes-k21-n10\n```\n*   **Expert Tip**: Use `--circular` for circular genomes (like many viruses/plasmids) to ensure k-mers are captured across the origin.\n\n### 2. Build Index\nConstruct the searchable database from the computed k-mer files.\n```bash\n# -n 1 (number of hashes), -f 0.3 (false positive rate)\nkmcp index --false-positive-rate 0.3 --num-hash 1 \\\n    --in-dir genomes-k21-n10/ --out-dir genomes.kmcp\n```\n\n### 3. Search\nSearch query sequences against the database.\n```bash\n# Single-end mode is often recommended for paired-end reads for higher sensitivity\nkmcp search --db-dir genomes.kmcp/ sample_1.fq.gz sample_2.fq.gz \\\n    --out-file search.tsv.gz\n```\n*   **Memory Management**: \n    *   Default: Uses `mmap` (fastest if RAM is sufficient).\n    *   `--load-whole-db`: Faster for small databases or when using Network Attached Storage (NAS).\n    *   `--low-mem`: Use this if the database exceeds available RAM (significantly slower).\n\n### 4. Profile\nGenerate taxonomic abundance estimates from search results.\n```bash\nkmcp profile search.tsv.gz \\\n    --taxid-map taxid.map \\\n    --taxdump taxdump/ \\\n    --mode 0 \\\n    --out-file sample.profile\n```\n\n## Profiling Modes\n\nKMCP provides preset modes for different scenarios:\n*   **Mode 0 (Default)**: Balanced mode for general metagenomic profiling.\n*   **Mode 1**: Higher sensitivity, suitable for pathogen detection.\n*   **Mode 2**: High specificity, requiring higher genome coverage.\n*   **Mode 3**: For searching against large scales of genomes (e.g., GTDB).\n\n## Expert Tips and Common Patterns\n\n### Handling Large Databases\nIf you lack sufficient RAM to load a massive database (like the full GTDB), split the reference genomes into partitions, build smaller databases for each, search against them individually, and then use `kmcp merge`:\n```bash\n# Merge results from multiple database searches\nkmcp merge search.db1.tsv.gz search.db2.tsv.gz -o merged_search.tsv.gz\n```\n\n### Genome Similarity Estimation\nFor fast similarity estimation (similar to Mash or Sourmash), use FracMinHash (Scaled MinHash):\n```bash\n# Compute with scaling (e.g., scale=1000)\nkmcp compute -k 31 --scale 1000 -I genomes/ -O sketches\n```\n\n### Contamination Detection\nTo detect contaminated sequences in an assembly, generate sliding window \"reads\" from your contigs and profile them:\n```bash\nseqkit sliding -s 50 -W 200 assembly.fasta | kmcp search -d gtdb.kmcp | kmcp profile ...\n```\n\n### Taxonomy Support\nKMCP supports custom taxonomies (GTDB, ICTV) by using `taxonkit create-taxdump` to generate the required `taxdump` directory and `taxid.map` file.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| kmcp autocompletion | Generate shell autocompletion script |\n| kmcp compute | Generate k-mers (sketches) from FASTA/Q sequences |\n| kmcp index | Construct a database from k-mer files |\n| kmcp profile | Generate the taxonomic profile from search results |\n| kmcp search | Search sequences against a database |\n| kmcp utils | Some utilities |\n| kmcp version | Print version information and check for update |\n| kmcp_merge | Merge search results from multiple databases |\n\n## Reference documentation\n- [KMCP Usage Guide](./references/bioinf_shenwei_me_kmcp_usage.md)\n- [Taxonomic Profiling Tutorial](./references/bioinf_shenwei_me_kmcp_tutorial_profiling.md)\n- [Database Building Guide](./references/bioinf_shenwei_me_kmcp_database.md)\n- [Pathogen Detection Tutorial](./references/bioinf_shenwei_me_kmcp_tutorial_detecting-pathogens.md)",
+  "skill_front_matter": {
+    "name": "kmcp",
+    "description": "KMCP performs high-performance metagenomic profiling and pathogen detection using a k-mer-based pseudo-mapping approach. Use when user asks to compute k-mer sketches, build searchable genome indexes, search sequences against a database, or generate taxonomic abundance profiles.",
+    "homepage": "https://github.com/shenwei356/kmcp"
+  }
+}

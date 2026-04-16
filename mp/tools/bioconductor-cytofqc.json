@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cytofqc",
+  "category": "bioconductor",
+  "name": "bioconductor-cytofqc",
+  "description": "This tool provides a model-based approach to perform quality control and automated labeling of CyTOF data. Use when user asks to clean mass cytometry data, identify beads or doublets, and label events as cells, debris, or dead events.",
+  "overview": "The `cytofQC` package provides a model-based approach to cleaning CyTOF data. Unlike simple thresholding, it uses statistical learning to label each event as a cell, bead, debris, doublet, dead event, or \"gdpZero\" (events with zero values in Gaussian parameters). It is particularly effective at distinguishing between doublets and large cells. The workflow typically involves reading data into a `SingleCellExperiment` object, generating event scores, and applying classification models to assign QC",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cytofQC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/jillbo1000/cytofQC",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cytofQC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cytofQC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/jillbo1000/cytofQC",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cytofqc\n\n## Overview\n\nThe `cytofQC` package provides a model-based approach to cleaning CyTOF data. Unlike simple thresholding, it uses statistical learning to label each event as a cell, bead, debris, doublet, dead event, or \"gdpZero\" (events with zero values in Gaussian parameters). It is particularly effective at distinguishing between doublets and large cells. The workflow typically involves reading data into a `SingleCellExperiment` object, generating event scores, and applying classification models to assign QC labels.\n\n## Core Workflow\n\n### 1. Data Loading and Preparation\nUse `readCytof` to initialize the `SingleCellExperiment` object. You must identify the specific channels used for QC.\n\n```r\nlibrary(cytofQC)\nlibrary(CATALYST)\n\n# Identify QC variable names if unknown\n# x <- prepData(\"path/to/file.fcs\")\n# names(int_colData(x))\n\n# Read and initialize\nsce <- readCytof(\"path/to/file.fcs\", \n                 beads = c(\"Bead\"),\n                 dna = c(\"DNA1\", \"DNA2\"),\n                 event_length = \"Event_length\",\n                 viability = \"Live_Dead\",\n                 gaussian = c(\"Center\", \"Offset\", \"Width\", \"Residual\"))\n```\n\n### 2. Automated Quality Control\nThe `labelQC` function is the primary interface. It performs initial classification and then trains a model (default is SVM) to label all observations.\n\n```r\n# Default SVM labeling\nsce <- labelQC(sce)\n\n# Alternative models (Random Forest or Gradient Boosting)\n# sce <- labelQC(sce, model = \"rf\", loss = \"class\")\n# sce <- labelQC(sce, model = \"gbm\", loss = \"class\")\n\n# Check results\ntable(label(sce))\n```\n\n### 3. Manual/Stepwise Labeling\nFor finer control, you can run the labeling process for each event type sequentially. The recommended order is: Beads -> Debris -> Doublets -> Dead cells.\n\n```r\n# Example: Stepwise Bead labeling\nsce <- initialBead(sce)\nsce <- svmLabel(sce, type = \"bead\", n = 500)\n\n# Example: Stepwise Debris labeling\nsce <- initialDebris(sce)\nsce <- svmLabel(sce, type = \"debris\", n = 500)\n```\n\n### 4. Data Extraction and Visualization\nThe package provides getter functions to access the QC metadata stored within the `SingleCellExperiment` object.\n\n*   `label(sce)`: Returns the final character vector of labels.\n*   `scores(sce, type)`: Returns the raw QC scores for a specific type (e.g., 'bead', 'doublet').\n*   `probs(sce, type)`: Returns the model-predicted probability for a label.\n*   `tech(sce)`: Returns the transformed data used for modeling.\n\n**Visualizing Scores:**\nUse `cytofHist` to inspect how well the labels separate based on their scores.\n\n```r\n# Create density plots for comparison\nbead_p <- cytofHist(scores(sce, type = 'bead'), label(sce), type = \"density\", title = \"Bead score\")\ndoublet_p <- cytofHist(scores(sce, type = 'doublet'), label(sce), type = \"density\", title = \"Doublet score\")\ngridExtra::grid.arrange(bead_p, doublet_p, ncol = 1)\n```\n\n## Key Data Components\nWhen `readCytof` is called, it adds four specific slots to the object:\n- **tech**: `log1p` transformed Gaussian parameters and event length.\n- **label**: The final classification (initially \"cell\" or \"GDPzero\").\n- **scores**: Values used to select training datasets.\n- **initial**: Initial \"hard\" classifications (-1, 0, or 1) used to train the models.\n- **probs**: Predicted probabilities from the classification model.\n\n## Tips for Success\n- **Order Matters**: Labels are assigned in order. Once an event is classified (e.g., as a bead), it cannot be re-classified as a doublet later in the `labelQC` pipeline.\n- **Sample Size**: If a warning appears stating there are not enough events to build a model, `cytofQC` will automatically use a smaller training set or skip that specific label if counts are too low.\n- **GDPzero**: Events with a 0 value in any Gaussian parameter or Event_length are automatically labeled \"GDPzero\" and are not processed by the learning models.\n\n## Reference documentation\n- [Complete Guide to cytofQC](./references/cytofQC.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cytofqc",
+    "description": "This tool provides a model-based approach to perform quality control and automated labeling of CyTOF data. Use when user asks to clean mass cytometry data, identify beads or doublets, and label events as cells, debris, or dead events.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cytofQC.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-viseago",
+  "category": "bioconductor",
+  "name": "bioconductor-viseago",
+  "description": "ViSEAGO performs Gene Ontology enrichment analysis and clusters results based on semantic similarity for functional visualization. Use when user asks to retrieve GO annotations, perform functional enrichment analysis, compare multiple experimental conditions, or cluster GO terms using semantic similarity.",
+  "overview": "ViSEAGO (Visualization, Semantic similarity, and Enrichment Analysis of Gene Ontology) is an R package designed to facilitate functional GO analysis, especially for complex experimental designs with multiple comparisons. It extends classical enrichment by aggregating closely related biological themes using semantic similarity, ensuring functional coherence in the results. It supports major genomic resources (EntrezGene, Ensembl, Uniprot) and integrates with enrichment tools like `topGO` and `fgs",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ViSEAGO.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ViSEAGO"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ViSEAGO.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-viseago\n\n## Overview\nViSEAGO (Visualization, Semantic similarity, and Enrichment Analysis of Gene Ontology) is an R package designed to facilitate functional GO analysis, especially for complex experimental designs with multiple comparisons. It extends classical enrichment by aggregating closely related biological themes using semantic similarity, ensuring functional coherence in the results. It supports major genomic resources (EntrezGene, Ensembl, Uniprot) and integrates with enrichment tools like `topGO` and `fgsea`.\n\n## Core Workflow\n\n### 1. GO Annotation Retrieval\nViSEAGO provides unified access to several databases. First, identify the available organisms, then annotate your genes.\n\n```R\n# Connect to a resource\nEnsembl <- ViSEAGO::Ensembl2GO()\n# List available organisms to find the key identifier\nViSEAGO::available_organisms(Ensembl)\n\n# Extract annotations for a specific species\nmyGENE2GO <- ViSEAGO::annotate(\"mmusculus_gene_ensembl\", Ensembl)\n```\n\n### 2. Functional Enrichment\nYou can use either `topGO` (Fisher's exact test) or `fgsea` (Gene Set Enrichment Analysis).\n\n**Using topGO:**\n```R\n# Create topGOdata object\nBP <- ViSEAGO::create_topGOdata(\n    geneSel = selection_vector,\n    allGenes = background_vector,\n    gene2GO = myGENE2GO,\n    ont = \"BP\",\n    nodeSize = 5\n)\n\n# Run test\nresult <- topGO::runTest(BP, algorithm = \"elim\", statistic = \"fisher\")\n```\n\n**Using fgsea:**\n```R\n# Requires a ranked data.table with 'Id' and statistical value\nBP_fgsea <- ViSEAGO::runfgsea(\n    geneSel = ranked_dt,\n    ont = \"BP\",\n    gene2GO = myGENE2GO,\n    method = \"fgseaMultilevel\",\n    params = list(scoreType = \"pos\", minSize = 5)\n)\n```\n\n### 3. Merging and Comparing Results\nCombine multiple enrichment tests to compare conditions.\n\n```R\nBP_sResults <- ViSEAGO::merge_enrich_terms(\n    Input = list(\n        Condition1 = c(\"BP\", \"elim\"),\n        Condition2 = c(\"BP\", \"elim\")\n    )\n)\n\n# Visualize intersections\nViSEAGO::Upset(BP_sResults)\n```\n\n### 4. Semantic Similarity and Clustering\nThis is the core strength of ViSEAGO: grouping GO terms by functional similarity.\n\n```R\n# Build the Semantic Similarity object\nmyGOs <- ViSEAGO::build_GO_SS(myGENE2GO, BP_sResults)\n\n# Compute distances (Resnik, Lin, Rel, Jiang, or Wang)\nmyGOs <- ViSEAGO::compute_SS_distances(myGOs, distance = \"Wang\")\n\n# Cluster GO terms and create a heatmap\nWang_clusters <- ViSEAGO::GOterms_heatmap(\n    myGOs,\n    showIC = TRUE,\n    GO.tree = list(\n        tree = list(distance = \"Wang\", aggreg.method = \"ward.D2\"),\n        cut = list(dynamic = list(deepSplit = 2, minClusterSize = 2))\n    )\n)\n\n# Display interactive heatmap\nViSEAGO::show_heatmap(Wang_clusters, \"GOterms\")\n```\n\n### 5. Higher-Level Clustering (GO Clusters)\nIf you have many GO clusters, you can compute similarity between the clusters themselves.\n\n```R\n# Compute similarity between clusters (max, avg, rcmax, or BMA)\nWang_clusters <- ViSEAGO::compute_SS_distances(Wang_clusters, distance = \"BMA\")\n\n# Cluster the clusters\nWang_clusters <- ViSEAGO::GOclusters_heatmap(\n    Wang_clusters,\n    tree = list(distance = \"BMA\", aggreg.method = \"ward.D2\")\n)\n\n# Show the cluster-level heatmap\nViSEAGO::show_heatmap(Wang_clusters, \"GOclusters\")\n```\n\n## Tips for Success\n- **Interactive Plots**: Most `show_heatmap` and `MDSplot` calls generate interactive plotly objects. Use `file = \"output.png\"` to save static versions.\n- **Data Export**: Use `ViSEAGO::show_table(Wang_clusters)` to get a detailed Excel-ready table containing GO terms, clusters, p-values, and the specific genes associated with each term.\n- **IC-based vs Graph-based**: Semantic similarities like Resnik and Lin are Information Content (IC) based, while Wang is graph-topology based. IC-based methods often cluster more tightly.\n\n## Reference documentation\n- [Evaluate impact of Semantic Similarity choice](./references/SS_choice.md)\n- [An overview of ViSEAGO](./references/ViSEAGO.md)\n- [Functional analysis using fgsea instead of topGO](./references/fgsea_alternative.md)\n- [Functional analysis of mouse mammary gland RNA-Seq](./references/mouse_bioconductor.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-viseago",
+    "description": "ViSEAGO performs Gene Ontology enrichment analysis and clusters results based on semantic similarity for functional visualization. Use when user asks to retrieve GO annotations, perform functional enrichment analysis, compare multiple experimental conditions, or cluster GO terms using semantic similarity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ViSEAGO.html"
+  }
+}

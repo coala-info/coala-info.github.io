@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-panomir",
+  "category": "bioconductor",
+  "name": "bioconductor-panomir",
+  "description": "PanomiR identifies and prioritizes miRNA regulators by analyzing their targeting of coordinated biological pathway clusters. Use when user asks to perform pathway summarization from gene expression, detect differentially activated pathways, cluster pathways using co-expression networks, or prioritize miRNAs based on pathway targeting.",
+  "overview": "PanomiR (Pathway networks of miRNA Regulation) is a systems biology framework used to discover miRNA regulators by analyzing how they target groups of coordinated pathways rather than isolated genes. It integrates gene expression data, pathway definitions, and miRNA-mRNA interaction data to identify miRNAs associated with specific disease states or biological conditions.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PanomiR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/pouryany/PanomiR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PanomiR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PanomiR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/pouryany/PanomiR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-panomir\n\nname: bioconductor-panomir\ndescription: Analysis and prioritization of miRNA regulators based on their targeting of coordinated biological pathways. Use this skill when you need to perform pathway summarization from gene expression, detect differentially activated pathways, cluster pathways using co-expression networks (PCxN), and prioritize miRNAs that target these pathway clusters.\n\n## Overview\n\nPanomiR (Pathway networks of miRNA Regulation) is a systems biology framework used to discover miRNA regulators by analyzing how they target groups of coordinated pathways rather than isolated genes. It integrates gene expression data, pathway definitions, and miRNA-mRNA interaction data to identify miRNAs associated with specific disease states or biological conditions.\n\n## Core Workflow\n\n### 1. Pathway Summarization\nConvert gene expression matrices into pathway activity profiles.\n\n```r\nlibrary(PanomiR)\ndata(\"path_gene_table\") # Default MSigDB V6.2 pathways\n\n# Generate activity summaries (z-normalized average rank-squared)\nsummaries <- pathwaySummary(\n  geneCounts = exp_matrix, \n  pathways = path_gene_table, \n  method = \"x2\", \n  zNormalize = TRUE, \n  id = \"ENSEMBL\" # Match rownames of exp_matrix\n)\n```\n\n### 2. Differential Pathway Analysis\nIdentify pathways that are significantly dysregulated between conditions.\n\n```r\noutput_de <- differentialPathwayAnalysis(\n  geneCounts = exp_matrix,\n  pathways = path_gene_table,\n  covariates = metadata_df,\n  condition = 'group_column' # The factor to contrast\n)\n\nde_paths <- output_de$DEP\n```\n\n### 3. Pathway Clustering\nGroup differentially activated pathways using the Pathway Co-expression Network (PCxN).\n\n```r\n# Map pathways to clusters based on co-expression\npathway_clusters <- mappingPathwaysClusters(\n  pcxn = miniTestsPanomiR$miniPCXN, \n  dePathways = de_paths,\n  topPathways = 200,\n  clusteringFunction = \"cluster_louvain\",\n  correlationCutOff = 0.1\n)\n\n# View cluster assignments\nhead(pathway_clusters$Clustering)\n```\n\n### 4. miRNA Prioritization\nRank miRNAs based on their targeting of the identified pathway clusters.\n\n```r\n# Prioritize miRNAs for a specific cluster (e.g., Cluster 1)\nmir_priority <- prioritizeMicroRNA(\n  enriches0 = miniTestsPanomiR$miniEnrich, # miRNA-pathway enrichment ref\n  pathClust = pathway_clusters$Clustering,\n  topClust = 1,\n  sampRate = 500, # Recommended 500-1000 for publication\n  method = \"aggInv\",\n  saveSampling = FALSE\n)\n\n# Results contain p-values and FDR for miRNAs\nhead(mir_priority$Cluster1)\n```\n\n## Customization and Data Preparation\n\n### Creating Custom Enrichment Tables\nIt is recommended to create enrichment tables tailored to the genes expressed in your specific experiment.\n\n```r\ndata(\"msigdb_c2\")\ndata(\"targetScan_03\")\n\ncustom_enrich <- miRNAPathwayEnrichment(\n  mirSets = targetScan_03,\n  pathwaySets = msigdb_c2,\n  geneSelection = rownames(exp_matrix),\n  fromID = \"ENSEMBL\",\n  toID = \"ENTREZID\"\n)\n\n# Generate a readable report\nreport <- reportEnrichment(custom_enrich)\n```\n\n### Using External Gene Sets\nTo use custom pathways (e.g., from a GMT file), convert them to the PanomiR table format.\n\n```r\nlibrary(GSEABase)\ngsc <- getGmt(\"path/to/your.gmt\")\ncustom_path_table <- tableFromGSC(gsc)\n```\n\n## Tips for Success\n- **ID Mapping**: Ensure `id` (ENSEMBL, SYMBOL, etc.) matches your expression data rownames in `pathwaySummary`.\n- **Contrasts**: `differentialPathwayAnalysis` uses `limma` logic. If your condition has more than two levels, ensure you specify the contrast or format the covariate as a factor.\n- **Sampling Rate**: For exploratory analysis, `sampRate = 50` is fast; use `500-1000` for final results to ensure stable p-values.\n- **PCxN Versions**: While a mini version is provided in the package, consider using the full PCxN data from Bioconductor (`pcxn` and `pcxnData` packages).\n\n## Reference documentation\n- [miRNA and pathway analysis with PanomiR](./references/PanomiR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-panomir",
+    "description": "PanomiR identifies and prioritizes miRNA regulators by analyzing their targeting of coordinated biological pathway clusters. Use when user asks to perform pathway summarization from gene expression, detect differentially activated pathways, cluster pathways using co-expression networks, or prioritize miRNAs based on pathway targeting.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PanomiR.html"
+  }
+}

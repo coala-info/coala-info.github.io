@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-coseq",
+  "category": "bioconductor",
+  "name": "bioconductor-coseq",
+  "description": "The coseq package performs co-expression analysis of RNA-seq data by clustering transformed normalized profiles using K-means or Gaussian Mixture Models. Use when user asks to cluster differentially expressed genes, identify co-expression patterns in transcriptomic data, or perform model selection for gene clusters using ICL or slope heuristics.",
+  "overview": "The `coseq` package is designed for the co-expression analysis of RNA-seq data. Unlike methods that cluster raw counts, `coseq` clusters **transformed normalized profiles**. It supports two primary clustering strategies:\n1. **K-means**: Fast, assumes diagonal covariance, uses slope heuristics for model selection.\n2. **Gaussian Mixture Models (GMM)**: More computationally intensive, allows for complex correlation structures, uses Integrated Completed Likelihood (ICL) for model selection.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/coseq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "coseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/coseq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-coseq\n\n## Overview\n\nThe `coseq` package is designed for the co-expression analysis of RNA-seq data. Unlike methods that cluster raw counts, `coseq` clusters **transformed normalized profiles**. It supports two primary clustering strategies:\n1. **K-means**: Fast, assumes diagonal covariance, uses slope heuristics for model selection.\n2. **Gaussian Mixture Models (GMM)**: More computationally intensive, allows for complex correlation structures, uses Integrated Completed Likelihood (ICL) for model selection.\n\nThe package integrates directly with `DESeq2` and `edgeR` objects, making it easy to cluster genes identified as differentially expressed.\n\n## Typical Workflow\n\n### 1. Basic Clustering (K-means)\nThe default approach uses K-means with a log-centered log ratio (logCLR) transformation and TMM normalization.\n\n```r\nlibrary(coseq)\n\n# counts: matrix or data.frame of gene-level counts (genes x samples)\n# K: range of clusters to test\nrun <- coseq(counts, K=2:25, seed=12345)\n\n# Summary of selected model\nsummary(run)\n\n# Get cluster assignments\ngene_clusters <- clusters(run)\n\n# Get conditional probabilities (for GMM) or membership\nprob_membership <- assay(run)\n```\n\n### 2. Gaussian Mixture Model (GMM)\nUse GMM when you need to estimate correlation structures between samples within clusters. The arcsine transformation is recommended for this approach.\n\n```r\nrun_gmm <- coseq(counts, K=2:20, \n                 model=\"Normal\", \n                 transformation=\"arcsin\", \n                 meanFilterCutoff=200, \n                 iter=10, \n                 seed=12345)\n\n# Compare transformations (e.g., arcsin vs logit) using ICL\n# compareICL(list(run_arcsin, run_logit))\n```\n\n### 3. Integration with DESeq2/edgeR\n`coseq` can be run directly on results from differential expression (DE) pipelines. It will automatically use the normalization factors from the object and subset genes based on significance.\n\n```r\n# DESeq2 Example\nlibrary(DESeq2)\ndds <- DESeq(DESeqDataSetFromMatrix(counts, colData, ~condition))\n# Clusters genes with adjusted p-value < 0.1 by default\nrun_de <- coseq(dds, K=2:15)\n\n# edgeR Example\nlibrary(edgeR)\n# ... (standard edgeR pipeline to create 'qlf' or 'lrt' object)\nrun_edgeR <- coseq(counts, K=2:15, subset=qlf, alpha=0.05)\n```\n\n## Visualization and Exploration\n\nThe `plot` function for `coseqResults` objects provides several diagnostic and exploratory views.\n\n```r\n# Plot specific graph types\nplot(run, graphs=\"boxplots\")\nplot(run, graphs=\"profiles\")\n\n# Customize with condition labels and collapsing replicates\nplot(run, graphs=\"boxplots\", conds=conds, collapse_reps=\"average\")\n\n# Diagnostic plots for model selection\nplot(run, graphs=c(\"logLike\", \"ICL\"))\n\n# Probability of membership diagnostics\nplot(run, graphs=\"probapost_histogram\")\n```\n\n## Tips and Best Practices\n\n- **Reproducibility**: Always use the `seed` argument in the `coseq()` function, as initialization is random.\n- **Transformation Choice**: \n    - **logCLR**: Best for highlighting highly specific profiles (e.g., tissue-specific genes).\n    - **CLR**: Best for distinguishing fine differences among genes with similar expression levels.\n    - **arcsin**: Recommended for Gaussian Mixture Models.\n- **Filtering**: Use `meanFilterCutoff` to remove lowly expressed genes, which improves both speed and cluster quality.\n- **Parallelization**: For large datasets or GMM, use `parallel=TRUE` (requires `BiocParallel`).\n- **Convergence**: Check `metadata(run)$nbClusterError` to see if any models failed to converge.\n- **Custom Plots**: The `plot()` function returns a list of `ggplot2` objects. You can modify them by accessing the list element (e.g., `p$boxplots + theme_bw()`).\n\n## Reference documentation\n\n- [coseq](./references/coseq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-coseq",
+    "description": "The coseq package performs co-expression analysis of RNA-seq data by clustering transformed normalized profiles using K-means or Gaussian Mixture Models. Use when user asks to cluster differentially expressed genes, identify co-expression patterns in transcriptomic data, or perform model selection for gene clusters using ICL or slope heuristics.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/coseq.html"
+  }
+}

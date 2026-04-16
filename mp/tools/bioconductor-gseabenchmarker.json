@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gseabenchmarker",
+  "category": "bioconductor",
+  "name": "bioconductor-gseabenchmarker",
+  "description": "This tool provides a framework for the reproducible evaluation and benchmarking of gene set enrichment analysis methods across transcriptomic data compendia. Use when user asks to load standardized microarray or RNA-seq datasets, perform differential expression across multiple datasets, execute various enrichment methods, or assess method performance based on runtime and phenotype relevance.",
+  "overview": "The `GSEABenchmarkeR` package provides a systematic framework for benchmarking gene set enrichment analysis (GSEA) methods. Unlike tools designed for the biological interpretation of a single dataset, this package is intended for methodological comparison. It allows users to run multiple enrichment algorithms across large compendia of transcriptomic data and evaluate them against gold standards, such as the MalaCards disease relevance database.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GSEABenchmarkeR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gseabenchmarker/overview",
+  "github": "https://github.com/waldronlab/GSEABenchmarkeR",
+  "conda_downloads": "27.4K",
+  "conda_downloads_num": 27400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GSEABenchmarkeR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GSEABenchmarkeR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gseabenchmarker/overview",
+    "github": "https://github.com/waldronlab/GSEABenchmarkeR",
+    "conda_downloads": "27.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gseabenchmarker\n\nname: bioconductor-gseabenchmarker\ndescription: Framework for reproducible evaluation and benchmarking of gene set enrichment analysis (GSEA) methods. Use this skill to load standardized microarray (GEO2KEGG) and RNA-seq (TCGA) compendia, perform differential expression across multiple datasets, execute various enrichment methods (ORA, GSEA, etc.), and assess performance based on runtime, statistical significance, and phenotype relevance.\n\n# bioconductor-gseabenchmarker\n\n## Overview\nThe `GSEABenchmarkeR` package provides a systematic framework for benchmarking gene set enrichment analysis (GSEA) methods. Unlike tools designed for the biological interpretation of a single dataset, this package is intended for methodological comparison. It allows users to run multiple enrichment algorithms across large compendia of transcriptomic data and evaluate them against gold standards, such as the MalaCards disease relevance database.\n\n## Core Workflow\n\n### 1. Loading Data Compendia\nThe package provides access to curated collections of human disease datasets.\n\n```r\nlibrary(GSEABenchmarkeR)\n\n# Load the GEO2KEGG microarray compendium (42 datasets)\ngeo2kegg <- loadEData(\"geo2kegg\")\n\n# Load the TCGA RNA-seq compendium (subset to specific number of datasets)\ntcga <- loadEData(\"tcga\", nr.datasets = 2)\n\n# Load user-defined data from a directory of RDS files (SummarizedExperiments)\nuser_data <- loadEData(\"/path/to/rds/files\")\n```\n\n### 2. Preprocessing and Differential Expression\nBefore enrichment, microarray data must be summarized to gene level, and all datasets require differential expression (DE) analysis.\n\n```r\n# Preprocess microarray data (probe to gene mapping)\ngeo2kegg <- maPreproc(geo2kegg[1:5])\n\n# Run Differential Expression analysis across the compendium\n# padj.method=\"flexible\" is recommended to ensure ORA suitability\ngeo2kegg <- runDE(geo2kegg, de.method = \"limma\", padj.method = \"flexible\")\n```\n\n### 3. Executing Enrichment Analysis\nUse `runEA` to apply methods to one or more datasets. This function tracks runtime and can save results to disk for persistence.\n\n```r\nlibrary(EnrichmentBrowser)\nkegg.gs <- getGenesets(org = \"hsa\", db = \"kegg\")\n\n# Run ORA and CAMERA on multiple datasets\nres.dir <- tempdir()\nres <- runEA(geo2kegg, methods = c(\"ora\", \"camera\"), \n             gs = kegg.gs, save2file = TRUE, out.dir = res.dir)\n```\n\n### 4. Benchmarking Performance\nEvaluate methods based on three primary criteria:\n\n#### Runtime\n```r\n# Read saved runtimes\nea.rtimes <- readResults(res.dir, names(geo2kegg), methods = c(\"ora\", \"camera\"), type = \"runtime\")\n\n# Visualize\nbpPlot(ea.rtimes, what = \"runtime\")\n```\n\n#### Statistical Significance\nAssess the fraction of gene sets identified as significant.\n```r\nea.ranks <- readResults(res.dir, names(geo2kegg), methods = c(\"ora\", \"camera\"), type = \"ranking\")\nsig.sets <- evalNrSigSets(ea.ranks, alpha = 0.05, padj = \"BH\")\nbpPlot(sig.sets, what = \"sig.sets\")\n```\n\n#### Phenotype Relevance\nCompare GSEA rankings against MalaCards disease-relevant gene sets.\n```r\n# Load relevance rankings and mapping\ndata.dir <- system.file(\"extdata\", package = \"GSEABenchmarkeR\")\nmala.kegg <- readRDS(file.path(data.dir, \"malacards\", \"KEGG.rds\"))\nd2d.map <- readDataId2diseaseCodeMap(file.path(data.dir, \"malacards\", \"GseId2Disease.txt\"))\n\n# Evaluate relevance (observed vs theoretical optimum)\nrel.res <- evalRelevance(ea.ranks, mala.kegg, d2d.map[names(geo2kegg)])\nbpPlot(rel.res, what = \"rel.sets\")\n```\n\n## Advanced Features\n\n### Caching\nUse `cacheResource` to save processed compendia (after `maPreproc` and `runDE`) to avoid recomputing.\n```r\ncacheResource(geo2kegg, rname = \"geo2kegg_processed\")\n# Restore later\ngeo2kegg <- loadEData(\"geo2kegg\", cache = TRUE)\n```\n\n### Parallelization\nFunctions like `runDE` and `runEA` automatically use `BiocParallel`. You can customize the backend:\n```r\nlibrary(BiocParallel)\nbp.par <- MulticoreParam(workers = 4, progressbar = TRUE)\ngeo2kegg <- runDE(geo2kegg, parallel = bp.par)\n```\n\n## Reference documentation\n- [Reproducible GSEA Benchmarking](./references/GSEABenchmarkeR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gseabenchmarker",
+    "description": "This tool provides a framework for the reproducible evaluation and benchmarking of gene set enrichment analysis methods across transcriptomic data compendia. Use when user asks to load standardized microarray or RNA-seq datasets, perform differential expression across multiple datasets, execute various enrichment methods, or assess method performance based on runtime and phenotype relevance.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GSEABenchmarkeR.html"
+  }
+}

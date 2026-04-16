@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scshapes",
+  "category": "bioconductor",
+  "name": "bioconductor-scshapes",
+  "description": "scShapes models and identifies the distribution shapes of gene expression in single-cell RNA-seq data using a generalized linear model framework. Use when user asks to filter genes, perform Kolmogorov-Smirnov tests, fit discrete probability distributions, or identify differential distribution shapes between treatment conditions.",
+  "overview": "`scShapes` is an R package designed to go beyond simple differential expression by modeling the specific distribution \"shape\" of gene expression in single-cell RNA-seq (scRNA-seq) data. It uses a Generalized Linear Model (GLM) framework to fit four discrete distributions (P, NB, ZIP, ZINB) while accounting for sequencing depth (library size) and other covariates (e.g., cell types). This allows researchers to identify genes that undergo subtle distributional shifts—such as moving from a unimodal ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scShapes.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Malindrie/scShapes",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scShapes"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scShapes.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Malindrie/scShapes",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scshapes\n\n## Overview\n\n`scShapes` is an R package designed to go beyond simple differential expression by modeling the specific distribution \"shape\" of gene expression in single-cell RNA-seq (scRNA-seq) data. It uses a Generalized Linear Model (GLM) framework to fit four discrete distributions (P, NB, ZIP, ZINB) while accounting for sequencing depth (library size) and other covariates (e.g., cell types). This allows researchers to identify genes that undergo subtle distributional shifts—such as moving from a unimodal to a zero-inflated state—between treatment conditions.\n\n## Workflow and Key Functions\n\n### 1. Data Preparation and Filtering\nThe package expects a count matrix where rows are genes and columns are cells. It is recommended to filter out lowly expressed genes.\n\n```r\nlibrary(scShapes)\nlibrary(BiocParallel)\n\n# Filter genes: keep those expressed in at least 10% of cells\nscData_filt <- filter_counts(counts_matrix, perc.zero = 0.1)\n```\n\n### 2. Preliminary Distribution Testing\nUse the Kolmogorov-Smirnov (KS) test to identify genes that potentially belong to the ZINB family. This step requires library sizes (for offsets) and any relevant covariates.\n\n```r\n# Run KS test with parallel processing\nscData_KS <- ks_test(\n    counts = counts_matrix, \n    cexpr = covariates_df, \n    lib.size = library_size_vector, \n    BPPARAM = SnowParam(workers = 8, type = \"SOCK\")\n)\n\n# Select significant genes (default p-value < 0.01 with BH correction)\nscData_KS_sig <- ks_sig(scData_KS)\n\n# Subset original counts to significant genes\nsig_counts <- counts_matrix[rownames(counts_matrix) %in% names(scData_KS_sig$genes), ]\n```\n\n### 3. Model Fitting and Selection\nFit the four candidate distributions (P, NB, ZIP, ZINB) to the filtered genes and select the best fit based on the Bayesian Information Criterion (BIC).\n\n```r\n# Fit the 4 models\nscData_models <- fit_models(\n    counts = sig_counts, \n    cexpr = covariates_df, \n    lib.size = library_size_vector, \n    BPPARAM = SnowParam(workers = 8, type = \"SOCK\")\n)\n\n# Calculate BIC and select model with least BIC\nscData_bicvals <- model_bic(scData_models)\nscData_least_bic <- lbic_model(scData_bicvals, sig_counts)\n```\n\n### 4. Goodness-of-Fit and Final Selection\nPerform Likelihood Ratio Tests (LRT) to ensure model adequacy and confirm the presence of zero-inflation.\n\n```r\n# Test for model adequacy\nscData_gof <- gof_model(\n    scData_least_bic, \n    cexpr = covariates_df, \n    lib.size = library_size_vector, \n    BPPARAM = SnowParam(workers = 8, type = \"SOCK\")\n)\n\n# Identify the final distribution of best fit for each gene\nscData_fit <- select_model(scData_gof)\n\n# Extract model parameters (mu, size, pi)\nscData_params <- model_param(scData_models, scData_fit)\n```\n\n### 5. Differential Distribution (Shape) Analysis\nTo compare two conditions (e.g., Control vs. Stimulated), run the pipeline for each condition independently, then compare the resulting distribution assignments.\n\n```r\n# Assuming 'distr_df' has columns 'CTRL' and 'STIM' with distribution names\n# Identify genes changing shape between conditions\nshape_changes <- change_shape(distr_df)\n\n# shape_changes$genes_change_shape: Genes with different distributions\n# shape_changes$genes_unimodal_to_zi: Genes shifting between unimodal and zero-inflated\n```\n\n## Tips for Success\n- **Parallelization**: Always use `BiocParallel` (e.g., `SnowParam`) as fitting GLMs for thousands of genes is computationally intensive.\n- **Library Size**: The package uses the log of library sizes as an offset in the GLM to normalize for sequencing depth. Ensure your `lib.size` vector matches the columns of your count matrix.\n- **Covariates**: Include biological or technical factors (like cell type or batch) in the `cexpr` argument to improve model accuracy.\n\n## Reference documentation\n- [The vignette for running scShapes (Rmd)](./references/vignette_scShapes.Rmd)\n- [The vignette for running scShapes (Markdown)](./references/vignette_scShapes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scshapes",
+    "description": "scShapes models and identifies the distribution shapes of gene expression in single-cell RNA-seq data using a generalized linear model framework. Use when user asks to filter genes, perform Kolmogorov-Smirnov tests, fit discrete probability distributions, or identify differential distribution shapes between treatment conditions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scShapes.html"
+  }
+}

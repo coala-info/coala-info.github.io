@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-xde",
+  "category": "bioconductor",
+  "name": "bioconductor-xde",
+  "description": "This tool performs Bayesian hierarchical modeling for cross-study differential expression analysis of gene expression datasets. Use when user asks to integrate multiple gene expression datasets, identify concordant or discordant differential expression patterns, or account for study-specific technological effects in meta-analyses.",
+  "overview": "The `XDE` package fits a Bayesian hierarchical model to gene expression data from two or more studies. It is designed to improve statistical power by combining data while filtering out technological variation between platforms. It identifies genes that are differentially expressed (DE) across all studies (concordant) or in a subset of studies (discordant).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/XDE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "XDE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/XDE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-xde\n\nname: bioconductor-xde\ndescription: Bayesian hierarchical modeling for cross-study differential expression analysis. Use this skill to integrate multiple gene expression datasets (ExpressionSets) to identify concordant or discordant differential expression patterns while accounting for study-specific technological effects.\n\n# bioconductor-xde\n\n## Overview\nThe `XDE` package fits a Bayesian hierarchical model to gene expression data from two or more studies. It is designed to improve statistical power by combining data while filtering out technological variation between platforms. It identifies genes that are differentially expressed (DE) across all studies (concordant) or in a subset of studies (discordant).\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be organized into an `ExpressionSetList`. All `ExpressionSet` objects in the list must have identical `featureNames` (e.g., mapped to common Entrez or Unigene IDs) and a common binary phenotype variable.\n\n```r\nlibrary(XDE)\n# xlist is an ExpressionSetList\n# Ensure a common binary covariate exists in all studies\nlabel <- \"adenoVsquamous\"\nstopifnot(all(sapply(xlist, function(x) label %in% varLabels(x))))\n```\n\n### 2. Initializing Parameters\nThe `XdeParameter` class manages MCMC hyperparameters, starting values, and tuning.\n\n```r\n# one.delta=TRUE assumes a gene is DE in all studies or none\n# one.delta=FALSE allows study-specific DE (delta_gp model)\nparams <- new(\"XdeParameter\", esetList=xlist, phenotypeLabel=label, one.delta=FALSE)\n```\n\n### 3. Fitting the Model\nThe `xde` function performs the MCMC sampling. It is recommended to run a burn-in period first.\n\n```r\n# Run burn-in (output not saved to disk)\niterations(params) <- 1000\nburnin(params) <- TRUE\nfit_burn <- xde(params, xlist)\n\n# Run production MCMC starting from the last state of burn-in\niterations(params) <- 2000\nburnin(params) <- FALSE\ndirectory(params) <- \"mcmc_logs\" # Directory for log files\nfit_final <- xde(params, xlist, fit_burn)\n```\n\n### 4. MCMC Diagnostics\nAssess convergence by plotting trace plots of hyperparameters that are not gene-indexed.\n\n```r\n# Load a chain from the log directory\nc2_chain <- fit_final$c2\nplot.ts(c2_chain, ylab=\"c2\", xlab=\"iterations\")\n```\n\n### 5. Posterior Summaries\nCalculate the Bayesian Effect Size (BES) and posterior probabilities of differential expression.\n\n```r\n# Calculate BES (requires delta, Delta, and sigma2 chains to be saved)\n# bayesianEffectSize(fit_final) <- calculateBayesianEffectSize(fit_final)\n\n# Access posterior averages for concordant/discordant DE\n# These are typically stored in a postAvg object after processing\n# postAvg[, \"concordant\"]  # Prob of same-direction DE across studies\n# postAvg[, \"discordant\"]  # Prob of different-direction DE across studies\n```\n\n## Key Tips\n- **Memory Management**: MCMC chains for gene-indexed parameters (nu, Delta, delta, sigma2) are very large. Use `thin(params)` to save every $n$-th iteration or disable specific outputs using `output(params)[...] <- 0`.\n- **Starting Values**: If the model struggles to converge, use `empiricalStart(xlist, phenotypeLabel)` to generate better initial values for the `firstMcmc` slot.\n- **Mapping**: Successful meta-analysis depends on high-quality mapping of platform-specific probes to a common reference identifier before creating the `ExpressionSetList`.\n\n## Reference documentation\n- [XDE](./references/XDE.md)\n- [XdeParameterClass](./references/XdeParameterClass.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-xde",
+    "description": "This tool performs Bayesian hierarchical modeling for cross-study differential expression analysis of gene expression datasets. Use when user asks to integrate multiple gene expression datasets, identify concordant or discordant differential expression patterns, or account for study-specific technological effects in meta-analyses.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/XDE.html"
+  }
+}

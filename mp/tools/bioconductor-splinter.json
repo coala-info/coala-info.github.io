@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-splinter",
+  "category": "bioconductor",
+  "name": "bioconductor-splinter",
+  "description": "\"Bioconductor-splinter analyzes alternative splicing events and predicts their impact on protein sequences and primer design. Use when user asks to analyze alternative splicing events, predict protein-level impacts like nonsense-mediated decay, or design PCR primers for experimental validation.\"",
+  "overview": "SPLINTER (Splicing Prediction and INTERpretation) is a Bioconductor package designed to bridge the gap between identifying alternative splicing events and experimental validation. It allows users to import splicing data (e.g., from rMATS), visualize events, predict the impact on coding sequences, and automate the design of primers for RT-PCR validation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SPLINTER.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/dianalow/SPLINTER",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SPLINTER"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPLINTER.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/dianalow/SPLINTER",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-splinter\n\nname: bioconductor-splinter\ndescription: Analysis of alternative splicing sites, interpretation of sequence outcomes, and primer design for validation. Use this skill when analyzing transcriptomics data for alternative splicing events (SE, RI, MXE, A5SS, A3SS), predicting the protein-level impact of splicing changes (e.g., NMD, early termination), or designing PCR primers to validate splicing variants.\n\n## Overview\n\nSPLINTER (Splicing Prediction and INTERpretation) is a Bioconductor package designed to bridge the gap between identifying alternative splicing events and experimental validation. It allows users to import splicing data (e.g., from rMATS), visualize events, predict the impact on coding sequences, and automate the design of primers for RT-PCR validation.\n\n## Core Workflow\n\n### 1. Initialization and Data Loading\nLoad the package and prepare the genome and transcriptome environment.\n\n```r\nlibrary(SPLINTER)\nlibrary(BSgenome.Mmusculus.UCSC.mm9) # Example genome\nlibrary(txdbmaker)\n\n# Load genome\nbsgenome <- BSgenome.Mmusculus.UCSC.mm9\n\n# Create TxDb from GTF (ensure compatibility with your splicing analysis)\ntxdb <- makeTxDbFromGFF(\"path/to/annotation.gtf\", chrominfo = Seqinfo(genome=\"mm9\"))\nthecds <- cdsBy(txdb, by=\"tx\", use.names=TRUE)\ntheexons <- exonsBy(txdb, by=\"tx\", use.names=TRUE)\n```\n\n### 2. Importing Splicing Events\nSPLINTER natively supports rMATS output but can be adapted for any tool providing exon coordinates.\n\n```r\n# Supported types: \"SE\" (Skipped Exon), \"RI\" (Retained Intron), \"MXE\", \"A5SS\", \"A3SS\"\nmats_file <- \"skipped_exons.txt\"\nsplice_data <- extractSpliceEvents(data=mats_file, filetype='mats', splicetype=\"SE\")\n\n# Add gene symbols if using ENSEMBL IDs\nsplice_data <- addEnsemblAnnotation(data=splice_data, species=\"mmusculus\")\n```\n\n### 3. Analyzing a Specific Event\nSelect a gene of interest and identify compatible transcripts.\n\n```r\n# Select a record\nsingle_record <- splice_data$data[splice_data$data$Symbol == \"Prmt5\", ][1, ]\n\n# Find transcripts containing the gene/event\nvalid_tx <- findTX(id=single_record$ID, tx=theexons, db=txdb)\nvalid_cds <- findTX(id=single_record$ID, tx=thecds, db=txdb)\n\n# Construct Region of Interest (ROI)\nroi <- makeROI(single_record, type=\"SE\")\n\n# Find transcripts compatible with the specific splicing event\ncompatible_tx <- findCompatibleEvents(valid_tx, roi=roi)\n```\n\n### 4. Simulating Sequence Outcomes\nPredict how the splicing event affects the protein sequence.\n\n```r\n# Remove the skipped exon from the coding sequence\nregion_minus_exon <- removeRegion(compatible_cds$hits[[1]], roi)\n\n# Compare sequences (WT vs Spliced)\n# direction=TRUE checks for translation; fullseq=FALSE focuses on the change site\nevent <- eventOutcomeCompare(seq1=compatible_cds$hits[[1]], \n                             seq2=region_minus_exon, \n                             genome=bsgenome, \n                             direction=TRUE)\n\n# Check for Nonsense Mediated Decay (NMD) or early termination\nprint(event$eventtypes)\n```\n\n### 5. Primer Design and PCR Prediction\nGenerate primers that span the junction of interest.\n\n```r\n# Get DNA sequence for the ROI (junction marked with [])\nregion_dna <- getRegionDNA(roi, bsgenome)\n\n# Design primers (requires Primer3 installed and path defined)\n# primers <- callPrimer3(seq=region_dna$seq, sequence_target=region_dna$jstart)\n\n# Predict PCR product sizes for both isoforms\ncp <- checkPrimer(primers[1,], bsgenome, roi)\npcr_wt <- getPCRsizes(cp, theexons)\npcr_alt <- getPCRsizes(cp, region_minus_exon)\n```\n\n### 6. Visualization\nGenerate coverage plots and PSI (Percent Spliced In) barplots.\n\n```r\n# Plot genomic range and BAM coverage\neventPlot(transcripts=theexons, roi_plot=roi, bams=c(\"wt.bam\", \"mt.bam\"), \n          names=c('WT', 'Mutant'), annoLabel=\"GeneName\")\n\n# Plot PSI values\npsiPlot(single_record)\n```\n\n## Tips and Best Practices\n- **Genome Compatibility**: Always ensure the `BSgenome` object matches the assembly version used to generate your GTF and BAM files.\n- **ROI Types**: `makeROI` creates two representations: Type 1 (usually the inclusion isoform) and Type 2 (usually the exclusion/alternative isoform).\n- **Primer3**: The `callPrimer3` function is a wrapper. If Primer3 is not in your system path, you must provide the path to the executable.\n- **NMD Prediction**: Use `eventOutcomeCompare` to quickly screen which alternative splicing events are likely to result in non-functional proteins or degraded transcripts.\n\n## Reference documentation\n- [SPLINTER Vignette](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-splinter",
+    "description": "Bioconductor-splinter analyzes alternative splicing events and predicts their impact on protein sequences and primer design. Use when user asks to analyze alternative splicing events, predict protein-level impacts like nonsense-mediated decay, or design PCR primers for experimental validation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPLINTER.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-snapcgh",
+  "category": "bioconductor",
+  "name": "bioconductor-snapcgh",
+  "description": "This tool provides a comprehensive pipeline for the segmentation, normalization, and processing of array CGH data. Use when user asks to read aCGH data, normalize log2 ratios, perform genomic segmentation using algorithms like BioHMM or DNAcopy, and visualize copy number profiles.",
+  "overview": "The `snapCGH` package provides a comprehensive pipeline for the Segmentation, Normalization, and Processing of array CGH data. It is designed to work seamlessly with the `limma` package, extending its `RGList` and `MAList` objects to handle genomic coordinates. The package is notable for its implementation of `BioHMM` (a heterogeneous hidden Markov model) and its ability to act as a wrapper for several other popular segmentation methods.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/snapCGH.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "snapCGH"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/snapCGH.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-snapcgh\n\nname: bioconductor-snapcgh\ndescription: Analysis of array CGH (aCGH) data including reading, normalization, and segmentation. Use this skill when you need to process aCGH data in R, specifically for: (1) Reading GenePix, Agilent, Bluefuse, or Nimblegen data, (2) Incorporating genomic positional information, (3) Normalizing log2 ratios, (4) Running segmentation algorithms (BioHMM, HomHMM, GLAD, DNAcopy, tilingArray), and (5) Visualizing copy number profiles across the genome or specific chromosomes.\n\n# bioconductor-snapcgh\n\n## Overview\n\nThe `snapCGH` package provides a comprehensive pipeline for the Segmentation, Normalization, and Processing of array CGH data. It is designed to work seamlessly with the `limma` package, extending its `RGList` and `MAList` objects to handle genomic coordinates. The package is notable for its implementation of `BioHMM` (a heterogeneous hidden Markov model) and its ability to act as a wrapper for several other popular segmentation methods.\n\n## Typical Workflow\n\n### 1. Data Loading and Pre-processing\nLoad the library and read in raw intensity data. `snapCGH` uses `limma`'s reading functions but adds positional metadata.\n\n```r\nlibrary(snapCGH)\n\n# Read targets and raw images (GenePix example)\ntargets <- readTargets(\"targets.txt\")\nRG <- read.maimages(targets$FileName, source = \"genepix\")\n\n# Add positional information (Chr and Position in Mb)\n# Supported: \"Agilent\", \"Bluefuse\", \"Nimblegen\"\nRG <- readPositionalInfo(RG, \"Agilent\")\n\n# Alternatively, read from a custom clone info file\n# File must have 'Chr' and 'Position' columns\nRG <- read.clonesinfo(\"cloneinfo.txt\", RG)\n\n# Background correction and Normalization\nRG2 <- backgroundCorrect(RG, method = \"minimum\")\nMA <- normalizeWithinArrays(RG2, method = \"median\")\n```\n\n### 2. Processing for Segmentation\nBefore segmentation, data should be \"tidied\" to handle replicate clones and ensure correct ordering.\n\n```r\n# Average replicates and remove duplicates\nMA2 <- processCGH(MA, method.of.averaging = mean, ID = \"ID\")\n```\n\n### 3. Segmentation Methods\n`snapCGH` provides access to multiple algorithms. All return a `SegList` object.\n\n*   **BioHMM (Recommended):** Heterogeneous HMM that accounts for varying distances between clones.\n    ```r\n    SegInfo.Bio <- runBioHMM(MA2)\n    ```\n*   **HomHMM:** Homogeneous HMM.\n    ```r\n    SegInfo.Hom <- runHomHMM(MA2, criteria = \"AIC\")\n    ```\n*   **Wrappers:** Access methods from other packages (`DNAcopy`, `GLAD`, `tilingArray`).\n    ```r\n    SegInfo.DNAcopy <- runDNAcopy(MA2)\n    ```\n\n### 4. Merging States\nSegmentation often produces states with very similar means. Use `mergeStates` to consolidate these.\n\n```r\nSegInfo.merged <- mergeStates(SegInfo.Bio, MergeType = 1)\n```\n\n### 5. Visualization\nThe package includes static and interactive plotting functions.\n\n*   **Genome Plot:** Plot log2 ratios against genomic position.\n    ```r\n    genomePlot(MA2, array = 1)\n    # Plot specific chromosome\n    genomePlot(MA2, array = 1, chrom.to.plot = 8)\n    ```\n*   **Segmented Plot:** Overlay predicted segments on the data.\n    ```r\n    plotSegmentedGenome(SegInfo.merged, array = 1)\n    ```\n*   **Interactive Zooming:**\n    ```r\n    # Click on a chromosome to zoom in\n    zoomGenome(SegInfo.merged, array = 1)\n    # Click two points on a chromosome to zoom into a region\n    zoomChromosome(SegInfo.merged, array = 1, chrom.to.plot = 1)\n    ```\n\n## Simulation and Evaluation\nYou can simulate aCGH data to test the performance of different segmentation algorithms.\n\n```r\n# Simulate 4 arrays\nsimulation <- simulateData(nArrays = 4)\n\n# Run algorithms on simulated data\nSim.DNAcopy <- runDNAcopy(simulation)\n\n# Compare against ground truth\nrates <- compareSegmentations(simulation, offset = 0, Sim.DNAcopy)\n# Access True Positive Rate (TPR) and False Discovery Rate (FDR)\nrates$TPR\nrates$FDR\n```\n\n## Tips and Best Practices\n*   **Reference Channel:** If Cy3 is the reference, set `RG$design <- 1`. If Cy5 is the reference, set `RG$design <- -1`.\n*   **Memory/Time:** Segmentation (especially BioHMM) on large datasets can be computationally intensive. Ensure your data is averaged using `processCGH` to reduce the number of points if necessary.\n*   **Chromosome Labels:** The package handles 'X' and 'Y' as 23 and 24 automatically when reading clone information.\n\n## Reference documentation\n- [snapCGH Users' Guide](./references/snapCGHguide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-snapcgh",
+    "description": "This tool provides a comprehensive pipeline for the segmentation, normalization, and processing of array CGH data. Use when user asks to read aCGH data, normalize log2 ratios, perform genomic segmentation using algorithms like BioHMM or DNAcopy, and visualize copy number profiles.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/snapCGH.html"
+  }
+}

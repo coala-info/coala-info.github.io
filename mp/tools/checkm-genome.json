@@ -1,0 +1,56 @@
+{
+  "id": "checkm-genome",
+  "category": "CLI",
+  "name": "checkm-genome",
+  "description": "CheckM evaluates the quality of genomic bins by estimating completeness and contamination using lineage-specific marker sets. Use when user asks to assess genome quality, identify single-copy marker genes, merge complementary bins, or remove outlier sequences from genomic datasets.",
+  "overview": "CheckM is a specialized bioinformatics suite designed to evaluate the quality of genomic bins. It uses a phylogenetic framework to identify sets of ubiquitous, single-copy genes (marker sets) specific to a genome's lineage. By checking for the presence, absence, or duplication of these markers, it provides robust estimates of how much of a genome is present (completeness) and how much foreign DNA is mixed in (contamination). This skill provides the necessary command patterns for executing standa",
+  "homepage": "https://github.com/Ecogenomics/CheckM",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/checkm-genome/overview",
+  "github": "https://github.com/Ecogenomics/CheckM",
+  "conda_downloads": "113.2K",
+  "conda_downloads_num": 113200,
+  "last_updated": "2025-08-14",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "checkm-genome_checkm",
+      "checkm-genome_checkm lineage_wf",
+      "checkm-genome_checkm taxon_list",
+      "checkm-genome_checkm taxonomy_wf",
+      "checkm-genome_checkm qa",
+      "checkm-genome_checkm ssu_finder",
+      "checkm-genome_checkm analyze"
+    ],
+    "description": "CheckM is a tool for assessing the quality of microbial genome bins.",
+    "docker_image": "quay.io/biocontainers/checkm-genome:1.2.4--pyhdfd78af_2",
+    "homepage": "https://github.com/Ecogenomics/CheckM",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/checkm-genome/overview",
+    "github": "https://github.com/Ecogenomics/CheckM",
+    "conda_downloads": "113.2K",
+    "last_updated": "2025-08-14",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "checkm-genome_checkm analyze.cwl",
+    "checkm-genome_checkm lineage_wf.cwl",
+    "checkm-genome_checkm qa.cwl",
+    "checkm-genome_checkm ssu_finder.cwl",
+    "checkm-genome_checkm taxonomy_wf.cwl",
+    "checkm-genome_checkm.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# checkm-genome\n\n## Overview\nCheckM is a specialized bioinformatics suite designed to evaluate the quality of genomic bins. It uses a phylogenetic framework to identify sets of ubiquitous, single-copy genes (marker sets) specific to a genome's lineage. By checking for the presence, absence, or duplication of these markers, it provides robust estimates of how much of a genome is present (completeness) and how much foreign DNA is mixed in (contamination). This skill provides the necessary command patterns for executing standard workflows and managing large-scale genomic datasets.\n\n## Core Workflows\n\n### Lineage-Specific Workflow (Recommended)\nThe most common entry point. It automatically places bins in a reference tree, identifies the appropriate marker set, and calculates statistics.\n```bash\ncheckm lineage_wf <bin_directory> <output_directory>\n```\n*   **Note**: Ensure your bins are in FASTA format (usually `.fna`, `.fasta`, or `.fa`).\n*   **Threads**: Use `-t <threads>` to speed up the HMMER and Prodigal steps.\n\n### Taxonomic-Specific Workflow\nUse this if you already know the taxonomic identity of your bins and want to use a specific marker set (e.g., only Bacterial markers).\n```bash\n# List available taxa\ncheckm taxon_list\n\n# Run for a specific rank (e.g., Family Enterobacteriaceae)\ncheckm taxon_set family Enterobacteriaceae <marker_file>\ncheckm analyze <marker_file> <bin_directory> <output_directory>\ncheckm qa <marker_file> <output_directory>\n```\n\n## Bin Exploration and Modification\n\n### Identifying Mergable Bins\nCheckM can suggest bins that might be parts of the same genome based on complementary marker sets.\n```bash\ncheckm merge <marker_set_file> <bin_directory> <output_directory>\n```\n*   **Expert Tip**: Only merge bins if they also show similar GC content and coding density (check via `checkm qa`).\n\n### Removing Outliers\nIdentify and remove sequences that don't fit the genomic profile (GC, tetranucleotide signature, or coding density) of the rest of the bin.\n```bash\n# 1. Calculate tetranucleotide signatures\ncheckm tetra <seq_file> <tetra_output_file>\n\n# 2. Identify outliers\ncheckm outliers <output_directory> <bin_directory> <tetra_output_file> <outliers_tsv>\n\n# 3. Modify bin (remove identified outliers)\ncheckm modify -r <seq_id> <original_bin.fna> <new_bin.fna>\n```\n\n## Best Practices and Troubleshooting\n\n### Handling Large Datasets\n*   **Memory Management**: For runs exceeding 1,000 genomes, split them into batches. A 64GB RAM machine typically handles ~1,000 genomes at 40 threads efficiently.\n*   **Recursion Errors**: If you encounter Python recursion errors, it is a known symptom of processing too many genomes in a single directory; use smaller batches.\n\n### Data Path Configuration\nIf CheckM cannot find its reference data, set the environment variable:\n```bash\nexport CHECKM_DATA_PATH=/path/to/checkm_data\n```\n\n### Quality Thresholds\nStandard \"High-Quality\" MAG (Metagenome-Assembled Genome) definitions often require:\n*   **Completeness**: >90%\n*   **Contamination**: <5%\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| checkm | CheckM is a tool for assessing the quality of microbial genome bins. |\n| checkm analyze | Identify marker genes in bins and calculate genome statistics. |\n| checkm lineage_wf | Runs tree, lineage_set, analyze, qa |\n| checkm qa | Assess bins for contamination and completeness. |\n| checkm ssu_finder | Identify SSU (16S/18S) rRNAs in sequences. |\n| checkm taxonomy_wf | Runs taxon_set, analyze, qa |\n\n## Reference documentation\n- [CheckM Wiki Home](./references/github_com_Ecogenomics_CheckM_wiki.md)\n- [Genome Quality Commands](./references/github_com_Ecogenomics_CheckM_wiki_Genome-Quality-Commands.md)\n- [Bin Exploration and Modification](./references/github_com_Ecogenomics_CheckM_wiki_Bin-Exploration-and-Modification.md)\n- [Workflows Overview](./references/github_com_Ecogenomics_CheckM_wiki_Workflows.md)\n- [Bugs and Feature Requests (Batch Processing)](./references/github_com_Ecogenomics_CheckM_wiki_Bugs-and-Feature-Requests.md)",
+  "skill_front_matter": {
+    "name": "checkm-genome",
+    "description": "CheckM evaluates the quality of genomic bins by estimating completeness and contamination using lineage-specific marker sets. Use when user asks to assess genome quality, identify single-copy marker genes, merge complementary bins, or remove outlier sequences from genomic datasets.",
+    "homepage": "https://github.com/Ecogenomics/CheckM"
+  }
+}

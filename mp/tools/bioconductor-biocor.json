@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biocor",
+  "category": "bioconductor",
+  "name": "bioconductor-biocor",
+  "description": "\"BioCor calculates functional similarity between genes, pathways, and clusters based on shared pathway membership. Use when user asks to calculate biological correlation, compare gene clusters using Dice similarity, or integrate functional similarities with gene co-expression network analysis.\"",
+  "overview": "BioCor calculates functional similarities between pathways, gene sets, genes, and clusters of genes. Unlike semantic similarity packages that rely on Gene Ontology (GO) structures, BioCor uses pathway membership (e.g., KEGG, Reactome) and the Sørensen-Dice index to quantify how biologically related two entities are based on shared components. It is particularly useful for enhancing gene co-expression network analysis (WGCNA) by incorporating known functional relationships.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BioCor.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocor/overview",
+  "github": "https://github.com/llrs/BioCor",
+  "conda_downloads": "23.5K",
+  "conda_downloads_num": 23500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BioCor"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioCor.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocor/overview",
+    "github": "https://github.com/llrs/BioCor",
+    "conda_downloads": "23.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biocor\n\nname: bioconductor-biocor\ndescription: Functional similarity analysis for genes, pathways, and clusters using pathway/gene set information. Use when calculating biological correlation (BioCor) based on shared pathway membership, integrating functional similarities with WGCNA, or comparing gene clusters using Dice similarity.\n\n# bioconductor-biocor\n\n## Overview\nBioCor calculates functional similarities between pathways, gene sets, genes, and clusters of genes. Unlike semantic similarity packages that rely on Gene Ontology (GO) structures, BioCor uses pathway membership (e.g., KEGG, Reactome) and the Sørensen-Dice index to quantify how biologically related two entities are based on shared components. It is particularly useful for enhancing gene co-expression network analysis (WGCNA) by incorporating known functional relationships.\n\n## Installation\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"BioCor\")\n```\n\n## Data Preparation\nBioCor requires a named list where names are genes (e.g., Entrez IDs) and elements are character vectors of pathways/sets they belong to.\n\n```R\nlibrary(BioCor)\nlibrary(org.Hs.eg.db)\n\n# Example: Creating a gene-to-pathway list from org.Hs.eg.db\ngenes2path <- as.list(org.Hs.egPATH)\n# Remove genes with no pathway info\ngenes2path <- genes2path[!is.na(genes2path)]\n```\n\n## Core Functions\n\n### Pathway Similarity\nCalculate similarity between specific pathways based on gene overlap.\n```R\n# Similarity between two pathways\npathSim(\"04120\", \"03440\", genes2path)\n\n# Matrix for multiple pathways\npathways <- c(\"04120\", \"03440\", \"05200\")\nmpathSim(pathways, genes2path)\n```\n\n### Gene Similarity\nCalculate similarity between genes based on the pathways they share.\n```R\n# Compare two genes (using Entrez IDs)\ngeneSim(\"672\", \"675\", genes2path, method = \"max\")\n\n# Matrix for multiple genes\ngenes <- c(\"672\", \"675\", \"10\")\nmgeneSim(genes, genes2path, method = \"BMA\")\n```\n\n### Cluster Similarity\nCompare groups of genes (clusters) using two distinct strategies:\n1.  **By Pathways (`clusterSim`)**: Combines all pathways from each cluster and compares the sets.\n2.  **By Genes (`clusterGeneSim`)**: Calculates gene-to-gene similarities first, then aggregates.\n\n```R\ncluster1 <- c(\"672\", \"675\")\ncluster2 <- c(\"100\", \"10\", \"1\")\n\n# Pathway-based comparison\nclusterSim(cluster1, cluster2, genes2path)\n\n# Gene-based comparison (requires two methods: one for pathways, one for genes)\nclusterGeneSim(cluster1, cluster2, genes2path, method = c(\"max\", \"BMA\"))\n```\n\n## Advanced Workflows\n\n### Combining Information Sources\nMerge pathway data from different databases (e.g., KEGG and Reactome) or combine multiple similarity matrices.\n```R\n# Merge two pathway lists\ncombined_info <- combineSources(kegg_list, reactome_list)\n\n# Merge similarity matrices (e.g., Expression correlation + Functional similarity)\nsim_list <- list(exp = cor_matrix, func = functional_sim_matrix)\nfinal_sim <- similarities(sim_list, weighted.sum, w = c(0.7, 0.3))\n```\n\n### Integration with WGCNA\nUse BioCor to create a hybrid adjacency matrix that considers both expression correlation and functional similarity.\n```R\n# 1. Calculate expression correlation\nexpr_sim <- WGCNA::cor(expression_data)\n\n# 2. Calculate functional similarity for the same genes\nfunc_sim <- mgeneSim(colnames(expression_data), genes2path)\n\n# 3. Combine and create adjacency\ncombined <- similarities(list(expr_sim, func_sim), mean, na.rm = TRUE)\nadj <- adjacency.fromSimilarity(combined, power = 6)\n```\n\n## Tips and Troubleshooting\n*   **Method Selection**: \"max\" is generally recommended for combining pathway scores to find the strongest functional link. \"BMA\" (Best-Match Average) is standard for gene-level and cluster-level aggregation.\n*   **Namespace Conflicts**: BioCor shares function names with `GOSemSim` (e.g., `geneSim`, `mgeneSim`). If both are loaded, use `BioCor::geneSim()` to ensure the correct method is called.\n*   **ID Mapping**: Ensure the gene IDs in your pathway list match the IDs used in your experimental data (e.g., all Entrez or all Symbols).\n*   **Dice vs Jaccard**: BioCor uses Dice by default. Use `D2J()` to convert a Dice similarity matrix to Jaccard, or `J2D()` for the reverse.\n\n## Reference documentation\n- [About BioCor](./references/BioCor_1_basics.md)\n- [Advanced usage of BioCor](./references/BioCor_2_advanced.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biocor",
+    "description": "BioCor calculates functional similarity between genes, pathways, and clusters based on shared pathway membership. Use when user asks to calculate biological correlation, compare gene clusters using Dice similarity, or integrate functional similarities with gene co-expression network analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioCor.html"
+  }
+}

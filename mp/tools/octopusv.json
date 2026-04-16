@@ -1,0 +1,61 @@
+{
+  "id": "octopusv",
+  "category": "CLI",
+  "name": "octopusv",
+  "description": "\"OctopuSV harmonizes and standardizes structural variant caller outputs into a unified format for downstream analysis and merging. Use when user asks to standardize VCF files, resolve breakend notations into standard SV types, merge variant calls from multiple tools, perform somatic variant calling, or benchmark structural variants against a truth set.\"",
+  "overview": "OctopuSV is a specialized toolkit designed to harmonize the inconsistent outputs of various structural variant callers. It addresses the challenge of varying VCF implementations by using a unified intermediate format called SVCF. This allows for seamless integration of short-read and long-read callers, resolution of complex breakend (BND) notations into standard SV types (DEL, DUP, INV, INS, TRA), and robust somatic filtering. Use this skill to standardize workflows from raw variant calls to pub",
+  "homepage": "https://github.com/ylab-hi/octopusV",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/octopusv/overview",
+  "github": "https://github.com/ylab-hi/octopusV",
+  "conda_downloads": "822",
+  "conda_downloads_num": 822,
+  "last_updated": "2026-02-06",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "octopusv_correct",
+      "octopusv_merge",
+      "octopusv_benchmark",
+      "octopusv_stat",
+      "octopusv_plot",
+      "octopusv_somatic",
+      "octopusv_svcf2vcf",
+      "octopusv_svcf2bed",
+      "octopusv_svcf2bedpe"
+    ],
+    "description": "Correct SV events with optional quality filtering.",
+    "docker_image": "quay.io/biocontainers/octopusv:0.3.0--pyhdfd78af_0",
+    "homepage": "https://github.com/ylab-hi/octopusV",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/octopusv/overview",
+    "github": "https://github.com/ylab-hi/octopusV",
+    "conda_downloads": "822",
+    "last_updated": "2026-02-06",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "octopusv_benchmark.cwl",
+    "octopusv_correct.cwl",
+    "octopusv_merge.cwl",
+    "octopusv_plot.cwl",
+    "octopusv_somatic.cwl",
+    "octopusv_stat.cwl",
+    "octopusv_svcf2bed.cwl",
+    "octopusv_svcf2bedpe.cwl",
+    "octopusv_svcf2vcf.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# octopusv\n\n## Overview\n\nOctopuSV is a specialized toolkit designed to harmonize the inconsistent outputs of various structural variant callers. It addresses the challenge of varying VCF implementations by using a unified intermediate format called SVCF. This allows for seamless integration of short-read and long-read callers, resolution of complex breakend (BND) notations into standard SV types (DEL, DUP, INV, INS, TRA), and robust somatic filtering. Use this skill to standardize workflows from raw variant calls to publication-ready cohort or somatic analysis.\n\n## Core Workflow\n\nThe standard OctopuSV pipeline follows a three-step process:\n1.  **Standardize**: Convert raw caller output to SVCF using `octopusv correct`.\n2.  **Analyze**: Perform merging, somatic calling, or benchmarking on the SVCF files.\n3.  **Export**: Convert the final results back to standard VCF using `octopusv svcf2vcf`.\n\n## Command Reference and Best Practices\n\n### 1. Standardization and BND Resolution\nUse `correct` to resolve paired BND records into concrete SV types. This is essential for BND-heavy callers like GRIDSS or SvABA.\n\n```bash\n# Basic standardization\noctopusv correct -i input.vcf -o output.svcf\n\n# Apply quality and length filters during correction\noctopusv correct -i input.vcf -o output.svcf --min-svlen 50 --max-svlen 100000 --filter-pass\n\n# Adjust position tolerance for BND pairing (default is often sufficient)\noctopusv correct -i input.vcf -o output.svcf --pos-tolerance 5\n```\n\n### 2. Merging and Integration\nOctopuSV supports merging across different callers (multi-caller) or different individuals (multi-sample).\n\n*   **Intersection (High Confidence)**: `octopusv merge -i a.svcf b.svcf c.svcf -o intersection.svcf --intersect`\n*   **Union (Maximum Sensitivity)**: `octopusv merge -i a.svcf b.svcf -o union.svcf --union`\n*   **Minimum Support**: Keep variants found by at least N callers:\n    `octopusv merge -i a.svcf b.svcf c.svcf -o supported.svcf --min-support 2`\n*   **Complex Logic**: Use the `--expression` flag for specific filtering:\n    `octopusv merge -i A.svcf B.svcf C.svcf --expression \"(A AND B) AND NOT C\" -o filtered.svcf`\n\n### 3. Somatic Variant Calling\nExtract tumor-specific variants by comparing tumor and normal SVCFs. This works even for callers not natively designed for somatic analysis.\n\n```bash\n# Basic somatic extraction\noctopusv somatic -t tumor.svcf -n normal.svcf -o somatic.svcf\n\n# Fine-tune matching parameters\noctopusv somatic -t tumor.svcf -n normal.svcf -o somatic.svcf --max-distance 100 --min-jaccard 0.8\n```\n\n### 4. Benchmarking and Statistics\nEvaluate call sets against truth sets or generate visual reports.\n\n```bash\n# Benchmark against a truth set\noctopusv benchmark truth.vcf calls.svcf -o results --reference-distance 500 --size-similarity 0.7\n\n# Generate an interactive HTML report\noctopusv stat -i input.svcf -o stats.txt --report\n\n# Plot figures from statistics\noctopusv plot stats.txt -o figures_prefix\n```\n\n## Expert Tips\n\n*   **GRIDSS Support**: OctopuSV (v0.3.1+) natively resolves GRIDSS BND pairs to standard types and detects insertions from BND pairs with inserted sequences. No external R scripts are required.\n*   **SVCF vs VCF**: Always perform analysis (merge/somatic) on `.svcf` files. Only use `svcf2vcf` at the very end of the pipeline for downstream tools that require standard VCF.\n*   **Sample Names**: When merging in `--mode sample`, use `--sample-names` to ensure the output header correctly reflects the cohort.\n*   **Visualization**: The `--upsetr` flag in the `merge` command generates UpSet plots to visualize the overlap between different callers or samples.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| octopusv benchmark | Benchmark structural variation calls against a truth set using GIAB standards. |\n| octopusv correct | Correct SV events with optional quality filtering. |\n| octopusv plot | Generate plots from the statistics file. |\n| octopusv somatic | Extract somatic SVs by finding tumor-specific variants (tumor - normal intersection). |\n| octopusv svcf2bed | Convert SVCF file to BED format. |\n| octopusv svcf2bedpe | Convert SVCF file to BEDPE format. |\n| octopusv svcf2vcf | Convert SVCF file to VCF format. |\n| octopusv_merge | Merge multiple SVCF files based on specified strategy with consistent SOURCES and SAMPLE ordering. |\n| octopusv_stat | Analyze a single SVCF file and generate comprehensive statistics. |\n\n## Reference documentation\n- [OctopuSV README](./references/github_com_ylab-hi_OctopuSV_blob_main_README.md)\n- [SVCF Specifications](./references/github_com_ylab-hi_OctopuSV_blob_main_docs_SVCF_specifications.md)",
+  "skill_front_matter": {
+    "name": "octopusv",
+    "description": "OctopuSV harmonizes and standardizes structural variant caller outputs into a unified format for downstream analysis and merging. Use when user asks to standardize VCF files, resolve breakend notations into standard SV types, merge variant calls from multiple tools, perform somatic variant calling, or benchmark structural variants against a truth set.",
+    "homepage": "https://github.com/ylab-hi/octopusV"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "extract_vcf",
+  "category": "CLI",
+  "name": "extract_vcf",
+  "description": "This tool standardizes the extraction of specific fields and annotations from VCF files using a configuration-based plugin system. Use when user asks to extract variant information, parse INFO field annotations, or convert VCF data into specific data types using custom rules.",
+  "overview": "`extract_vcf` is a Python tool designed to standardize the extraction of information from VCF files, which often contain inconsistent or complex annotation formats. Instead of writing custom regex for every field, you define extraction logic in a simple `.ini` configuration file. The tool creates \"plugins\" based on these rules to handle data typing (float, int, str, flag) and multi-value resolution (e.g., taking the maximum CADD score from a comma-separated list).",
+  "homepage": "https://github.com/moonso/extract_vcf",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/extract_vcf/overview",
+  "github": "https://github.com/moonso/extract_vcf",
+  "conda_downloads": "3.0K",
+  "conda_downloads_num": 3000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "extract_vcf"
+    ],
+    "description": "Extract codon alignments from VCF files.",
+    "docker_image": "quay.io/biocontainers/extract-codon-alignment:0.0.1--py_0",
+    "homepage": "https://github.com/moonso/extract_vcf",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/extract_vcf/overview",
+    "github": "https://github.com/moonso/extract_vcf",
+    "conda_downloads": "3.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "extract_vcf.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# extract_vcf\n\n## Overview\n\n`extract_vcf` is a Python tool designed to standardize the extraction of information from VCF files, which often contain inconsistent or complex annotation formats. Instead of writing custom regex for every field, you define extraction logic in a simple `.ini` configuration file. The tool creates \"plugins\" based on these rules to handle data typing (float, int, str, flag) and multi-value resolution (e.g., taking the maximum CADD score from a comma-separated list).\n\n## Configuration Patterns\n\nThe core of `extract_vcf` is the `.ini` configuration file. Every config must include a `[Version]` section followed by individual plugin sections.\n\n### Mandatory Version Section\n```ini\n[Version]\nversion = 0.1\nname = my_extraction_profile\n```\n\n### Plugin Definitions\nEach plugin represents a specific field or annotation you want to extract.\n\n| Field | Description | Options |\n|-------|-------------|---------|\n| `field` | The VCF column to target | `ID`, `FILTER`, `QUAL`, `INFO` |\n| `data_type` | The Python type to return | `float`, `int`, `str`, `flag` |\n| `record_rule` | Logic for multiple values | `min`, `max`, `eq` |\n| `separators` | Character used to split values | Usually `','` |\n| `info_key` | The key inside the INFO column | Required if `field = INFO` |\n\n### Example: Extracting Allele Frequency and Impact Scores\n```ini\n[ExAC_AF]\nfield = INFO\ninfo_key = AF\ndata_type = float\nrecord_rule = max\nseparators = ','\n\n[CADD_Score]\nfield = INFO\ninfo_key = CADD\ndata_type = float\nrecord_rule = max\nseparators = ','\n\n[Is_DBSNP]\nfield = ID\ndata_type = flag\n```\n\n## Python API Usage\n\nTo use the skill in a script, initialize the `ConfigParser` and apply plugins to variant lines.\n\n```python\nimport extract_vcf\n\n# 1. Load the configuration\nconfigs = extract_vcf.ConfigParser(\"my_config.ini\")\n\n# 2. Process VCF lines (skipping headers)\nwith open(\"input.vcf\", 'r') as f:\n    for line in f:\n        if line.startswith('#'):\n            continue\n        \n        # The tool expects the raw variant line\n        variant = line.strip()\n        \n        # 3. Extract values using defined plugins\n        for name, plugin in configs.plugins.items():\n            value = plugin.get_value(variant)\n            print(f\"Plugin: {name}, Value: {value}\")\n```\n\n## Expert Tips\n\n*   **Handling Flags**: Use `data_type = flag` for fields that either exist or don't (like `PASS` in FILTER or a specific ID). The plugin will return a boolean.\n*   **Multi-allelic Sites**: When a VCF line has multiple alternative alleles, annotations are often comma-separated. Use `record_rule = max` for deleterious scores (to find the most severe) or `min` for frequencies (to find the rarest).\n*   **Raw Data Access**: If you need the unparsed string before the `record_rule` is applied, use `plugin.get_entry(variant)` instead of `get_value()`. This returns a list of all values found.\n*   **Missing Data**: If a field or `info_key` is missing for a specific variant, `get_value()` returns `None`. Always include null-handling logic in your downstream processing.\n\n## Reference documentation\n- [Extract VCF GitHub Overview](./references/github_com_moonso_extract_vcf.md)\n- [Bioconda extract_vcf Package](./references/anaconda_org_channels_bioconda_packages_extract_vcf_overview.md)",
+  "skill_front_matter": {
+    "name": "extract_vcf",
+    "description": "This tool standardizes the extraction of specific fields and annotations from VCF files using a configuration-based plugin system. Use when user asks to extract variant information, parse INFO field annotations, or convert VCF data into specific data types using custom rules.",
+    "homepage": "https://github.com/moonso/extract_vcf"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-prone",
+  "category": "bioconductor",
+  "name": "bioconductor-prone",
+  "description": "PRONE evaluates and compares multiple normalization methods for proteomics data within the R Bioconductor framework. Use when user asks to load proteomics data into SummarizedExperiment objects, apply simultaneous normalization techniques, perform TMT batch correction, or evaluate normalization performance through comparative visualization and differential expression analysis.",
+  "overview": "PRONE (Proteomics Normalization Evaluator) is a Bioconductor package designed for the comprehensive evaluation of normalization methods in proteomics workflows (LFQ and TMT). Its primary strength lies in its ability to apply multiple normalization techniques simultaneously to a single `SummarizedExperiment` object, allowing for side-by-side qualitative and quantitative comparison of how different normalization strategies affect downstream biological signals and differential expression results.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PRONE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/daisybio/PRONE",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PRONE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PRONE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/daisybio/PRONE",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-prone\n\nname: bioconductor-prone\ndescription: Expert guidance for the PRONE R package (Proteomics Normalization Evaluator). Use this skill when performing proteomics data analysis in R, specifically for loading data into SummarizedExperiment objects, preprocessing, comparing multiple normalization methods (including TMT batch correction like IRS), performing imputation, and conducting differential expression analysis with comparative visualization.\n\n# bioconductor-prone\n\n## Overview\n\nPRONE (Proteomics Normalization Evaluator) is a Bioconductor package designed for the comprehensive evaluation of normalization methods in proteomics workflows (LFQ and TMT). Its primary strength lies in its ability to apply multiple normalization techniques simultaneously to a single `SummarizedExperiment` object, allowing for side-by-side qualitative and quantitative comparison of how different normalization strategies affect downstream biological signals and differential expression results.\n\n## Core Workflow\n\n### 1. Data Loading\nPRONE uses the `SummarizedExperiment` class. Use `load_data()` to initialize the object.\n\n```r\nlibrary(PRONE)\n\n# data: protein intensities; md: metadata\n# Note: md must have a \"Column\" column matching sample names in data\nse <- load_data(data, md, \n                protein_column = \"Protein.IDs\", \n                gene_column = \"Gene.names\", \n                batch_column = \"Pool\",        # Optional: for TMT batches\n                ref_samples = ref_samples,    # Optional: for IRS normalization\n                condition_column = \"Group\")\n```\n\n### 2. Preprocessing and Imputation\nClean the data by removing low-quality samples or proteins and handling missing values.\n\n```r\n# Remove samples manually if needed\nse <- remove_samples_manually(se, \"Label\", c(\"Sample_A\", \"Sample_B\"))\n\n# Imputation (Mixed KNN for MAR and left-shifted Gaussian for MNAR)\nse <- impute_se(se, ain = NULL) # ain=NULL processes all assays\n```\n\n### 3. Comparative Normalization\nApply multiple methods at once. Use the `combination_pattern` to chain basic normalization with batch correction (e.g., Internal Reference Scaling - IRS).\n\n```r\n# List available methods\nget_normalization_methods()\n\n# Apply multiple methods\nse_norm <- normalize_se(se, \n                        methods = c(\"RobNorm\", \"Median\", \"IRS_on_RobNorm\", \"IRS_on_Median\"), \n                        combination_pattern = \"_on_\")\n```\n\n### 4. Evaluation of Normalization\nEvaluate which method best reduces technical bias while preserving biological variation.\n\n*   **Visual Inspection**: `plot_boxplots()`, `plot_densities()`, and `plot_PCA()`.\n*   **Intragroup Variation**: `plot_intragroup_correlation()`, `plot_intragroup_PCV()`, `plot_intragroup_PEV()`, and `plot_intragroup_PMAD()`.\n\n```r\n# Compare PCV reduction relative to log2 data\nplot_intragroup_PCV(se_norm, ain = NULL, diff = TRUE)\n```\n\n### 5. Differential Expression (DE) Analysis\nRun DE analysis across all normalization assays to see how method choice impacts results.\n\n```r\n# 1. Specify comparisons (Condition-Control)\ncomparisons <- c(\"Disease-Healthy\")\n\n# 2. Run DE using limma, DEqMS, or ROTS\nde_res <- run_DE(se = se_norm, \n                 comparisons = comparisons,\n                 DE_method = \"limma\", \n                 alpha = 0.05, \n                 logFC_up = 1)\n\n# 3. Visualize DE overlaps (Upset plot)\nplot_upset_DE(de_res, ain = NULL, plot_type = \"stacked\")\n```\n\n### 6. Functional Enrichment\nInterpret the biological relevance of DE proteins using `gprofiler2` integration.\n\n```r\nenrich_res <- plot_intersection_enrichment(se, de_res, \n                                           comparison = \"Disease-Healthy\",\n                                           id_column = \"Gene.Names\", \n                                           organism = \"hsapiens\", \n                                           source = \"KEGG\")\n```\n\n## Tips for Success\n*   **Assay Management**: Use `names(assays(se_norm))` to keep track of the normalization versions stored in your object.\n*   **TMT Reference Samples**: When working with TMT, use `remove_reference_samples(se_norm)` after normalization but before DE analysis.\n*   **Subsetting**: If evaluation shows certain methods perform poorly, use `subset_SE_by_norm()` to keep only the promising ones for downstream steps.\n*   **Thresholds**: Use `apply_thresholds(de_res, ...)` to update significance criteria without re-running the entire DE pipeline.\n\n## Reference documentation\n- [Getting started with PRONE](./references/PRONE.md)\n- [Preprocessing Tutorial](./references/Preprocessing.md)\n- [Imputation Tutorial](./references/Imputation.md)\n- [Normalization Tutorial](./references/Normalization.md)\n- [Differential Expression Tutorial](./references/Differential_Expression.md)\n- [Spike-In Tutorial](./references/Spike_In_Data.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-prone",
+    "description": "PRONE evaluates and compares multiple normalization methods for proteomics data within the R Bioconductor framework. Use when user asks to load proteomics data into SummarizedExperiment objects, apply simultaneous normalization techniques, perform TMT batch correction, or evaluate normalization performance through comparative visualization and differential expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PRONE.html"
+  }
+}

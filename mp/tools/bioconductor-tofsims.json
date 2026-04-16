@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tofsims",
+  "category": "bioconductor",
+  "name": "bioconductor-tofsims",
+  "description": "This tool processes and analyzes Time-of-Flight Secondary Ion Mass Spectrometry (ToF-SIMS) data. Use when user asks to import raw instrument data, perform mass calibration, generate peaklists, reconstruct images, or conduct multivariate image analysis and segmentation.",
+  "overview": "The `tofsims` package is a specialized toolbox for processing and analyzing Time-of-Flight Secondary Ion Mass Spectrometry (ToF-SIMS) data. It bridges the gap between raw instrument data and biological interpretation by providing tools for mass calibration, image reconstruction, and multivariate statistical analysis. It is particularly useful for chemical imaging where spatial distribution of molecules is critical.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/tofsims.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/lorenzgerber/tofsims",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tofsims"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/tofsims.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/lorenzgerber/tofsims",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tofsims\n\nname: bioconductor-tofsims\ndescription: Analysis of Time-of-Flight Secondary Ion Mass Spectrometry (ToF-SIMS) data. Use this skill to import raw data from ULVAC-Phi or IONTOF platforms, perform mass calibration, create peaklists, and execute multivariate image analysis (PCA, MAF, MCR, MNF) and image segmentation.\n\n## Overview\n\nThe `tofsims` package is a specialized toolbox for processing and analyzing Time-of-Flight Secondary Ion Mass Spectrometry (ToF-SIMS) data. It bridges the gap between raw instrument data and biological interpretation by providing tools for mass calibration, image reconstruction, and multivariate statistical analysis. It is particularly useful for chemical imaging where spatial distribution of molecules is critical.\n\n## Workflow and Core Functions\n\n### 1. Data Import\nThe package supports pre-processed binary files (BIF/BIF6) and raw data from ULVAC-Phi and IONTOF platforms.\n\n```r\nlibrary(tofsims)\nlibrary(tofsimsData)\nlibrary(BiocParallel)\n\n# Register parallel backend (use SnowParam(workers=0) for non-parallel)\nregister(SnowParam(workers=0), default=TRUE)\n\n# Import raw data as spectra\nrawData <- system.file('rawdata', 'trift_test_001.RAW', package=\"tofsimsData\")\nspectraImport <- MassSpectra(select = 'ulvacraw', analysisName = rawData)\n\n# Summary and Visualization\nshow(spectraImport)\nplot(spectraImport, mzRange=c(1, 150), type='l')\n```\n\n### 2. Mass Calibration\nCalibration can be performed interactively or by specifying known M/z values.\n\n```r\n# Add calibration points\nspectraImport <- calibPointNew(object = spectraImport, mz = 15, value = 15.0113)\nspectraImport <- calibPointNew(object = spectraImport, mz = 181, value = 181.0444)\n\n# Apply recalibration\nspectraImport <- recalibrate(spectraImport)\n```\n\n### 3. Peaklist Generation\nCreate a peaklist to define the M/z windows for image reconstruction.\n\n```r\n# Generate unit mass peaks\nspectraImport <- unitMassPeaks(object = spectraImport, \n                               mzRange = c(1, 250), \n                               widthAt = c(15, 181), \n                               factor = c(0.4, 0.6))\n```\n\n### 4. Image Reconstruction and Scaling\nImport the experiment as image data using the generated peaklist and apply Poisson scaling to account for counting noise.\n\n```r\nimageImport <- MassImage(select = 'ulvacrawpeaks', \n                         analysisName = rawData, \n                         PeakListobj = spectraImport)\n\n# Apply Poisson scaling\nimageImport <- poissonScaling(imageImport)\n\n# Visualize\nimage(imageImport)\n```\n\n### 5. Multivariate Image Analysis\nExtract chemical features using dimension reduction techniques.\n\n*   **PCA (Principal Component Analysis):** General dimension reduction.\n*   **MAF (Maximum Autocorrelation Factors):** Specifically designed for spatial datasets to maximize spatial correlation.\n*   **MCR (Multivariate Curve Resolution):** For resolving pure components.\n\n```r\n# Run PCA and MAF\nimageImport <- PCAnalysis(imageImport, nComp = 4)\nimageImport <- MAF(imageImport, nComp = 4)\n\n# Plot results (e.g., first 4 components of PCA)\nfor(i in 1:4) image(analysis(imageImport, 1), comp=i)\n```\n\n### 6. Image Segmentation and Masking\nUse `EBImage` integration to segment features based on multivariate scores.\n\n```r\nlibrary(EBImage)\n\n# Create a mask from a PCA score (e.g., component 3)\npcaScore3 <- imageMatrix(analysis(imageImport, 1), comp=3)\nmask <- thresh(x = pcaScore3, h = 30, w = 30)\n\n# Apply mask back to the original image to isolate specific regions\n# (opened-1)^2 inverts the mask if necessary\ncellWallOnly <- bwApply(imageImport, (mask - 1)^2)\nimage(cellWallOnly)\n```\n\n## Tips and Best Practices\n*   **Parallel Processing:** Use `BiocParallel` to speed up raw data import, especially for large imaging datasets.\n*   **Scaling:** Always consider `poissonScaling()` for ToF-SIMS data, as the noise characteristics are typically Poisson-distributed.\n*   **Peak Widths:** When using `unitMassPeaks()`, the `factor` argument allows for asymmetric peak widths, which is common in ToF-SIMS due to instrument-specific peak tailing.\n*   **Segmentation:** Use PCA or MAF scores as the input for thresholding rather than raw mass channels to capture correlated chemical signals.\n\n## Reference documentation\n- [Example Workflow using the tofsims package (Rmd)](./references/workflow.Rmd)\n- [Example Workflow using the tofsims package (Markdown)](./references/workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tofsims",
+    "description": "This tool processes and analyzes Time-of-Flight Secondary Ion Mass Spectrometry (ToF-SIMS) data. Use when user asks to import raw instrument data, perform mass calibration, generate peaklists, reconstruct images, or conduct multivariate image analysis and segmentation.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/tofsims.html"
+  }
+}

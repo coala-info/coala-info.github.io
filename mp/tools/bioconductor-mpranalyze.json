@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mpranalyze",
+  "category": "bioconductor",
+  "name": "bioconductor-mpranalyze",
+  "description": "MPRAnalyze is an R package that uses a nested generalized linear model framework to perform statistical analysis of Massively Parallel Reporter Assay data. Use when user asks to quantify enhancer activity, identify differential activity between conditions, or perform comparative analysis of MPRA count data.",
+  "overview": "MPRAnalyze is an R package designed for the statistical analysis of Massively Parallel Reporter Assays (MPRA). Unlike ratio-based methods, it uses a nested generalized linear model (GLM) framework to model DNA (copy number) and RNA (transcription) counts separately. This approach accounts for the specific architecture of MPRA experiments, including multiple barcodes per enhancer, batch effects, and different experimental designs (episomal vs. integrated).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MPRAnalyze.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/YosefLab/MPRAnalyze",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MPRAnalyze"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MPRAnalyze.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/YosefLab/MPRAnalyze",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mpranalyze\n\n## Overview\nMPRAnalyze is an R package designed for the statistical analysis of Massively Parallel Reporter Assays (MPRA). Unlike ratio-based methods, it uses a nested generalized linear model (GLM) framework to model DNA (copy number) and RNA (transcription) counts separately. This approach accounts for the specific architecture of MPRA experiments, including multiple barcodes per enhancer, batch effects, and different experimental designs (episomal vs. integrated).\n\n## Core Workflow\n\n### 1. Data Preparation\nInput requires two count matrices (DNA and RNA) where rows are enhancers and columns are observations. You also need annotation data frames for both.\n- **DNA Counts:** Plasmid library counts.\n- **RNA Counts:** Transcribed reporter counts.\n- **Controls:** A logical vector identifying negative control enhancers (e.g., scrambled sequences).\n\n```r\nlibrary(MPRAnalyze)\n\n# Create the MpraObject\nobj <- MpraObject(dnaCounts = dna_mat, \n                  rnaCounts = rna_mat, \n                  dnaAnnot = dna_annot, \n                  rnaAnnot = rna_annot, \n                  controls = is_control_vector)\n```\n\n### 2. Normalization\nEstimate library size depth factors. You must specify which factors in your annotation represent distinct libraries (e.g., batch and condition).\n\n```r\n# Estimate for both DNA and RNA simultaneously\nobj <- estimateDepthFactors(obj, lib.factor = c(\"batch\", \"condition\"), which.lib = \"both\")\n```\n\n### 3. Quantification Analysis\nUsed to estimate the absolute transcription rate (alpha) for each enhancer.\n- **dnaDesign:** Model for plasmid copy number (e.g., `~ batch`).\n- **rnaDesign:** Model for transcription rate (e.g., `~ condition`).\n\n```r\nobj <- analyzeQuantification(obj = obj, \n                             dnaDesign = ~ batch, \n                             rnaDesign = ~ condition)\n\n# Extract alpha values\nalpha <- getAlpha(obj, by.factor = \"condition\")\n\n# Test for activity against negative controls\nres <- testEmpirical(obj = obj, statistic = alpha$active_condition)\n# Use res$pval.mad for robust p-values\n```\n\n### 4. Comparative Analysis\nUsed to identify enhancers with differential activity between conditions.\n- **reducedDesign:** The null model (usually `~ 1`).\n\n```r\nobj <- analyzeComparative(obj = obj, \n                          dnaDesign = ~ barcode + batch + condition, \n                          rnaDesign = ~ condition, \n                          reducedDesign = ~ 1)\n\n# Likelihood Ratio Test\nres <- testLrt(obj)\n# res contains statistic, pval, fdr, and logFC\n```\n\n## Advanced Features\n\n### Scalable Mode\nFor large datasets with many barcodes where the standard GLM is slow, use `mode=\"scale\"`. This requires matched DNA and RNA observations and uses DNA counts directly as offsets.\n```r\nobj <- analyzeComparative(obj = obj, \n                          rnaDesign = ~ condition, \n                          reducedDesign = ~ 1, \n                          mode = \"scale\")\n```\n\n### Allelic Comparison\nWhen comparing two sequences that do not share barcodes (e.g., SNP alleles), create a unique interaction factor for barcodes and conditions in the annotation before running a comparative analysis.\n```r\nannot$barcode_allelic <- interaction(annot$barcode, annot$condition)\n```\n\n## Best Practices\n- **Barcode Modeling:** Include barcodes in the `dnaDesign` for comparative analyses to increase power, but avoid them in `rnaDesign` to prevent overfitting.\n- **Zero Padding:** All enhancers must have the same number of columns; pad missing observations with 0.\n- **Controls:** Always include negative controls to calibrate the null distribution and correct for systemic biases.\n- **Parallelization:** Use `BiocParallel` to speed up model fitting by passing a `BPPARAM` object to `MpraObject`.\n\n## Reference documentation\n- [Analyzing MPRA data with MPRAnalyze](./references/vignette.md)\n- [Analyzing MPRA data with MPRAnalyze (Rmd Source)](./references/vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-mpranalyze",
+    "description": "MPRAnalyze is an R package that uses a nested generalized linear model framework to perform statistical analysis of Massively Parallel Reporter Assay data. Use when user asks to quantify enhancer activity, identify differential activity between conditions, or perform comparative analysis of MPRA count data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MPRAnalyze.html"
+  }
+}

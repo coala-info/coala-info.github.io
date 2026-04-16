@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-consica",
+  "category": "bioconductor",
+  "name": "bioconductor-consica",
+  "description": "The consICA package provides a robust framework for performing consensus Independent Component Analysis on omics data to decompose gene expression matrices into stable metagenes and metasamples. Use when user asks to perform consensus ICA, extract significant features from independent components, correlate components with experimental factors, or conduct survival and enrichment analysis on omics signals.",
+  "overview": "The `consICA` package provides a robust framework for Independent Component Analysis (ICA) of omics data, specifically designed for modern multicore systems. It decomposes a gene expression matrix (X) into statistically independent signals (metagenes, S) and their weights across samples (metasamples, M). This allows for the separation of biological processes from technical noise, feature engineering for classification, and clinical outcome prediction.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/consICA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/biomod-lih/consICA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "consICA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/consICA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/biomod-lih/consICA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-consica\n\n## Overview\n\nThe `consICA` package provides a robust framework for Independent Component Analysis (ICA) of omics data, specifically designed for modern multicore systems. It decomposes a gene expression matrix (X) into statistically independent signals (metagenes, S) and their weights across samples (metasamples, M). This allows for the separation of biological processes from technical noise, feature engineering for classification, and clinical outcome prediction.\n\n## Installation\n\nInstall the package using BiocManager:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"consICA\")\nlibrary(consICA)\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package accepts `SummarizedExperiment` objects or standard R matrices. Ensure your data is normalized (e.g., log-transformed transcriptomics data).\n\n```r\n# Using a SummarizedExperiment object\nlibrary(SummarizedExperiment)\ndata(\"samples_data\")\n\n# Extract expression matrix and metadata\nX <- assay(samples_data)\nmetadata <- as.data.frame(colData(samples_data))\nsurvival_data <- metadata[, c(\"time\", \"event\")]\n```\n\n### 2. Running Consensus ICA\nUse `consICA()` to perform the deconvolution. Key parameters include `ncomp` (number of components) and `ntry` (number of iterations to ensure stability).\n\n```r\nset.seed(2022)\ncica_res <- consICA(samples_data, \n                    ncomp = 20, \n                    ntry = 10, \n                    ncores = parallel::detectCores() - 1, \n                    show.every = 0)\n\n# Inspect results\n# cica_res$S: Metagene matrix (Features x Components)\n# cica_res$M: Weight matrix (Components x Samples)\n```\n\n### 3. Extracting Significant Features\nIdentify genes that contribute most significantly to each independent component (IC).\n\n```r\n# Extract features with FDR < 0.05\nfeatures <- getFeatures(cica_res, alpha = 0.05, sort = TRUE)\n\n# View top positive and negative contributors for IC 1\nhead(features$ic.1$pos)\nhead(features$ic.1$neg)\n```\n\n### 4. Variance and Visualization\nEstimate how much variance is captured by the components.\n\n```r\nvar_explained <- estimateVarianceExplained(cica_res)\nplotICVarianceExplained(cica_res)\n\n# Plot gene involvement for a specific component\nplot(sort(cica_res$S[, 1]), type=\"l\", main=\"Metagene #1 Involvement\")\n```\n\n## Downstream Analysis\n\n### Linking to Experimental Factors (ANOVA)\nUse `anovaIC()` to determine if component weights correlate with metadata (e.g., gender, tumor stage, batch).\n\n```r\n# Run ANOVA for IC 1 against all metadata factors\nres_anova <- anovaIC(cica_res, metadata, icomp = 1, plot = TRUE)\n```\n\n### Enrichment Analysis\nPerform Gene Ontology (GO) enrichment on the metagenes to interpret their biological meaning.\n\n```r\n# Search for Biological Process (BP) terms\ncica_res <- getGO(cica_res, alpha = 0.05, db = \"BP\")\n```\n\n### Survival Analysis\nLink component weights to patient survival using Cox partial hazard regression. The function calculates a Risk Score (RS) based on significant components.\n\n```r\n# Perform survival analysis\nrs_results <- survivalAnalysis(cica_res, surv = survival_data)\n\n# View hazard scores for significant components\nrs_results$hazard.score\n```\n\n### Automatic Reporting\nGenerate a comprehensive PDF report containing all analyses (ICA, ANOVA, GO, and Survival).\n\n```r\nsaveReport(cica_res, Var = metadata, surv = survival_data, file = \"ICA_Analysis_Report.pdf\")\n```\n\n## Tips for Success\n- **Component Selection**: Choosing `ncomp` is critical. If unknown, start with a value between 20 and 50, or use stability metrics (`cica_res$stab`) to evaluate consistency.\n- **Parallelization**: Always set `ncores` to utilize multicore processing, as consensus ICA is computationally intensive.\n- **Orientation**: ICA components have arbitrary signs. Use `getFeatures` to see both positive and negative poles, as both can represent distinct biological signals.\n\n## Reference documentation\n- [The consICA package: User’s manual](./references/ConsICA.md)\n- [The consICA package: User’s manual (Rmd source)](./references/ConsICA.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-consica",
+    "description": "The consICA package provides a robust framework for performing consensus Independent Component Analysis on omics data to decompose gene expression matrices into stable metagenes and metasamples. Use when user asks to perform consensus ICA, extract significant features from independent components, correlate components with experimental factors, or conduct survival and enrichment analysis on omics signals.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/consICA.html"
+  }
+}

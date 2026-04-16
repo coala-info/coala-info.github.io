@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metcirc",
+  "category": "bioconductor",
+  "name": "bioconductor-metcirc",
+  "description": "Bioconductor-metcirc provides tools for MS/MS spectral similarity analysis and circular visualization of metabolomics data. Use when user asks to calculate spectral similarity using normalized dot product or neutral losses, create circular layouts to visualize metabolite relationships across biological groups, or cluster spectra to identify metabolite families.",
+  "overview": "MetCirc is designed for the interactive exploration and visualization of MS/MS metabolomics data, particularly from comparative experiments (e.g., cross-species or cross-tissue). It utilizes the `Spectra` infrastructure to handle MS/MS data and provides tools to calculate similarity scores based on shared fragments or neutral losses. These similarities are visualized in a circular layout (inspired by Circos), allowing users to identify clusters of related metabolites and annotate unknown feature",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MetCirc.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MetCirc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetCirc.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metcirc\n\nname: bioconductor-metcirc\ndescription: Comprehensive MS/MS spectral similarity analysis and circular visualization using the MetCirc package. Use when Claude needs to: (1) Calculate similarity between MS/MS spectra using normalized dot product (NDP) or neutral losses, (2) Create circular layouts (Circos-style) to visualize metabolomics data across different biological groups/tissues, (3) Interactively explore and annotate MS/MS features, or (4) Cluster spectra based on structural similarity.\n\n## Overview\n\nMetCirc is designed for the interactive exploration and visualization of MS/MS metabolomics data, particularly from comparative experiments (e.g., cross-species or cross-tissue). It utilizes the `Spectra` infrastructure to handle MS/MS data and provides tools to calculate similarity scores based on shared fragments or neutral losses. These similarities are visualized in a circular layout (inspired by Circos), allowing users to identify clusters of related metabolites and annotate unknown features.\n\n## Data Preparation\n\n### Load the Package\n```r\nlibrary(MetCirc)\nlibrary(MsCoreUtils)\nlibrary(Spectra)\n```\n\n### Create Spectra Objects\nMetCirc relies on `Spectra` objects. You can create them from data frames or .MSP files.\n\n**From a Data Frame:**\nEnsure the data frame has columns for `id` (unique identifier), `mz`, and `intensity`.\n```r\n# Example: Create a Spectra object from a data frame 'df'\nspd <- S4Vectors::DataFrame(\n    name = as.character(unique_ids),\n    rtime = retention_times,\n    msLevel = 2L,\n    precursorMz = precursor_mzs\n)\nspd$mz <- list_of_mz_vectors\nspd$intensity <- list_of_intensity_vectors\nsps <- Spectra::Spectra(spd)\n\n# Add metadata for biological groups (e.g., tissues)\nsps@metadata <- data.frame(Tissue1 = c(TRUE, FALSE, ...), Tissue2 = ...)\n```\n\n**From .MSP Files:**\n```r\n# Use the built-in converter for MSP-formatted data frames\nsps_msp <- convertMsp2Spectra(msp_dataframe)\n```\n\n## Similarity Calculation\n\nUse `Spectra::compareSpectra` to generate a similarity matrix.\n\n### Normalized Dot Product (NDP)\nCalculates similarity based on shared fragment ions.\n```r\nsimilarityMat <- Spectra::compareSpectra(sps, \n    FUN = MsCoreUtils::ndotproduct, \n    ppm = 10, m = 0.5, n = 2)\ncolnames(similarityMat) <- rownames(similarityMat) <- sps$name\n```\n\n### Neutral Loss\nCalculates similarity based on shared neutral losses (precursor m/z - fragment m/z).\n```r\n# Use neutralloss function within compareSpectra\nsimilarityMat_nl <- Spectra::compareSpectra(sps, \n    FUN = neutralloss, \n    ppm = 10)\n```\n\n## Clustering and Module Extraction\n\nCluster features to identify metabolite families.\n```r\nlibrary(amap)\n# Cluster using Spearman correlation\nhClust <- hcluster(similarityMat, method = \"spearman\")\n\n# Cut tree to extract specific modules\ncutTree <- cutree(hClust, k = 5)\nmodule1_ids <- names(cutTree)[cutTree == 1]\nsimilarityMat_mod1 <- similarityMat[module1_ids, module1_ids]\n```\n\n## Visualization\n\n### Interactive Exploration (shinyCircos)\nThe primary tool for interactive annotation and exploration.\n```r\n# Start the Shiny app\n# Returns updated Spectra object and selected features upon exit\nresult <- shinyCircos(similarityMat, sps = sps, \n                      condition = c(\"Group1\", \"Group2\", \"Group3\"))\n\n# Access updated annotations\nupdated_sps <- result$sps\n```\n\n### Static Circular Plots (plotCircos)\nFor reproducible figure generation.\n\n1. **Prepare Link Data Frame:**\n```r\nlinkDf <- createLinkDf(similarityMatrix = similarityMat, \n                       sps = sps, \n                       condition = c(\"Group1\", \"Group2\"), \n                       lower = 0.8, upper = 1)\n\n# Filter for inter-group or intra-group links\nlinkDf_inter <- cutLinkDf(linkDf, type = \"inter\")\n```\n\n2. **Generate Plot:**\n```r\n# Set circlize parameters\ncircos.par(gap.degree = 0, cell.padding = c(0, 0, 0, 0), track.margin = c(0, 0))\n\n# Plot\nplotCircos(group_vector, linkDf_inter, initialize = TRUE, \n           featureNames = TRUE, groupSector = TRUE, links = TRUE)\n```\n\n3. **Highlight Specific Features:**\n```r\nhighlight(groupname = group_vector, ind = feature_index, linkDf = linkDf_inter)\n```\n\n## Workflow Tips\n- **Filtering:** Before calculating similarity, filter `Spectra` objects to remove low-intensity noise or irrelevant precursors to save computation time.\n- **Ordering:** Use `orderSimilarityMatrix` to sort the matrix by m/z or retention time before plotting to make patterns more visible.\n- **Annotation:** In `shinyCircos`, you can manually update metabolite names and classes. These changes are preserved in the returned `Spectra` object.\n\n## Reference documentation\n- [MetCirc](./references/MetCirc.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metcirc",
+    "description": "Bioconductor-metcirc provides tools for MS/MS spectral similarity analysis and circular visualization of metabolomics data. Use when user asks to calculate spectral similarity using normalized dot product or neutral losses, create circular layouts to visualize metabolite relationships across biological groups, or cluster spectra to identify metabolite families.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetCirc.html"
+  }
+}

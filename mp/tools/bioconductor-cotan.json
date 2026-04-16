@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cotan",
+  "category": "bioconductor",
+  "name": "bioconductor-cotan",
+  "description": "COTAN is a statistical tool that analyzes single-cell RNA-seq data using a contingency table approach to identify gene-gene interactions and cell states. Use when user asks to identify gene co-expression, calculate the Global Differentiation Index, or perform uniform clustering on single-cell datasets.",
+  "overview": "COTAN (COexpression Tables ANalysis) is a statistical tool for analyzing single-cell RNA-seq data. Unlike methods that rely on data normalization, COTAN uses a contingency table approach based on the presence or absence of gene transcripts. It models the zero-expression probability to identify gene-gene interactions (COEX) and uses the Global Differentiation Index (GDI) to identify specifically expressed genes. It is particularly effective for identifying cell states and ensuring cluster uniform",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/COTAN.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/seriph78/COTAN",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "COTAN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/COTAN.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/seriph78/COTAN",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cotan\n\n## Overview\n\nCOTAN (COexpression Tables ANalysis) is a statistical tool for analyzing single-cell RNA-seq data. Unlike methods that rely on data normalization, COTAN uses a contingency table approach based on the presence or absence of gene transcripts. It models the zero-expression probability to identify gene-gene interactions (COEX) and uses the Global Differentiation Index (GDI) to identify specifically expressed genes. It is particularly effective for identifying cell states and ensuring cluster uniformity.\n\n## Core Workflow\n\n### 1. Initialization and Metadata\nInitialize the COTAN object from a raw count matrix (UMI counts).\n\n```r\nlibrary(COTAN)\nlibrary(zeallot) # For multi-assignment %<-%\n\n# Create object\nobj <- COTAN(raw = raw_counts)\nobj <- initializeMetaDataset(obj, \n                             GEO = \"GEO_ID\", \n                             sequencingMethod = \"Drop_seq\", \n                             sampleCondition = \"condition_name\")\n\n# Set logging for transparency\nsetLoggingLevel(1L)\n```\n\n### 2. Data Cleaning Pipeline\nCOTAN provides specific plots to identify low-quality cells, doublets, and mitochondrial contamination.\n\n*   **Visual Inspection:** Use `cellSizePlot(obj)`, `genesSizePlot(obj)`, and `mitochondrialPercentagePlot(obj)`.\n*   **Filtering:** Use `dropGenesCells()` to remove outliers.\n*   **Parameter Estimation:** Run `clean(obj)` after every filtering step to re-estimate parameters.\n\n```r\n# Example: Drop cells with high mitochondrial percentage\nc(mitPlot, mitSizes) %<-% mitochondrialPercentagePlot(obj, genePrefix = \"^Mt\")\ncellsToRem <- rownames(mitSizes)[mitSizes[[\"mit.percentage\"]] > 1.0]\nobj <- dropGenesCells(obj, cells = cellsToRem)\n\n# Re-run cleaning to estimate nu (efficiency) and other parameters\nobj <- clean(obj)\n```\n\n### 3. COEX Analysis\nCalculate the co-expression matrix. This is the most computationally intensive step.\n\n```r\nobj <- proceedToCoex(obj, \n                     calcCoex = TRUE, \n                     optimizeForSpeed = TRUE, \n                     cores = 6L, \n                     saveObj = FALSE)\n```\n\n### 4. Gene Differentiation and Heatmaps\nIdentify marker genes using GDI and visualize relationships.\n\n*   **GDI:** Values > 1.43 typically indicate specifically expressed genes (potential markers).\n*   **Heatmaps:** Visualize COEX between gene sets.\n\n```r\n# Calculate GDI\ngdiDF <- calculateGDI(obj)\nobj <- storeGDI(obj, genesGDI = gdiDF)\n\n# Plot GDI with specific markers highlighted\nGDIPlot(obj, genes = list(\"Markers\" = c(\"Satb2\", \"Bcl11b\")))\n\n# COEX Heatmap\ngenesHeatmapPlot(obj, primaryMarkers = c(\"Satb2\", \"Vim\"), symmetric = TRUE)\n```\n\n### 5. Uniform Clustering\nCOTAN defines clusters based on \"uniformity\"—where gene expression within a cluster satisfies the null hypothesis (independence).\n\n*   **`cellsUniformClustering`:** Splits data into uniform clusters.\n*   **`mergeUniformCellsClusters`:** Merges clusters that remain uniform when combined.\n*   **`DEAOnClusters`:** Performs Differential Expression Analysis to get COEX values for clusters.\n\n```r\n# Perform DEA on existing clusters\ncluster_coex <- DEAOnClusters(obj, clusters = my_clusters)\nobj <- addClusterization(obj, clName = \"my_cl\", clusters = my_clusters, coexDF = cluster_coex)\n\n# Summary of clusters (cell counts, efficiency, expressed genes)\nc(summaryData, summaryPlot) %<-% clustersSummaryPlot(obj, clName = \"my_cl\")\n```\n\n## Tips for Success\n*   **Torch Support:** COTAN can use the `torch` library for GPU acceleration. Check availability with `COTAN::canUseTorch(TRUE, \"cuda\")`.\n*   **Efficiency (nu):** The `nu` parameter represents cell efficiency. In the PCA plot generated by `cleanPlots(obj)`, `nu` should not correlate strongly with the main principal components.\n*   **B-Group Cells:** During cleaning, COTAN often identifies a \"B group\" in PCA (often enriched for hemoglobin genes). These are typically removed to improve signal.\n\n## Reference documentation\n- [Guided tutorial to COTAN V.2](./references/Guided_tutorial_v2.md)\n- [Guided tutorial to COTAN V.2 (Rmd Source)](./references/Guided_tutorial_v2.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cotan",
+    "description": "COTAN is a statistical tool that analyzes single-cell RNA-seq data using a contingency table approach to identify gene-gene interactions and cell states. Use when user asks to identify gene co-expression, calculate the Global Differentiation Index, or perform uniform clustering on single-cell datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/COTAN.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-motif2site",
+  "category": "bioconductor",
+  "name": "bioconductor-motif2site",
+  "description": "This tool detects transcription factor binding sites by integrating DNA sequence motifs with ChIP-seq data. Use when user asks to identify binding sites from motifs or BED files, recenter sites across experiments, or perform differential binding analysis.",
+  "overview": "Motif2Site is a Bioconductor package designed to detect transcription factor binding sites (TFBS) by combining DNA sequence motif information with ChIP-seq alignment data. Unlike standard peak callers that identify broad regions of enrichment, Motif2Site uses motifs as anchors and ChIP-seq signal to statistically validate and precisely locate binding events. It employs negative binomial distributions (via edgeR) for modeling counts and mixture models (via mixtools) to deconvolve closely spaced b",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Motif2Site.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/fls-bioinformatics-core/Motif2Site",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Motif2Site"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Motif2Site.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/fls-bioinformatics-core/Motif2Site",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-motif2site\n\nname: bioconductor-motif2site\ndescription: Detect transcription factor binding sites by integrating DNA sequence motifs with ChIP-seq data. Use this skill when you need to identify, recenter, and compare binding sites across different experiments or conditions using the Motif2Site R package.\n\n# bioconductor-motif2site\n\n## Overview\n\nMotif2Site is a Bioconductor package designed to detect transcription factor binding sites (TFBS) by combining DNA sequence motif information with ChIP-seq alignment data. Unlike standard peak callers that identify broad regions of enrichment, Motif2Site uses motifs as anchors and ChIP-seq signal to statistically validate and precisely locate binding events. It employs negative binomial distributions (via edgeR) for modeling counts and mixture models (via mixtools) to deconvolve closely spaced binding sites.\n\n## Core Workflows\n\n### 1. Motif Selection and Validation\nBefore detecting sites, evaluate the quality of your motif or bed files against known high-confidence regions.\n\n```r\nlibrary(Motif2Site)\n\n# Compare DNA strings with different mismatch tolerances\ncomp <- compareMotifs2UserProvidedRegions(\n    givenRegion = high_confidence_granges,\n    motifs = c(\"TGATTSCAGGANT\", \"TGATTCCAGGANT\"),\n    mismatchNumbers = c(1, 0),\n    genome = \"Scerevisiae\",\n    genomeBuild = \"sacCer3\"\n)\n\n# Compare existing BED files\ncomp_bed <- compareBedFiless2UserProvidedRegions(\n    givenRegion = high_confidence_granges,\n    bedfiles = c(\"path/to/file1.bed\", \"path/to/file2.bed\"),\n    motifnames = c(\"Motif1\", \"Motif2\")\n)\n```\n\n### 2. Detecting Binding Sites\nYou can detect sites using either a BED file of candidate regions or a DNA sequence motif.\n\n**Using a BED file:**\n```r\nstats <- DetectBindingSitesBed(\n    BedFile = \"candidate_motifs.bed\",\n    IPfiles = c(\"IP_rep1.bam\", \"IP_rep2.bam\"),\n    BackgroundFiles = c(\"Input_rep1.bam\", \"Input_rep2.bam\"),\n    genome = \"Ecoli\",\n    genomeBuild = \"20080805\",\n    DB = \"NCBI\",\n    expName = \"MyExperiment\",\n    format = \"BAM\" # Supports BAM, BEDSE (Single End), BEDPE (Paired End)\n)\n```\n\n**Using a DNA String:**\n```r\nstats <- DetectBindingSitesMotif(\n    motif = \"GWWTGAGAA\",\n    mismatchNumber = 1,\n    IPfiles = ip_files,\n    BackgroundFiles = input_files,\n    genome = \"Ecoli\",\n    genomeBuild = \"20080805\",\n    DB = \"NCBI\",\n    expName = \"MyExperiment_String\",\n    GivenRegion = optional_granges_to_limit_search\n)\n```\n\n### 3. Combining and Comparing Experiments\nCombine results from multiple conditions into a unified matrix and perform differential binding analysis.\n\n**Recenter and Combine:**\n```r\n# Combines results from previous DetectBindingSites runs\ncorMAT <- recenterBindingSitesAcrossExperiments(\n    expLocations = c(\"Exp_Condition1\", \"Exp_Condition2\"),\n    experimentNames = c(\"Cond1\", \"Cond2\"),\n    expName = \"Combined_Analysis\"\n)\n```\n\n**Differential Binding:**\n```r\n# Uses edgeR TMM normalization and GLM test\ndiff_results <- pairwisDifferential(\n    tableOfCountsDir = \"Combined_Analysis\",\n    exp1 = \"Cond1\",\n    exp2 = \"Cond2\",\n    FDRcutoff = 0.05,\n    logFCcuttoff = 1\n)\n# Returns a list: [[1]] Up in exp1, [[2]] Up in exp2, [[3]] Full table\n```\n\n## Key Parameters and Tips\n\n- **Input Formats**: `format` argument accepts \"BAM\", \"BEDSE\" (Single End), and \"BEDPE\" (Paired End).\n- **Genome Builds**: Ensure the `genomeBuild` and `DB` (e.g., \"UCSC\", \"NCBI\") match the BSgenome package installed.\n- **Output Structure**: Functions like `DetectBindingSitesMotif` create a directory named after `expName` containing the results.\n- **Filtering**: The `recenterBindingSitesAcrossExperiments` function uses a default stringent FDR of 0.001 to ensure high-quality combined sites.\n- **Efficiency**: Use the `GivenRegion` parameter in `DetectBindingSitesMotif` to restrict the search to specific chromosomes or regions, significantly speeding up processing.\n\n## Reference documentation\n\n- [Motif2Site](./references/Motif2Site.md)\n- [Motif2Site.Rmd](./references/Motif2Site.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-motif2site",
+    "description": "This tool detects transcription factor binding sites by integrating DNA sequence motifs with ChIP-seq data. Use when user asks to identify binding sites from motifs or BED files, recenter sites across experiments, or perform differential binding analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Motif2Site.html"
+  }
+}

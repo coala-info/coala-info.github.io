@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-proda",
+  "category": "bioconductor",
+  "name": "bioconductor-proda",
+  "description": "This tool analyzes label-free mass spectrometry data using a probabilistic dropout model to identify differentially abundant proteins without requiring imputation. Use when user asks to identify differentially abundant proteins, account for non-random missing values in LFQ-MS data, or estimate sample distances from protein intensity matrices.",
+  "overview": "The `proDA` package provides a principled framework for the analysis of protein intensities from mass spectrometry. Unlike traditional methods that require imputing missing values (which can lead to overconfident results), `proDA` models the dropout mechanism—where lower intensity proteins are more likely to be missing—using a sigmoidal curve. This allows for more accurate estimation of protein abundance means and variances.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/proDA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/const-ae/proDA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "proDA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/proDA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/const-ae/proDA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-proda\n\nname: bioconductor-proda\ndescription: Analyze label-free mass spectrometry (LFQ-MS) data using a probabilistic dropout model. Use this skill to identify differentially abundant proteins while accounting for non-random missing values (dropouts) without the need for imputation. It supports linear models, empirical Bayesian priors, and provides tools for normalization and sample distance estimation.\n\n## Overview\n\nThe `proDA` package provides a principled framework for the analysis of protein intensities from mass spectrometry. Unlike traditional methods that require imputing missing values (which can lead to overconfident results), `proDA` models the dropout mechanism—where lower intensity proteins are more likely to be missing—using a sigmoidal curve. This allows for more accurate estimation of protein abundance means and variances.\n\n## Typical Workflow\n\n### 1. Data Preparation\n`proDA` requires a log-transformed abundance matrix where missing values are represented as `NA`.\n\n```r\nlibrary(proDA)\n\n# Load MaxQuant proteinGroups.txt or similar\nraw_data <- read.delim(\"proteinGroups.txt\", stringsAsFactors = FALSE)\n\n# Extract intensity columns (e.g., LFQ intensities)\nintensity_cols <- grep(\"^LFQ\\\\.intensity\\\\.\", colnames(raw_data), value = TRUE)\nabundance_matrix <- as.matrix(raw_data[, intensity_cols])\n\n# 1. Replace 0 with NA\nabundance_matrix[abundance_matrix == 0] <- NA\n\n# 2. Log2 transformation\nabundance_matrix <- log2(abundance_matrix)\n\n# 3. Median Normalization\nnormalized_matrix <- median_normalization(abundance_matrix)\n```\n\n### 2. Fitting the Model\nThe `proDA()` function fits the probabilistic dropout model. You can provide a matrix, a `SummarizedExperiment`, or an `MSnSet`.\n\n```r\n# Define experimental design\nsample_info <- data.frame(\n  name = colnames(normalized_matrix),\n  condition = factor(c(\"A\", \"A\", \"A\", \"B\", \"B\", \"B\")),\n  stringsAsFactors = FALSE\n)\n\n# Fit model using a formula\nfit <- proDA(normalized_matrix, design = ~ condition, col_data = sample_info)\n\n# Or fit using a design matrix directly\n# fit <- proDA(normalized_matrix, design = model.matrix(~ condition, sample_info))\n```\n\n### 3. Differential Abundance Testing\nUse `test_diff()` to perform Wald tests for specific contrasts or Likelihood Ratio Tests.\n\n```r\n# Wald test for a specific contrast\n# If using a formula, the coefficients are named based on the levels\nresult <- test_diff(fit, contrast = \"conditionB - conditionA\")\n\n# Sort by significance\nresult <- result[order(result$pval), ]\n\n# Complex contrasts\n# result <- test_diff(fit, contrast = \"cond1 - (cond2 + cond3)/2\")\n```\n\n### 4. Quality Control and Distances\nStandard distance functions like `dist()` fail with `NA` values. `proDA` provides `dist_approx()` to estimate distances based on the dropout model.\n\n```r\n# Estimate sample distances\nda <- dist_approx(fit)\n\n# da$mean contains the distance estimates\n# da$sd contains the uncertainty (standard deviation) of the estimates\n\n# Plotting a heatmap (requires pheatmap)\npheatmap::pheatmap(as.matrix(da$mean))\n```\n\n## Key Functions\n\n- `proDA()`: Main function to fit the model. Parameters include `design`, `col_data`, and `reference_level`.\n- `test_diff()`: Conducts differential abundance tests. Returns a data frame with p-values, adjusted p-values (BH), and log2 fold changes (`diff`).\n- `median_normalization()`: Robust normalization that ignores missing values.\n- `dist_approx()`: Calculates the expected distance between samples or proteins.\n- `generate_synthetic_data()`: Useful for creating mock datasets to test pipelines.\n\n## Tips for Success\n\n- **Missing Values**: Do not impute missing values before using `proDA`. The model is specifically designed to handle `NA` values natively.\n- **Reference Levels**: When using a formula in `proDA()`, use the `reference_level` argument to specify the control group.\n- **Object Access**: The `proDAFit` object (output of `proDA()`) acts like a `SummarizedExperiment`. You can access parameters using the `$` operator (e.g., `fit$hyper_parameters`).\n- **Large Datasets**: For very large datasets, `proDA` is computationally efficient as it fits parameters protein-by-protein after estimating global hyperparameters.\n\n## Reference documentation\n\n- [Introduction](./references/Introduction.md)\n- [Introduction (Rmd)](./references/Introduction.Rmd)\n- [Proteomics Data Import](./references/data-import.md)\n- [Proteomics Data Import (Rmd)](./references/data-import.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-proda",
+    "description": "This tool analyzes label-free mass spectrometry data using a probabilistic dropout model to identify differentially abundant proteins without requiring imputation. Use when user asks to identify differentially abundant proteins, account for non-random missing values in LFQ-MS data, or estimate sample distances from protein intensity matrices.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/proDA.html"
+  }
+}

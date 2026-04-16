@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-interest",
+  "category": "bioconductor",
+  "name": "bioconductor-interest",
+  "description": "The IntEREst package estimates and compares splicing efficiency across RNA-seq samples by quantifying intron retention and exon-exon junction levels. Use when user asks to quantify intron retention, identify U12-type minor introns, or perform differential splicing analysis between experimental groups.",
+  "overview": "The **IntEREst** (Intron Exon Retention Estimator) package is designed to estimate and compare splicing efficiency across multiple RNA-seq samples. It specifically excels at quantifying Intron Retention (IR) by counting reads at intron-exon junctions and within introns, as well as measuring exon-exon junction levels. A key feature is its specialized support for U12-type (minor) introns, allowing for comparative studies between major (U2) and minor spliceosome targets.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/IntEREst.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-interest/overview",
+  "github": "N/A",
+  "conda_downloads": "30.4K",
+  "conda_downloads_num": 30400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IntEREst"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/IntEREst.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-interest/overview",
+    "github": "N/A",
+    "conda_downloads": "30.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-interest\n\n## Overview\n\nThe **IntEREst** (Intron Exon Retention Estimator) package is designed to estimate and compare splicing efficiency across multiple RNA-seq samples. It specifically excels at quantifying Intron Retention (IR) by counting reads at intron-exon junctions and within introns, as well as measuring exon-exon junction levels. A key feature is its specialized support for U12-type (minor) introns, allowing for comparative studies between major (U2) and minor spliceosome targets.\n\n## Core Workflow\n\n### 1. Reference Preparation\nBefore counting reads, you must create a reference object containing coordinates for introns and exons.\n\n```r\nlibrary(IntEREst)\n\n# Prepare reference from a GTF/GFF3 file or UCSC/biomaRt\n# collapseExons=TRUE avoids assigning reads from alternative exons to introns\ntestRef <- referencePrepare(\n    sourceBuild=\"file\",\n    filePath=\"path/to/file.gff3\",\n    fileFormat=\"gff3\",\n    collapseExons=TRUE\n)\n```\n\n### 2. Annotating U12 Introns\nIf studying minor introns, use `annotateU12` to identify them based on Position Weight Matrices (PWM) for splice sites.\n\n```r\n# Uses internal pwmU12db for scoring\nannoRef <- annotateU12(\n    referenceChr = ref$chr,\n    referenceBegin = ref$begin,\n    referenceEnd = ref$end,\n    referenceIntronExon = ref$int_ex,\n    refGenome = BSgenome.Hsapiens.UCSC.hg19,\n    setNaAs = \"U2\"\n)\n```\n\n### 3. Read Summarization\nUse `interest()` (parallel) or `interest.sequential()` to quantify reads from BAM files.\n\n*   **Method \"IntRet\"**: Counts reads mapping to introns (Intron Retention).\n*   **Method \"IntSpan\"**: Counts reads spanning across introns.\n*   **Method \"ExEx\"**: Counts reads mapping to exon-exon junctions.\n\n```r\n# Example for Intron Retention\ninterest(\n    bamFile = \"sample.bam\",\n    reference = ref,\n    method = \"IntRet\",\n    junctionReadsOnly = FALSE, # Recommended for IntRet\n    isPaired = TRUE,\n    yieldSize = 10000,\n    outFile = \"results_intret.tsv\"\n)\n```\n\n### 4. Creating SummarizedExperiment Objects\nAfter processing BAMs, load the results into a `SummarizedExperiment` for downstream analysis.\n\n```r\n# Load results from TSV files\nirObj <- readInterestResults(\n    resultFiles = \"results_intret.tsv\",\n    sampleNames = \"Sample1\",\n    sampleAnnotation = data.frame(group=\"test\"),\n    commonColumns = 1:10, # Columns from the reference\n    freqCol = 11,         # Column with raw counts\n    scaledRetentionCol = 12\n)\n```\n\n## Differential Retention Analysis\n\nIntEREst provides wrappers for popular differential expression tools adapted for IR analysis:\n\n*   **Exact Test**: `exactTestInterest()` (edgeR-based pair-wise comparison).\n*   **GLM/QLF**: `glmInterest()` or `qlfInterest()` (edgeR-based for complex designs).\n*   **DESeq2**: `deseqInterest()`.\n*   **DEXSeq**: `DEXSeqIntEREst()`.\n\n```r\n# Simple edgeR-based comparison\ntestResults <- exactTestInterest(\n    irObj,\n    sampleAnnoCol = \"group\",\n    sampleAnnotation = c(\"control\", \"test\")\n)\n```\n\n## Visualization and U12 Analysis\n\nThe package includes specialized plotting functions to compare intron types:\n\n*   **`u12Boxplot()`**: Compares FPKM levels of U12 vs U2 introns.\n*   **`u12BoxplotNb()`**: Compares U12 introns to their immediate upstream/downstream U2 neighbors.\n*   **`u12DensityPlotIntron()`**: Plots log fold-change densities for different intron classes.\n*   **`plot()`**: General distribution check for the `SummarizedExperiment` object.\n\n## Recommended Pipeline for Differential IR\n\nTo perform a robust differential IR analysis (comparing intron-mapping reads relative to intron-spanning reads):\n1.  Run `interest()` with `method=\"IntSpan\"` on uncollapsed exons.\n2.  Run `interest()` with `method=\"IntRet\"` on collapsed exons.\n3.  Combine objects using `cbind()`.\n4.  Use `deseqInterest()` with a design like `~condition + condition:intronExon` to find introns where the ratio of retained to spanned reads changes significantly between conditions.\n\n## Reference documentation\n- [IntEREst](./references/IntEREst.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-interest",
+    "description": "The IntEREst package estimates and compares splicing efficiency across RNA-seq samples by quantifying intron retention and exon-exon junction levels. Use when user asks to quantify intron retention, identify U12-type minor introns, or perform differential splicing analysis between experimental groups.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/IntEREst.html"
+  }
+}

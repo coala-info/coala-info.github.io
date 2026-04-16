@@ -1,0 +1,49 @@
+{
+  "id": "bioprov",
+  "category": "CLI",
+  "name": "bioprov",
+  "description": "BioProv is a framework that integrates bioinformatics tool execution with formal provenance tracking to ensure reproducibility and auditability. Use when user asks to track execution metadata, wrap command-line tools into Pythonic structures, manage genomic samples, or export workflows as W3C-PROV documents.",
+  "overview": "BioProv is a specialized framework that bridges bioinformatics execution with formal provenance standards. It allows you to wrap command-line tools into a Pythonic structure that automatically tracks inputs, outputs, and execution metadata. Use this skill to transition from simple script execution to a structured environment where every file and program run is recorded as part of a W3C-PROV document, ensuring full reproducibility and auditability of genomic analyses.",
+  "homepage": "https://github.com/vinisalazar/BioProv",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioprov/overview",
+  "github": "https://github.com/vinisalazar/BioProv",
+  "conda_downloads": "8.6K",
+  "conda_downloads_num": 8600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bioprov_genome_annotation",
+      "bioprov_blastn",
+      "bioprov_kaiju"
+    ],
+    "description": "Genome annotation with Prodigal, Prokka and the COG database.",
+    "docker_image": "quay.io/biocontainers/bioprov:0.1.23--pyh5e36f6f_0",
+    "homepage": "https://github.com/vinisalazar/BioProv",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioprov/overview",
+    "github": "https://github.com/vinisalazar/BioProv",
+    "conda_downloads": "8.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bioprov_blastn.cwl",
+    "bioprov_genome_annotation.cwl",
+    "bioprov_kaiju.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioprov\n\n## Overview\n\nBioProv is a specialized framework that bridges bioinformatics execution with formal provenance standards. It allows you to wrap command-line tools into a Pythonic structure that automatically tracks inputs, outputs, and execution metadata. Use this skill to transition from simple script execution to a structured environment where every file and program run is recorded as part of a W3C-PROV document, ensuring full reproducibility and auditability of genomic analyses.\n\n## Core Workflow Patterns\n\n### 1. Initializing Samples and Files\nAlways start by defining a `Sample` and associating `File` objects with specific tags. Tags are critical as they are used by programs to identify inputs and outputs.\n\n```python\nimport bioprov as bp\n\n# Initialize sample\nsample = bp.Sample(\"sample_01\")\n\n# Add files with descriptive tags\nsample.add_files(bp.File(\"data/raw_genome.fasta\", \"genome\"))\n```\n\n### 2. Executing Programs with Provenance\nTo run a tool, create a `Program` object. Map the `params` dictionary to the file tags defined in your sample.\n\n```python\n# Define output file and add to sample\noutput_file = bp.File(\"results/blast_out.tsv\", \"blast_out\")\nsample.add_files(output_file)\n\n# Configure and run the program\nblastn = bp.Program(\"blastn\", params={\n    \"-query\": sample.files[\"genome\"],\n    \"-db\": \"ref_database.fasta\",\n    \"-out\": sample.files[\"blast_out\"]\n})\nsample.add_programs(blastn)\nsample.run_programs()\n```\n\n### 3. Batch Processing from DataFrames\nFor large-scale studies, import sample metadata directly from CSV/TSV files using Pandas integration.\n\n```python\n# sequencefile_cols maps a column in the CSV to a BioProv File object\nproject = bp.read_csv(\"metadata.tsv\", sep=\"\\t\", sequencefile_cols=\"assembly_path\")\n\n# Access specific samples\nfirst_sample = project['sample_id_001']\n```\n\n### 4. Generating Provenance Exports\nOnce execution is complete, wrap the `Project` in a `BioProvDocument` to export the trace.\n\n```python\n# Create the provenance document\nprov = bp.BioProvDocument(project)\n\n# Export to human-readable PROV-N\nprov.write_provn(\"workflow_trace.provn\")\n\n# Export to PDF visualization (requires pydot)\nprov.dot.write_pdf(\"workflow_graph.pdf\")\n```\n\n## CLI Usage Best Practices\n\nThe `bioprov` command-line tool is used for managing the internal database and running preset workflows.\n\n- **Database Management**: BioProv stores project history in a local TinyDB.\n  - `bioprov -l`: List all projects in the database.\n  - `bioprov --show_db`: Locate the database file.\n  - `bioprov --clear_db`: Reset the environment.\n- **Preset Workflows**: Use built-in workflows for common tasks to ensure standard provenance.\n  - `bioprov genome_annotation -i input_folder/`: Runs a standard annotation pipeline.\n  - `bioprov blastn -i query.fasta -d db.fasta`: Runs BLASTN with automatic tracking.\n\n## Expert Tips\n\n- **Preset Programs**: Instead of defining `bp.Program` from scratch, check `bioprov.programs` for pre-configured tools like `prodigal`, `prokka`, `mafft`, and `muscle`. These have pre-defined parameter mappings.\n- **JSON Persistence**: Use `project.to_json()` to save the entire state of your analysis. This can be reloaded later with `bp.from_json()` to resume work or inspect results without re-running.\n- **Attribute Tracking**: You can add arbitrary metadata to samples using `sample.attributes[\"key\"] = \"value\"`. These attributes are included in the final provenance document.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bioprov_blastn | Align nucleotide data to a reference database with BLASTN. |\n| genome_annotation | Genome annotation with Prodigal, Prokka and the COG database. |\n| kaiju | Run Kaiju on metagenomic data and create reports for taxonomic ranks. |\n\n## Reference documentation\n- [BioProv - W3C-PROV provenance documents for bioinformatics](./references/bioprov_readthedocs_io_en_latest_readme.html.md)\n- [Source API Overview](./references/bioprov_readthedocs_io_en_latest_modules.html.md)\n- [bioprov.programs package](./references/bioprov_readthedocs_io_en_latest_bioprov.programs.html.md)\n- [bioprov.src package (Core Classes)](./references/bioprov_readthedocs_io_en_latest_bioprov.src.html.md)",
+  "skill_front_matter": {
+    "name": "bioprov",
+    "description": "BioProv is a framework that integrates bioinformatics tool execution with formal provenance tracking to ensure reproducibility and auditability. Use when user asks to track execution metadata, wrap command-line tools into Pythonic structures, manage genomic samples, or export workflows as W3C-PROV documents.",
+    "homepage": "https://github.com/vinisalazar/BioProv"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-seqgsea",
+  "category": "bioconductor",
+  "name": "bioconductor-seqgsea",
+  "description": "SeqGSEA performs gene set enrichment analysis for RNA-Seq data by integrating differential expression and differential splicing signals. Use when user asks to identify enriched biological pathways, integrate differential expression and splicing analysis, or perform gene set enrichment analysis on high-throughput sequencing data.",
+  "overview": "SeqGSEA is a Bioconductor package designed to integrate differential expression (DE) and differential splicing (DS) into a unified gene set enrichment analysis. It models RNA-Seq read counts using a negative binomial distribution to account for biological variation and sequencing biases. The package is particularly useful for discovering biological insights that might be missed by looking at gene-level expression alone.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SeqGSEA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SeqGSEA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SeqGSEA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-seqgsea\n\nname: bioconductor-seqgsea\ndescription: Gene set enrichment analysis (GSEA) for RNA-Seq data integrating differential expression (DE) and differential splicing (DS). Use this skill when analyzing high-throughput sequencing data to identify enriched biological pathways while accounting for both transcript abundance and alternative splicing events.\n\n# bioconductor-seqgsea\n\n## Overview\nSeqGSEA is a Bioconductor package designed to integrate differential expression (DE) and differential splicing (DS) into a unified gene set enrichment analysis. It models RNA-Seq read counts using a negative binomial distribution to account for biological variation and sequencing biases. The package is particularly useful for discovering biological insights that might be missed by looking at gene-level expression alone.\n\n## Core Workflow\n\n### 1. Data Initialization\nSeqGSEA uses the `ReadCountSet` class to store exon-level counts.\n\n```R\nlibrary(SeqGSEA)\n# Create ReadCountSet from exon counts, exon IDs, and gene IDs\nRCS <- newReadCountSet(counts, exonIDs, geneIDs)\n\n# Filter low-count exons (default cutoff = 5)\nRCS <- exonTestability(RCS, cutoff = 5)\n```\n\n### 2. Differential Splicing (DS) Analysis\nDS analysis calculates NB-statistics for exons and aggregates them to the gene level.\n\n```R\n# Calculate DS statistics\nRCS <- estiExonNBstat(RCS)\nRCS <- estiGeneNBstat(RCS)\n\n# Permutation for empirical background (recommended: times=1000)\npermuteMat <- genpermuteMat(RCS, times = 1000)\nRCS <- DSpermute4GSEA(RCS, permuteMat)\n\n# Normalize DS scores\nDSscore.normFac <- normFactor(RCS@permute_NBstat_gene)\nDSscore <- scoreNormalization(RCS@featureData_gene$NBstat, DSscore.normFac)\nDSscore.perm <- scoreNormalization(RCS@permute_NBstat_gene, DSscore.normFac)\n```\n\n### 3. Differential Expression (DE) Analysis\nDE analysis is performed at the gene level, typically using `DESeq2` internally.\n\n```R\n# Aggregate exon counts to gene counts\ngeneCounts <- getGeneCount(RCS)\nlabel <- label(RCS)\n\n# Run DE analysis\ndds <- runDESeq(geneCounts, label)\nDEGres <- DENBStat4GSEA(dds)\n\n# Permutation for DE (use same permuteMat as DS)\nDEpermNBstat <- DENBStatPermut4GSEA(dds, permuteMat)\n\n# Normalize DE scores\nDEscore.normFac <- normFactor(DEpermNBstat)\nDEscore <- scoreNormalization(DEGres$NBstat, DEscore.normFac)\nDEscore.perm <- scoreNormalization(DEpermNBstat, DEscore.normFac)\n```\n\n### 4. Score Integration\nCombine DE and DS scores using linear or rank-based methods. The `DEweight` parameter (0 to 1) controls the contribution of expression vs. splicing.\n\n```R\n# Linear integration (e.g., 30% DE, 70% DS)\ngene.score <- geneScore(DEscore, DSscore, method=\"linear\", DEweight = 0.3)\ngene.score.perm <- genePermuteScore(DEscore.perm, DSscore.perm, method=\"linear\", DEweight = 0.3)\n\n# Rank-based integration (often more robust)\ncombine <- rankCombine(DEscore, DSscore, DEscore.perm, DSscore.perm, DEweight = 0.3)\ngene.score <- combine$geneScore\ngene.score.perm <- combine$genePermuteScore\n```\n\n### 5. Gene Set Enrichment Analysis\nLoad gene sets (GMT format) and run the enrichment analysis.\n\n```R\n# Load gene sets (supports MSigDB symbols or Ensembl IDs)\ngene.set <- loadGenesets(gmtFile, geneIDs, geneID.type = \"ensembl\")\n\n# Run GSEA\ngene.set <- GSEnrichAnalyze(gene.set, gene.score, gene.score.perm)\n\n# View top results\ntopGeneSets(gene.set, n = 10)\n```\n\n## Visualization and Results\n*   `plotGeneScore(gene.score, gene.score.perm)`: Visualize the distribution of integrated scores.\n*   `plotES(gene.set)`: Plot the distribution of Normalized Enrichment Scores (NES).\n*   `plotSigGeneSet(gene.set, index, gene.score)`: Detailed running ES plot for a specific gene set.\n*   `GSEAresultTable(gene.set)`: Generate a summary table of results.\n\n## Performance Tips\n*   **Parallelization**: Use `doParallel` to speed up permutations.\n    ```R\n    library(doParallel)\n    cl <- makeCluster(parallel::detectCores())\n    registerDoParallel(cl)\n    ```\n*   **One-Step Analysis**: For a standard pipeline, use the wrapper function `runSeqGSEA`.\n\n## Reference documentation\n- [SeqGSEA](./references/SeqGSEA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-seqgsea",
+    "description": "SeqGSEA performs gene set enrichment analysis for RNA-Seq data by integrating differential expression and differential splicing signals. Use when user asks to identify enriched biological pathways, integrate differential expression and splicing analysis, or perform gene set enrichment analysis on high-throughput sequencing data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SeqGSEA.html"
+  }
+}

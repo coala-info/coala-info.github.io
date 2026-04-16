@@ -1,0 +1,49 @@
+{
+  "id": "rilseq",
+  "category": "CLI",
+  "name": "rilseq",
+  "description": "RIL-seq identifies RNA-RNA interactions in bacteria by processing chimeric sequencing reads through mapping and statistical enrichment analysis. Use when user asks to map single or chimeric fragments, identify significant interacting regions, or analyze sRNA-target interaction datasets.",
+  "overview": "RIL-seq is a specialized toolset designed to identify RNA-RNA interactions in bacteria by processing chimeric sequencing reads. This skill provides the procedural knowledge required to execute the three primary stages of the RIL-seq pipeline: initial fragment mapping, chimera identification, and statistical enrichment analysis. It is particularly useful for researchers working with Hfq-mediated or other sRNA-target interaction datasets.",
+  "homepage": "http://github.com/asafpr/RILseq",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/rilseq/overview",
+  "github": "https://github.com/asafpr/RILseq",
+  "conda_downloads": "31.1K",
+  "conda_downloads_num": 31100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rilseq_map_single_fragments.py",
+      "rilseq_map_chimeric_fragments.py",
+      "rilseq_RILseq_significant_regions.py"
+    ],
+    "description": "Map fastq files to the genome using bwa.",
+    "docker_image": "quay.io/biocontainers/rilseq:0.82--pyhdfd78af_0",
+    "homepage": "http://github.com/asafpr/RILseq",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/rilseq/overview",
+    "github": "https://github.com/asafpr/RILseq",
+    "conda_downloads": "31.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "rilseq_RILseq_significant_regions.py.cwl",
+    "rilseq_map_chimeric_fragments.py.cwl",
+    "rilseq_map_single_fragments.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# rilseq\n\n## Overview\nRIL-seq is a specialized toolset designed to identify RNA-RNA interactions in bacteria by processing chimeric sequencing reads. This skill provides the procedural knowledge required to execute the three primary stages of the RIL-seq pipeline: initial fragment mapping, chimera identification, and statistical enrichment analysis. It is particularly useful for researchers working with Hfq-mediated or other sRNA-target interaction datasets.\n\n## Installation and Prerequisites\nRIL-seq can be installed via `pip` or `conda`. Note that fastq files must be pre-processed (adapter trimming and quality filtering) using tools like `cutadapt` before starting this protocol.\n\n```bash\n# Installation\npip install rilseq\n# OR\nconda install -c bioconda rilseq\n```\n\n## Core Workflow\n\n### 1. Single Fragment Mapping\nMap reads to the reference genome using `bwa`. This step handles both single-end and paired-end data.\n\n```bash\nmap_single_fragments.py genome.fa \\\n  -g annotations.gff \\\n  -1 lib1_1.fastq.gz lib2_1.fastq.gz \\\n  -2 lib1_2.fastq.gz lib2_2.fastq.gz \\\n  -d output_dir \\\n  -o output_prefix \\\n  -m 3\n```\n- **-1 / -2**: Paths to R1 and R2 files. Order must match.\n- **-m**: Maximum mismatches allowed (default is often 3).\n\n### 2. Chimeric Fragment Mapping\nIdentify reads where the two ends map to different genomic locations, indicating a potential interaction.\n\n```bash\nmap_chimeric_fragments.py genome.fa lib1_bwa.bam lib2_bwa.bam [additional_bams...]\n```\n- **Logic**: For paired-end, it takes the first 25nt of each fragment. For single-end, it takes the first and last 25nt.\n- **Dust Filter**: Low complexity sequences are removed by default (threshold 10). Use `--dust_thr 0` to disable.\n- **Circular RNAs**: By default, reads mapping in reverse order within 1000nt are removed. Use `--keep_circular` to retain them.\n- **Long Transcripts**: Use `-t` to prevent flagging reads from the same long transcript (e.g., rRNAs) as chimeras.\n\n### 3. Identifying Significant Interacting Regions\nApply Fisher's exact test to distinguish true biological interactions from random ligation events.\n\n```bash\nRIL_significant_regions.py reads_in_list \\\n  --ec_dir EcoCyc_dir \\\n  --EC_chrlist \"chr,COLI-K12\" \\\n  --seglen 100 \\\n  --min_int 5 \\\n  --max_pv 0.05\n```\n- **Segmentation**: The genome is divided into windows (default `--seglen 100`).\n- **Normalization**: If total RNA-seq data is available, use `--total_RNA <indexed_bam_list>` to calculate a \"Total normalized odds ratio,\" which accounts for RNA abundance.\n- **Expansion**: Use `--maxsegs` (default 500) to allow interacting regions to expand and find the most significant p-value.\n\n## Expert Tips\n- **Read Length**: Ensure your chimeric mapping length (`-l`, default 25) does not cause overlaps in single-end reads, or the script will fail to produce results.\n- **Memory Management**: When processing many BAM files, you can run `map_chimeric_fragments.py` on each individually and then concatenate the resulting text files before running the significance script.\n- **Annotation**: Ensure your GFF/GTF files match the chromosome names in your `genome.fa` exactly to avoid decoration errors in the final report.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| RILseq_significant_regions.py | Find over-represented regions of interactions. |\n| map_chimeric_fragments.py | Map unmapped reads as chimeric fragments |\n| map_single_fragments.py | Map fastq files to the genome using bwa. |\n\n## Reference documentation\n- [RILseq GitHub Repository](./references/github_com_asafpr_RILseq.md)\n- [Bioconda RILseq Package](./references/anaconda_org_channels_bioconda_packages_rilseq_overview.md)",
+  "skill_front_matter": {
+    "name": "rilseq",
+    "description": "RIL-seq identifies RNA-RNA interactions in bacteria by processing chimeric sequencing reads through mapping and statistical enrichment analysis. Use when user asks to map single or chimeric fragments, identify significant interacting regions, or analyze sRNA-target interaction datasets.",
+    "homepage": "http://github.com/asafpr/RILseq"
+  }
+}

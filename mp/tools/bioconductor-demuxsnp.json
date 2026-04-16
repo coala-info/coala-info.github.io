@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-demuxsnp",
+  "category": "bioconductor",
+  "name": "bioconductor-demuxsnp",
+  "description": "The demuxSNP package provides a supervised approach to demultiplexing scRNA-seq data by combining cell hashing and SNP information. Use when user asks to demultiplex scRNA-seq data, recover unclassifiable cells using SNP signatures, or train a k-nearest neighbors classifier for donor assignment without prior genotyping.",
+  "overview": "The `demuxSNP` package provides a supervised approach to demultiplexing multiplexed scRNA-seq data. It addresses the limitations of using cell hashing or SNPs alone by using high-confidence hashing assignments to \"learn\" the genetic signatures (SNPs) of each group. These signatures are then used to train a k-nearest neighbors (kNN) classifier to reassign cells that were previously unclassifiable due to poor tagging quality.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/demuxSNP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-demuxsnp/overview",
+  "github": "https://github.com/michaelplynch/demuxSNP",
+  "conda_downloads": "1.6K",
+  "conda_downloads_num": 1600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "demuxSNP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/demuxSNP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-demuxsnp/overview",
+    "github": "https://github.com/michaelplynch/demuxSNP",
+    "conda_downloads": "1.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-demuxsnp\n\n## Overview\n\nThe `demuxSNP` package provides a supervised approach to demultiplexing multiplexed scRNA-seq data. It addresses the limitations of using cell hashing or SNPs alone by using high-confidence hashing assignments to \"learn\" the genetic signatures (SNPs) of each group. These signatures are then used to train a k-nearest neighbors (kNN) classifier to reassign cells that were previously unclassifiable due to poor tagging quality.\n\nKey advantages:\n- Recovers high-quality cells that hashing algorithms might label as \"Negative\" or \"Uncertain\".\n- Does not require prior donor genotyping (unlike `demuxlet`).\n- Reduces noise by focusing on SNPs within highly expressed genes.\n\n## Core Workflow\n\n### 1. Data Preparation and Preprocessing\nLoad the required libraries and your `SingleCellExperiment` (SCE) object containing RNA and HTO counts.\n\n```r\nlibrary(demuxSNP)\nlibrary(SingleCellExperiment)\nlibrary(VariantAnnotation)\nlibrary(EnsDb.Hsapiens.v86)\n\n# Identify genes expressed in the highest proportion of cells\ntop_genes <- common_genes(sce = multiplexed_sce, n = 100)\n\n# Subset a VCF file to SNPs within these top genes\n# Ensure the EnsDb version matches your VCF genome build\nensdb <- EnsDb.Hsapiens.v86\nnew_vcf <- subset_vcf(vcf = input_vcf, top_genes = top_genes, ensdb = ensdb)\n```\n\n### 2. Identifying High-Confidence Training Cells\nUse `demuxmix` (via the `high_conf_calls` wrapper) to identify cells that can be confidently assigned to a group based on hashing data.\n\n```r\n# This adds 'train', 'predict', and 'labels' to colData\nmultiplexed_sce <- high_conf_calls(multiplexed_sce, assay = \"HTO\")\n\n# 'train' (logical): High confidence singlets\n# 'predict' (logical): All cells to be classified\n# 'labels' (factor): Initial hashing-based assignments\n```\n\n### 3. Integrating SNP Data\nAfter generating a SNP matrix (e.g., using VarTrix with the subsetted VCF), add it to the SCE object. The package recodes the matrix: 0 (no read), 1 (SNP present), -1 (SNP absent).\n\n```r\n# mat: SNP matrix where rows are SNPs and columns are cells\n# thresh: Filter SNPs observed in less than 'thresh' proportion of cells\nmultiplexed_sce <- add_snps(multiplexed_sce, mat = snp_matrix, thresh = 0.95)\n```\n\n### 4. Supervised Reassignment\nTrain the centroid-based kNN classifier on the high-confidence cells and predict the identity of all cells.\n\n```r\nset.seed(1)\nmultiplexed_sce$knn <- reassign_centroid(\n    multiplexed_sce,\n    train_cells = multiplexed_sce$train,\n    predict_cells = multiplexed_sce$predict,\n    min_cells = 5 # Minimum cells required per group to simulate doublets\n)\n\n# View final assignments\ntable(multiplexed_sce$knn)\n```\n\n## Visualization and Evaluation\n\n### Visualizing SNP Profiles\nUse `ComplexHeatmap` to verify if SNP profiles align with the assignments.\n\n```r\nlibrary(ComplexHeatmap)\ncolors <- structure(viridisLite::viridis(n = 3), names = c(\"-1\", \"0\", \"1\"))\n\nhm <- Heatmap(counts(altExp(multiplexed_sce, \"SNP\")),\n    column_split = multiplexed_sce$knn,\n    cluster_rows = FALSE,\n    show_column_names = FALSE,\n    col = colors\n)\ndraw(hm)\n```\n\n### Performance Testing\nYou can validate the model by splitting high-confidence cells into a mock training and test set to check for agreement between hashing and SNP-based calls.\n\n## Tips for Success\n- **Genome Compatibility**: Ensure the `EnsDb` object used in `subset_vcf` matches the genome build of your VCF and BAM files (e.g., hg38 vs hg19).\n- **SNP Matrix Generation**: The SNP matrix must be generated outside of R (e.g., using VarTrix) using the VCF produced by `subset_vcf`.\n- **Doublet Simulation**: `reassign_centroid` automatically simulates doublets by combining SNP profiles of training singlets, allowing for robust doublet detection even without prior genotypes.\n\n## Reference documentation\n- [Supervised Demultiplexing using Cell Hashing and SNPs](./references/supervised_demultiplexing.Rmd)\n- [Supervised Demultiplexing using Cell Hashing and SNPs](./references/supervised_demultiplexing.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-demuxsnp",
+    "description": "The demuxSNP package provides a supervised approach to demultiplexing scRNA-seq data by combining cell hashing and SNP information. Use when user asks to demultiplex scRNA-seq data, recover unclassifiable cells using SNP signatures, or train a k-nearest neighbors classifier for donor assignment without prior genotyping.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/demuxSNP.html"
+  }
+}

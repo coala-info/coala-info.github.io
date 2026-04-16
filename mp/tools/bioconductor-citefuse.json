@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-citefuse",
+  "category": "bioconductor",
+  "name": "bioconductor-citefuse",
+  "description": "\"CiteFuse provides a comprehensive framework for integrating and analyzing multimodal CITE-seq data using Similarity Network Fusion. Use when user asks to integrate RNA and surface protein measurements, perform cell hashing for doublet detection, cluster cells using a fused similarity matrix, or identify important ADT markers.\"",
+  "overview": "CiteFuse is a comprehensive framework for analyzing CITE-seq data (simultaneous RNA and surface protein/ADT measurement). It excels at integrating these two modalities using Similarity Network Fusion (SNF) to create a unified representation of cell states. The package also provides specialized tools for cell hashing (HTO) analysis to identify doublets and methods to assess which proteins (ADTs) contribute most to cluster identity.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CiteFuse.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-citefuse/overview",
+  "github": "https://github.com/SydneyBioX/CiteFuse",
+  "conda_downloads": "17.0K",
+  "conda_downloads_num": 17000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CiteFuse"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CiteFuse.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-citefuse/overview",
+    "github": "https://github.com/SydneyBioX/CiteFuse",
+    "conda_downloads": "17.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-citefuse\n\n## Overview\n\nCiteFuse is a comprehensive framework for analyzing CITE-seq data (simultaneous RNA and surface protein/ADT measurement). It excels at integrating these two modalities using Similarity Network Fusion (SNF) to create a unified representation of cell states. The package also provides specialized tools for cell hashing (HTO) analysis to identify doublets and methods to assess which proteins (ADTs) contribute most to cluster identity.\n\n## Core Workflow\n\n### 1. Data Preprocessing and HTO Analysis\nCiteFuse uses the `SingleCellExperiment` (SCE) class. RNA is stored in the main assay, while ADT and HTO data are stored in `altExp` slots.\n\n```r\nlibrary(CiteFuse)\n# Create SCE from a list of matrices (RNA, ADT, HTO)\nsce <- preprocessing(CITEseq_example)\n\n# Normalization (HTO for doublet detection)\nsce <- normaliseExprs(sce, altExp_name = \"HTO\", transform = \"log\")\n\n# Step-wise Doublet Detection\nsce <- crossSampleDoublets(sce) # Between-sample\nsce <- withinSampleDoublets(sce, minPts = 10) # Within-sample\n\n# Filter for singlets\nsce <- sce[, sce$doubletClassify_within_class == \"Singlet\" & \n             sce$doubletClassify_between_class == \"Singlet\"]\n```\n\n### 2. Modality Integration (SNF)\nIntegrate RNA and ADT data to create a fused similarity matrix.\n\n```r\n# Normalize RNA and ADT before fusion\nsce <- scater::logNormCounts(sce)\nsce <- normaliseExprs(sce, altExp_name = \"ADT\", transform = \"log\")\n\n# Run Similarity Network Fusion\nsce <- CiteFuse(sce)\n# Fused matrix is stored in metadata(sce)[[\"SNF_W\"]]\n```\n\n### 3. Clustering and Visualization\nPerform clustering on the fused network and visualize results.\n\n```r\n# Spectral Clustering: Determine K using eigenvalues\nSNF_W_clust <- spectralClustering(metadata(sce)[[\"SNF_W\"]], K = 20)\nplot(SNF_W_clust$eigen_values) # Look for \"elbow\"\n\n# Final clustering\nSNF_W_clust <- spectralClustering(metadata(sce)[[\"SNF_W\"]], K = 5)\nsce$SNF_W_clust <- as.factor(SNF_W_clust$labels)\n\n# Louvain Clustering alternative\nsce$SNF_W_louvain <- as.factor(igraphClustering(sce, method = \"louvain\"))\n\n# Visualization\nsce <- reducedDimSNF(sce, method = \"tSNE\", dimNames = \"tSNE_joint\")\nvisualiseDim(sce, dimNames = \"tSNE_joint\", colour_by = \"SNF_W_clust\")\n```\n\n### 4. Differential Expression (DE)\nIdentify markers for both RNA and ADT modalities.\n\n```r\n# RNA DE\nsce <- DEgenes(sce, altExp_name = \"none\", group = sce$SNF_W_louvain)\nsce <- selectDEgenes(sce, altExp_name = \"none\")\n\n# ADT DE\nsce <- DEgenes(sce, altExp_name = \"ADT\", group = sce$SNF_W_louvain)\nsce <- selectDEgenes(sce, altExp_name = \"ADT\")\n\n# Visualization\nDEbubblePlot(list(RNA = metadata(sce)[[\"DE_res_RNA_filter\"]], \n                  ADT = metadata(sce)[[\"DE_res_ADT_filter\"]]))\n```\n\n### 5. ADT Importance and Networks\nEvaluate which proteins drive the clustering and explore gene-protein correlations.\n\n```r\n# ADT Importance (Random Forest)\nsce <- importanceADT(sce, group = sce$SNF_W_louvain, subsample = TRUE)\nvisImportance(sce, plot = \"boxplot\")\n\n# Gene-ADT Network\ngeneADTnetwork(sce, \n               RNA_feature_subset = rna_features, \n               ADT_feature_subset = adt_features, \n               cor_method = \"pearson\")\n```\n\n### 6. Ligand-Receptor Analysis\nPredict interactions using RNA for ligands and ADT for receptors.\n\n```r\n# Requires specific normalization\nsce <- normaliseExprs(sce, altExp_name = \"ADT\", transform = \"zi_minMax\")\nsce <- normaliseExprs(sce, altExp_name = \"none\", transform = \"minMax\")\n\nsce <- ligandReceptorTest(sce, \n                          ligandReceptor_list = lr_pair_subset, \n                          cluster = sce$SNF_W_louvain, \n                          use_alt_exp = TRUE, \n                          altExp_name = \"ADT\")\n\nvisLigandReceptor(sce, type = \"pval_dotplot\", receptor_type = \"ADT\")\n```\n\n## Reference documentation\n- [CiteFuse: getting started](./references/CiteFuse.Rmd)\n- [CiteFuse: getting started (Markdown)](./references/CiteFuse.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-citefuse",
+    "description": "CiteFuse provides a comprehensive framework for integrating and analyzing multimodal CITE-seq data using Similarity Network Fusion. Use when user asks to integrate RNA and surface protein measurements, perform cell hashing for doublet detection, cluster cells using a fused similarity matrix, or identify important ADT markers.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CiteFuse.html"
+  }
+}

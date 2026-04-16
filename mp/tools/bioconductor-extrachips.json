@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-extrachips",
+  "category": "bioconductor",
+  "name": "bioconductor-extrachips",
+  "description": "This tool provides functions for differential binding and signal analysis of ChIP-seq data using sliding window or fixed-width approaches. Use when user asks to perform dual filtering of genomic windows, merge overlapping ranges using harmonic mean p-values, map peaks to genes via HiC or enhancers, and create specialized visualizations like HFGC plots or profile heatmaps.",
+  "overview": "The `extraChIPs` package extends the capabilities of `csaw` and `edgeR` for ChIP-seq analysis. It is specifically designed for the GRAVI workflow but is broadly applicable to any genomic interval analysis. Its core strengths lie in:\n1. **Dual Filtering**: Using consensus peaks to guide the filtering of sliding windows.\n2. **Variable Width Merging**: Merging dependent windows into variable-width regions using harmonic mean p-values or representative signal.\n3. **Complex Mapping**: Assigning peaks",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/extraChIPs.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-extrachips/overview",
+  "github": "https://github.com/smped/extraChIPs",
+  "conda_downloads": "5.0K",
+  "conda_downloads_num": 5000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "extraChIPs"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/extraChIPs.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-extrachips/overview",
+    "github": "https://github.com/smped/extraChIPs",
+    "conda_downloads": "5.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-extrachips\n\nname: bioconductor-extrachips\ndescription: Expert guidance for using the extraChIPs R package for differential binding and signal analysis of ChIP-seq data. Use this skill when performing sliding window or fixed-width window analyses, merging overlapping genomic ranges, mapping peaks to genes (incorporating HiC, promoters, and enhancers), and creating specialized visualizations like profile heatmaps, HFGC plots, and overlap diagrams.\n\n# bioconductor-extrachips\n\n## Overview\n\nThe `extraChIPs` package extends the capabilities of `csaw` and `edgeR` for ChIP-seq analysis. It is specifically designed for the GRAVI workflow but is broadly applicable to any genomic interval analysis. Its core strengths lie in:\n1. **Dual Filtering**: Using consensus peaks to guide the filtering of sliding windows.\n2. **Variable Width Merging**: Merging dependent windows into variable-width regions using harmonic mean p-values or representative signal.\n3. **Complex Mapping**: Assigning peaks to genes using a hierarchical approach that considers HiC interactions, promoters, and enhancers.\n4. **Advanced Visualization**: Streamlined plotting of coverage tracks (HFGC), profile heatmaps, and UpSet/Venn diagrams for range overlaps.\n\n## Core Workflows\n\n### 1. Sliding Window Analysis\nThis is the preferred method for histone marks (e.g., H3K27ac) where signal width varies.\n\n```r\nlibrary(extraChIPs)\nlibrary(csaw)\n\n# 1. Count reads in windows\nrp <- readParam(pe = \"none\", dedup = TRUE, restrict = \"chr10\")\nwincounts <- windowCounts(bam_files, spacing = 40, width = 120, ext = 200, param = rp)\n\n# 2. Dual filtering using guide/consensus peaks\n# Retains windows with signal above input and within likely peak regions\nfiltcounts <- dualFilter(x = wincounts, bg = \"input_sample_name\", ref = guide_peaks, q = 0.5)\n\n# 3. Statistical testing (Quasi-Likelihood)\nX <- model.matrix(~condition, data = colData(filtcounts))\nfit_gr <- fitAssayDiff(filtcounts, design = X, fc = 1.2, asRanges = TRUE)\n\n# 4. Merge windows using Harmonic Mean P-value (HMP)\nresults_gr <- mergeByHMP(fit_gr, merge_within = 120) %>% addDiffStatus()\n```\n\n### 2. Fixed-Width Peak Analysis\nCommonly used for Transcription Factors (TFs) using MACS2 peak calls.\n\n```r\n# 1. Import and clean peaks\npeaks <- importPeaks(peak_files, seqinfo = sq, blacklist = omit_ranges)\n\n# 2. Create consensus peaks (e.g., present in 2/3 replicates)\nconsensus <- makeConsensus(peaks, p = 2/3)\n\n# 3. Define fixed-width windows around peak centres\ncentred_peaks <- consensus %>% \n  mutate(centre = resize(granges(.), width = 1, fix = \"center\")) %>%\n  mutate(window = resize(centre, width = 500, fix = \"center\")) %>%\n  colToRanges(\"window\")\n\n# 4. Count and test\nse <- regionCounts(bam_files, centred_peaks, ext = 200)\nres <- fitAssayDiff(se, design = X, norm = \"TMM\", asRanges = TRUE)\n```\n\n### 3. Mapping Peaks to Genes\n`mapByFeature` uses a priority-based assignment:\n1. HiC Interactions (if provided)\n2. Promoter overlaps\n3. Enhancer proximity\n4. Nearest Gene\n\n```r\nmapped_res <- mapByFeature(\n  results_gr, \n  genes = gencode_genes, \n  prom = promoters_gr,\n  enh = enhancers_gr, # Optional\n  gi = hic_interactions # Optional (GInteractions)\n)\n```\n\n## Visualization Tips\n\n### Profile Heatmaps\nVisualizes signal density around peak centers.\n```r\n# Get smoothed data\npd <- getProfileData(bw_files, regions_gr)\n# Plot with facets by status (Increased/Decreased)\nplotProfileHeatmap(pd, \"profile_data\", facetY = \"status\") +\n  scale_fill_viridis_c()\n```\n\n### HFGC Plots (HiC, Features, Genes, Coverage)\nA wrapper for `Gviz` to create publication-ready track plots.\n```r\nplotHFGC(\n  region_gr, \n  hic = hic_data, \n  features = GRangesList(Promoters = prom_gr),\n  genes = gene_models, \n  coverage = bw_file_list,\n  zoom = 1.2\n)\n```\n\n### Overlap Analysis\nQuickly compare replicates or different peak callers.\n```r\n# Venn (1-3 sets) or UpSet (3+ sets)\nplotOverlaps(peaks_grl, type = \"upset\", var = \"score\", f = \"max\")\n```\n\n## Key Functions Reference\n- `dualFilter()`: Filters windows based on reference peaks and background (input) signal.\n- `fitAssayDiff()`: Unified interface for `edgeR` QLF or `limma-trend` testing.\n- `mergeByHMP()` / `mergeByCol()`: Combines sliding windows into merged regions.\n- `makeConsensus()`: Generates consensus peak sets from replicates.\n- `colToRanges()`: Swaps the active GRanges in a metadata-rich object.\n- `plotAssayRle()` / `plotAssayPCA()`: Standard QC plots for SummarizedExperiment objects.\n\n## Reference documentation\n- [Differential Binding Analysis](./references/differential_binding.Rmd)\n- [Differential Signal Using Fixed-Width Windows](./references/differential_signal_fixed.md)\n- [Differential Signal Using Sliding Windows](./references/differential_signal_sliding.md)\n- [Range-Based Functions and Mapping](./references/range_based_functions.Rmd)\n- [Range-Based Functions Overview](./references/range_based_functions.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-extrachips",
+    "description": "This tool provides functions for differential binding and signal analysis of ChIP-seq data using sliding window or fixed-width approaches. Use when user asks to perform dual filtering of genomic windows, merge overlapping ranges using harmonic mean p-values, map peaks to genes via HiC or enhancers, and create specialized visualizations like HFGC plots or profile heatmaps.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/extraChIPs.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hd2013sgi",
+  "category": "bioconductor",
+  "name": "bioconductor-hd2013sgi",
+  "description": "This package provides tools and data for analyzing multiparametric genetic interaction screens in human cancer cells. Use when user asks to access data from the Laufer et al. (2013) study, perform image segmentation and feature extraction, normalize phenotypic data, or calculate pi-scores for genetic interactions.",
+  "overview": "The `HD2013SGI` package provides the data and analysis pipeline for a large-scale genetic interaction screen in human cells. It uses multiparametric phenotyping (measuring cell shape, nucleus size, texture, etc.) rather than just cell viability. The package contains raw feature data, pre-computed interaction scores (pi-scores), and functions to reproduce the statistical analysis from the original publication.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/HD2013SGI.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hd2013sgi/overview",
+  "github": "N/A",
+  "conda_downloads": "23.0K",
+  "conda_downloads_num": 23000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HD2013SGI"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/HD2013SGI.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hd2013sgi/overview",
+    "github": "N/A",
+    "conda_downloads": "23.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hd2013sgi\n\nname: bioconductor-hd2013sgi\ndescription: Analysis of multiparametric genetic interaction screens in human cancer cells using RNAi. Use this skill to access and process the data from the Laufer et al. (2013) study, including image segmentation, feature extraction, normalization, and calculation of pi-scores for genetic interactions.\n\n## Overview\nThe `HD2013SGI` package provides the data and analysis pipeline for a large-scale genetic interaction screen in human cells. It uses multiparametric phenotyping (measuring cell shape, nucleus size, texture, etc.) rather than just cell viability. The package contains raw feature data, pre-computed interaction scores (pi-scores), and functions to reproduce the statistical analysis from the original publication.\n\n## Data Access\nThe package contains several key datasets representing different stages of the analysis pipeline.\n\n```r\nlibrary(HD2013SGI)\n\n# Main genetic interaction data (pi-scores and p-values)\ndata(\"Interactions\", package=\"HD2013SGI\")\n# Interactions$piscore: 6D array [target, design, query, design, phenotype, replicate]\n# Interactions$padj: 5D array of adjusted p-values\n\n# Other intermediate datasets\ndata(\"featuresPerWell\", package=\"HD2013SGI\") # Raw screen data\ndata(\"datamatrix\", package=\"HD2013SGI\")      # QC-filtered phenotype data\ndata(\"mainEffects\", package=\"HD2013SGI\")     # Single knockdown effects\n```\n\n## Typical Workflow\n\n### 1. Image Processing and Feature Extraction\nWhile the full 5.6TB dataset is not in the package, you can run the segmentation pipeline on example images.\n```r\n# Load example images\nfnch1 = system.file(\"images/image-DAPI.tif\", package=\"HD2013SGI\")\nImg1 = readImage(fnch1)\n\n# Nuclei segmentation\nnucleusThresh = thresh(Img1, w = 10, h = 10, offset = 0.0001)\nnucleusOpening = opening(nucleusThresh, kern=makeBrush(3, shape=\"disc\"))\nnucleusSeed = bwlabel(nucleusOpening)\n\n# Feature extraction\nF1 = computeFeatures(nucleusRegions, Img1, xname=\"nuc\", refnames=\"nuc\")\n```\n\n### 2. Normalization and Transformation\nPhenotypic features are transformed using a generalized logarithm (glog) to stabilize variance and then normalized to account for plate effects.\n```r\n# Generalized log transform\n# c is typically the 3% quantile of the feature distribution\nglog_data = log((x + sqrt(x^2 + c^2)) / 2)\n\n# Center and scale\nscaled_data = (data - median(data)) / mad(data)\n```\n\n### 3. Calculating Interaction Scores (pi-scores)\nThe package uses a robust linear model to estimate interaction terms.\n```r\n# Calculate main effects and pi-scores\n# TargetNeg specifies indices of negative control siRNAs\nMP = HD2013SGImaineffects(D_matrix, TargetNeg = neg_indices)\n\n# Access results\npi_scores = MP$pi\ntarget_effects = MP$targetMainEffect\n```\n\n### 4. Feature Selection\nTo reduce redundancy among the hundreds of extracted features, a stability-based selection is used.\n```r\n# Select non-redundant features\nstabilitySelection = HD2013SGIselectByStability(data_list, preselect = \"count\")\nselected_features = stabilitySelection$selected[stabilitySelection$ratioPositive >= 0.5]\n```\n\n## Visualization\nThe package includes specialized functions for visualizing high-dimensional interaction data.\n```r\n# Screen plots (mapping scores back to plate layout)\nplotScreen(plate_list, ncol=2, zrange=c(-3,3))\n\n# Heatmaps with specific color scales for pi-scores\ncuts = c(-Inf, seq(-6, -2, length.out=10), 0, seq(2, 6, length.out=10), Inf)\nHD2013SGIHeatmapHuman(x = PI_array, cuts = cuts)\n```\n\n## Reference documentation\n- [HD2013SGI](./references/HD2013SGI.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hd2013sgi",
+    "description": "This package provides tools and data for analyzing multiparametric genetic interaction screens in human cancer cells. Use when user asks to access data from the Laufer et al. (2013) study, perform image segmentation and feature extraction, normalize phenotypic data, or calculate pi-scores for genetic interactions.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/HD2013SGI.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bearscc",
+  "category": "bioconductor",
+  "name": "bioconductor-bearscc",
+  "description": "bioconductor-bearscc evaluates the robustness of single-cell RNA-seq clusters by modeling technical noise and generating simulated replicates. Use when user asks to assess cluster stability, model technical variation using ERCC spike-ins, or generate simulated technical replicates for single-cell data.",
+  "overview": "BEARscc (Bayesian ERCC Assessment of single-cell cluster robustness) is a noise perturbation algorithm that determines the extent to which single-cell RNA-seq cluster assignments are robust to technical variation. It uses spike-in controls (like ERCCs) to build a statistical model of expression-dependent variance and drop-out effects. By generating simulated technical replicates and re-clustering them, BEARscc provides quantitative metrics to identify stable clusters and cells that may be incons",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/BEARscc.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bearscc/overview",
+  "github": "N/A",
+  "conda_downloads": "24.4K",
+  "conda_downloads_num": 24400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BEARscc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/BEARscc.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bearscc/overview",
+    "github": "N/A",
+    "conda_downloads": "24.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bearscc\n\nname: bioconductor-bearscc\ndescription: Use when analyzing single-cell RNA-seq data to evaluate the robustness of cell clusters against technical noise. This skill helps model technical variation using ERCC spike-ins, generate simulated technical replicates, and calculate consensus metrics (stability, promiscuity, and score) to determine if clusters are biologically meaningful or artifacts of experimental noise.\n\n# bioconductor-bearscc\n\n## Overview\n\nBEARscc (Bayesian ERCC Assessment of single-cell cluster robustness) is a noise perturbation algorithm that determines the extent to which single-cell RNA-seq cluster assignments are robust to technical variation. It uses spike-in controls (like ERCCs) to build a statistical model of expression-dependent variance and drop-out effects. By generating simulated technical replicates and re-clustering them, BEARscc provides quantitative metrics to identify stable clusters and cells that may be inconsistently assigned due to experimental noise.\n\n## Workflow and Core Functions\n\n### 1. Data Preparation\nBEARscc requires a `SingleCellExperiment` object containing:\n- An assay named `\"observed_expression\"` (counts or normalized counts).\n- Metadata containing `\"spikeConcentrations\"` (a data frame of spike-in IDs and their actual concentrations).\n- Spike-in rows identified via `isSpike()`.\n\n```r\nlibrary(BEARscc)\n# Create SCE object\nsce <- SingleCellExperiment(list(counts=as.matrix(data.counts.df)))\nmetadata(sce)$spikeConcentrations <- ERCC.meta.df\nassay(sce, \"observed_expression\") <- counts(sce)\nisSpike(sce, \"ERCC_spikes\") <- grepl(\"^ERCC-\", rownames(sce))\n```\n\n### 2. Building the Noise Model\nEstimate technical variance and drop-out parameters based on the spike-ins.\n- `alpha_resolution`: Use 0.001 to 0.01 for production; higher values (0.1+) are for testing.\n- `write.noise.model`: Set to `TRUE` to save parameters for HPC use.\n\n```r\nsce <- estimate_noiseparameters(sce, alpha_resolution = 0.01)\n```\n\n### 3. Simulating Technical Replicates\nGenerate perturbed counts matrices based on the noise model.\n- `n`: Number of replicates (50–100 recommended for stable consensus).\n\n```r\nsce <- simulate_replicates(sce, n = 50)\n# Replicates are stored in metadata(sce)$simulated_replicates\n```\n\n### 4. Forming a Noise Consensus\nAfter generating replicates, you must cluster each one using your preferred algorithm (e.g., SC3, Seurat, or hierarchical clustering). Collect the cluster labels into a data frame where each column is a replicate.\n\n```r\n# Example: Re-clustering a list of replicates\ncluster_list <- lapply(metadata(sce)$simulated_replicates, function(replicate_counts) {\n    # Apply your clustering algorithm here\n    # return(cluster_labels)\n})\nclusters.df <- do.call(\"cbind\", cluster_list)\n\n# Compute the consensus matrix\nnoise_consensus <- compute_consensus(clusters.df)\n```\n\n### 5. Evaluating Robustness Metrics\nCalculate metrics to interpret the consensus matrix.\n- **Stability**: Propensity for a cluster to contain the same cells across replicates.\n- **Promiscuity**: Tendency for cells in a cluster to associate with other clusters.\n- **Score**: Stability minus Promiscuity (higher is better).\n\n```r\n# Cluster the consensus matrix to find optimal k\nvector <- seq(2, 10, by=1)\nbearscc_clusters <- cluster_consensus(noise_consensus, vector)\n\n# Report metrics\ncluster_scores <- report_cluster_metrics(bearscc_clusters, noise_consensus)\ncell_scores <- report_cell_metrics(bearscc_clusters, noise_consensus)\n```\n\n## High Performance Computing (HPC)\nFor large datasets, use `HPC_simulate_replicates()` to generate replicates in parallel across a cluster. This requires exporting the noise model parameters using `write.noise.model=TRUE` in the estimation step.\n\n## Reference documentation\n- [BEARscc](./references/BEARscc.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bearscc",
+    "description": "bioconductor-bearscc evaluates the robustness of single-cell RNA-seq clusters by modeling technical noise and generating simulated replicates. Use when user asks to assess cluster stability, model technical variation using ERCC spike-ins, or generate simulated technical replicates for single-cell data.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/BEARscc.html"
+  }
+}

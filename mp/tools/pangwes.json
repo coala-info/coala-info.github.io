@@ -1,0 +1,53 @@
+{
+  "id": "pangwes",
+  "category": "CLI",
+  "name": "pangwes",
+  "description": "PANGWES performs genome-wide epistasis studies by analyzing pangenome-spanning unitig correlations within a de Bruijn graph framework. Use when user asks to construct colored compacted de Bruijn graphs, calculate mutual information between unitigs, determine shortest path distances in single genome subgraphs, or visualize epistasis results with Manhattan plots.",
+  "overview": "PANGWES (Pangenome-spanning Epistasis and Co-selection Analysis) is a suite of C++ tools designed to perform Genome-Wide Epistasis Studies (GWES) using de Bruijn graphs. Instead of relying on a single reference genome, it analyzes the entire pangenome by representing sequences as unitigs. The workflow involves constructing a colored compacted de Bruijn graph (cdBG), identifying highly correlated unitig pairs via mutual information, and filtering these pairs based on their physical distance withi",
+  "homepage": "https://github.com/jurikuronen/PANGWES",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pangwes/overview",
+  "github": "https://github.com/jurikuronen/PANGWES",
+  "conda_downloads": "2.1K",
+  "conda_downloads_num": 2100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pangwes",
+      "pangwes_cuttlefish",
+      "pangwes_gfa1_parser",
+      "pangwes_SpydrPick",
+      "pangwes_unitig_distance",
+      "pangwes_Rscript"
+    ],
+    "description": "FAIL to generate CWL: pangwes not found in Singularity image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/pangwes:0.3.0_alpha--h9948957_1",
+    "homepage": "https://github.com/jurikuronen/PANGWES",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pangwes/overview",
+    "github": "https://github.com/jurikuronen/PANGWES",
+    "conda_downloads": "2.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pangwes_Rscript.cwl",
+    "pangwes_SpydrPick.cwl",
+    "pangwes_gfa1_parser.cwl",
+    "pangwes_unitig_distance.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pangwes\n\n## Overview\n\nPANGWES (Pangenome-spanning Epistasis and Co-selection Analysis) is a suite of C++ tools designed to perform Genome-Wide Epistasis Studies (GWES) using de Bruijn graphs. Instead of relying on a single reference genome, it analyzes the entire pangenome by representing sequences as unitigs. The workflow involves constructing a colored compacted de Bruijn graph (cdBG), identifying highly correlated unitig pairs via mutual information, and filtering these pairs based on their physical distance within individual genome subgraphs to distinguish true epistasis from simple genetic linkage.\n\n## Core Workflow and CLI Patterns\n\nThe PANGWES pipeline consists of five primary stages. Ensure all dependencies (`cuttlefish`, `SpydrPick`) are installed and available in your PATH.\n\n### 1. Graph Construction\nBuild a colored compacted de Bruijn graph from a list of genome assemblies using `cuttlefish`.\n\n```bash\n# Build the graph\n./cuttlefish build --list assemblies_list.txt \\\n                   --kmer-len 61 \\\n                   --output cdbg_k61 \\\n                   --work-dir /tmp \\\n                   --threads 8\n```\n\n### 2. GFA Parsing\nConvert the Graphical Fragment Assembly (GFA) output into a format compatible with the PANGWES analysis tools.\n\n```bash\n# Parse GFA1 to generate .unitigs, .edges, and .paths files\n./gfa1_parser cdbg_k61.gfa1 cdbg_k61\n```\n\n### 3. Mutual Information Calculation\nUse `SpydrPick` to calculate mutual information (MI) scores. This identifies candidate unitig pairs that show strong co-occurrence patterns.\n\n```bash\n# Calculate MI scores for top candidate pairs\n./SpydrPick --alignmentfile cdbg_k61.fasta \\\n            --maf-threshold 0.05 \\\n            --mi-values 50000000 \\\n            --threads 8 \\\n            --verbose\n```\n\n### 4. Graph Distance Calculation\nCalculate the shortest path distances between candidate unitig pairs within single genome subgraphs (SGGs). This step is critical for filtering out linked variants.\n\n```bash\n# Calculate distances\nunitig_distance --unitigs-file cdbg_k61.unitigs \\\n                --edges-file cdbg_k61.edges \\\n                --k-mer-length 61 \\\n                --sgg-paths-file cdbg_k61.paths \\\n                --queries-file cdbg.*spydrpick_couplings*edges \\\n                --threads 8 \\\n                --queries-one-based \\\n                --run-sggs-only \\\n                --output-stem cdbg \\\n                --verbose\n```\n\n### 5. Visualization\nGenerate a Manhattan plot to visualize the GWES results.\n\n```bash\n# Draw the Manhattan plot\nRscript gwes_plot.r [input_results] [output_file]\n```\n\n## Best Practices and Tips\n\n- **K-mer Selection**: A k-mer length of 61 is a common starting point for bacterial pangenomes, but this should be adjusted based on the complexity and repeat content of the target species.\n- **Memory Management**: `cuttlefish` and `unitig_distance` can be memory-intensive. Use the `--work-dir` flag to point to a high-speed SSD or scratch space for temporary files.\n- **Thread Optimization**: Most tools in the suite support multi-threading. Match the `--threads` count to your available CPU cores to significantly reduce processing time for large pangenomes.\n- **Input Formatting**: The `assemblies_list.txt` file should contain absolute paths to your FASTA/GFA files, one per line.\n- **Distance Filtering**: When interpreting results, unitig pairs with high MI scores but low graph distances are likely physically linked (e.g., on the same operon), while those with high MI scores and high graph distances (or on different components) are stronger candidates for true epistasis.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| /usr/local/bin/gfa1_parser | Parser for GFA1 files |\n| Rscript | A binary front-end to R, for use in scripting applications. |\n| SpydrPick | MI-ARACNE genome-wide co-evolution analysis. |\n| pangwes_unitig_distance | Calculate unitig distances in graphs and single genome graphs, with tools for determining outliers. |\n\n## Reference documentation\n- [PANGWES README](./references/github_com_jurikuronen_PANGWES_blob_main_README.md)\n- [Unitig Distance Tool Details](./references/github_com_jurikuronen_PANGWES_tree_main_unitig_distance.md)",
+  "skill_front_matter": {
+    "name": "pangwes",
+    "description": "PANGWES performs genome-wide epistasis studies by analyzing pangenome-spanning unitig correlations within a de Bruijn graph framework. Use when user asks to construct colored compacted de Bruijn graphs, calculate mutual information between unitigs, determine shortest path distances in single genome subgraphs, or visualize epistasis results with Manhattan plots.",
+    "homepage": "https://github.com/jurikuronen/PANGWES"
+  }
+}

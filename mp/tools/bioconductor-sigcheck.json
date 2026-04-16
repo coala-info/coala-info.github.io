@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sigcheck",
+  "category": "bioconductor",
+  "name": "bioconductor-sigcheck",
+  "description": "SigCheck verifies if a gene expression signature performs significantly better than random chance or existing signatures by calculating empirical p-values. Use when user asks to validate signature performance against random gene sets, compare results to known signatures, or perform permutation tests on survival data and features.",
+  "overview": "SigCheck is used to verify if a derived gene expression signature performs significantly better than random chance or existing signatures. It addresses the \"random signature\" problem in genomic studies by providing empirical p-values through four primary checks:\n1. **Random Signatures**: Compares performance against signatures of the same size composed of randomly selected genes.\n2. **Known Signatures**: Compares performance against established signatures (e.g., NKI, GGI).\n3. **Permuted Survival",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SigCheck.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SigCheck"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SigCheck.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sigcheck\n\n## Overview\n\nSigCheck is used to verify if a derived gene expression signature performs significantly better than random chance or existing signatures. It addresses the \"random signature\" problem in genomic studies by providing empirical p-values through four primary checks:\n1. **Random Signatures**: Compares performance against signatures of the same size composed of randomly selected genes.\n2. **Known Signatures**: Compares performance against established signatures (e.g., NKI, GGI).\n3. **Permuted Survival**: Checks if the signature still \"works\" when survival metadata is shuffled (reality check for signal).\n4. **Permuted Features**: Checks performance when expression values are shuffled across samples.\n\n## Core Workflow\n\n### 1. Data Preparation\nSigCheck requires an `ExpressionSet` object. Ensure your metadata (phenoData) does not contain `NA` values for the columns you intend to analyze.\n\n```r\nlibrary(SigCheck)\nlibrary(Biobase)\n\n# Clean data: remove samples with missing survival/class data\ndataset <- dataset[, !is.na(dataset$survival_time)]\n```\n\n### 2. Initializing a SigCheckObject\nThe `sigCheck` function is the constructor. It establishes the baseline performance of your signature.\n\n```r\ncheck <- sigCheck(expressionSet = dataset, \n                  classes = \"binary_outcome_column\",\n                  survival = \"survival_time_column\",\n                  signature = my_gene_vector,\n                  annotation = \"feature_data_column_name\",\n                  validationSamples = which(dataset$series == \"Validation\"))\n```\n\n### 3. Running Validation Tests\nYou can run all checks at once or individually. A minimum of 1000 iterations is recommended for publication-quality empirical p-values.\n\n```r\n# Run all default checks (Random, Known, Permuted Survival, Permuted Features)\nresults <- sigCheckAll(check, iterations=1000)\n\n# Run specific checks\nrandomRes <- sigCheckRandom(check, iterations=1000)\nknownRes  <- sigCheckKnown(check)\n```\n\n### 4. Visualizing and Interpreting Results\nSigCheck provides built-in plotting to compare your signature (red line) against the background distribution.\n\n```r\n# Plot Kaplan-Meier curves for the signature\nsigCheck(check) \n\n# Plot distributions of the validation checks\nsigCheckPlot(results)\n\n# Access empirical p-values\nresults$checkRandom$checkPval\n```\n\n## Advanced Configuration\n\n### Scoring Methods\nBy default, SigCheck uses the first principal component (`PCA1`) to score samples. You can modify how samples are divided into groups:\n\n- **scoreMethod**: `\"PCA1\"` (default), `\"High\"` (mean expression), or `\"classifier\"` (SVM/ML).\n- **threshold**: Default is `0.5` (median split). Use `c(0.33, 0.66)` to create High/Low groups while excluding the middle tier.\n\n```r\n# Example: Using mean expression and splitting at the 66th percentile\ncheckHigh <- sigCheck(check, scoreMethod=\"High\", threshold=0.66)\n```\n\n### Classification Analysis\nIf survival time is unavailable, you can evaluate the signature based on its ability to classify binary phenotypes using machine learning (via `MLInterfaces`).\n\n```r\n# Omit the 'survival' parameter to trigger classification mode\ncheckClass <- sigCheck(dataset, \n                       classes=\"outcome\", \n                       signature=my_sig, \n                       scoreMethod=\"classifier\")\n\n# View confusion matrix\ncheckClass@confusion\n```\n\n### Parallel Processing\nFor large iterations, use `BiocParallel` to speed up computations.\n\n```r\nlibrary(BiocParallel)\nregister(MulticoreParam(workers=4), default=TRUE)\n```\n\n## Reference documentation\n\n- [Checking gene expression signatures against random and known signatures with SigCheck](./references/SigCheck.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sigcheck",
+    "description": "SigCheck verifies if a gene expression signature performs significantly better than random chance or existing signatures by calculating empirical p-values. Use when user asks to validate signature performance against random gene sets, compare results to known signatures, or perform permutation tests on survival data and features.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SigCheck.html"
+  }
+}

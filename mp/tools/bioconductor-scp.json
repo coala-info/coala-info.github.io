@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scp",
+  "category": "bioconductor",
+  "name": "bioconductor-scp",
+  "description": "The bioconductor-scp package provides a standardized framework for processing and analyzing single-cell proteomics data within the QFeatures and SingleCellExperiment ecosystems. Use when user asks to ingest quantitative proteomics tables, normalize peptide intensities, aggregate features from PSMs to proteins, or filter missing values in single-cell proteomics assays.",
+  "overview": "The `scp` package is a Bioconductor extension of `QFeatures` designed specifically for single-cell proteomics. It provides a standardized framework for handling the hierarchical nature of proteomics data (PSMs -> Peptides -> Proteins) while integrating with the `SingleCellExperiment` ecosystem. It is optimized for handling data acquired across multiple MS batches, supporting both multiplexed (TMT) and label-free workflows.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scp.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/UCLouvain-CBIO/scp",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scp"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scp.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/UCLouvain-CBIO/scp",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scp\n\n## Overview\n\nThe `scp` package is a Bioconductor extension of `QFeatures` designed specifically for single-cell proteomics. It provides a standardized framework for handling the hierarchical nature of proteomics data (PSMs -> Peptides -> Proteins) while integrating with the `SingleCellExperiment` ecosystem. It is optimized for handling data acquired across multiple MS batches, supporting both multiplexed (TMT) and label-free workflows.\n\n## Core Workflows\n\n### 1. Data Ingestion\nThe primary entry point is `readSCP()`. It requires two inputs: a quantitative table (e.g., MaxQuant `evidence.txt`) and a sample annotation table.\n\n```r\nlibrary(scp)\n\n# Load raw data and annotations\ndata(\"mqScpData\")\ndata(\"sampleAnnotation\")\n\n# Create QFeatures object\n# runCol: column in mqScpData identifying the MS run\n# quantCols: column in sampleAnnotation identifying the intensity columns\nscp <- readSCP(assayData = mqScpData,\n               colData = sampleAnnotation,\n               runCol = \"Raw.file\",\n               removeEmptyCols = TRUE)\n```\n\n### 2. Data Access and Subsetting\n`scp` objects (QFeatures) support three-index subsetting: `[features, samples, assays]`.\n\n*   **Access Assays:** `names(scp)` to list, `assay(scp, \"assay_name\")` to extract matrix.\n*   **Metadata:** `colData(scp)` for sample info, `rowData(scp[[\"assay\"]])` for feature info.\n*   **Subsetting:**\n    ```r\n    # Subset by sample type in colData\n    macrophages <- scp[, scp$SampleType == \"Macrophage\", ]\n    \n    # Subset by feature (automatically includes linked peptides/PSMs)\n    protein_x <- scp[\"Protein_ID\", , ]\n    ```\n\n### 3. Processing Steps\nCommon processing functions usually require the `i` argument to specify which assay(s) to process.\n\n*   **Missing Values:** Convert zeros to NA using `zeroIsNa(scp, i = \"peptides\")`.\n*   **Filtering:** Use `filterFeatures(scp, ~ Reverse != \"+\")` to remove contaminants or `filterNA(scp, i = \"proteins\", pNA = 0.7)` to filter by missingness.\n*   **Normalization:** `normalize(scp, i = \"peptides\", method = \"center.median\", name = \"peptides_norm\")`.\n*   **Log Transformation:** `logTransform(scp, i = \"peptides\", name = \"peptides_log\")`.\n*   **Aggregation:** Combine PSMs into peptides or peptides into proteins.\n    ```r\n    scp <- aggregateFeatures(scp, i = \"peptides\", fcol = \"protein\", \n                             name = \"proteins\", fun = MsCoreUtils::robustSummary)\n    ```\n\n### 4. Advanced Manipulation\nFor custom operations not covered by wrappers, extract the assay as a `SingleCellExperiment` with its associated `colData`.\n\n```r\n# Extract with sample metadata\nsce <- getWithColData(scp, \"proteins\")\n\n# Perform custom calculation on assay(sce)\n# ...\n\n# Add back as a new assay\nscp <- addAssay(scp, sce, name = \"custom_assay\")\nscp <- addAssayLinkOneToOne(scp, from = \"proteins\", to = \"custom_assay\")\n```\n\n## Tips for Success\n*   **Regex Selection:** When dealing with hundreds of MS runs, use regex for the `i` argument (e.g., `i = grep(\"Batch_A\", names(scp))`).\n*   **Validity Checks:** After manual modifications, always run `validObject(scp)` to ensure the hierarchical links between assays remain intact.\n*   **Long Form:** Use `longForm(scp)` to flatten the data for visualization with `ggplot2`.\n\n## Reference documentation\n\n- [QFeatures in a nutshell](./references/QFeatures_nutshell.md)\n- [Advanced usage of scp](./references/advanced.md)\n- [Load data using readSCP](./references/read_scp.md)\n- [Reporting missing values](./references/reporting_missing_values.md)\n- [scp package overview](./references/scp.md)\n- [Single-cell proteomics data modelling](./references/scp_data_modelling.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scp",
+    "description": "The bioconductor-scp package provides a standardized framework for processing and analyzing single-cell proteomics data within the QFeatures and SingleCellExperiment ecosystems. Use when user asks to ingest quantitative proteomics tables, normalize peptide intensities, aggregate features from PSMs to proteins, or filter missing values in single-cell proteomics assays.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scp.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-remp",
+  "category": "bioconductor",
+  "name": "bioconductor-remp",
+  "description": "REMP predicts site-specific DNA methylation of repetitive elements using genetic and epigenetic information from Illumina arrays or sequencing data. Use when user asks to predict Alu, LINE-1, or LTR methylation, preprocess methylation data for repetitive element analysis, or aggregate CpG-level predictions to repetitive element levels.",
+  "overview": "REMP (Repetitive Element Methylation Prediction) is a Bioconductor package designed to predict site-specific DNA methylation of repetitive elements (REs). It leverages surrounding genetic and epigenetic information from Illumina BeadChip arrays (450k/EPIC) or sequencing platforms to provide genome-wide, single-base resolution of RE methylation. It currently supports Human (hg19/hg38) Alu, LINE-1 (L1), and Long Terminal Repeat (LTR) elements.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/REMP.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/YinanZheng/REMP",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "REMP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/REMP.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/YinanZheng/REMP",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-remp\n\n## Overview\n\nREMP (Repetitive Element Methylation Prediction) is a Bioconductor package designed to predict site-specific DNA methylation of repetitive elements (REs). It leverages surrounding genetic and epigenetic information from Illumina BeadChip arrays (450k/EPIC) or sequencing platforms to provide genome-wide, single-base resolution of RE methylation. It currently supports Human (hg19/hg38) Alu, LINE-1 (L1), and Long Terminal Repeat (LTR) elements.\n\n## Core Workflow\n\n### 1. Data Preprocessing (Grooming)\nBefore prediction, methylation data must be cleaned. The `grooMethy` function handles missing values (KNN imputation), infinite values, and boundary issues (0/1 beta values).\n\n```r\nlibrary(REMP)\n# For array data (RatioSet, GenomicRatioSet, matrix, or data.frame)\n# Rows must be Illumina probe IDs (e.g., cg00000029)\nmy_data <- grooMethy(my_methylation_data)\n\n# For sequencing data, provide a GRanges object for CpG locations\nmy_seq_data <- grooMethy(my_matrix, Seq.GR = my_cpg_locations)\n```\n\n### 2. Annotation Preparation\nInitialize the annotation \"parcel\" for the specific RE type and genome build.\n\n```r\n# annotation.source can be \"AH\" (AnnotationHub) or \"UCSC\"\nremparcel <- initREMP(arrayType = \"450k\", # or \"EPIC\", \"Sequencing\"\n                      REtype = \"Alu\",      # \"Alu\", \"L1\", or \"LTR\"\n                      genome = \"hg19\",     # \"hg19\" or \"hg38\"\n                      annotation.source = \"AH\")\n```\n\n### 3. Running Prediction\nThe `remp` function performs the prediction, typically using Random Forest (`method = 'rf'`).\n\n```r\nremp.res <- remp(my_data,\n                 REtype = \"Alu\",\n                 parcel = remparcel,\n                 ncore = 1,\n                 seed = 777)\n\n# View summary\ndetails(remp.res)\n```\n\n### 4. Post-Processing and Quality Control\nPredictions include a reliability score (lower is better). Use `rempTrim` to remove low-quality predictions.\n\n```r\n# Trim results (threshold 1.7 is default for high reliability)\nremp.res <- rempTrim(remp.res, threshold = 1.7, missingRate = 0.2)\n\n# Aggregate CpG-level data to RE-level data (averaging)\nremp.res <- rempAggregate(remp.res, NCpG = 2)\n\n# Add gene/region annotations (TSS, 5'UTR, Exon, etc.)\nremp.res <- decodeAnnot(remp.res)\n```\n\n## Data Extraction and Visualization\n\n### Extracting Profiled REs\nIf you only want to extract methylation values for RE-associated CpGs that were *actually measured* on the array (without prediction):\n\n```r\nprofiled.res <- remprofile(my_data, REtype = \"Alu\", genome = \"hg19\")\n```\n\n### Accessors\n`REMProduct` objects (the output of `remp`) allow easy access to data:\n- `rempB(remp.res)`: Get Beta values.\n- `rempM(remp.res)`: Get M-values.\n- `rempQC(remp.res)`: Get reliability scores.\n- `rempAnnot(remp.res)`: Get genomic annotations.\n- `rempImp(remp.res)`: Get predictor importance.\n\n### Visualization\n```r\n# Density plot of predicted methylation\nremplot(remp.res, main = \"Alu Methylation\", col = \"blue\")\n```\n\n## Tips for Success\n- **Memory Management**: For large datasets, use `ncore` to parallelize and specify a `work.dir` in `initREMP` to save/reuse annotation parcels.\n- **Genome Builds**: If using hg38 with array data, REMP will automatically perform liftover of probe locations.\n- **Reliability**: Always check the distribution of reliability scores in `details()`. Scores > 1.7 generally indicate less reliable predictions.\n\n## Reference documentation\n- [An Introduction to the REMP Package](./references/REMP.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-remp",
+    "description": "REMP predicts site-specific DNA methylation of repetitive elements using genetic and epigenetic information from Illumina arrays or sequencing data. Use when user asks to predict Alu, LINE-1, or LTR methylation, preprocess methylation data for repetitive element analysis, or aggregate CpG-level predictions to repetitive element levels.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/REMP.html"
+  }
+}

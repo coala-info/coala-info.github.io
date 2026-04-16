@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methylpipe",
+  "category": "bioconductor",
+  "name": "bioconductor-methylpipe",
+  "description": "This tool analyzes base-pair resolution DNA methylation data using a memory-efficient framework for data management and comparative analysis. Use when user asks to process methylation calls from aligned files, manage large-scale datasets with TABIX indexing, profile methylation across genomic ranges, or identify differentially methylated regions.",
+  "overview": "The `methylPipe` package provides a memory-efficient framework for managing and analyzing genome-wide DNA methylation data at base-pair resolution. It supports various sequence contexts (CG, CHG, CHH) and integrates with `GRanges` for region-specific analysis. Key features include TABIX-based data storage to minimize memory footprint and robust methods for differential methylation analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/methylPipe.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "methylPipe"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylPipe.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methylpipe\n\nname: bioconductor-methylpipe\ndescription: Analysis of base-pair resolution DNA methylation data using the methylPipe R package. Use this skill to process methylation calls from aligned files (SAM/Bismark), manage large-scale methylation datasets using TABIX indexing, profile methylation across genomic ranges, and identify differentially methylated regions (DMRs).\n\n## Overview\nThe `methylPipe` package provides a memory-efficient framework for managing and analyzing genome-wide DNA methylation data at base-pair resolution. It supports various sequence contexts (CG, CHG, CHH) and integrates with `GRanges` for region-specific analysis. Key features include TABIX-based data storage to minimize memory footprint and robust methods for differential methylation analysis.\n\n## Core Classes\n- **BSdata**: Stores methylation data for a single biological sample.\n- **BSdataSet**: Combines multiple `BSdata` objects for comparative analysis.\n- **GEcollection**: Stores methylation status for a collection of genomic regions (extends `RangedSummarizedExperiment`).\n- **GElist**: A list of multiple `GEcollection` objects.\n\n## Typical Workflow\n\n### 1. Data Preparation and Loading\nMethylation calls can be extracted from sorted SAM files (e.g., from Bismark) or text files.\n\n```R\nlibrary(methylPipe)\nlibrary(BSgenome.Hsapiens.UCSC.hg18)\n\n# Process SAM files to create methylation calls\nmeth.call(files_location=\"path/to/sam\", output_folder=tempdir(), read.context=\"CpG\")\n\n# Prepare TABIX indexed files (requires tabix installed)\n# BSprepare(files_location=\"meth_calls.txt\", output_folder=\"output\", tabix=\"/path/to/tabix\")\n\n# Create a BSdata object\n# uncov_GR should be a GRanges object of regions not covered by sequencing\nbs_sample <- BSdata(file=\"sample_tabix.txt.gz\", uncov=uncov_GR, org=Hsapiens)\n```\n\n### 2. Comparative Dataset Management\nGroup samples into \"C\" (Control) and \"E\" (Experiment) for downstream analysis.\n\n```R\n# Combine samples into a set\nbs_set <- BSdataSet(org=Hsapiens, group=c(\"C\", \"E\"), \n                    Control1=bs_ctrl, Experiment1=bs_exp)\n\n# Check sample similarity and descriptive stats\nstats_res <- methstats(bs_set, chrom=\"chr20\", mcClass='mCG')\n```\n\n### 3. Profiling Genomic Regions\nExtract methylation levels for specific regions of interest (e.g., promoters, enhancers).\n\n```R\n# Map methylation data to specific GRanges\nres_mC <- mapBSdata2GRanges(GenoRanges=my_regions, Sample=bs_sample, context='CG')\n\n# Profile methylation in bins across regions\ngec <- profileDNAmetBin(GenoRanges=my_regions, Sample=bs_sample, mcCLASS='mCG', nbins=3)\n\n# Access binned data: binmC (absolute), binC (potential sites), binrC (relative mC/C)\nbinrC(gec)[1:5, ]\n```\n\n### 4. Differential Methylation Analysis\nIdentify Differentially Methylated Regions (DMRs) using non-parametric tests.\n\n```R\n# Find DMRs using a sliding window approach\n# dmrSize: min number of mCs; dmrBp: max distance between mCs\ndmrs <- findDMR(object=bs_set, ROI=my_regions, MCClass='mCG', dmrSize=6, dmrBp=800)\n\n# Consolidate and filter DMRs\nhyper_dmrs <- consolidateDMRs(DmrGR=dmrs, pvThr=0.05, GAP=100, type=\"hyper\")\n```\n\n### 5. Visualization\nVisualize methylation profiles alongside gene annotations.\n\n```R\nlibrary(TxDb.Hsapiens.UCSC.hg18.knownGene)\ntxdb <- TxDb.Hsapiens.UCSC.hg18.knownGene\n\n# Plot GElist or BSdata objects\nplotMeth(my_gelist, colors=c(\"red\", \"blue\"), transcriptDB=txdb, \n         chr=\"chr20\", start=10000, end=20000, org=Hsapiens)\n```\n\n## Tips for Efficiency\n- **Memory Management**: `methylPipe` uses TABIX indexing; data is referenced on disk and not fully loaded into memory until specific queries (like `mCsmoothing` or `mapBSdata2GRanges`) are made.\n- **Parallel Processing**: Use the `Nproc` argument in functions like `meth.call`, `methstats`, and `findDMR` to utilize multiple cores.\n- **Uncovered Regions**: Always provide the `uncov` GRanges to `BSdata` to distinguish between unmethylated cytosines and regions with zero sequencing coverage.\n\n## Reference documentation\n- [methylPipe](./references/methylPipe.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-methylpipe",
+    "description": "This tool analyzes base-pair resolution DNA methylation data using a memory-efficient framework for data management and comparative analysis. Use when user asks to process methylation calls from aligned files, manage large-scale datasets with TABIX indexing, profile methylation across genomic ranges, or identify differentially methylated regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylPipe.html"
+  }
+}

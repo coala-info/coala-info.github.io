@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-harmonizedtcgadata",
+  "category": "bioconductor",
+  "name": "bioconductor-harmonizedtcgadata",
+  "description": "This package provides harmonized multi-omic affinity matrices and survival data from the Cancer Genome Atlas for patient clustering and disease subtype analysis. Use when user asks to access precomputed TCGA affinity matrices, perform multi-omic data fusion with ANF, or evaluate cancer patient clustering results using survival data.",
+  "overview": "The `HarmonizedTCGAData` package provides processed, harmonized multi-omic data from the Cancer Genome Atlas (TCGA). It specifically contains precomputed affinity matrices for 2,582 patients across five primary cancer sites (adrenal gland, lung, uterus, kidney, and colorectal). These matrices are designed for use with the `ANF` (Affinity Network Fusion) package to cluster patients into disease subtypes.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/HarmonizedTCGAData.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-harmonizedtcgadata/overview",
+  "github": "N/A",
+  "conda_downloads": "24.7K",
+  "conda_downloads_num": 24700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HarmonizedTCGAData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/HarmonizedTCGAData.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-harmonizedtcgadata/overview",
+    "github": "N/A",
+    "conda_downloads": "24.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-harmonizedtcgadata\n\n## Overview\n\nThe `HarmonizedTCGAData` package provides processed, harmonized multi-omic data from the Cancer Genome Atlas (TCGA). It specifically contains precomputed affinity matrices for 2,582 patients across five primary cancer sites (adrenal gland, lung, uterus, kidney, and colorectal). These matrices are designed for use with the `ANF` (Affinity Network Fusion) package to cluster patients into disease subtypes.\n\nThe package includes three main components:\n1. `Wall`: A nested list of 90 affinity matrices (5 cancer types × 6 normalization methods × 3 omic views).\n2. `project_ids`: Ground truth mapping of patients to TCGA project IDs (disease types).\n3. `surv.plot`: Patient survival data for clinical evaluation of clustering results.\n\n## Data Retrieval\n\nData is hosted on `ExperimentHub`. Use the following workflow to load the objects:\n\n```r\nlibrary(ExperimentHub)\neh <- ExperimentHub()\ntcga_data <- query(eh, \"HarmonizedTCGAData\")\n\n# Load the three main objects\nWall <- tcga_data[[1]]\nproject_ids <- tcga_data[[2]]\nsurv.plot <- tcga_data[[3]]\n```\n\n## Understanding the Wall Object\n\n`Wall` is structured as a deeply nested list: `Wall[[CancerType]][[Normalization]][[View]]`.\n\n- **Cancer Types**: `adrenal_gland`, `lung`, `uterus`, `kidney`, `colorectal`.\n- **Normalization Types**: \n    - `raw.all` / `raw.sel`: Raw counts (all or differentially expressed).\n    - `log.all` / `log.sel`: Log2 transformed counts.\n    - `vst.sel`: Variance stabilizing transformation.\n    - `normalized`: FPKM or normalized counts.\n- **Views**: `fpkm` (Gene expression), `mirnas` (miRNA), `methy450` (DNA methylation).\n\n## Typical Workflow\n\n### 1. Single Matrix Clustering\nTo cluster patients using a single data type (e.g., adrenal gland log-transformed gene expression):\n\n```r\nlibrary(ANF)\n# Extract specific affinity matrix\naffinity.mat <- Wall$adrenal_gland$log.sel$fpkm\n\n# Perform spectral clustering (k = number of clusters)\nlabels <- spectral_clustering(affinity.mat, k = 2)\n\n# Evaluate against ground truth\ntrue.types <- as.factor(project_ids[rownames(affinity.mat)])\ntable(labels, true.types)\n```\n\n### 2. Multi-Omic Fusion (ANF)\nTo improve clustering by fusing multiple omic views (e.g., for uterus cancer):\n\n```r\n# Fuse the three views (fpkm, mirnas, methy450) for a specific normalization\nfused.mat <- ANF(Wall = Wall$uterus$raw.all)\n\n# Cluster on the fused matrix\nres <- eval_clu(true_class = project_ids[rownames(fused.mat)], w = fused.mat)\nprint(res$nmi) # Normalized Mutual Information\n```\n\n### 3. Survival Analysis Evaluation\nEvaluate if the identified clusters show significant differences in survival:\n\n```r\n# Subset survival data to match the affinity matrix patients\ncurrent_surv <- surv.plot[rownames(affinity.mat), ]\n\n# Calculate p-value using survival package\nf <- survival::Surv(current_surv$time, !current_surv$censored)\nfit <- survival::survdiff(f ~ labels)\npval <- stats::pchisq(fit$chisq, df = length(fit$n) - 1, lower.tail = FALSE)\n```\n\n## Tips and Best Practices\n- **View Names**: Note that `fpkm` is used as a generic label for gene expression views, even when the data is actually raw counts or VST-transformed.\n- **Evaluation**: Use `ANF::eval_clu` for a streamlined evaluation that calculates NMI, ARI, and survival p-values in one step.\n- **Patient IDs**: Row names of matrices are Case IDs; column names are Aliquot IDs (TCGA barcodes). Use these to link back to the GDC Data Portal if raw files are needed.\n\n## Reference documentation\n- [HarmonizedTCGAData](./references/HarmonizedTCGAData.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-harmonizedtcgadata",
+    "description": "This package provides harmonized multi-omic affinity matrices and survival data from the Cancer Genome Atlas for patient clustering and disease subtype analysis. Use when user asks to access precomputed TCGA affinity matrices, perform multi-omic data fusion with ANF, or evaluate cancer patient clustering results using survival data.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/HarmonizedTCGAData.html"
+  }
+}

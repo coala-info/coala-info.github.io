@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-geodiff",
+  "category": "bioconductor",
+  "name": "bioconductor-geodiff",
+  "description": "This tool provides statistical analysis and differential expression modeling for NanoString GeoMx Digital Spatial Profiler data. Use when user asks to model background noise, aggregate probes into targets, normalize spatial profiling data, or perform differential expression analysis with fixed and mixed effects.",
+  "overview": "The `GeoDiff` package provides a statistical framework for analyzing NanoString GeoMx Digital Spatial Profiler (DSP) data. It addresses the unique challenges of DSP data, such as varying background levels and technical noise, by using Poisson and Negative Binomial models. Key capabilities include background modeling using negative probes, probe aggregation, and robust differential expression (DE) analysis that accounts for complex study designs with random effects.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GeoDiff.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geodiff/overview",
+  "github": "https://github.com/Nanostring-Biostats/GeoDiff",
+  "conda_downloads": "9.4K",
+  "conda_downloads_num": 9400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GeoDiff"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GeoDiff.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geodiff/overview",
+    "github": "https://github.com/Nanostring-Biostats/GeoDiff",
+    "conda_downloads": "9.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-geodiff\n\nname: bioconductor-geodiff\ndescription: Statistical analysis of NanoString GeoMx Digital Spatial Profiler (DSP) data. Use for background modeling (Poisson), target and sample QC, normalization (Poisson threshold), and differential expression analysis (Negative Binomial threshold models) including fixed and mixed effects.\n\n# bioconductor-geodiff\n\n## Overview\nThe `GeoDiff` package provides a statistical framework for analyzing NanoString GeoMx Digital Spatial Profiler (DSP) data. It addresses the unique challenges of DSP data, such as varying background levels and technical noise, by using Poisson and Negative Binomial models. Key capabilities include background modeling using negative probes, probe aggregation, and robust differential expression (DE) analysis that accounts for complex study designs with random effects.\n\n## Core Workflow\n\n### 1. Data Preparation\n`GeoDiff` works with `NanoStringGeoMxSet` objects. Ensure your data is at the **probe level** before starting background modeling.\n\n```r\nlibrary(GeoDiff)\nlibrary(GeomxTools)\n\n# Load data (example using internal kidney dataset)\ndata(\"kidney\")\nkidney <- updateGeoMxSet(kidney)\n\n# Check if data is at probe level\nfeatureType(kidney) # Should return \"Probe\"\n```\n\n### 2. Background Modeling\nFit a Poisson background model using negative probes to estimate feature factors for probes and size factors for Regions of Interest (ROIs).\n\n```r\n# Fit model\nkidney <- fitPoisBG(kidney)\n\n# Optional: Fit by group (e.g., slide) if batch effects are suspected\nkidney <- fitPoisBG(kidney, groupvar = \"slide name\")\n\n# Diagnose dispersion (values > 2 suggest over-dispersion/outliers)\nkidney_diag <- diagPoisBG(kidney, split = TRUE)\nnotes(kidney_diag)$disper_sp\n```\n\n### 3. Probe Aggregation and Target QC\nFilter and aggregate probes into targets. `aggreprobe` handles filtering based on correlation or score tests.\n\n```r\n# Aggregate probes to targets\nkidney <- aggreprobe(kidney, use = \"cor\")\n\n# Background Score Test to find targets expressed above background\nkidney <- BGScoreTest(kidney, split = TRUE)\nsum(fData(kidney)$pvalues < 1e-3, na.rm = TRUE)\n```\n\n### 4. Normalization\nUse the Poisson threshold model for normalization. This method is often more robust than Q3 normalization for low-signal data.\n\n```r\n# Estimate signal size factors\nkidney <- fitNBth(kidney, split = TRUE)\n\n# Perform normalization (adds 'normmat' to assayData)\nbgMean <- mean(fData(kidney)$featfact, na.rm = TRUE)\nROIs_high <- sampleNames(kidney) # Or subset based on QC\nkidney <- fitPoisthNorm(kidney, split = TRUE, ROIs_high = ROIs_high, threshold_mean = bgMean)\n\n# Access normalized data (log2 scale)\nnorm_data <- assayDataElement(kidney, \"normmat_sp\")\n```\n\n### 5. Differential Expression (DE)\n`GeoDiff` provides Negative Binomial threshold models for DE.\n\n**Fixed Effect Model:**\n```r\nNBthDEmod <- fitNBthDE(form = ~region, object = kidney, split = FALSE)\n```\n\n**Mixed Effect Model (Random Intercept/Slope):**\nUse when multiple ROIs come from the same slide or patient.\n```r\n# Random slope model: ~ fixed_effect + (random_effect | grouping_factor)\nNBthmDEmod <- fitNBthmDE(object = kidney, \n                         form = ~ region + (1 + region | `slide name`),\n                         ROIs_high = ROIs_high,\n                         features_all = features_subset)\n```\n\n**Extracting Results:**\n```r\n# Generate inference results\ncoeff <- coefNBth(NBthDEmod)\n\n# Create DE table for a specific variable\nDE_table <- DENBth(coeff, variable = \"regiontubule\")\nhead(DE_table)\n```\n\n## Key Functions\n- `fitPoisBG`: Fits the Poisson background model.\n- `diagPoisBG`: Diagnostic tool for the background model.\n- `aggreprobe`: Aggregates probes into targets with optional filtering.\n- `BGScoreTest`: Statistical test for expression above background.\n- `fitNBth`: Estimates technical size factors for signal.\n- `fitPoisthNorm`: Performs Poisson threshold normalization.\n- `fitNBthDE` / `fitNBthmDE`: Fits DE models (fixed/mixed effects).\n- `coefNBth` / `DENBth`: Extracts coefficients and formats DE tables.\n\n## Reference documentation\n- [Workflow_WTA_kidney.Rmd](./references/Workflow_WTA_kidney.Rmd)\n- [Workflow_WTA_kidney.md](./references/Workflow_WTA_kidney.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-geodiff",
+    "description": "This tool provides statistical analysis and differential expression modeling for NanoString GeoMx Digital Spatial Profiler data. Use when user asks to model background noise, aggregate probes into targets, normalize spatial profiling data, or perform differential expression analysis with fixed and mixed effects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GeoDiff.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-kcsmart",
+  "category": "bioconductor",
+  "name": "bioconductor-kcsmart",
+  "description": "This tool performs statistical analysis of multi-experiment aCGH data to identify recurrent genomic gains and losses using kernel convolution-based smoothing. Use when user asks to perform KC-SMART on copy number data, identify significant recurrent aberrations using permutation-based thresholds, or compare copy number profiles between sample groups.",
+  "overview": "KCsmart (Kernel Convolution-based Smoothing) is a package for identifying recurrent genomic aberrations from array Comparative Genome Hybridization (aCGH) data. Unlike methods that rely on discrete calling of gains and losses, KCsmart uses continuous log2 ratios. It applies Gaussian locally weighted regression to summed totals of positive and negative ratios, corrects for probe spacing, and determines significance through permutation testing.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/KCsmart.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-kcsmart/overview",
+  "github": "N/A",
+  "conda_downloads": "47.4K",
+  "conda_downloads_num": 47400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "KCsmart"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/KCsmart.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-kcsmart/overview",
+    "github": "N/A",
+    "conda_downloads": "47.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-kcsmart\n\nname: bioconductor-kcsmart\ndescription: Statistical analysis of multi-experiment aCGH data to find recurrent genomic gains and losses. Use this skill when you need to perform kernel convolution-based smoothing (KC-SMART) on copy number data, identify significant recurrent aberrations using permutation-based thresholds, or compare copy number profiles between two groups of samples.\n\n## Overview\n\nKCsmart (Kernel Convolution-based Smoothing) is a package for identifying recurrent genomic aberrations from array Comparative Genome Hybridization (aCGH) data. Unlike methods that rely on discrete calling of gains and losses, KCsmart uses continuous log2 ratios. It applies Gaussian locally weighted regression to summed totals of positive and negative ratios, corrects for probe spacing, and determines significance through permutation testing.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a data frame or a Bioconductor object (DNAcopy, CGHbase) containing:\n- `chrom`: Chromosome names.\n- `maploc`: Chromosomal locations.\n- Sample columns: Numeric log2 ratios (no missing values allowed).\n\n```r\nlibrary(KCsmart)\ndata(hsSampleData) # Example dataset\n# Ensure no NAs; impute or discard if necessary\n```\n\n### 2. Mirror Locations\nTo prevent signal decay at chromosome ends and centromeres, KCsmart uses \"mirroring.\"\n- Use `data(hsMirrorLocs)` for human or `data(mmMirrorLocs)` for mouse.\n- Custom genomes require a list with start, centromere (optional), and end coordinates for each chromosome.\n\n### 3. Calculating the Sample Point Matrix (SPM)\nThe `calcSpm` function performs the kernel convolution. The `sigma` parameter (in bp) determines the smoothing scale (default is 1Mb).\n\n```r\n# 1Mb kernel width\nspm1mb <- calcSpm(hsSampleData, hsMirrorLocs)\n\n# 4Mb kernel width for lower resolution/larger regions\nspm4mb <- calcSpm(hsSampleData, hsMirrorLocs, sigma=4000000)\n```\n\n### 4. Significance Testing\nDetermine thresholds for gains and losses using permutation.\n- `findSigLevelTrad`: Traditional Bonferroni-corrected significance.\n- `findSigLevelFdr`: False Discovery Rate (FDR) approach.\n\n```r\n# n=1000 is recommended for definitive analysis\nsigLevel <- findSigLevelTrad(hsSampleData, spm4mb, n=10, p=0.05)\n```\n\n### 5. Visualization and Extraction\n- **Plotting**: Use `plot(spm)` to see genomic views. Use `sigLevels` to add thresholds.\n- **Extraction**: Use `getSigSegments` to retrieve genomic coordinates and probe names for significant regions.\n\n```r\n# Plot gains and losses in one frame with significance\nplot(spm4mb, sigLevels=sigLevel, type=1)\n\n# Extract segments\nsigRegions <- getSigSegments(spm4mb, sigLevel)\n# Access probes in the first gained region\nsigRegions@gains[[1]]$probes\n```\n\n## Advanced Analysis\n\n### Multi-scale Analysis (Scale Space)\nCompare results across different kernel widths to identify both focal and broad aberrations.\n\n```r\nplotScaleSpace(list(spm1mb, spm4mb), list(sigLevel1mb, sigLevel4mb), type='g')\n```\n\n### Comparative KC-SMART\nIdentify significant differences between two groups (e.g., Treatment vs. Control).\n\n1. **Create Collection**: `calcSpmCollection` requires a class vector `cl` (0s and 1s).\n2. **Compare**: `compareSpmCollection` uses permutations or the `siggenes` package.\n3. **Extract**: `getSigRegionsCompKC` retrieves the differing regions.\n\n```r\n# cl defines the two groups\nspmc <- calcSpmCollection(hsSampleData, hsMirrorLocs, cl=c(rep(0,10), rep(1,10)))\nspmc.sig <- compareSpmCollection(spmc, method=\"siggenes\")\ndiffRegions <- getSigRegionsCompKC(spmc.sig)\nplot(spmc.sig, sigRegions=diffRegions)\n```\n\n## Reference documentation\n- [KC-SMART Vignette](./references/KCS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-kcsmart",
+    "description": "This tool performs statistical analysis of multi-experiment aCGH data to identify recurrent genomic gains and losses using kernel convolution-based smoothing. Use when user asks to perform KC-SMART on copy number data, identify significant recurrent aberrations using permutation-based thresholds, or compare copy number profiles between sample groups.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/KCsmart.html"
+  }
+}

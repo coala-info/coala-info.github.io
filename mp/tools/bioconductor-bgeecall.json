@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bgeecall",
+  "category": "bioconductor",
+  "name": "bioconductor-bgeecall",
+  "description": "BgeeCall generates statistically grounded present or absent gene expression calls from RNA-Seq data using reference intergenic regions to define background noise. Use when user asks to generate reliable expression calls, calculate null distributions from intergenic regions, or merge calls from multiple RNA-Seq libraries.",
+  "overview": "`BgeeCall` is a Bioconductor package designed to generate reliable present/absent gene expression calls from RNA-Seq data. Unlike standard methods that use arbitrary thresholds (e.g., TPM > 1), `BgeeCall` uses reference intergenic regions—areas of the genome known to be non-expressed—to calculate a library-specific null distribution. This allows for a statistically grounded determination of whether a gene's expression is significantly higher than the background noise.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BgeeCall.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bgeecall/overview",
+  "github": "https://github.com/BgeeDB/BgeeCall",
+  "conda_downloads": "19.1K",
+  "conda_downloads_num": 19100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BgeeCall"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BgeeCall.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bgeecall/overview",
+    "github": "https://github.com/BgeeDB/BgeeCall",
+    "conda_downloads": "19.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bgeecall\n\n## Overview\n\n`BgeeCall` is a Bioconductor package designed to generate reliable present/absent gene expression calls from RNA-Seq data. Unlike standard methods that use arbitrary thresholds (e.g., TPM > 1), `BgeeCall` uses reference intergenic regions—areas of the genome known to be non-expressed—to calculate a library-specific null distribution. This allows for a statistically grounded determination of whether a gene's expression is significantly higher than the background noise.\n\n## Core Workflow\n\nThe standard workflow involves defining metadata for your samples, the species, and the quantification tool (kallisto), then running the automated pipeline.\n\n### 1. Setup Metadata Objects\n`BgeeCall` uses S4 classes to manage configuration:\n\n```r\nlibrary(BgeeCall)\n\n# 1. UserMetadata: Species and local file paths\nuser_bgee <- new(\"UserMetadata\", species_id = \"6239\") # e.g., C. elegans\nuser_bgee <- setAnnotationFromObject(user_bgee, annotation_granges, \"unique_annot_name\")\nuser_bgee <- setTranscriptomeFromObject(user_bgee, transcriptome_dna_string_set, \"unique_trans_name\")\nuser_bgee <- setRNASeqLibPath(user_bgee, \"path/to/fastq_directory\")\n\n# 2. KallistoMetadata: Quantification settings\n# Set download_kallisto = TRUE if not installed on system\nkallisto <- new(\"KallistoMetadata\", download_kallisto = FALSE)\n\n# 3. BgeeMetadata: Reference intergenic data version\nbgee <- new(\"BgeeMetadata\", intergenic_release = \"1.0\")\n```\n\n### 2. Generate Calls\nThe `generate_calls_workflow` function executes the full pipeline: indexing, quantification, and call generation.\n\n```r\n# Run the full workflow\ncalls_output <- generate_calls_workflow(\n  userMetadata = user_bgee,\n  abundanceMetadata = kallisto,\n  bgeeMetadata = bgee\n)\n```\n\n### 3. Interpreting Results\nThe workflow returns a list of file paths. The primary output is the `calls_tsv_path`:\n\n```r\nresults <- read.table(calls_output$calls_tsv_path, header = TRUE)\n# Columns include: id, abundance (TPM), counts, pValue, and 'call' (present/absent)\nhead(results)\n```\n\n## Advanced Usage\n\n### Merging Multiple Libraries\nTo combine calls from multiple libraries (e.g., biological replicates) into a single condition call:\n\n```r\n# Requires a TSV file mapping libraries to conditions\nmerged <- merging_libraries(\n  userFile = \"metadata_mapping.tsv\",\n  approach = \"BH\", # Benjamini-Hochberg for p-values\n  condition = c(\"species_id\", \"anatEntity\"),\n  cutoff = 0.05\n)\n```\n\n### Customizing Thresholds\nYou can switch between different statistical approaches for defining \"presence\":\n\n*   **pValue (Default):** Based on Z-score relative to intergenic TPMs.\n*   **Intergenic Ratio:** Ratio of proportion of intergenic present vs protein-coding present.\n*   **qValue:** Uses linear interpolation and numerical integration.\n\n```r\n# Example: Using intergenic ratio approach\nkallisto_custom <- new(\"KallistoMetadata\", cutoff_type = \"intergenic\", cutoff = 0.05)\n```\n\n### Working with Clusters (Slurm)\nFor large-scale processing, `BgeeCall` integrates with `rslurm`:\n\n```r\n# Step 1: Generate indexes on cluster\ngenerate_slurm_indexes(userFile = \"all_samples.tsv\", nodes = 10)\n\n# Step 2: Generate calls on cluster\ngenerate_slurm_calls(userFile = \"all_samples.tsv\", nodes = 10)\n```\n\n## Tips and Best Practices\n*   **Species Support:** Use `list_bgee_ref_intergenic_species()` to check if Bgee provides curated intergenic regions for your organism.\n*   **Transcript Versions:** If you encounter errors during `tximport` (summarizing transcripts to genes), set `ignoreTxVersion = TRUE` in the `KallistoMetadata` object.\n*   **Kmer Size:** `BgeeCall` automatically adjusts kallisto kmer size (31 for reads ≥ 50bp, 15 for shorter reads).\n*   **Beta Feature:** To generate calls at the transcript level instead of the gene level, set `txOut = TRUE` in `KallistoMetadata`.\n\n## Reference documentation\n- [automatic RNA-Seq present/absent gene expression calls generation](./references/bgeecall-manual.md)\n- [BgeeCall Manual (Rmd Source)](./references/bgeecall-manual.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-bgeecall",
+    "description": "BgeeCall generates statistically grounded present or absent gene expression calls from RNA-Seq data using reference intergenic regions to define background noise. Use when user asks to generate reliable expression calls, calculate null distributions from intergenic regions, or merge calls from multiple RNA-Seq libraries.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BgeeCall.html"
+  }
+}

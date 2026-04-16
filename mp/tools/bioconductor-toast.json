@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-toast",
+  "category": "bioconductor",
+  "name": "bioconductor-toast",
+  "description": "\"TOAST analyzes high-throughput genomic data from heterogeneous tissue samples to identify cell-type specific signals. Use when user asks to estimate cell type proportions, perform cell-type specific differential expression or methylation analysis, and conduct cross-cell type differential analysis.\"",
+  "overview": "TOAST (TOols for the Analysis of heterogeneouS Tissues) provides a statistical framework for analyzing genomic data where samples are mixtures of different cell types (e.g., blood, tumor, or brain tissue). It allows researchers to uncover cell-type specific signals that are often masked in bulk analysis. The package supports reference-based, reference-free, and partial reference-free deconvolution, followed by rigorous testing for differential signals.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TOAST.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ziyili20/TOAST",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TOAST"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TOAST.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ziyili20/TOAST",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-toast\n\nname: bioconductor-toast\ndescription: Analysis of high-throughput data from heterogeneous samples (mixtures of cell types). Use this skill to perform cell-type specific differential expression (csDE) or differential methylation (csDM) analysis, estimate cell type proportions (deconvolution), and conduct cross-cell type differential analysis.\n\n## Overview\n\nTOAST (TOols for the Analysis of heterogeneouS Tissues) provides a statistical framework for analyzing genomic data where samples are mixtures of different cell types (e.g., blood, tumor, or brain tissue). It allows researchers to uncover cell-type specific signals that are often masked in bulk analysis. The package supports reference-based, reference-free, and partial reference-free deconvolution, followed by rigorous testing for differential signals.\n\n## Core Workflow\n\n### 1. Data Preparation\nTOAST requires three main inputs:\n- **Y_raw**: A matrix of expression or methylation data (features by samples) or a `SummarizedExperiment` object.\n- **design**: A data frame containing sample metadata (e.g., age, gender, disease status). Categorical variables must be factors.\n- **Prop**: A matrix of cell type proportions (samples by cell types).\n\n### 2. Estimating Cell Proportions (Deconvolution)\nIf proportions are unknown, use one of these methods:\n\n**Reference-Based (RB):**\nRequires a reference panel (e.g., `Blood_ref`).\n```r\n# 1. Select markers\nrefinx <- findRefinx(Y_raw, nmarker = 1000, sortBy = \"var\")\n# 2. Estimate using EpiDISH (RPC method)\nlibrary(EpiDISH)\noutT <- epidish(beta.m = Y_raw[refinx,], ref.m = Blood_ref[refinx,], method = \"RPC\")\nProp <- outT$estF\n```\n\n**Reference-Free (RF) with Improvement:**\nTOAST improves RF deconvolution via iterative feature selection.\n```r\n# K is the number of cell types\noutRF <- csDeconv(Y_raw, K = 6, TotalIter = 30, bound_negative = TRUE)\nProp <- outRF$estProp\n```\n\n**Partial Reference-Free (PRF):**\nRequires cell-type specific markers but no full reference panel.\n```r\n# Get markers from pure profiles or prior knowledge\nmyMarker <- ChooseMarker(LM_5, CellType_list)\n# Deconvolve with optional prior (e.g., \"human pbmc\")\nres <- MDeconv(Y_raw, myMarker, alpha = \"human pbmc\")\nProp <- t(res$H)\n```\n\n### 3. Cell-Type Specific Testing (csDE/csDM)\nOnce proportions are available, follow this three-step testing pipeline:\n\n```r\n# 1. Create the design matrix\nDesign_out <- makeDesign(design, Prop)\n\n# 2. Fit the linear model\nfitted_model <- fitModel(Design_out, Y_raw)\n\n# 3. Test for differential signals\n# Test 'disease' effect in 'Gran' cells\nres_table <- csTest(fitted_model, coef = \"disease\", cell_type = \"Gran\")\n\n# Test joint effect across all cell types\nres_joint <- csTest(fitted_model, coef = \"disease\", cell_type = \"joint\")\n```\n\n### 4. Advanced Testing: CEDAR\nTo improve power in low-abundance cell types, use `cedar` to incorporate correlation of DE/DM states between cell types.\n```r\nres_cedar <- cedar(Y_raw = Y_raw, prop = Prop, design.1 = design, factor.to.test = 'disease')\n# Access posterior probabilities\nhead(res_cedar$tree_res$full$pp)\n```\n\n### 5. Cross-Cell Type Analysis\nCompare signals between different cell types within the same sample.\n```r\n# Compare CD8T vs Bcell in the 'disease' group (level 1)\ntest_cross <- csTest(fitted_model, \n                     coef = c(\"disease\", 1), \n                     cell_type = c(\"CD8T\", \"Bcell\"))\n```\n\n## Key Functions\n- `findRefinx()`: Selects informative features for deconvolution based on variance or CV.\n- `makeDesign()`: Combines phenotype metadata and cell proportions into a model matrix.\n- `fitModel()`: Fits the TOAST linear model to the data.\n- `csTest()`: Performs the statistical tests for csDE/csDM or cross-cell type differences.\n- `MDeconv()`: Performs partial reference-free deconvolution.\n- `Tsisal()`: Complete deconvolution using a geometric approach for DNA methylation.\n\n## Tips for Success\n- **Factor Conversion**: Ensure all categorical variables in your design data frame are converted to factors using `as.factor()`.\n- **Variance Shrinkage**: Keep `var_shrinkage = TRUE` (default) in `csTest()` to prevent unstable statistics from extremely small variance estimates.\n- **Feature Selection**: For RNA-seq counts, use `sortBy = \"cv\"` in `findRefinx()`. For DNA methylation or log-counts, `sortBy = \"var\"` is generally preferred.\n- **Validation**: Because F-tests can sometimes show inflated Type I errors in this context, consider permutation tests for highly significant results.\n\n## Reference documentation\n- [The TOAST User's Guide](./references/TOAST.md)\n- [Analyses of high-throughput data from heterogeneous samples with TOAST](./references/TOAST.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-toast",
+    "description": "TOAST analyzes high-throughput genomic data from heterogeneous tissue samples to identify cell-type specific signals. Use when user asks to estimate cell type proportions, perform cell-type specific differential expression or methylation analysis, and conduct cross-cell type differential analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TOAST.html"
+  }
+}

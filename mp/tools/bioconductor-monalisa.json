@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-monalisa",
+  "category": "bioconductor",
+  "name": "bioconductor-monalisa",
+  "description": "\"bioconductor-monalisa identifies transcription factor motifs associated with experimental data using binned enrichment analysis or stability selection regression. Use when user asks to perform binned motif enrichment analysis, identify motifs using randomized Lasso stability selection, scan sequences for known motif hits, or analyze k-mer enrichments in genomic regions.\"",
+  "overview": "The `monaLisa` package is designed to identify drivers of biological changes (like gene expression or chromatin accessibility) by analyzing sequence motifs. It offers two primary workflows:\n1.  **Binned Motif Enrichment:** Groups genomic regions into bins based on a numerical value (e.g., log-fold change) and identifies motifs enriched in specific bins relative to others or a genomic background.\n2.  **Stability Selection (Randomized Lasso):** A regression-based approach where motifs \"compete\" to",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/monaLisa.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/fmicompbio/monaLisa",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "monaLisa"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/monaLisa.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/fmicompbio/monaLisa",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-monalisa\n\nname: bioconductor-monalisa\ndescription: Motif analysis with Lisa (monaLisa) for identifying transcription factor (TF) motifs associated with experimental data (e.g., differential methylation, accessibility, or expression). Use this skill when you need to: (1) Perform binned motif enrichment analysis to find TFs driving observed changes, (2) Use Randomized Lasso Stability Selection for regression-based motif discovery, (3) Scan biological sequences for known motif hits, or (4) Analyze k-mer enrichments in genomic regions.\n\n## Overview\n\nThe `monaLisa` package is designed to identify drivers of biological changes (like gene expression or chromatin accessibility) by analyzing sequence motifs. It offers two primary workflows:\n1.  **Binned Motif Enrichment:** Groups genomic regions into bins based on a numerical value (e.g., log-fold change) and identifies motifs enriched in specific bins relative to others or a genomic background.\n2.  **Stability Selection (Randomized Lasso):** A regression-based approach where motifs \"compete\" to explain a continuous response variable, providing a robust selection of relevant TFs while controlling for sequence biases like GC content.\n\n## Core Workflows\n\n### 1. Binned Motif Enrichment Analysis\nThis is the most common workflow for analyzing differential data.\n\n```r\nlibrary(monaLisa)\nlibrary(JASPAR2020)\nlibrary(TFBSTools)\n\n# 1. Bin your regions based on a numeric vector (e.g., delta methylation)\n# binmode \"equalN\" ensures same number of regions per bin\nbins <- bin(x = my_numeric_values, binmode = \"equalN\", nElement = 400)\n\n# 2. Get PWMs (e.g., from JASPAR)\npwms <- getMatrixSet(JASPAR2020, opts = list(matrixtype = \"PWM\", tax_group = \"vertebrates\"))\n\n# 3. Calculate enrichment (requires DNAStringSet of sequences)\nse <- calcBinnedMotifEnrR(seqs = my_dna_seqs, bins = bins, pwmL = pwms)\n\n# 4. Visualize results\nplotMotifHeatmaps(x = se, which.plots = c(\"log2enr\", \"negLog10Padj\"), \n                  cluster = TRUE, maxSig = 10)\n```\n\n### 2. Randomized Lasso Stability Selection\nUse this when you want a regression model to identify motifs that best explain the variance in your data.\n\n```r\n# 1. Create a TFBS hit matrix (rows = regions, cols = motifs)\nhits <- findMotifHits(query = pwms, subject = my_dna_seqs, min.score = 10.0)\nTFBSmatrix <- unclass(table(factor(seqnames(hits), levels = seqlevels(hits)),\n                            factor(hits$pwmname, levels = name(pwms))))\n\n# 2. Run stability selection\n# y is your response vector (e.g., log-fold change)\nse_stab <- randLassoStabSel(x = TFBSmatrix, y = my_response_vector, cutoff = 0.8)\n\n# 3. Visualize selection probabilities\nplotSelectionProb(se_stab, directional = TRUE)\nplotStabilityPaths(se_stab)\n```\n\n### 3. Finding Motif Hits\nTo simply annotate sequences with motif occurrences:\n\n```r\nres <- findMotifHits(query = pwms, subject = my_dna_seqs, min.score = 7.0)\n# Returns a GRanges object with hit locations, scores, and motif names\n```\n\n## Key Functions and Tips\n\n-   **`bin()`**: Use `minAbsX` to create a \"no-change\" bin around zero. Use `plotBinDensity()` to verify the distribution.\n-   **`plotBinDiagnostics()`**: Always check for GC-content or dinucleotide frequency biases between bins before running enrichment.\n-   **`calcBinnedMotifEnrR()`**: \n    -   By default, `background = \"otherBins\"`. \n    -   Use `background = \"genome\"` to compare a single set of sequences against a GC-matched genomic background.\n-   **`motifSimilarity()`**: Calculate similarity between PWMs to cluster the heatmap by motif family rather than enrichment patterns.\n-   **`calcBinnedKmerEnr()`**: Use this for an \"unbiased\" analysis if you suspect drivers not represented in known motif databases.\n\n## Data Structures\n-   **Input:** Typically `GRanges` (for regions) or `DNAStringSet` (for sequences).\n-   **Output:** Most analysis functions return a `SummarizedExperiment`. \n    -   `assay(se, \"log2enr\")`: Motif enrichment values.\n    -   `assay(se, \"negLog10Padj\")`: Significance values.\n    -   `rowData(se)`: Information about the motifs.\n    -   `colData(se)`: Information about the bins.\n\n## Reference documentation\n- [monaLisa - MOtif aNAlysis with Lisa](./references/monaLisa.md)\n- [Regression Based Approach for Motif Selection](./references/selecting_motifs_with_randLassoStabSel.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-monalisa",
+    "description": "bioconductor-monalisa identifies transcription factor motifs associated with experimental data using binned enrichment analysis or stability selection regression. Use when user asks to perform binned motif enrichment analysis, identify motifs using randomized Lasso stability selection, scan sequences for known motif hits, or analyze k-mer enrichments in genomic regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/monaLisa.html"
+  }
+}

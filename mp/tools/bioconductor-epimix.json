@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-epimix",
+  "category": "bioconductor",
+  "name": "bioconductor-epimix",
+  "description": "EpiMix performs integrative analysis of DNA methylation and gene expression data using beta mixture models to identify functional epigenetic changes. Use when user asks to identify methylation-driven gene expression, analyze TCGA data, find survival-associated epigenetic biomarkers, or investigate methylation states in enhancers, miRNAs, and lncRNAs.",
+  "overview": "EpiMix is an R package designed for population-level analysis of DNA methylation. It uses beta mixture models to identify methylation states of CpG sites and correlates these states with gene expression to identify functional epigenetic changes. The package supports four distinct analytic modes:\n- **Regular**: Proximal cis-regulatory elements for protein-coding genes.\n- **Enhancer**: Distal enhancers (requires Roadmap Epigenomics tissue/cell type IDs).\n- **miRNA**: miRNA-coding genes.\n- **lncRNA",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EpiMix.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epimix/overview",
+  "github": "https://github.com/gevaertlab/EpiMix",
+  "conda_downloads": "4.8K",
+  "conda_downloads_num": 4800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EpiMix"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EpiMix.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epimix/overview",
+    "github": "https://github.com/gevaertlab/EpiMix",
+    "conda_downloads": "4.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-epimix\n\nname: bioconductor-epimix\ndescription: Integrative analysis of DNA methylation and gene expression data using beta mixture models. Use this skill to identify functional DNA methylation changes (hypo- or hypermethylation) associated with gene expression across different genetic elements (protein-coding genes, enhancers, miRNAs, and lncRNAs). It is particularly useful for processing TCGA data, performing pathway enrichment, and identifying survival-associated epigenetic biomarkers.\n\n# bioconductor-epimix\n\n## Overview\n\nEpiMix is an R package designed for population-level analysis of DNA methylation. It uses beta mixture models to identify methylation states of CpG sites and correlates these states with gene expression to identify functional epigenetic changes. The package supports four distinct analytic modes:\n- **Regular**: Proximal cis-regulatory elements for protein-coding genes.\n- **Enhancer**: Distal enhancers (requires Roadmap Epigenomics tissue/cell type IDs).\n- **miRNA**: miRNA-coding genes.\n- **lncRNA**: lncRNA-coding genes.\n\n## Data Input Requirements\n\nThe core `EpiMix` function requires three primary inputs:\n1. **DNA Methylation Matrix**: Beta values with CpG sites in rows and samples in columns.\n2. **Gene Expression Matrix**: Matched expression data (TPM, RPKM, etc.) with genes in rows and samples in columns.\n3. **Sample Annotation**: A dataframe with columns `primary` (sample IDs) and `sample.type` (e.g., \"Cancer\" vs \"Normal\").\n\n## Core Workflow\n\n### 1. Standard Analysis (Regular Mode)\nTo run a standard integrative analysis:\n```r\nlibrary(EpiMix)\nresults <- EpiMix(\n  methylation.data = MET.data,\n  gene.expression.data = mRNA.data,\n  sample.info = LUAD.sample.annotation,\n  group.1 = \"Cancer\",\n  group.2 = \"Normal\",\n  met.platform = \"HM450\",\n  OutputRoot = tempdir()\n)\n# Access functional pairs (CpG-gene associations)\nhead(results$FunctionalPairs)\n```\n\n### 2. Enhancer Mode\nRequires a Roadmap Epigenome ID (e.g., \"E096\" for Lung) to filter for tissue-specific enhancers.\n```r\nresults_enhancer <- EpiMix(\n  methylation.data = MET.data,\n  gene.expression.data = mRNA.data,\n  mode = \"Enhancer\",\n  roadmap.epigenome.ids = \"E096\",\n  sample.info = LUAD.sample.annotation,\n  group.1 = \"Cancer\",\n  group.2 = \"Normal\",\n  met.platform = \"HM450\"\n)\n```\n\n### 3. TCGA Automated Workflow\nEpiMix provides a one-step function for TCGA data:\n```r\nresults_tcga <- TCGA_GetData(\n  CancerSite = \"OV\",\n  mode = \"Regular\",\n  outputDirectory = tempdir(),\n  cores = 10\n)\n```\nAlternatively, use step-by-step functions: `TCGA_Download_DNAmethylation`, `TCGA_Preprocess_DNAmethylation`, `TCGA_Download_GeneExpression`, and `TCGA_GetSampleInfo`.\n\n## Visualization\n\nEpiMix provides several plotting functions to interpret results:\n- `EpiMix_PlotModel()`: Shows the mixture model distribution, violin plots of expression by methylation state, and correlation plots.\n- `EpiMix_PlotGene()`: Genome-browser style view of chromatin state, DM values, and transcript structure.\n- `EpiMix_PlotProbe()`: Visualizes chromatin states of a CpG and nearby genes (useful for enhancers).\n- `EpiMix_PlotSurvival()`: Kaplan-Meier curves comparing survival between different methylation states.\n\n## Downstream Analysis\n\n### Pathway Enrichment\nIntegrates with `clusterProfiler` to analyze differentially methylated genes:\n```r\nenrich_res <- functionEnrich(\n  EpiMixResults = results,\n  methylation.state = \"all\", # or \"hypo\"/\"hyper\"\n  enrich.method = \"GO\",      # or \"KEGG\"\n  ont = \"BP\"\n)\n```\n\n### Survival Analysis\nIdentify CpGs where methylation state significantly impacts patient survival:\n```r\nsurvival_probes <- GetSurvivalProbe(\n  EpiMixResults = results,\n  TCGA_CancerSite = \"LUAD\"\n)\n```\n\n### miRNA Target Identification\nFor miRNA mode, find targets whose expression is inversely associated with miRNA methylation:\n```r\nmiRNA_targets <- find_miRNA_targets(\n  EpiMixResults = results_miRNA,\n  geneExprData = mRNA.data\n)\n```\n\n## Reference documentation\n\n- [Methylation Modeling](./references/Methylation_Modeling.md)\n- [Methylation Modeling RMarkdown](./references/Methylation_Modeling.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-epimix",
+    "description": "EpiMix performs integrative analysis of DNA methylation and gene expression data using beta mixture models to identify functional epigenetic changes. Use when user asks to identify methylation-driven gene expression, analyze TCGA data, find survival-associated epigenetic biomarkers, or investigate methylation states in enhancers, miRNAs, and lncRNAs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EpiMix.html"
+  }
+}

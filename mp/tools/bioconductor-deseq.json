@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-deseq",
+  "category": "bioconductor",
+  "name": "bioconductor-deseq",
+  "description": "This tool performs differential expression analysis of RNA-Seq and other count data using the negative binomial distribution. Use when user asks to identify differentially expressed genes, normalize sequencing data, estimate dispersion, or perform statistical testing on biological count tables.",
+  "overview": "The `DESeq` package provides methods to test for differential expression in count data from high-throughput sequencing assays (like RNA-Seq or ChIP-Seq). It models counts using the negative binomial distribution and employs a shrinkage estimator for variance to handle small replicate numbers.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/DESeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deseq/overview",
+  "github": "N/A",
+  "conda_downloads": "64.8K",
+  "conda_downloads_num": 64800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DESeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/DESeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deseq/overview",
+    "github": "N/A",
+    "conda_downloads": "64.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-deseq\n\n## Overview\n\nThe `DESeq` package provides methods to test for differential expression in count data from high-throughput sequencing assays (like RNA-Seq or ChIP-Seq). It models counts using the negative binomial distribution and employs a shrinkage estimator for variance to handle small replicate numbers. \n\n**Note:** This skill covers the original `DESeq` package. For newer projects, `DESeq2` is often preferred, but `DESeq` remains relevant for maintaining legacy workflows or specific statistical requirements.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a count table (raw integers) and metadata describing the experimental design.\n\n```R\nlibrary(\"DESeq\")\n\n# Load count data (rows = genes, columns = samples)\ncountsTable <- read.table(\"counts.tsv\", header=TRUE, row.names=1)\n\n# Define experimental conditions\ncondition <- factor(c(\"untreated\", \"untreated\", \"treated\", \"treated\"))\n\n# Create the CountDataSet object\ncds <- newCountDataSet(countsTable, condition)\n```\n\n### 2. Normalization\nEstimate size factors to account for differences in sequencing depth.\n\n```R\ncds <- estimateSizeFactors(cds)\n# View normalized counts\nhead(counts(cds, normalized=TRUE))\n```\n\n### 3. Variance Estimation\nEstimate the relationship between mean and dispersion. This is a prerequisite for differential expression testing.\n\n```R\n# Default for replicated data\ncds <- estimateDispersions(cds)\n\n# Visualization of the fit\nplotDispEsts(cds)\n```\n\n### 4. Differential Expression Testing\nPerform the test to identify genes changing between two conditions.\n\n```R\nres <- nbinomTest(cds, \"untreated\", \"treated\")\n\n# Filter for significant results (e.g., FDR < 0.1)\nresSig <- res[res$padj < 0.1, ]\nresSig <- resSig[order(resSig$pval), ]\n```\n\n## Advanced Workflows\n\n### Multi-factor Designs\nFor experiments with multiple variables (e.g., treatment and batch/library type), use GLMs.\n\n```R\n# Define design with a data frame\ndesign <- data.frame(\n    row.names = colnames(countsTable),\n    condition = c(\"untreated\", \"untreated\", \"treated\", \"treated\"),\n    libType = c(\"single\", \"paired\", \"single\", \"paired\")\n)\ncdsFull <- newCountDataSet(countsTable, design)\ncdsFull <- estimateSizeFactors(cdsFull)\ncdsFull <- estimateDispersions(cdsFull)\n\n# Fit GLMs\nfit1 <- fitNbinomGLMs(cdsFull, count ~ libType + condition)\nfit0 <- fitNbinomGLMs(cdsFull, count ~ libType)\n\n# Likelihood ratio test\npvalsGLM <- nbinomGLMTest(fit1, fit0)\npadjGLM <- p.adjust(pvalsGLM, method=\"BH\")\n```\n\n### Working Without Replicates\nIf no replicates are available, you must use the \"blind\" method to estimate dispersion.\n\n```R\ncds2 <- estimateDispersions(cds2, method=\"blind\", sharingMode=\"fit-only\")\nres2 <- nbinomTest(cds2, \"untreated\", \"treated\")\n```\n\n### Variance Stabilizing Transformation (VST)\nUseful for downstream applications like clustering or PCA.\n\n```R\ncdsBlind <- estimateDispersions(cds, method=\"blind\")\nvsd <- varianceStabilizingTransformation(cdsBlind)\n\n# PCA Plot\nplotPCA(vsd, intgroup=c(\"condition\"))\n```\n\n## Best Practices\n- **Input Data:** Always use raw, non-normalized integer counts. Do not use RPKM/FPKM.\n- **Technical Replicates:** Sum technical replicates (same library sequenced multiple times) into a single column before analysis.\n- **Independent Filtering:** Remove genes with very low overall counts before multiple testing correction to increase power.\n- **Dispersion Fit:** If the default parametric fit fails, try `estimateDispersions(cds, fitType=\"local\")`.\n\n## Reference documentation\n- [Differential expression of RNA-Seq data at the gene level – the DESeq package](./references/DESeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-deseq",
+    "description": "This tool performs differential expression analysis of RNA-Seq and other count data using the negative binomial distribution. Use when user asks to identify differentially expressed genes, normalize sequencing data, estimate dispersion, or perform statistical testing on biological count tables.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/DESeq.html"
+  }
+}

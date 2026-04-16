@@ -1,0 +1,49 @@
+{
+  "id": "seg-suite",
+  "category": "CLI",
+  "name": "seg-suite",
+  "description": "The seg-suite toolkit performs composition, transformation, and intersection operations on sequence alignments and genomic annotations using a unified segment format. Use when user asks to convert genomic formats to seg, compose alignments to transfer coordinates between genomes, find intersections or differences between coordinate sets, or mask sequences based on genomic regions.",
+  "overview": "The `seg-suite` is a specialized toolkit for the composition and transformation of sequence alignments and genomic annotations. By treating annotations as alignments (e.g., a gene aligned to a chromosome), the suite allows for complex operations like transferring gene coordinates from one genome to another using a reference alignment. The suite operates on the \"seg\" format, a simple tab-delimited representation of sequence segments.",
+  "homepage": "https://github.com/mcfrith/seg-suite",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/seg-suite/overview",
+  "github": "https://github.com/mcfrith/seg-suite",
+  "conda_downloads": "2.9K",
+  "conda_downloads_num": 2900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "seg-suite_seg-import",
+      "seg-suite_seg-sort",
+      "seg-suite_seg-join"
+    ],
+    "description": "Read segments or alignments in various formats, and write them in SEG format.",
+    "docker_image": "quay.io/biocontainers/seg-suite:98--py310h184ae93_0",
+    "homepage": "https://github.com/mcfrith/seg-suite",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/seg-suite/overview",
+    "github": "https://github.com/mcfrith/seg-suite",
+    "conda_downloads": "2.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "seg-suite_seg-import.cwl",
+    "seg-suite_seg-join.cwl",
+    "seg-suite_seg-sort.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# seg-suite\n\n## Overview\n\nThe `seg-suite` is a specialized toolkit for the composition and transformation of sequence alignments and genomic annotations. By treating annotations as alignments (e.g., a gene aligned to a chromosome), the suite allows for complex operations like transferring gene coordinates from one genome to another using a reference alignment. The suite operates on the \"seg\" format, a simple tab-delimited representation of sequence segments.\n\nUse this skill when you need to:\n- Convert various alignment and annotation formats to a unified segment format.\n- Perform \"alignment composition\" to link disparate sequence relationships.\n- Find intersections, differences, or containments between sets of genomic coordinates.\n- Mask specific regions of a genome in FASTA or FASTQ files.\n\n## The \"seg\" Format\n\nThe suite uses a coordinate-based format where each line represents a segment or a gapless alignment:\n- **Single Segment**: `length  sequence_name  start_coordinate`\n- **Segment Pair**: `length  seq1_name  seq1_start  seq2_name  seq2_start`\n- **Coordinates**: 0-based. A segment at the very beginning of a sequence starts at 0.\n- **Strands**: Forward strands use positive coordinates. Reverse strands are indicated by **negative** start coordinates, where the value points to the 5'-end of the segment.\n\n## Tool Usage and Patterns\n\n### seg-import: Format Conversion\nConverts external formats to `.seg`. Supported formats include `maf`, `psl`, `bed`, `genePred`, `gtf`, `rmsk`, and `lastTab`.\n\n```bash\n# Basic conversion\nseg-import maf alignments.maf > alignments.seg\n\n# Extract specific features from GTF/BED/genePred\nseg-import gtf -c genes.gtf > coding_regions.seg\nseg-import gtf -i genes.gtf > introns.seg\nseg-import gtf -5 genes.gtf > five_prime_utrs.seg\n```\n\n**Key Options:**\n- `-f N`: Force the Nth segment in each line to be forward-stranded (flips the whole line if necessary).\n- `-a`: Appends alignment number and position (useful for tracking lines belonging to the same gapped alignment).\n\n### seg-join: Composition and Intersections\nJoins two `.seg` files based on overlaps in their **first** sequence. \n\n**CRITICAL**: Both input files must be sorted (typically via `seg-sort`) before using `seg-join`.\n\n```bash\n# Compose alignments: If ab.seg maps A->B and ac.seg maps A->C, \n# this creates a triple mapping A->B->C\nseg-join ab.seg ac.seg > abc.seg\n\n# Find segments in x.seg wholly contained within y.seg\nseg-join -c1 x.seg y.seg > inside.seg\n\n# Find parts of x.seg that do NOT overlap y.seg (subtraction)\nseg-join -v1 x.seg y.seg > difference.seg\n\n# Join based on identical coordinates in ALL sequences (not just the first)\nseg-join -w ab.seg cd.seg > intersection.seg\n```\n\n**Filtering Options:**\n- `-n PERCENT`: Output file 2 segments only if at least PERCENT is covered by file 1.\n- `-f FILENUM`: Output the whole tuple from the specified file if it overlaps the other.\n\n### seg-mask: Sequence Masking\nMasks segments in a FASTA/FASTQ file based on a `.seg` file.\n\n```bash\n# Default: lowercase masked regions, uppercase others\nseg-mask segments.seg genome.fa > masked_genome.fa\n\n# Mask with a specific character (e.g., 'N')\nseg-mask -x N repeats.seg genome.fa > hard_masked.fa\n```\n\n## Expert Tips\n- **Alignment Composition**: To transfer annotations from Human to Mouse using a Human-Mouse alignment:\n  1. Convert Human annotations to `.seg` (e.g., `seg-import gtf human.gtf`).\n  2. Ensure the first column of the annotation and the alignment file is the shared sequence (Human).\n  3. Sort both and use `seg-join`.\n- **Sorting**: Always ensure your `.seg` files are sorted by sequence name and then coordinate before attempting a join.\n- **Reverse Strands**: Remember that a negative coordinate like `-7` means the segment's 5'-end is at position 7 on the reverse strand.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| seg-import | Read segments or alignments in various formats, and write them in SEG format. |\n| seg-join | Read two SEG files, and write their JOIN. |\n| sort | Sort lines of text |\n\n## Reference documentation\n- [seg-suite README](./references/github_com_mcfrith_seg-suite_blob_master_README.rst.md)",
+  "skill_front_matter": {
+    "name": "seg-suite",
+    "description": "The seg-suite toolkit performs composition, transformation, and intersection operations on sequence alignments and genomic annotations using a unified segment format. Use when user asks to convert genomic formats to seg, compose alignments to transfer coordinates between genomes, find intersections or differences between coordinate sets, or mask sequences based on genomic regions.",
+    "homepage": "https://github.com/mcfrith/seg-suite"
+  }
+}

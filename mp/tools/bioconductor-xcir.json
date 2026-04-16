@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-xcir",
+  "category": "bioconductor",
+  "name": "bioconductor-xcir",
+  "description": "This tool performs statistical modeling of X-chromosome inactivation (XCI) using allele-specific RNA-Seq data. Use when user asks to estimate X-chromosome skewing, identify genes that escape inactivation, or analyze allele-specific expression from X-linked SNPs.",
+  "overview": "The `XCIR` package provides a statistical framework to analyze X-chromosome inactivation using allele-specific expression (ASE) data. It implements beta-binomial mixture models to estimate the fraction of inactivation for each parental X chromosome (skewing) and performs hypothesis testing to identify X-linked genes that escape silencing.",
+  "homepage": "https://bioconductor.org/packages/3.10/bioc/html/XCIR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/SRenan/XCIR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "XCIR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.10/bioc/html/XCIR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/SRenan/XCIR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-xcir\n\nname: bioconductor-xcir\ndescription: Statistical modeling for X-chromosome inactivation (XCI) analysis. Use this skill to estimate X-chromosome skewing (mosaicism) and identify genes that escape XCI from allele-specific RNA-Seq counts.\n\n# bioconductor-xcir\n\n## Overview\nThe `XCIR` package provides a statistical framework to analyze X-chromosome inactivation using allele-specific expression (ASE) data. It implements beta-binomial mixture models to estimate the fraction of inactivation for each parental X chromosome (skewing) and performs hypothesis testing to identify X-linked genes that escape silencing.\n\n## Core Workflow\n\n### 1. Data Input and Pre-processing\nLoad allele-specific counts from VCF files or data frames. The package requires columns for sample ID, chromosome, position, and allelic depths (AD).\n\n```r\nlibrary(XCIR)\nlibrary(data.table)\n\n# Read from VCF\nvcf_path <- system.file(\"extdata/AD_example.vcf\", package = \"XCIR\")\nvcf_data <- readVCF4(vcf_path)\n\n# Annotate SNPs with Gene information (defaults to hg38)\n# Use release argument for other versions (e.g., release = 37)\nanno_data <- annotateX(vcf_data, mirror = \"useast\")\n```\n\n### 2. Gene-Level Summarization\nAggregate SNP-level data into gene-level counts.\n- If phasing is known: Sum all SNPs within a gene.\n- If phasing is unknown: Use the most highly expressed SNP per gene.\n\n```r\n# Phased data (highest_expr = TRUE sums counts)\ngenic_data <- getGenicDP(anno_data, highest_expr = TRUE)\n\n# Unphased data (highest_expr = FALSE picks top SNP)\ngenic_data <- getGenicDP(anno_data, highest_expr = FALSE)\n```\n\n### 3. Modeling Skewing and Escape\nThe `betaBinomXI` function is the primary tool for estimation and inference. It requires a set of \"training genes\" (known XCI genes) to estimate the subject-level skewing parameter ($f$).\n\n```r\n# Load training genes (known to be silenced)\nxcig <- readLines(system.file(\"extdata/xcig_vignette.txt\", package = \"XCIR\"))\n\n# Fit model\n# model = \"BB\": Simple Beta-Binomial\n# model = \"MM\": Mixture model (handles sequencing errors/outliers)\n# model = \"AUTO\": AIC-based model selection (Recommended)\nresults <- betaBinomXI(genic_data, xciGenes = xcig, model = \"AUTO\")\n\n# Annotate escape status based on p-value\nresults[, status := ifelse(p_value < 0.05, \"E\", \"S\")]\n```\n\n### 4. Result Interpretation and Quality Control\nUse helper functions to summarize subject-level parameters or gene-level consensus across a cohort.\n\n```r\n# Subject-level summary (skewing estimate 'f' and model used)\nsubject_summary <- sample_clean(results)\n\n# Gene-level consensus across the dataset\n# Categorizes as Silenced (S), Variable Escape (VE), or Escape (E)\ngene_status <- getXCIstate(results)\n\n# Visual QC for a specific sample\nplotQC(results[sample == \"sample_id\"], xcig = xcig)\n```\n\n## Key Functions\n- `readVCF4()`: Extracts AD (Allelic Depth) fields from VCF files.\n- `annotateX()`: Maps X-linked SNPs to genes using biomaRt.\n- `getGenicDP()`: Collapses SNP counts to gene counts.\n- `betaBinomXI()`: Main modeling function for skewing and escape testing.\n- `getXCIstate()`: Summarizes escape frequency across multiple samples.\n\n## Reference documentation\n- [Introduction to XCIR](./references/xcir_intro.md)\n- [XCIR Rmd Source](./references/xcir_intro.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-xcir",
+    "description": "This tool performs statistical modeling of X-chromosome inactivation (XCI) using allele-specific RNA-Seq data. Use when user asks to estimate X-chromosome skewing, identify genes that escape inactivation, or analyze allele-specific expression from X-linked SNPs.",
+    "homepage": "https://bioconductor.org/packages/3.10/bioc/html/XCIR.html"
+  }
+}

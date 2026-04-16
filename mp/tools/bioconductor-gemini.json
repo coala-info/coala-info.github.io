@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gemini",
+  "category": "bioconductor",
+  "name": "bioconductor-gemini",
+  "description": "The gemini package implements a variational Bayes approach to identify genetic interactions and calculate interaction scores from pairwise CRISPR knockout screens. Use when user asks to identify synergistic or buffering gene relationships, analyze dual-guide CRISPR screens, or calculate interaction significance values from guide counts.",
+  "overview": "The `gemini` package implements a variational Bayes approach to identify genetic interactions in pairwise CRISPR knockout screens. It jointly analyzes all samples and reagents to account for sample, reagent, and biological variability. The workflow transforms raw guide counts into interaction scores and significance values (FDR), allowing for the systematic discovery of synergistic or buffering gene relationships.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/gemini.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gemini/overview",
+  "github": "https://github.com/sellerslab/gemini",
+  "conda_downloads": "19.4K",
+  "conda_downloads_num": 19400,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gemini"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gemini.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gemini/overview",
+    "github": "https://github.com/sellerslab/gemini",
+    "conda_downloads": "19.4K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gemini\n\n## Overview\nThe `gemini` package implements a variational Bayes approach to identify genetic interactions in pairwise CRISPR knockout screens. It jointly analyzes all samples and reagents to account for sample, reagent, and biological variability. The workflow transforms raw guide counts into interaction scores and significance values (FDR), allowing for the systematic discovery of synergistic or buffering gene relationships.\n\n## Core Workflow\n\n### 1. Data Preparation\nGEMINI requires three inputs: a counts matrix, sample/replicate annotations, and guide/gene annotations.\n\n```r\nlibrary(gemini)\nlibrary(magrittr)\n\n# Create the gemini input object\nInput <- gemini_create_input(\n  counts.matrix = counts,\n  sample.replicate.annotation = sample.replicate.annotation,\n  guide.annotation = guide.annotation,\n  ETP.column = 'pDNA', # Early Time Point / Reference column\n  gene.column.names = c(\"U6.gene\", \"H1.gene\"),\n  sample.column.name = \"samplename\"\n)\n\n# Calculate Log-Fold Change (LFC)\nInput %<>% gemini_calculate_lfc(normalize = TRUE, CONSTANT = 32)\n```\n\n### 2. Model Initialization and Inference\nInitialization requires defining a negative control gene (`nc_gene`). It is highly recommended that every gene in the library is paired with this negative control at least once.\n\n```r\n# Initialize the model\n# pattern_split: separator in counts.matrix rownames\n# pattern_join: separator for output gene pairs\nModel <- gemini_initialize(\n  Input = Input,\n  nc_gene = \"CD81\",\n  pattern_join = ';',\n  pattern_split = ';',\n  cores = 1\n)\n\n# Perform Coordinate-Ascent Variational Inference (CAVI)\nModel %<>% gemini_inference(cores = 1, verbose = FALSE)\n```\n\n### 3. Scoring Interactions\nTo calculate significance, you must provide a set of non-interacting gene pairs (`nc_pairs`) to build the null distribution.\n\n```r\n# Identify non-interacting pairs (e.g., pairs involving negative controls)\nnc_pairs <- grep(\"6T|HPRT\", rownames(Model$s), value = TRUE)\n\n# Score interactions\n# pc_gene: positive control gene to filter individually lethal effects\nScore <- gemini_score(\n  Model = Model,\n  pc_gene = \"EEF2\",\n  nc_pairs = nc_pairs\n)\n```\n\n## Interpreting Results\n\n*   **Interaction Strength:** Found in `Score$strong`. Positive values typically indicate synthetic lethality (synergy), while negative values may indicate recovery (buffering).\n*   **Significance:** Found in `Score$fdr_strong`. Use standard thresholds (e.g., < 0.05 or 0.1) to identify significant interactions.\n*   **Convergence:** Use `gemini_plot_mae(Model)` to ensure the Mean Absolute Error (MAE) decreased and stabilized during inference.\n\n## Visualization\nUse `gemini_boxplot` to inspect specific gene pairs. This function visualizes the LFC distribution and the adjustments made by the GEMINI model.\n\n```r\ngemini_boxplot(\n  Model = Model, \n  g = \"BRCA2\", \n  h = \"PARP1\", \n  nc_gene = \"CD81\", \n  sample = \"A549\",\n  show_inference = TRUE, \n  identify_guides = TRUE\n)\n```\n\n## Reference documentation\n- [A guide to the GEMINI R package](./references/gemini-quickstart.md)\n- [QuickStart Vignette Source](./references/gemini-quickstart.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-gemini",
+    "description": "The gemini package implements a variational Bayes approach to identify genetic interactions and calculate interaction scores from pairwise CRISPR knockout screens. Use when user asks to identify synergistic or buffering gene relationships, analyze dual-guide CRISPR screens, or calculate interaction significance values from guide counts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gemini.html"
+  }
+}

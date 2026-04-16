@@ -1,0 +1,57 @@
+{
+  "id": "ptgaul",
+  "category": "CLI",
+  "name": "ptgaul",
+  "description": "ptgaul is a bioinformatics pipeline that reconstructs complete chloroplast genomes using long-read sequencing data and a reference-based baiting approach. Use when user asks to assemble plastid genomes, reconstruct chloroplast sequences from Nanopore or PacBio reads, or resolve assembly graphs for circular organelle genomes.",
+  "overview": "ptgaul (PlasTid Genome Assembly Using Long reads) is a specialized bioinformatics pipeline designed to reconstruct complete chloroplast genomes. It leverages the length of Nanopore or PacBio reads to bridge repetitive regions that often cause short-read assemblers to produce fragmented results. The tool works by using a reference genome from a closely related species to \"bait\" and filter relevant long reads from a raw dataset, followed by assembly and path resolution.",
+  "homepage": "https://github.com/Bean061/ptgaul",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ptgaul/overview",
+  "github": "https://github.com/Bean061/ptgaul",
+  "conda_downloads": "4.4K",
+  "conda_downloads_num": 4400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ptgaul_ptGAUL.sh",
+      "ptgaul_combine_gfa.py",
+      "ptgaul_minimap2",
+      "ptgaul_gunzip",
+      "ptgaul_awk",
+      "ptgaul_sort",
+      "ptgaul_tr"
+    ],
+    "description": "this pipeline is used for plastome assembly using long read data.",
+    "docker_image": "quay.io/biocontainers/ptgaul:1.0.5--pyhdfd78af_1",
+    "homepage": "https://github.com/Bean061/ptgaul",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ptgaul/overview",
+    "github": "https://github.com/Bean061/ptgaul",
+    "conda_downloads": "4.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ptgaul_awk.cwl",
+    "ptgaul_combine_gfa.py.cwl",
+    "ptgaul_gunzip.cwl",
+    "ptgaul_minimap2.cwl",
+    "ptgaul_ptGAUL.sh.cwl",
+    "ptgaul_sort.cwl",
+    "ptgaul_tr.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ptgaul\n\n## Overview\n\nptgaul (PlasTid Genome Assembly Using Long reads) is a specialized bioinformatics pipeline designed to reconstruct complete chloroplast genomes. It leverages the length of Nanopore or PacBio reads to bridge repetitive regions that often cause short-read assemblers to produce fragmented results. The tool works by using a reference genome from a closely related species to \"bait\" and filter relevant long reads from a raw dataset, followed by assembly and path resolution.\n\n## Installation and Environment\n\nThe tool is best managed via a Conda environment to handle its dependencies (minimap2, flye, seqkit, etc.).\n\n```bash\nconda create --name chloroplast python=3.7\nsource activate chloroplast\nconda install -c bioconda ptgaul\n```\n\n## Core CLI Usage\n\nThe primary entry point is the `ptGAUL.sh` script. It requires a reference fasta and a long-read data file.\n\n### Basic Command\n```bash\nptGAUL.sh -r reference_species.fasta -l raw_long_reads.fastq\n```\n\n### Advanced Configuration\nUse additional flags to optimize for specific datasets or hardware:\n- `-t`: Number of threads (default: 1).\n- `-g`: Expected plastome size in bp (default: 160000).\n- `-c`: Target coverage for assembly (default: 50).\n- `-f`: Minimum read length filter (default: 3000).\n- `-o`: Output directory.\n\n**Example:**\n```bash\nptGAUL.sh -r ./refs/Beta.fasta -l ./data/reads.fq.gz -t 16 -f 5000 -o ./assembly_results/\n```\n\n## Manual Path Resolution\n\nIf the automated assembly does not produce a single circular contig (indicated by edge numbers not equaling 1 or 3), you may need to manually resolve the assembly graph using the provided Python utility.\n\n1. Visualize the `assembly_graph.gfa` in **Bandage**.\n2. If the graph structure is confirmed, run the combination script:\n```bash\ncombine_gfa.py -e ./output/edges.fa -d ./output/sorted_depth -o ./final_output/\n```\n\n## Expert Polishing Workflows\n\nWhile ptgaul produces a consensus, polishing is highly recommended to improve base-call accuracy, especially for Nanopore data.\n\n### Short-Read Polishing (Recommended)\nUsing Illumina reads with FMLRC provides the highest accuracy. This requires a pre-built MSBWT index of your short reads.\n\n1. **Build Index:**\n```bash\ngunzip -c r1.fq.gz r2.fq.gz | awk 'NR % 4 == 2' | sort | tr NT TN | ropebwt2 -LR | tr NT TN | msbwt convert ./msbwt_index\n```\n\n2. **Correct Assembly:**\n```bash\nfmlrc -p 8 ./msbwt_index/comp_msbwt.npy ptgaul_assembly.fasta corrected_cp.fasta\n```\n\n### Long-Read Polishing\nIf short reads are unavailable, use Racon with the original long reads:\n```bash\nminimap2 -x ava-ont -t 8 ptgaul_assembly.fasta long_reads.fastq > map.paf\nracon -t 8 long_reads.fastq map.paf ptgaul_assembly.fasta > polished_assembly.fasta\n```\n\n## Troubleshooting Tips\n\n- **Reference Selection**: The reference genome does not need to be an exact match; a species from the same genus or family is usually sufficient for the filtering step.\n- **Memory Requirements**: For a standard 10Gbp dataset, 16GB of RAM is typically sufficient.\n- **Read Filtering**: If the assembly is fragmented, try increasing the `-f` (filter) threshold to 5000 or higher to force the assembler to use only the longest, most informative reads.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| awk | Pattern scanning and processing language |\n| combine_gfa.py | This script is used to merge the edges from assembly graph. |\n| gunzip | Decompress FILEs (or stdin) |\n| minimap2 | A versatile pairwise aligner for genomic and transcribed nucleotide sequences |\n| ptGAUL.sh | this pipeline is used for plastome assembly using long read data. |\n| sort | Sort lines of text |\n| tr | Translate, squeeze, or delete characters from stdin, writing to stdout |\n\n## Reference documentation\n- [ptGAUL GitHub README](./references/github_com_Bean061_ptgaul_blob_main_README.md)\n- [ptGAUL Shell Script Reference](./references/github_com_Bean061_ptgaul_blob_main_ptGAUL.sh.md)\n- [GFA Combination Utility](./references/github_com_Bean061_ptgaul_blob_main_combine_gfa.py.md)",
+  "skill_front_matter": {
+    "name": "ptgaul",
+    "description": "ptgaul is a bioinformatics pipeline that reconstructs complete chloroplast genomes using long-read sequencing data and a reference-based baiting approach. Use when user asks to assemble plastid genomes, reconstruct chloroplast sequences from Nanopore or PacBio reads, or resolve assembly graphs for circular organelle genomes.",
+    "homepage": "https://github.com/Bean061/ptgaul"
+  }
+}

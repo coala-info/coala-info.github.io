@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gcrisprtools",
+  "category": "bioconductor",
+  "name": "bioconductor-gcrisprtools",
+  "description": "This tool analyzes pooled CRISPR screening data to perform quality control, normalization, and gene-level target prioritization. Use when user asks to perform quality control on CRISPR screens, normalize guide counts, prioritize gene targets using RRA, or visualize screen results and contrasts.",
+  "overview": "The `gCrisprTools` package is a Bioconductor suite designed for the analysis of pooled CRISPR screens. It leverages the `limma` linear modeling framework to handle complex experimental designs and uses the Robust Rank Aggregation (RRA) algorithm to prioritize gene targets from guide-level data. Key capabilities include comprehensive QC reporting, guide-to-gene signal aggregation, and cross-contrast comparisons.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/gCrisprTools.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gcrisprtools/overview",
+  "github": "N/A",
+  "conda_downloads": "32.8K",
+  "conda_downloads_num": 32800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gCrisprTools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gCrisprTools.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gcrisprtools/overview",
+    "github": "N/A",
+    "conda_downloads": "32.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gcrisprtools\n\nname: bioconductor-gcrisprtools\ndescription: Analysis of pooled CRISPR screening data using gCrisprTools. Use this skill to perform quality control, normalization, target prioritization (RRA alpha), and visualization of CRISPR screens. It supports complex experimental designs via limma/voom and enables comparison across multiple screen contrasts.\n\n# bioconductor-gcrisprtools\n\n## Overview\n\nThe `gCrisprTools` package is a Bioconductor suite designed for the analysis of pooled CRISPR screens. It leverages the `limma` linear modeling framework to handle complex experimental designs and uses the Robust Rank Aggregation (RRA) algorithm to prioritize gene targets from guide-level data. Key capabilities include comprehensive QC reporting, guide-to-gene signal aggregation, and cross-contrast comparisons.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires an `ExpressionSet` for counts, a `data.frame` for annotation, and a named factor for the sample key.\n\n```R\nlibrary(gCrisprTools)\nlibrary(Biobase)\nlibrary(limma)\n\n# Load data (counts in assayData, samples in phenoData)\ndata(\"es\", package = \"gCrisprTools\")\ndata(\"ann\", package = \"gCrisprTools\")\n\n# Create a sample key (relevel to set the reference/control group)\nsk <- relevel(as.factor(pData(es)$TREATMENT_NAME), \"ControlReference\")\nnames(sk) <- row.names(pData(es))\n```\n\n### 2. Preprocessing and Normalization\nFilter low-count guides and normalize to account for library size and composition biases.\n\n```R\n# Filter trace reads\nes <- ct.filterReads(es, trim = 1000, sampleKey = sk)\n\n# Normalize (options: 'scale', 'FQ', 'slope', 'controlScale', 'controlSpline')\nes <- ct.normalizeGuides(es, method = \"scale\", plot.it = TRUE)\n\n# Update annotation to match filtered guides\nann <- ct.prepareAnnotation(ann, es, controls = \"NoTarget\")\n```\n\n### 3. Differential Expression (Guide Level)\nUse `limma/voom` to model the screen dynamics.\n\n```R\ndesign <- model.matrix(~ 0 + REPLICATE_POOL + TREATMENT_NAME, pData(es))\ncolnames(design) <- gsub('TREATMENT_NAME', '', colnames(design))\ncontrasts <- makeContrasts(DeathExpansion - ControlExpansion, levels = design)\n\nvm <- voom(exprs(es), design)\nfit <- lmFit(vm, design)\nfit <- contrasts.fit(fit, contrasts)\nfit <- eBayes(fit)\n```\n\n### 4. Target Prioritization (Gene Level)\nAggregate guide-level signals into gene-level results using RRA.\n\n```R\nresultsDF <- ct.generateResults(\n  fit,\n  annotation = ann,\n  RRAalphaCutoff = 0.1,\n  permutations = 1000,\n  scoring = \"combined\"\n)\n```\n\n## Visualization and QC\n\n### Quality Control Plots\n- `ct.alignmentChart(aln, sk)`: Visualize read alignment success.\n- `ct.rawCountDensities(es, sk)`: Check for sequencing depth or PCR artifacts.\n- `ct.gRNARankByReplicate(es, sk)`: Waterfall plots of guide abundance.\n- `ct.viewControls(es, ann, sk)`: Monitor Non-Targeting Control (NTC) behavior.\n\n### Results Visualization\n- `ct.topTargets(fit, resultsDF, ann, targets = 10, enrich = TRUE)`: View log2FC of guides for top hits.\n- `ct.viewGuides(\"GeneName\", fit, ann)`: Detailed view of all guides for a specific gene.\n- `ct.contrastBarchart(resultsDF)`: Summary of enriched vs. depleted targets.\n\n## Advanced Analysis\n\n### Comparing Multiple Contrasts\nTo compare results across different experiments or conditions, use \"Simple Result\" objects.\n\n```R\n# Create simplified target-level objects\nres1 <- ct.simpleResult(resultsDF)\n\n# Regularize multiple results to be in register\nregularized <- ct.regularizeContrasts(dflist = list('Exp1' = res1, 'Exp2' = res2))\n\n# Identify replicated signals\ncomparison <- ct.compareContrasts(dflist = regularized, statistics = 'best.p', cutoffs = 0.05)\n\n# Multi-contrast visualization\nct.upSet(regularized)\n```\n\n### Gene Set Enrichment\nPerform ontological testing using the `sparrow` integration.\n\n```R\ngenesetdb <- sparrow::getMSigGeneSetDb(collection = 'h', species = 'human', id.type = 'entrez')\nseas_res <- ct.seas(resultsDF, gdb = genesetdb)\n```\n\n## Automated Reporting\nGenerate comprehensive HTML reports for QC or specific contrasts.\n\n```R\n# Full experiment report\nct.makeReport(fit = fit, eset = es, sampleKey = sk, annotation = ann, results = resultsDF, outdir = \".\")\n\n# QC-only report\nct.makeQCReport(es, sampleKey = sk, annotation = ann, identifier = 'QC_Report')\n```\n\n## Reference documentation\n- [Advanced Screen Analysis: Contrast Comparisons](./references/Contrast_Comparisons.md)\n- [Example Workflow For Processing a Single Pooled Screen](./references/Crispr_example_workflow.md)\n- [gCrisprTools and the Analysis of Pooled Screening Data](./references/gCrisprTools_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gcrisprtools",
+    "description": "This tool analyzes pooled CRISPR screening data to perform quality control, normalization, and gene-level target prioritization. Use when user asks to perform quality control on CRISPR screens, normalize guide counts, prioritize gene targets using RRA, or visualize screen results and contrasts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gCrisprTools.html"
+  }
+}

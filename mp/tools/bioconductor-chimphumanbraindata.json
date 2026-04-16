@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chimphumanbraindata",
+  "category": "bioconductor",
+  "name": "bioconductor-chimphumanbraindata",
+  "description": "This package provides raw Affymetrix gene expression data and workflows for comparing human and chimpanzee brain regions. Use when user asks to load ChimpHumanBrainData CEL files, preprocess brain expression datasets with RMA, or perform split-plot differential expression analysis using limma.",
+  "overview": "The `ChimpHumanBrainData` package provides a specialized dataset for comparing gene expression across different brain regions in humans and chimpanzees. It contains raw Affymetrix Genechip (HG_U95B) data from a split-plot design experiment. This skill guides the user through loading the raw CEL files, preprocessing with RMA, and conducting complex differential expression analysis using linear models and empirical Bayes methods (limma).",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/ChimpHumanBrainData.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chimphumanbraindata/overview",
+  "github": "N/A",
+  "conda_downloads": "22.3K",
+  "conda_downloads_num": 22300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChimpHumanBrainData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/ChimpHumanBrainData.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chimphumanbraindata/overview",
+    "github": "N/A",
+    "conda_downloads": "22.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chimphumanbraindata\n\n## Overview\nThe `ChimpHumanBrainData` package provides a specialized dataset for comparing gene expression across different brain regions in humans and chimpanzees. It contains raw Affymetrix Genechip (HG_U95B) data from a split-plot design experiment. This skill guides the user through loading the raw CEL files, preprocessing with RMA, and conducting complex differential expression analysis using linear models and empirical Bayes methods (limma).\n\n## Data Loading and Preprocessing\n\nTo access the raw data, you must locate the external data directory within the package and read the CEL files.\n\n```r\nlibrary(ChimpHumanBrainData)\nlibrary(affy)\n\n# Locate and load raw CEL files\ncelfileDir <- system.file(\"extdata\", package=\"ChimpHumanBrainData\")\ncelfileNames <- list.celfiles(celfileDir)\nbrainBatch <- ReadAffy(filenames=celfileNames, celfile.path=celfileDir, compress=TRUE)\n\n# Assign informative sample names\n# Order: 3 Chimp replicates (4 regions each), then 3 Human replicates (4 regions each)\nsampleNames(brainBatch) <- paste(rep(c(\"CH\",\"HU\"), each=12), \n                               rep(c(1:3, 1:3), each=4), \n                               rep(c(\"Prefrontal\",\"Caudate\",\"Cerebellum\",\"Broca\"), 6), \n                               sep=\"\")\n\n# Normalize using RMA\nbrain.rma <- rma(brainBatch)\n```\n\n## Differential Expression Workflow\n\nThe dataset uses a split-plot design (Species as whole-plot, Region as subplot, Brain as block). Analysis is typically performed using `limma` with `duplicateCorrelation` to account for multiple samples from the same individual.\n\n### 1. Design Matrix and Correlation\n```r\nlibrary(limma)\nlibrary(statmod)\n\n# Create treatment factor and design matrix\ntrts <- factor(paste(rep(c(\"CH\",\"HU\"), each=12), \n                    rep(c(\"Prefrontal\",\"Caudate\",\"Cerebellum\",\"Broca\"), 6), sep=\"\"))\ndesign.trt <- model.matrix(~0 + trts)\n\n# Define blocks (6 individual brains)\nblocks <- factor(rep(1:6, each=4))\n\n# Compute within-block correlation (consensus correlation for the split-plot design)\ncorfit <- duplicateCorrelation(brain.rma, design.trt, block = blocks)\nconsensus_corr <- corfit$consensus.correlation\n```\n\n### 2. Linear Model Fitting\n```r\n# Fit model accounting for block correlation\nfitTrtMean <- lmFit(brain.rma, design.trt, block = blocks, cor = consensus_corr)\n```\n\n### 3. Contrasts and Statistics\nDefine specific comparisons between species or regions.\n\n```r\n# Example: Species effect and Interaction\ncontrast.matrix <- makeContrasts(\n    ChVsHu = (trtsCHBroca+trtsCHCaudate+trtsCHCerebellum+trtsCHPrefrontal)/4 - \n             (trtsHUBroca+trtsHUCaudate+trtsHUCerebellum+trtsHUPrefrontal)/4,\n    Interact = (trtsCHCerebellum-trtsHUCerebellum)-(trtsCHBroca-trtsHUBroca),\n    levels = design.trt\n)\n\n# Compute contrasts and moderated t-tests\nfit.contrast <- contrasts.fit(fitTrtMean, contrast.matrix)\nefit.contrast <- eBayes(fit.contrast)\n\n# View top genes for a specific contrast (e.g., ChVsHu)\ntopTable(efit.contrast, coef=\"ChVsHu\", adjust.method=\"BY\")\n```\n\n## Tips and Interpretation\n- **Quality Control**: Use `hexbin` plots on `log2(exprs(brainBatch))` to visualize correlations between replicates before normalization.\n- **P-value Distribution**: Always plot histograms of p-values (`hist(efit.contrast$p.value[,i])`) to assess the proportion of differentially expressed genes and detection power.\n- **Multiple Testing**: The \"BY\" (Benjamini & Yekutieli) or \"fdr\" methods are recommended given the high number of expected differentially expressed genes in species comparisons.\n- **Data Structure**: The data includes 4 specific regions: Prefrontal cortex, Caudate nucleus, Cerebellum, and Broca’s region.\n\n## Reference documentation\n- [Differential Expression Analysis using LIMMA](./references/DiffExpressVignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chimphumanbraindata",
+    "description": "This package provides raw Affymetrix gene expression data and workflows for comparing human and chimpanzee brain regions. Use when user asks to load ChimpHumanBrainData CEL files, preprocess brain expression datasets with RMA, or perform split-plot differential expression analysis using limma.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/ChimpHumanBrainData.html"
+  }
+}

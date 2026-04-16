@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cydar",
+  "category": "bioconductor",
+  "name": "bioconductor-cydar",
+  "description": "bioconductor-cydar performs differential abundance analysis for mass cytometry data using a hypersphere-based counting approach. Use when user asks to identify differentially abundant cell subpopulations, perform spatial FDR control on high-dimensional cytometry data, or count cells in hyperspheres without clustering.",
+  "overview": "The `cydar` package implements a method for detecting differentially abundant (DA) subpopulations in mass cytometry data. Unlike traditional clustering, it uses a hypersphere-based approach to count cells in high-dimensional marker space. This avoids the stochasticity and potential biases of clustering while providing higher resolution for detecting small changes in specific cell states.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cydar.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cydar/overview",
+  "github": "N/A",
+  "conda_downloads": "31.3K",
+  "conda_downloads_num": 31300,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cydar"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cydar.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cydar/overview",
+    "github": "N/A",
+    "conda_downloads": "31.3K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cydar\n\nname: bioconductor-cydar\ndescription: Differential abundance analysis for mass cytometry (CyTOF) data using hypersphere-based counting. Use this skill when you need to identify cell subpopulations that change in frequency between experimental conditions, perform spatial FDR control, or visualize high-dimensional cytometry results.\n\n# bioconductor-cydar\n\n## Overview\n\nThe `cydar` package implements a method for detecting differentially abundant (DA) subpopulations in mass cytometry data. Unlike traditional clustering, it uses a hypersphere-based approach to count cells in high-dimensional marker space. This avoids the stochasticity and potential biases of clustering while providing higher resolution for detecting small changes in specific cell states.\n\n## Core Workflow\n\n### 1. Data Preparation and Pre-processing\nThe analysis typically starts with FCS files loaded into a `ncdfFlowSet` or a list of intensity matrices.\n\n```r\nlibrary(cydar)\nlibrary(ncdfFlow)\nlibrary(flowCore)\n\n# Load data (example using ncdfFlowSet)\n# fs <- read.ncdfFlowSet(fcs_files)\n\n# 1. Pool cells for parameter estimation\npool.ff <- poolCells(fs)\n\n# 2. Transform intensities (Logicle is standard for CyTOF)\ntrans <- estimateLogicle(pool.ff, colnames(pool.ff))\nfs.proc <- transform(fs, trans)\n\n# 3. Gating (e.g., removing outliers or dead cells)\ngate.out <- outlierGate(poolCells(fs.proc), \"MarkerName\", type=\"upper\")\nfs.proc <- Subset(fs.proc, gate.out)\n```\n\n### 2. Counting Cells in Hyperspheres\nCells are assigned to hyperspheres centered at individual cells. The radius (`tol`) is a critical parameter.\n\n```r\n# Prepare data for counting\ncd <- prepareCellData(fs.proc)\n\n# Count cells in hyperspheres\n# tol=0.5 is a common default (0.5 * sqrt(number of markers))\ncd <- countCells(cd, tol=0.5)\n\n# Access counts and intensities\ncounts <- assay(cd)\nmids <- intensities(cd)\n```\n\n### 3. Differential Abundance Testing\n`cydar` integrates with `edgeR` to perform statistical testing using a quasi-likelihood (QL) framework.\n\n```r\nlibrary(edgeR)\n\n# Create DGEList\ny <- DGEList(assay(cd), lib.size=cd$totals)\n\n# Filter low-abundance hyperspheres (average count < 5)\nkeep <- aveLogCPM(y) >= aveLogCPM(5, mean(cd$totals))\ncd.filt <- cd[keep,]\ny <- y[keep,]\n\n# Statistical testing\ndesign <- model.matrix(~factor(conditions))\ny <- estimateDisp(y, design)\nfit <- glmQLFit(y, design, robust=TRUE)\nres <- glmQLFTest(fit, coef=2)\n```\n\n### 4. Spatial FDR Control\nBecause hyperspheres overlap, standard BH corrections are insufficient. `spatialFDR` accounts for the density of hyperspheres in high-dimensional space.\n\n```r\n# Calculate spatial FDR\nqvals <- spatialFDR(intensities(cd.filt), res$table$PValue)\nis.sig <- qvals <= 0.05\n```\n\n### 5. Interpretation and Visualization\nSignificant hyperspheres are visualized using dimensionality reduction (PCA/t-SNE) and colored by Log-Fold Change or marker intensity.\n\n```r\n# PCA on significant hyperspheres\nsig.coords <- intensities(cd.filt)[is.sig,]\ncoords <- prcomp(sig.coords)\n\n# Plot Log-Fold Change\nplotSphereLogFC(coords$x[,1], coords$x[,2], res$table$logFC[is.sig])\n\n# Plot Marker Intensities to identify the subpopulation\nlimits <- intensityRanges(cd.filt, p=0.05)\nplotSphereIntensity(coords$x[,1], coords$x[,2], sig.coords[,\"CD3\"], irange=limits[,\"CD3\"])\n```\n\n## Key Functions and Tips\n\n- **`prepareCellData()`**: Converts input into a `CyData` object. It handles the underlying neighbor search structures.\n- **`countCells()`**: The `tol` argument defines the hypersphere radius. Larger values \"smooth\" over batch effects but reduce resolution.\n- **`spatialFDR()`**: Always use this instead of `p.adjust()` to account for the spatial correlation of overlapping hyperspheres.\n- **`findFirstSphere()`**: Useful for reducing redundancy by selecting the \"peak\" hypersphere (lowest p-value) in a local area of significant results.\n- **`interpretSpheres()`**: Launches a Shiny app for interactive exploration of DA results.\n- **Batch Correction**: If samples were not barcoded/multiplexed, use `normalizeBatch` or `expandRadius` to mitigate technical shifts.\n\n## Reference documentation\n- [Detecting differentially abundant subpopulations in mass cytometry data](./references/cydar.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cydar",
+    "description": "bioconductor-cydar performs differential abundance analysis for mass cytometry data using a hypersphere-based counting approach. Use when user asks to identify differentially abundant cell subpopulations, perform spatial FDR control on high-dimensional cytometry data, or count cells in hyperspheres without clustering.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cydar.html"
+  }
+}

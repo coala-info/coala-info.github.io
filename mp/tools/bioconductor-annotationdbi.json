@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-annotationdbi",
+  "category": "bioconductor",
+  "name": "bioconductor-annotationdbi",
+  "description": "AnnotationDbi provides a unified interface for querying and mapping biological identifiers across SQLite-based Bioconductor annotation packages. Use when user asks to map between different biological identifiers, query organism-level or transcript-centric databases, or retrieve genomic feature information using the select interface.",
+  "overview": "AnnotationDbi provides a unified interface for interacting with SQLite-based annotation packages. It allows users to map biological identifiers across various databases using a consistent set of methods (`select`, `keys`, `columns`, and `keytypes`). It supports organism-level packages (e.g., `org.Hs.eg.db`), chip-specific packages (e.g., `hgu95av2.db`), and genomic feature packages (e.g., `TxDb` or `EnsDb`).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AnnotationDbi.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-annotationdbi/overview",
+  "github": "https://github.com/Bioconductor/AnnotationDbi",
+  "conda_downloads": "791.2K",
+  "conda_downloads_num": 791200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AnnotationDbi"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AnnotationDbi.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-annotationdbi/overview",
+    "github": "https://github.com/Bioconductor/AnnotationDbi",
+    "conda_downloads": "791.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-annotationdbi\n\nname: bioconductor-annotationdbi\ndescription: Interface for SQLite-based annotation data packages in Bioconductor. Use this skill when you need to map between different biological identifiers (e.g., Entrez, Symbol, Ensembl, GO, KEGG), query organism-level (OrgDb), platform-specific (ChipDb), or transcript-centric (TxDb/EnsDb) databases, or perform direct SQL queries on Bioconductor annotation objects.\n\n# bioconductor-annotationdbi\n\n## Overview\n\nAnnotationDbi provides a unified interface for interacting with SQLite-based annotation packages. It allows users to map biological identifiers across various databases using a consistent set of methods (`select`, `keys`, `columns`, and `keytypes`). It supports organism-level packages (e.g., `org.Hs.eg.db`), chip-specific packages (e.g., `hgu95av2.db`), and genomic feature packages (e.g., `TxDb` or `EnsDb`).\n\n## Core Workflow: The Select Interface\n\nThe modern recommended interface for all `AnnotationDb` objects consists of four primary methods.\n\n### 1. Discovery\nBefore querying, identify what data is available within the loaded annotation package.\n```r\nlibrary(org.Hs.eg.db)\n# See available data types (e.g., SYMBOL, ENSEMBL, GO)\ncolumns(org.Hs.eg.db)\n\n# See which types can be used as input keys\nkeytypes(org.Hs.eg.db)\n```\n\n### 2. Retrieving Keys\nExtract valid identifiers to use for lookups.\n```r\n# Get the first 10 Entrez IDs\nk <- head(keys(org.Hs.eg.db, keytype=\"ENTREZID\"))\n```\n\n### 3. Mapping Data (select)\nPerform the actual mapping between identifier types.\n```r\n# Map Entrez IDs to Symbols and Gene Names\nres <- select(org.Hs.eg.db, \n              keys = k, \n              columns = c(\"SYMBOL\", \"GENENAME\"), \n              keytype = \"ENTREZID\")\n```\n\n### 4. Simplified Mapping (mapIds)\nUse `mapIds` when you need a 1:1 mapping returned as a named vector or list instead of a data.frame.\n```r\n# Returns a named character vector\nsyms <- mapIds(org.Hs.eg.db, \n               keys = k, \n               column = \"SYMBOL\", \n               keytype = \"ENTREZID\", \n               multiVals = \"first\")\n```\n\n## Working with Different Database Types\n\n### Organism Packages (OrgDb)\nUsed for general gene-centric mappings (e.g., `org.Mm.eg.db` for Mouse).\n*   **Central ID:** Usually Entrez ID (`ENTREZID`) or Ensembl ID (`ENSEMBL`).\n\n### Chip/Platform Packages (ChipDb)\nUsed for mapping manufacturer-specific probe IDs to genes.\n*   **Central ID:** `PROBEID`.\n*   **Note:** These packages often depend on an OrgDb package for metadata.\n\n### Transcript Packages (TxDb/EnsDb)\nUsed for genomic coordinates and transcript-to-gene relationships.\n*   **Functions:** `transcripts()`, `exons()`, `cds()`, `transcriptsBy()`.\n*   **Columns:** `TXNAME`, `TXSTART`, `TXEND`, `EXONID`.\n\n## Advanced Usage\n\n### Direct SQL Access\nIf the standard interface is insufficient, you can access the underlying SQLite database directly.\n```r\n# Get the database connection\nconn <- org.Hs.eg_dbconn()\n\n# Run a custom SQL query\nquery <- \"SELECT gene_id, symbol FROM gene_info LIMIT 5\"\ndbGetQuery(conn, query)\n\n# View the database schema\norg.Hs.eg_dbschema()\n```\n\n### Attaching Multiple Databases\nSQLite allows \"attaching\" multiple databases to perform cross-package joins (e.g., joining a ChipDb with an OrgDb).\n```r\n# Get path to the organism database\ndb_path <- system.file(\"extdata\", \"org.Hs.eg.sqlite\", package=\"org.Hs.eg.db\")\n# Attach in SQL\ndbExecute(hgu95av2_dbconn(), paste0(\"ATTACH '\", db_path, \"' AS orgDB\"))\n```\n\n### Handling Multiple Probes\nSome probes map to multiple genes. Use `toggleProbes` to control visibility.\n```r\n# Show all mappings, including those that map to multiple targets\nmulti_map <- toggleProbes(hgu95av2ENTREZID, \"all\")\n```\n\n## Tips and Best Practices\n*   **Check for NAs:** Not all keys will have a mapping in every column. Use `isNA()` on Bimap objects or check for `NA` in `select()` results.\n*   **GO Evidence Codes:** When querying GO terms, the `EVIDENCE` column indicates the type of supporting evidence (e.g., IDA, IEA).\n*   **Reverse Mappings:** For older Bimap objects, use `revmap()` to swap the direction of the mapping (e.g., `revmap(hgu95av2SYMBOL)` to map Symbols to Probes).\n\n## Reference documentation\n- [How to use bimaps from the \".db\" annotation packages](./references/AnnotationDbi.md)\n- [AnnotationDbi: Introduction To Bioconductor Annotation Packages](./references/IntroToAnnotationPackages.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-annotationdbi",
+    "description": "AnnotationDbi provides a unified interface for querying and mapping biological identifiers across SQLite-based Bioconductor annotation packages. Use when user asks to map between different biological identifiers, query organism-level or transcript-centric databases, or retrieve genomic feature information using the select interface.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AnnotationDbi.html"
+  }
+}

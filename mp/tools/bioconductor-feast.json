@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-feast",
+  "category": "bioconductor",
+  "name": "bioconductor-feast",
+  "description": "FEAST selects the most informative genes for single-cell RNA-seq data to improve the accuracy of downstream cell clustering. Use when user asks to perform feature selection for scRNA-seq, rank genes by their ability to distinguish cell populations, or optimize gene sets for clustering algorithms like SC3 and TSCAN.",
+  "overview": "FEAST (FEAture SelecTion) is a Bioconductor package designed to improve scRNA-seq clustering by selecting the most informative genes before the clustering process. Unlike unsupervised methods based solely on statistical moments, FEAST uses a consensus clustering approach followed by F-statistics to rank genes by their ability to distinguish cell populations. It integrates well with established clustering algorithms like SC3 and TSCAN.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/FEAST.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-feast/overview",
+  "github": "https://github.com/suke18/FEAST",
+  "conda_downloads": "12.7K",
+  "conda_downloads_num": 12700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "FEAST"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/FEAST.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-feast/overview",
+    "github": "https://github.com/suke18/FEAST",
+    "conda_downloads": "12.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-feast\n\n## Overview\nFEAST (FEAture SelecTion) is a Bioconductor package designed to improve scRNA-seq clustering by selecting the most informative genes before the clustering process. Unlike unsupervised methods based solely on statistical moments, FEAST uses a consensus clustering approach followed by F-statistics to rank genes by their ability to distinguish cell populations. It integrates well with established clustering algorithms like SC3 and TSCAN.\n\n## Installation\n```r\nif(!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"FEAST\")\nlibrary(FEAST)\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nFEAST requires a count matrix (genes as rows, cells as columns) and the expected number of clusters `k`.\n```r\n# Preprocess to filter genes based on dropout rates\n# Y is a count matrix; thre is the zero-expression threshold\nY_processed = process_Y(Y, thre = 2)\n```\n\n### 2. Feature Selection (The FEAST Algorithm)\nThe simplest way to get gene rankings is using the wrapper functions.\n```r\n# Standard version for small/medium datasets\nixs = FEAST(Y_processed, k = k)\n\n# Fast version for large datasets (> 2000 cells)\n# Use dim_reduce = \"irlba\" for efficiency\nixs = FEAST_fast(Y_processed, k = k, dim_reduce = \"irlba\")\n\n# For extremely large datasets (> 5000 cells), use split mode\nixs = FEAST_fast(Y_processed, k = k, split = TRUE, batch_size = 1000)\n```\n\n### 3. Step-by-Step Manual Analysis\nFor more control, you can run the underlying steps individually:\n```r\n# Step A: Consensus clustering to get initial labels\ncon_res = Consensus(Y_processed, k = k)\n\n# Step B: Calculate gene-level significance using F-statistics\nF_res = cal_F2(Y_processed, con_res$cluster)\n\n# Step C: Rank genes (decreasing F-score)\nixs = order(F_res$F_scores, decreasing = TRUE)\n```\n\n### 4. Validation and Model Selection\nFEAST provides tools to determine the optimal number of top features (e.g., top 500 vs 1000) by calculating the Mean Squared Error (MSE).\n```r\n# Automated model selection using TSCAN or SC3\nmod_res = Select_Model_short_TSCAN(Y_processed, cluster = con_res$cluster, top = c(500, 1000, 2000))\n\n# Visualize the MSE vs Accuracy trend\nlibrary(ggpubr)\nres_plot = Visual_Rslt(model_cv_res = mod_res, trueclass = trueclass)\nprint(res_plot$ggobj)\n```\n\n## Key Functions\n- `FEAST()` / `FEAST_fast()`: Main wrappers to return ranked gene indices.\n- `process_Y()`: Filters genes based on dropout/zero-expression rates.\n- `Consensus()`: Performs initial clustering to provide labels for F-statistics.\n- `cal_MSE()`: Evaluates the quality of a feature set based on the average distance between cells and cluster centers.\n- `SC3_Clust()` / `TSCAN_Clust()`: Embedded wrappers for running these specific clustering algorithms within the FEAST workflow.\n\n## Tips\n- **Input Matrix**: While FEAST can take normalized matrices, it is optimized for count matrices where it can perform its own dropout-based filtering via `process_Y`.\n- **Choosing K**: The number of clusters `k` is a required input. If unknown, estimate it using prior biological knowledge or tools like `SC3`'s estimation function.\n- **Memory Management**: For datasets with more than 2,000 cells, always prefer `FEAST_fast` with `irlba` to avoid memory bottlenecks during dimension reduction.\n\n## Reference documentation\n- [The FEAST User's Guide](./references/FEAST.md)\n- [FEAST Vignette Source](./references/FEAST.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-feast",
+    "description": "FEAST selects the most informative genes for single-cell RNA-seq data to improve the accuracy of downstream cell clustering. Use when user asks to perform feature selection for scRNA-seq, rank genes by their ability to distinguish cell populations, or optimize gene sets for clustering algorithms like SC3 and TSCAN.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/FEAST.html"
+  }
+}

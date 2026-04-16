@@ -1,0 +1,58 @@
+{
+  "id": "khmer",
+  "category": "CLI",
+  "name": "khmer",
+  "description": "khmer provides memory-efficient tools for analyzing DNA shotgun sequencing data using probabilistic data structures. Use when user asks to perform digital normalization, filter reads by k-mer abundance, partition metagenomes, or interleave and extract paired-end reads.",
+  "overview": "The khmer software provides a suite of memory-efficient tools for analyzing DNA shotgun sequencing data. Its primary purpose is to manage the \"volume\" problem in bioinformatics by using probabilistic data structures (Bloom filters) to perform tasks like digital normalization and k-mer abundance filtering. By reducing the number of reads while preserving the underlying genomic information, khmer makes downstream assembly faster and less memory-intensive.",
+  "homepage": "https://khmer.readthedocs.io/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/khmer/overview",
+  "github": "https://github.com/dib-lab/khmer",
+  "conda_downloads": "101.4K",
+  "conda_downloads_num": 101400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "khmer",
+      "khmer_normalize-by-median.py",
+      "khmer_load-into-counting.py",
+      "khmer_filter-abund.py",
+      "khmer_load-graph.py",
+      "khmer_partition-graph.py",
+      "khmer_merge-partition.py",
+      "khmer_extract-partitions.py",
+      "khmer_interleave-reads.py",
+      "khmer_split-paired-reads.py",
+      "khmer_fastq-to-fasta.py"
+    ],
+    "description": "The provided text contains system error messages regarding a container runtime failure (no space left on device) and does not contain help documentation or usage instructions for the khmer tool.",
+    "docker_image": "quay.io/biocontainers/khmer:3.0.0a1--py36hfc679d8_0",
+    "homepage": "https://khmer.readthedocs.io/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/khmer/overview",
+    "github": "https://github.com/dib-lab/khmer",
+    "conda_downloads": "101.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "khmer_fastq-to-fasta.py.cwl",
+    "khmer_filter-abund.py.cwl",
+    "khmer_interleave-reads.py.cwl",
+    "khmer_partition-graph.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# khmer\n\n## Overview\n\nThe khmer software provides a suite of memory-efficient tools for analyzing DNA shotgun sequencing data. Its primary purpose is to manage the \"volume\" problem in bioinformatics by using probabilistic data structures (Bloom filters) to perform tasks like digital normalization and k-mer abundance filtering. By reducing the number of reads while preserving the underlying genomic information, khmer makes downstream assembly faster and less memory-intensive.\n\n## Core CLI Workflows\n\n### 1. Digital Normalization (DigiNorm)\nUse this to reduce high-coverage datasets to a manageable median coverage (e.g., 20x), which discards redundant data without losing information from low-coverage regions.\n\n*   **Normalize reads**:\n    `normalize-by-median.py -k 20 -C 20 -N 4 -x 1e9 reads.fq`\n    *   `-k`: K-mer size (default is often 20).\n    *   `-C`: Desired median coverage.\n    *   `-x`: Maximum hash table size (adjust based on available RAM).\n    *   `-N`: Number of hash tables.\n\n### 2. Abundance Filtering\nUse this to remove reads containing low-abundance k-mers, which are typically the result of sequencing errors.\n\n*   **Step A: Load k-mers into a counting table**:\n    `load-into-counting.py -k 20 -x 1e9 -N 4 table.ct reads.fq.keep`\n*   **Step B: Filter reads by abundance**:\n    `filter-abund.py table.ct reads.fq.keep`\n\n### 3. Partitioning Metagenomes\nUse this to divide large, complex datasets into smaller, independent groups of reads (partitions) that can be assembled separately.\n\n*   **Load and partition**:\n    1. `load-into-hashbits.py -k 32 -x 1e9 graph.ht reads.fq.gz`\n    2. `do-partition.py graph.ht reads.fq.gz`\n    3. `extract-partitions.py reads.fq.gz`\n\n## Paired-End Data Handling\n\nkhmer tools generally expect paired-end reads to be interleaved in a single file to ensure that pairs are kept together during normalization and filtering.\n\n*   **Interleave R1 and R2**:\n    `interleave-reads.py read1.fq read2.fq > interleaved.fq`\n*   **Extract paired reads after processing**:\n    `extract-paired-reads.py interleaved.fq.keep`\n\n## Expert Tips and Best Practices\n\n*   **Memory Estimation**: The `-x` parameter is critical. If you set it too low, the false positive rate of the Bloom filter increases, leading to over-aggressive filtering. Aim for a false positive rate below 1% (check the tool output for \"FP rate\").\n*   **K-mer Size**: For most applications, a k-mer size of 20–32 is standard. Metagenomic partitioning often benefits from larger k-mers (e.g., 32).\n*   **File Extensions**: khmer scripts often append suffixes to output files. For example, `normalize-by-median.py` produces `.keep` files, and `filter-abund.py` produces `.abundfilt` files.\n*   **Paired-End Integrity**: Always use `extract-paired-reads.py` after normalization or filtering to separate \"orphaned\" reads (where one mate was discarded) from properly paired reads. This is essential for assemblers like Velvet or Trinity.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| filter-abund.py | Filter sequences based on abundance using a k-prime countgraph. |\n| interleave-reads.py | Interleave left and right reads from paired-end sequencing files. |\n| khmer_fastq-to-fasta.py | Convert FASTQ files to FASTA format. |\n| khmer_partition-graph.py | Partition a k-mer graph (Compact De Bruijn Graph) into disconnected components. |\n\n## Reference documentation\n\n- [Pipelines](./references/github_com_dib-lab_khmer_wiki_Pipelines.md)\n- [Scripts and what they eat](./references/github_com_dib-lab_khmer_wiki_Scripts-and-what-they-eat.md)\n- [Conda Support](./references/github_com_dib-lab_khmer_wiki_Conda-Support.md)\n- [User Scripts Guide](./references/khmer_readthedocs_io_en_latest_user_scripts.html.md)",
+  "skill_front_matter": {
+    "name": "khmer",
+    "description": "khmer provides memory-efficient tools for analyzing DNA shotgun sequencing data using probabilistic data structures. Use when user asks to perform digital normalization, filter reads by k-mer abundance, partition metagenomes, or interleave and extract paired-end reads.",
+    "homepage": "https://khmer.readthedocs.io/"
+  }
+}

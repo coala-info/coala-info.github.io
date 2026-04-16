@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-appreci8r",
+  "category": "bioconductor",
+  "name": "bioconductor-appreci8r",
+  "description": "This tool filters and classifies SNVs and short indels by integrating results from multiple variant calling tools using the appreci8 algorithm. Use when user asks to combine outputs from multiple variant callers, normalize and annotate variants, or filter and classify SNVs and short indels.",
+  "overview": "The `appreci8R` package implements the \"appreci8\" algorithm for high-sensitivity and high-PPV variant filtering. It is designed to integrate results from an unlimited number of variant callers (e.g., GATK, VarScan, FreeBayes) and perform a multi-step filtration process. **Note: Currently, only hg19 is supported.**",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/appreci8R.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-appreci8r/overview",
+  "github": "N/A",
+  "conda_downloads": "19.1K",
+  "conda_downloads_num": 19100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "appreci8R"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/appreci8R.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-appreci8r/overview",
+    "github": "N/A",
+    "conda_downloads": "19.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-appreci8r\n\nname: bioconductor-appreci8r\ndescription: Expert guidance for the appreci8R Bioconductor package to filter SNVs and short indels. Use this skill when you need to combine outputs from multiple variant calling tools (GATK, VarScan, etc.), normalize variants, annotate them, and apply the 'appreci8' algorithm to classify calls as \"probably true\", \"polymorphism\", or \"artifact\".\n\n# bioconductor-appreci8r\n\n## Overview\nThe `appreci8R` package implements the \"appreci8\" algorithm for high-sensitivity and high-PPV variant filtering. It is designed to integrate results from an unlimited number of variant callers (e.g., GATK, VarScan, FreeBayes) and perform a multi-step filtration process. **Note: Currently, only hg19 is supported.**\n\n## Workflow and Key Functions\n\n### 1. Target Filtration (`filterTarget`)\nReads VCF or TXT files and excludes off-target calls based on a BED file or GRanges object.\n```r\ntarget <- data.frame(chr = c(\"2\", \"17\"), start = c(25469500, 7579470), end = c(25469510, 7579475))\n# Returns a list of data.frames (one per sample)\non_target <- filterTarget(output_folder = \"\", caller_name = \"GATK\", \n                          caller_folder = \"path/to/vcf\", \n                          caller_file_names_add = \".raw\", \n                          caller_file_type = \".vcf\", \n                          targetRegions = target)\n```\n\n### 2. Normalization (`normalize`)\nStandardizes indels, MNVs, and multiple alternate alleles.\n```r\n# caller_indels_pm: TRUE if deletions use \"-\" and insertions use \"+\"\n# caller_mnvs: TRUE if MNVs (e.g., CA > GT) should be split\nnorm_calls <- normalize(output_folder = \"\", caller_name = \"GATK\", \n                        target_calls = on_target, \n                        caller_indels_pm = FALSE, caller_mnvs = TRUE)\n```\n\n### 3. Annotation (`annotate`)\nAnnotates variants using `VariantAnnotation` and filters by location and consequence.\n```r\nannotated <- annotate(output_folder = \"\", caller_name = \"GATK\", \n                      normalized_calls = norm_calls,\n                      locations = c(\"coding\", \"spliceSite\"),\n                      consequences = c(\"nonsynonymous\", \"frameshift\", \"nonsense\"))\n```\n\n### 4. Output Combination (`combineOutput`)\nMerges results from different callers into a single GRanges object.\n```r\n# annotated_list is a GRangesList where each element is the output of annotate() for a specific caller\ncombined <- combineOutput(output_folder = \"\", \n                          caller_names = c(\"GATK\", \"VarScan\"), \n                          annotated_calls = annotated_list)\n```\n\n### 5. Coverage and Base Quality (`evaluateCovAndBQ`)\nUses BAM files to verify depth (DP), variant allele frequency (VAF), and base quality (BQ).\n```r\nfiltered <- evaluateCovAndBQ(output_folder = \"\", combined_calls = combined, \n                             bam_folder = \"path/to/bams\", \n                             dp = 50, nr_alt = 20, vaf = 0.01, bq = 15)\n```\n\n### 6. Characteristics Determination (`determineCharacteristics`)\nQueries databases (dbSNP, 1000G, ExAC, COSMIC, ClinVar) and predicts impact (SIFT, Provean, or PolyPhen2).\n```r\nchar_calls <- determineCharacteristics(output_folder = \"\", frequency_calls = filtered,\n                                       predict = \"Provean\", dbSNP = TRUE, cosmicDB = TRUE)\n```\n\n### 7. Final Filtration (`finalFiltration`)\nThe core \"appreci8\" step. It calculates artifact and polymorphism scores to categorize variants.\n```r\nfinal_results <- finalFiltration(output_folder = \"results\", \n                                 frequency_calls = filtered,\n                                 database_calls = char_calls,\n                                 combined_calls = combined,\n                                 overlapTools = c(\"VarScan\", \"GATK\"),\n                                 vaf = 0.01, artifactThreshold = 0)\n```\n\n## GUI Mode\nFor an interactive experience, use the Shiny interface:\n```r\nappreci8Rshiny()\n```\n\n## Tips for Success\n- **Sample Naming**: Ensure BAM file names match the sample names derived from the VCF/TXT files.\n- **Checkpoints**: When using the GUI, you can restart from specific steps (checkpoints) if the analysis is interrupted.\n- **Hotspots**: Provide a hotspot data.frame to `finalFiltration` to prevent known clinical variants from being filtered as artifacts.\n- **Strand Bias**: The package automatically performs Fisher's Exact Test on forward/reverse reads during the final filtration step.\n\n## Reference documentation\n- [appreci8R – an R/Bioconductor package for filtering SNVs and short indels](./references/appreci8R.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-appreci8r",
+    "description": "This tool filters and classifies SNVs and short indels by integrating results from multiple variant calling tools using the appreci8 algorithm. Use when user asks to combine outputs from multiple variant callers, normalize and annotate variants, or filter and classify SNVs and short indels.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/appreci8R.html"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "metamlst",
+  "category": "CLI",
+  "name": "metamlst",
+  "description": "MetaMLST performs in-silico reconstruction of Multi-Locus Sequence Typing loci directly from raw shotgun metagenomic sequencing reads for high-resolution strain tracking. Use when user asks to identify known microbial strains, detect novel sequence types, or prepare concatenated loci sequences for phylogenomic studies.",
+  "overview": "MetaMLST is a computational pipeline designed for high-resolution strain tracking within metagenomic datasets. Unlike traditional methods that require isolate cultivation or metagenomic assembly, MetaMLST performs in-silico reconstruction of MLST loci directly from raw shotgun sequencing reads. Use this skill to identify known microbial strains, detect novel sequence types (STs), and prepare data for downstream phylogenomic studies. It is specifically applicable to shotgun metagenomics and canno",
+  "homepage": "https://github.com/SegataLab/metamlst",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/metamlst/overview",
+  "github": "https://github.com/SegataLab/metamlst",
+  "conda_downloads": "4.8K",
+  "conda_downloads_num": 4800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metamlst_metamlst-index.py",
+      "metamlst_metamlst.py",
+      "metamlst_metamlst-merge.py"
+    ],
+    "description": "Builds and manages the MetaMLST SQLite Databases",
+    "docker_image": "quay.io/biocontainers/metamlst:1.2.3--hdfd78af_0",
+    "homepage": "https://github.com/SegataLab/metamlst",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/metamlst/overview",
+    "github": "https://github.com/SegataLab/metamlst",
+    "conda_downloads": "4.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "metamlst_metamlst-index.py.cwl",
+    "metamlst_metamlst-merge.py.cwl",
+    "metamlst_metamlst.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# metamlst\n\n## Overview\n\nMetaMLST is a computational pipeline designed for high-resolution strain tracking within metagenomic datasets. Unlike traditional methods that require isolate cultivation or metagenomic assembly, MetaMLST performs in-silico reconstruction of MLST loci directly from raw shotgun sequencing reads. Use this skill to identify known microbial strains, detect novel sequence types (STs), and prepare data for downstream phylogenomic studies. It is specifically applicable to shotgun metagenomics and cannot be used with 16S rRNA amplicon data.\n\n## Core Workflow\n\n### 1. Database and Index Preparation\nBefore processing samples, you must prepare the MetaMLST database and a corresponding Bowtie2 index. MetaMLST automatically handles the download of the default database (e.g., metamlstDB_2021) if a custom one is not provided.\n\n**Build the Bowtie2 index:**\n```bash\nmetamlst-index.py -i <index_prefix>\n```\n\n**Create a custom database (Optional):**\nIf using specific sequences or typing files from PubMLST:\n```bash\n# Initialize DB with sequences and types\nmetamlst-index.py -s sequences.fasta -t typings.txt -d custom_db.db\n\n# Build index from the custom DB\nmetamlst-index.py -i custom_index -d custom_db.db\n```\n\n### 2. Read Mapping\nMap raw FASTQ reads against the MetaMLST index. MetaMLST requires specific Bowtie2 settings to ensure sensitive alignment of loci.\n\n```bash\nbowtie2 --very-sensitive-local -a --no-unal -x <index_prefix> -U <input.fastq> | samtools view -bS - > <sample_alignments.bam>\n```\n*Note: Use `-1` and `-2` for paired-end reads if applicable.*\n\n### 3. Loci Reconstruction\nProcess the resulting BAM file to detect microbial species and reconstruct sample-specific MLST sequences.\n\n```bash\nmetamlst.py <sample_alignments.bam> -o ./out_directory/\n```\n*Expert Tip: Run this command for every sample in your study, directing all outputs to the same parent directory for easier merging.*\n\n### 4. Multi-Sample Merging and ST Calling\nAggregate results from all processed samples to call Sequence Types and generate comparative reports.\n\n```bash\nmetamlst-merge.py ./out_directory/\n```\n\n**Advanced Merging Options:**\n*   **Metadata Integration:** Add external metadata to the final report.\n    ```bash\n    metamlst-merge.py --meta metadata.txt ./out_directory/\n    ```\n*   **Phylogenetic Output:** Generate concatenated loci sequences in FASTA format for tree building (e.g., with RAxML).\n    ```bash\n    metamlst-merge.py --outseqformat A ./out_directory/\n    ```\n\n## Best Practices and Interpretation\n\n*   **Novel ST Identification:** MetaMLST labels novel loci or new combinations of known loci with IDs starting at 100001. Treat these as potentially new strains unique to your dataset.\n*   **Sensitivity:** Always use the `--very-sensitive-local` flag in Bowtie2. MLST loci reconstruction depends on capturing as many relevant reads as possible, even those with minor variations.\n*   **Output Files:**\n    *   `*_report.txt`: Summary of detected species and their assigned STs.\n    *   `*_ST.txt`: Updated typing table including newly identified profiles.\n    *   `*_sequences.fna`: Reconstructed sequences (if requested via `--outseqformat`).\n*   **Database Updates:** Use `metamlst-index.py` to incorporate results from previous runs back into your master database to maintain consistency across longitudinal studies.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| metamlst.py | Reconstruct the MLST loci from a BAMFILE aligned to the reference MLST loci |\n| metamlst_metamlst-index.py | Builds and manages the MetaMLST SQLite Databases |\n| metamlst_metamlst-merge.py | Detects the MLST profiles from a collection of intermediate files from MetaMLST.py |\n\n## Reference documentation\n- [MetaMLST Wiki Home](./references/github_com_SegataLab_metamlst_wiki.md)\n- [metamlst-index Documentation](./references/github_com_SegataLab_metamlst_wiki_metamlst-index.md)\n- [metamlst Sample Processing](./references/github_com_SegataLab_metamlst_wiki_metamlst.md)\n- [metamlst-merge Comparative Analysis](./references/github_com_SegataLab_metamlst_wiki_metamlst-merge.md)\n- [MetaMLST Usage Examples](./references/github_com_SegataLab_metamlst_wiki_Examples.md)",
+  "skill_front_matter": {
+    "name": "metamlst",
+    "description": "MetaMLST performs in-silico reconstruction of Multi-Locus Sequence Typing loci directly from raw shotgun metagenomic sequencing reads for high-resolution strain tracking. Use when user asks to identify known microbial strains, detect novel sequence types, or prepare concatenated loci sequences for phylogenomic studies.",
+    "homepage": "https://github.com/SegataLab/metamlst"
+  }
+}

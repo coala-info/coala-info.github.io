@@ -1,0 +1,59 @@
+{
+  "id": "pstools",
+  "category": "CLI",
+  "name": "pstools",
+  "description": "pstools produces base-level resolution haplotypes from genomic assembly graphs by integrating Hi-Fi long reads and Hi-C proximity ligation data. Use when user asks to map Hi-C reads to assembly graphs, resolve assembly graphs into phased haplotypes, or calculate assembly quality metrics like QV and switch error rates.",
+  "overview": "`pstools` is a specialized bioinformatics suite designed to produce base-level resolution haplotypes from genomic assembly graphs. It primarily bridges the gap between high-fidelity long reads (HiFi) and proximity ligation data (Hi-C). By utilizing a graph-based algorithm, it resolves ambiguities in assembly graphs (like those produced by hifiasm) to output two distinct phased haplotype sets. It is optimized for speed and accuracy, capable of processing human-scale genomes in under 12 hours with",
+  "homepage": "https://github.com/shilpagarg/pstools",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pstools/overview",
+  "github": "https://github.com/shilpagarg/pstools",
+  "conda_downloads": "3.5K",
+  "conda_downloads_num": 3500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pstools_clean_graph",
+      "pstools_intersect",
+      "pstools_resolve_haplotypes",
+      "pstools_haplotype_scaffold",
+      "pstools_hic_mapping_unitig",
+      "pstools_hic_mapping_haplo",
+      "pstools_qv",
+      "pstools_completeness",
+      "pstools_phasing_error"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/pstools:0.2a3--h077b44d_4",
+    "homepage": "https://github.com/shilpagarg/pstools",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pstools/overview",
+    "github": "https://github.com/shilpagarg/pstools",
+    "conda_downloads": "3.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pstools_completeness.cwl",
+    "pstools_haplotype_scaffold.cwl",
+    "pstools_hic_mapping_haplo.cwl",
+    "pstools_hic_mapping_unitig.cwl",
+    "pstools_phasing_error.cwl",
+    "pstools_qv.cwl",
+    "pstools_resolve_haplotypes.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pstools\n\n## Overview\n`pstools` is a specialized bioinformatics suite designed to produce base-level resolution haplotypes from genomic assembly graphs. It primarily bridges the gap between high-fidelity long reads (HiFi) and proximity ligation data (Hi-C). By utilizing a graph-based algorithm, it resolves ambiguities in assembly graphs (like those produced by hifiasm) to output two distinct phased haplotype sets. It is optimized for speed and accuracy, capable of processing human-scale genomes in under 12 hours with high sequence continuity (NG50 > 130 Mb).\n\n## Core Workflow\n\n### 1. Data Preparation\nBefore using `pstools`, you must have an assembly graph (GFA) and corresponding Hi-C reads. You must first extract the node sequences from your GFA file into a FASTA format.\n\n```bash\n# Extract sequences from a hifiasm unitig graph\nawk '/^S/{print \">\"$2;print $3}' hifiasm_r_utg.gfa > hifiasm_r_utg.fa\n```\n\n### 2. Hi-C Mapping\nThe `hic_mapping` command aligns Hi-C paired-end reads to the extracted unitig sequences.\n\n```bash\npstools hic_mapping -t <threads> -o <map.out> <unitigs.fa> <hic_R1.fastq.gz> <hic_R2.fastq.gz>\n```\n*   **-t**: Number of threads (e.g., 32).\n*   **-o**: Output file for the mapping results.\n\n### 3. Haplotype Resolution\nThe `resolve_haplotypes` command uses the mapping data and the original GFA structure to produce the final phased sequences.\n\n```bash\npstools resolve_haplotypes -t <threads> -i true <map.out> <hifiasm_r_utg.gfa> <output_dir>\n```\n*   **-i true**: Enables specific graph integration logic.\n*   **Output**: This generates `pred_hap1.fa` and `pred_hap2.fa` in the specified output directory.\n\n## Command Reference and Utilities\n\n| Command | Purpose |\n| :--- | :--- |\n| `hic_mapping` | Maps Hi-C reads to assembly graph nodes. |\n| `resolve_haplotypes` | Resolves the assembly graph into two phased haplotypes. |\n| `hic_qv` | Calculates the Quality Value (QV) of the assembly using Hi-C data. |\n| `hic_completeness` | Evaluates the completeness of the phased sequences. |\n| `hic_switch_error` | Measures switch and Hamming error rates in the haplotypes. |\n\n## Expert Tips and Best Practices\n*   **Graph Input**: Ensure you use the `r_utg` (raw unitig) graph from hifiasm for the best resolution, as processed graphs may have collapsed variations that `pstools` needs to see.\n*   **Performance**: For a standard human genome (~3Gb), allocating 32-48 threads typically results in a 5-hour runtime for the mapping phase.\n*   **Memory**: Ensure your system has sufficient RAM to hold the assembly graph and the k-mer hash tables used during mapping.\n*   **Limitations**: Be aware that current versions of `pstools` may not fully resolve centromeric regions and do not currently incorporate Ultra-Long (UL) Nanopore data.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| pstools completeness | Calculate completeness using Hi-C data and a sequence file |\n| pstools haplotype_scaffold | Haplotype scaffolding tool using connection files and predicted haplotypes |\n| pstools hic_mapping_haplo | Map Hi-C reads to predicted haplotypes |\n| pstools hic_mapping_unitig | Map Hi-C reads to unitig graphs |\n| pstools phasing_error | Calculate phasing errors using haplotype assemblies and Hi-C data |\n| pstools qv | Calculate QV (Quality Value) using Hi-C data and a sequence file |\n| pstools resolve_haplotypes | Resolve haplotypes using Hi-C mapping and GFA files |\n\n## Reference documentation\n- [github_com_shilpagarg_pstools_blob_main_README.md](./references/github_com_shilpagarg_pstools_blob_main_README.md)\n- [github_com_shilpagarg_pstools_blob_main_Makefile.md](./references/github_com_shilpagarg_pstools_blob_main_Makefile.md)",
+  "skill_front_matter": {
+    "name": "pstools",
+    "description": "pstools produces base-level resolution haplotypes from genomic assembly graphs by integrating Hi-Fi long reads and Hi-C proximity ligation data. Use when user asks to map Hi-C reads to assembly graphs, resolve assembly graphs into phased haplotypes, or calculate assembly quality metrics like QV and switch error rates.",
+    "homepage": "https://github.com/shilpagarg/pstools"
+  }
+}

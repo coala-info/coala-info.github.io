@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-iseepathways",
+  "category": "bioconductor",
+  "name": "bioconductor-iseepathways",
+  "description": "\"iSEEpathways provides interactive visualization panels for pathway analysis results within the iSEE ecosystem. Use when user asks to visualize gene set enrichment results, browse pathway tables interactively, or link pathway selections to feature-level plots.\"",
+  "overview": "`iSEEpathways` is a Bioconductor package that extends the `iSEE` (Interactive SummarizedExperiment Explorer) ecosystem to support pathway analysis results. It provides specialized panels to visualize gene set enrichment, browse pathway tables, and link pathway selections to feature-level visualizations (like Volcano plots or Heatmaps). It is particularly designed to work with `fgsea` results but can be adapted for other pathway analysis frameworks.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/iSEEpathways.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iseepathways/overview",
+  "github": "https://github.com/iSEE/iSEEpathways",
+  "conda_downloads": "1.6K",
+  "conda_downloads_num": 1600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iSEEpathways"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iSEEpathways.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iseepathways/overview",
+    "github": "https://github.com/iSEE/iSEEpathways",
+    "conda_downloads": "1.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-iseepathways\n\n## Overview\n\n`iSEEpathways` is a Bioconductor package that extends the `iSEE` (Interactive SummarizedExperiment Explorer) ecosystem to support pathway analysis results. It provides specialized panels to visualize gene set enrichment, browse pathway tables, and link pathway selections to feature-level visualizations (like Volcano plots or Heatmaps). It is particularly designed to work with `fgsea` results but can be adapted for other pathway analysis frameworks.\n\n## Core Workflow\n\n### 1. Prepare Data and Run Pathway Analysis\nBefore using `iSEEpathways`, you typically perform a differential expression analysis and a gene set enrichment analysis (GSEA).\n\n```r\nlibrary(iSEEpathways)\nlibrary(fgsea)\nlibrary(SummarizedExperiment)\n\n# Assume 'se' is your SummarizedExperiment and 'stats' is a named vector of gene scores\n# 'pathways_list' is a list of gene sets (e.g., from MSigDB or GO)\nfgseaRes <- fgsea(pathways = pathways_list, stats = stats, minSize = 15, maxSize = 500)\nfgseaRes <- fgseaRes[order(pval), ]\n```\n\n### 2. Embed Results into the Object\nUse `embedPathwaysResults` to store the enrichment data within the `SummarizedExperiment` object's metadata.\n\n```r\nse <- embedPathwaysResults(\n    fgseaRes, \n    se, \n    name = \"my_fgsea_results\", \n    class = \"fgsea\", \n    pathwayType = \"GO\", \n    pathwaysList = pathways_list, \n    featuresStats = stats\n)\n```\n\n### 3. Configure Interactive Panels\n`iSEEpathways` provides specific panel classes:\n- `PathwaysTable()`: Displays a searchable table of enrichment results.\n- `FgseaEnrichmentPlot()`: Displays the classic GSEA \"mountain\" plot for a selected pathway.\n\n```r\nlibrary(iSEE)\n\ninitial_state <- list(\n    PathwaysTable(ResultName = \"my_fgsea_results\", Selected = \"GO:0046324\", PanelWidth = 6L),\n    FgseaEnrichmentPlot(ResultName = \"my_fgsea_results\", PathwayId = \"GO:0046324\", PanelWidth = 6L)\n)\n\napp <- iSEE(se, initial = initial_state)\n```\n\n## Advanced Integration and Optimization\n\n### Mapping Pathways to Features\nTo allow a selection in a `PathwaysTable` to filter genes in other panels (e.g., a `VolcanoPlot`), you must register a mapping function.\n\n```r\n# Example using a list stored in metadata for speed\nmetadata(se)[[\"pathways\"]] <- list(GO = pathways_list)\n\nmap_fun <- function(pathway_id, se) {\n    pathway_list <- metadata(se)[[\"pathways\"]][[\"GO\"]]\n    pathway_list[[pathway_id]]\n}\n\nse <- registerAppOptions(se, Pathways.map.functions = list(GO = map_fun))\n```\n\n### Customizing Pathway Details\nYou can define a function to display rich HTML metadata (like GO definitions) when a pathway is selected in the UI.\n\n```r\nlibrary(shiny)\nlibrary(GO.db)\n\ngo_details <- function(x) {\n    info <- select(GO.db, x, c(\"TERM\", \"DEFINITION\"), \"GOID\")\n    tagList(\n        p(strong(info$GOID), \": \", info$TERM),\n        p(info$DEFINITION)\n    )\n}\n\nse <- registerAppOptions(se, PathwaysTable.select.details = go_details)\n```\n\n## Tips for Performance\n- **Pre-sort results**: Sort your `fgseaRes` by p-value before embedding to define the default app view.\n- **Memory vs. Speed**: Storing the `pathwaysList` directly in the `SummarizedExperiment` metadata and using a simple list-lookup function is significantly faster than querying SQLite databases (like `org.Hs.eg.db`) inside the Shiny app.\n\n## Reference documentation\n\n- [Working with the Gene Ontology](./references/gene-ontology.md)\n- [Introduction to iSEEpathways](./references/iSEEpathways.md)\n- [Integration with other panels](./references/integration.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-iseepathways",
+    "description": "iSEEpathways provides interactive visualization panels for pathway analysis results within the iSEE ecosystem. Use when user asks to visualize gene set enrichment results, browse pathway tables interactively, or link pathway selections to feature-level plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iSEEpathways.html"
+  }
+}

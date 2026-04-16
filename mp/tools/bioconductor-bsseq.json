@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bsseq",
+  "category": "bioconductor",
+  "name": "bioconductor-bsseq",
+  "description": "This tool analyzes whole-genome bisulfite sequencing data using the BSmooth algorithm to estimate methylation profiles. Use when user asks to create BSseq objects, perform smoothing, compute t-statistics, identify differentially methylated regions, or visualize methylation data.",
+  "overview": "The `bsseq` package is the reference implementation of the BSmooth algorithm for analyzing WGBS data. It is designed to handle large-scale methylation data by using smoothing to obtain reliable methylation estimates from low-coverage sequencing. The package supports in-memory processing and HDF5-backed objects for large datasets, allowing for the identification of differentially methylated regions (DMRs) across biological replicates.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/bsseq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bsseq/overview",
+  "github": "https://github.com/kasperdanielhansen/bsseq",
+  "conda_downloads": "59.0K",
+  "conda_downloads_num": 59000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bsseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bsseq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bsseq/overview",
+    "github": "https://github.com/kasperdanielhansen/bsseq",
+    "conda_downloads": "59.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bsseq\n\nname: bioconductor-bsseq\ndescription: Analysis of whole-genome bisulfite sequencing (WGBS) data using the BSmooth algorithm. Use this skill to create BSseq objects, perform smoothing, compute t-statistics, identify differentially methylated regions (DMRs), and visualize methylation profiles.\n\n## Overview\n\nThe `bsseq` package is the reference implementation of the BSmooth algorithm for analyzing WGBS data. It is designed to handle large-scale methylation data by using smoothing to obtain reliable methylation estimates from low-coverage sequencing. The package supports in-memory processing and HDF5-backed objects for large datasets, allowing for the identification of differentially methylated regions (DMRs) across biological replicates.\n\n## Core Workflow\n\n### 1. Data Import and Object Creation\nThe primary data structure is the `BSseq` object, which contains genomic positions, M-values (methylated reads), and Cov-values (total coverage).\n\n```r\nlibrary(bsseq)\n\n# Manual construction\nM <- matrix(c(17, 20, 4, 20), ncol = 2)\nCov <- matrix(c(18, 23, 11, 28), ncol = 2)\nbs_obj <- BSseq(chr = c(\"chr22\", \"chr22\"), pos = c(14430632, 14430677),\n                M = M, Cov = Cov, sampleNames = c(\"r1\", \"r2\"))\n\n# Reading from Bismark (HDF5 recommended for large files)\n# bismark_files <- c(\"sample1.txt\", \"sample2.txt\")\n# bs_obj <- read.bismark(bismark_files, BACKEND = \"HDF5Array\")\n```\n\n### 2. Data Manipulation\n- **Subsetting**: Use `bs_obj[i, j]` for loci (i) and samples (j), or `subsetByOverlaps(bs_obj, granges)`.\n- **Combining**: Use `combine(obj1, obj2)` to merge samples or loci.\n- **Collapsing**: Use `collapseBSseq(bs_obj, group)` to sum coverage across technical replicates.\n- **Accessors**: `getCoverage(bs_obj, type = \"M\")`, `getMeth(bs_obj, type = \"raw\")`.\n\n### 3. Smoothing with BSmooth\nSmoothing estimates the underlying methylation profile. This is computationally intensive and supports parallelization.\n\n```r\n# Smoothing a single sample or small object\nbs_fit <- BSmooth(bs_obj, verbose = TRUE)\n\n# Parallel smoothing (not supported on Windows)\n# bs_fit <- BSmooth(bs_obj, mc.cores = 4, parallelBy = \"sample\")\n```\n\n### 4. Differential Methylation Analysis\nAfter smoothing, filter low-coverage loci before computing t-statistics to reduce false positives.\n\n```r\n# Filter: keep loci with >= 2x coverage in at least 2 samples per group\nkeepLoci <- which(rowSums(getCoverage(bs_fit)[, group1] >= 2) >= 2 &\n                  rowSums(getCoverage(bs_fit)[, group2] >= 2) >= 2)\nbs_filt <- bs_fit[keepLoci,]\n\n# Compute t-statistics\n# local.correct = TRUE is recommended for cancer data (large-scale changes)\nbs_tstat <- BSmooth.tstat(bs_filt, \n                          group1 = c(\"C1\", \"C2\"), \n                          group2 = c(\"N1\", \"N2\"),\n                          estimate.var = \"group2\", \n                          local.correct = TRUE)\n\n# Find DMRs\ndmrs <- dmrFinder(bs_tstat, cutoff = c(-4.6, 4.6))\n# Filter DMRs by number of CpGs and mean difference\ndmrs_final <- subset(dmrs, n >= 3 & abs(meanDiff) >= 0.1)\n```\n\n### 5. Visualization\nVisualize specific regions or DMRs to validate results.\n\n```r\n# Add colors to phenoData for plotting\npData(bs_fit)$col <- c(\"red\", \"red\", \"blue\", \"blue\")\n\n# Plot a single region\nplotRegion(bs_fit, dmrs_final[1,], extend = 5000, addRegions = dmrs_final)\n\n# Plot many regions to a PDF\n# plotManyRegions(bs_fit, dmrs_final[1:50,], extend = 5000)\n```\n\n## Handling Large Datasets (HDF5)\nFor datasets exceeding available RAM, use HDF5-backed objects.\n\n```r\nlibrary(HDF5Array)\n# Convert in-memory object to HDF5\nsaveHDF5SummarizedExperiment(bs_obj, dir = \"my_bsseq_h5\")\n\n# Load HDF5 object\nbs_h5 <- loadHDF5SummarizedExperiment(dir = \"my_bsseq_h5\")\n```\n\n## Reference documentation\n- [The bsseq User's Guide](./references/bsseq.md)\n- [Analyzing WGBS with the bsseq package](./references/bsseq_analysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bsseq",
+    "description": "This tool analyzes whole-genome bisulfite sequencing data using the BSmooth algorithm to estimate methylation profiles. Use when user asks to create BSseq objects, perform smoothing, compute t-statistics, identify differentially methylated regions, or visualize methylation data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bsseq.html"
+  }
+}

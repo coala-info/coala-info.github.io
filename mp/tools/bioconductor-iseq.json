@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-iseq",
+  "category": "bioconductor",
+  "name": "bioconductor-iseq",
+  "description": "Bioconductor-iseq performs ChIP-seq peak calling using Bayesian hierarchical modeling and Hidden Ising Models. Use when user asks to analyze ChIP-seq data, aggregate sequence tags into dynamic bins, model tag counts, or identify enriched regions using posterior probabilities.",
+  "overview": "The `iSeq` package provides a three-step workflow for ChIP-seq peak calling:\n1. **Data Aggregation**: Merging sequence tags into non-overlapping dynamic bins using `mergetag`.\n2. **Statistical Modeling**: Applying Hidden Ising Models (via `iSeq1` for fully Bayesian or `iSeq2` for high-order models) to estimate the probability of enrichment for each bin.\n3. **Peak Calling**: Merging enriched bins into regions and calculating peak statistics using `peakreg`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/iSeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iseq/overview",
+  "github": "N/A",
+  "conda_downloads": "45.5K",
+  "conda_downloads_num": 45500,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iSeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iseq/overview",
+    "github": "N/A",
+    "conda_downloads": "45.5K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-iseq\n\nname: bioconductor-iseq\ndescription: Bayesian hierarchical modeling of ChIP-seq data using Hidden Ising Models. Use this skill to analyze ChIP-seq data (with or without controls/replicates) by building dynamic signal profiles, modeling tag counts with Poisson-Gamma distributions, and calling enriched regions (peaks) based on posterior probabilities.\n\n## Overview\nThe `iSeq` package provides a three-step workflow for ChIP-seq peak calling:\n1. **Data Aggregation**: Merging sequence tags into non-overlapping dynamic bins using `mergetag`.\n2. **Statistical Modeling**: Applying Hidden Ising Models (via `iSeq1` for fully Bayesian or `iSeq2` for high-order models) to estimate the probability of enrichment for each bin.\n3. **Peak Calling**: Merging enriched bins into regions and calculating peak statistics using `peakreg`.\n\n## Typical Workflow\n\n### 1. Data Preparation\nLoad the library and prepare tag data. Tags should be in a data frame with columns: `chr`, `position` (5' start), and `strand`. It is recommended to use the tag middle position.\n\n```r\nlibrary(iSeq)\n# Example: Adjusting 25bp tags to middle position\nchip[,2] <- chip[,2] + 12\nmock[,2] <- mock[,2] + 12\n```\n\n### 2. Build Dynamic Signal Profiles\nUse `mergetag` to create bins. The bin size varies based on local tag density.\n- `maxlen`: Maximum bin size (e.g., 80).\n- `minlen`: Minimum bin size (e.g., 10).\n- `ntagcut`: Threshold for triggering bin size change (adjust based on sequencing depth).\n\n```r\ntagct <- mergetag(chip=chip, control=mock, maxlen=80, minlen=10, ntagcut=10)\n# tagct columns: chr, gstart, gend, adjct, ipct1, ipct2, conct1, conct2\n```\n\n### 3. Model Fitting\nChoose between `iSeq1` (standard 1D Ising model) or `iSeq2` (fixed interaction parameter).\n\n**Using iSeq1 (Fully Bayesian):**\n```r\nset.seed(777)\nres1 <- iSeq1(Y=tagct[tagct$chr==\"chr22\", 1:4], gap=200, burnin=200, sampling=1000)\n# Check convergence\nplot(res1$lambda1, type=\"l\")\n```\n\n**Using iSeq2 (High-order/Fixed k):**\nUse `iSeq2` if data is noisy or `iSeq1` fails to reach the super-paramagnetic phase.\n```r\nres2 <- iSeq2(Y=tagct[tagct$chr==\"chr22\", 1:4], winsize=2, k=1.0, burnin=100, sampling=500)\n```\n\n### 4. Calling Enriched Regions\nUse `peakreg` to merge bins into peaks based on a posterior probability (pp) or FDR cutoff.\n- `method=\"ppcut\"`: Uses a direct probability threshold (e.g., 0.5).\n- `method=\"fdrcut\"`: Uses a False Discovery Rate threshold (e.g., 0.05).\n\n```r\n# Call peaks using 0.5 posterior probability cutoff\nreg <- peakreg(chrpos=tagct[tagct$chr==\"chr22\", 1:3], \n               count=(tagct$ipct1 - tagct$conct1), \n               pp=res1$pp, cutoff=0.5, method=\"ppcut\", maxgap=200)\n\n# Results include: peakpos (exact binding site), meanpp, and sym (symmetry/bimodality)\n```\n\n## Tips and Interpretation\n- **Symmetry (sym)**: Values range from 0 to 0.5. A value of 0.5 indicates perfect symmetry between forward and reverse tags, a hallmark of true binding sites.\n- **Convergence**: Always check trace plots for `lambda0`, `lambda1`, and `kappa`. If a trend is visible, increase `burnin` and `sampling`.\n- **No Enriched Regions**: If `lambda1` is very small (close to the prior mean) or all posterior probabilities are near zero, the chromosome likely lacks significant binding sites.\n- **Parallelization**: For large datasets, use `snowfall` to run `iSeq1` or `iSeq2` across chromosomes in parallel.\n\n## Reference documentation\n- [iSeq: Bayesian Hierarchical Modeling of ChIP-seq Data Through Hidden Ising Models](./references/iSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-iseq",
+    "description": "Bioconductor-iseq performs ChIP-seq peak calling using Bayesian hierarchical modeling and Hidden Ising Models. Use when user asks to analyze ChIP-seq data, aggregate sequence tags into dynamic bins, model tag counts, or identify enriched regions using posterior probabilities.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iSeq.html"
+  }
+}

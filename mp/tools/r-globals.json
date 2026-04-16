@@ -1,0 +1,41 @@
+{
+  "id": "r-globals",
+  "category": "R",
+  "name": "r-globals",
+  "description": "This tool identifies global objects and functions in R expressions through static code analysis. Use when user asks to identify free variables, find dependencies for parallel execution, or determine which objects must be exported to external R workers.",
+  "overview": "The `globals` package provides a robust way to identify global objects in R expressions by performing static code analysis. It is a core dependency for the `future` framework but can be used independently to audit code for \"unknown\" symbols. It supports different search strategies (conservative vs. liberal) and can automatically resolve the values of identified globals.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-globals\n\nname: r-globals\ndescription: Identify global (free) objects and functions in R expressions. Use this skill when you need to determine which variables, functions, and packages must be exported to external R workers (e.g., in parallel or distributed computing) to ensure an expression can be evaluated successfully in a different environment.\n\n## Overview\n\nThe `globals` package provides a robust way to identify global objects in R expressions by performing static code analysis. It is a core dependency for the `future` framework but can be used independently to audit code for \"unknown\" symbols. It supports different search strategies (conservative vs. liberal) and can automatically resolve the values of identified globals.\n\n## Installation\n\n```r\ninstall.packages(\"globals\")\n```\n\n## Core Functions\n\n### Identifying Globals\nThe primary function is `globalsOf()`, which identifies and retrieves the values of global objects.\n\n```r\nlibrary(globals)\n\n# Define some objects in the global environment\na <- 1\nf <- function(x) x + a\n\n# Identify globals in an expression\nexpr <- quote(f(10) + b)\nglobals <- globalsOf(expr, envir = parent.frame())\n\n# View identified names\nnames(globals)\n# [1] \"f\" \"a\" \"+\"\n\n# Note: 'b' is not found if it doesn't exist in the environment, \n# but it is identified as a global.\n```\n\n### Finding Global Names\nIf you only need the names of the globals without their values, use `findGlobals()`:\n\n```r\n# Returns a character vector of names\nnames <- findGlobals(expr, method = \"ordered\")\n```\n\n### Cleanup and Export\n`cleanup()` can be used to remove globals that are part of standard R packages to keep the export list lean.\n\n```r\nglobals <- globalsOf(expr)\nglobals <- cleanup(globals)\n```\n\n## Search Strategies\n\nThe `method` argument (in `findGlobals`) or `dotdotdot` argument (in `globalsOf`) controls how aggressively the package searches for globals:\n\n- **ordered**: (Default) A full-search strategy that follows the order of the code.\n- **conservative**: Only identifies objects that are clearly used as globals; less likely to pick up false positives in complex formulas.\n- **liberal**: More aggressive; identifies anything that might be a global.\n- **deep-first search**: Recursively explores functions within the expression.\n\n## Workflows\n\n### Preparing for Parallel Execution\nWhen manually setting up a cluster or a parallel socket, use `globalsOf` to ensure the worker has everything it needs.\n\n```r\nlibrary(globals)\n\n# 1. Identify all globals needed for a function\nmy_task <- function(x) {\n  res <- some_external_val * x\n  return(helper_func(res))\n}\n\nglobals <- globalsOf(my_task, recursive = TRUE)\n\n# 2. Filter out base R functions to save memory\nglobals <- cleanup(globals)\n\n# 3. The resulting 'globals' object is a named list \n# that can be exported to workers via parallel::clusterExport()\n# or used to verify environment completeness.\n```\n\n### Handling Closures\nIf a function depends on variables in its lexical scope (enclosing environment), set `recursive = TRUE` to ensure those \"hidden\" globals are captured.\n\n## Tips\n- **Missing Objects**: If `globalsOf()` cannot find an object in the provided `envir`, it will still list the name but won't include a value unless `mustExist = FALSE` is set.\n- **Formula Objects**: R formulas (`~ x + y`) often hide globals. `globals` is specifically designed to handle these better than `codetools::findGlobals`.\n- **Packages**: Use `attr(globals, \"packages\")` to see which R packages need to be loaded on the worker side to support the identified globals.\n\n## Reference documentation\n- [globals: Identify Global Objects in R Expressions](./references/README.md)",
+  "skill_front_matter": {
+    "name": "r-globals",
+    "description": "This tool identifies global objects and functions in R expressions through static code analysis. Use when user asks to identify free variables, find dependencies for parallel execution, or determine which objects must be exported to external R workers.",
+    "homepage": "https://cloud.r-project.org/web/packages/globals/index.html"
+  }
+}

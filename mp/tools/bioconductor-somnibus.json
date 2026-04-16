@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-somnibus",
+  "category": "bioconductor",
+  "name": "bioconductor-somnibus",
+  "description": "SOMNiBUS identifies differentially methylated regions in targeted bisulfite sequencing data using a binomial regression framework within a generalized additive model. Use when user asks to identify differentially methylated regions, analyze targeted bisulfite sequencing data, or visualize smooth covariate effects across genomic regions.",
+  "overview": "SOMNiBUS is an R package designed for the regional analysis of targeted bisulfite sequencing data. It uses a binomial regression framework within a Generalized Additive Model (GAM) to identify Differentially Methylated Regions (DMRs). It is particularly effective because it borrows information across nearby CpG sites using regression splines and accounts for technical error rates (false positives/negatives) and over-dispersion.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SOMNiBUS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kaiqiong/SOMNiBUS",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SOMNiBUS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SOMNiBUS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kaiqiong/SOMNiBUS",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-somnibus\n\n## Overview\n\nSOMNiBUS is an R package designed for the regional analysis of targeted bisulfite sequencing data. It uses a binomial regression framework within a Generalized Additive Model (GAM) to identify Differentially Methylated Regions (DMRs). It is particularly effective because it borrows information across nearby CpG sites using regression splines and accounts for technical error rates (false positives/negatives) and over-dispersion.\n\n## Data Preparation\n\n### Input Format\nThe package requires a data frame where each row is a CpG site and a sample. The first four columns must be:\n1. `Meth_Counts`: Number of methylated reads.\n2. `Total_Counts`: Total read depth.\n3. `Position`: Genomic position.\n4. `ID`: Sample identifier.\n5. `Covariates`: Columns 5+ should contain numeric phenotypes or traits (e.g., disease status, age).\n\n### Formatting from Other Tools\nIf your data is in `BSseq`, `Bismark`, or `BSmooth` formats, use the following converters:\n- `formatFromBSseq(bsseq_dat)`: Converts a BSseq object.\n- `formatFromBismark(...)`: Wrapper for `bsseq::read.bismark`.\n- `formatFromBSmooth(...)`: Wrapper for `bsseq::read.bsmooth`.\n\n### Filtering\nFilter out observations with zero total reads and samples with missing covariate data:\n```r\ndata.filtered <- na.omit(data[data$Total_Counts != 0, ])\n```\n\n## Analysis Workflows\n\n### Single Region Analysis\nUse `binomRegMethModel` for a predefined genomic region.\n```r\nout <- binomRegMethModel(\n  data = data.filtered, \n  n.k = rep(5, 3),    # Basis dimensions (approx unique CpGs / 20)\n  p0 = 0.003,         # False positive rate (default)\n  p1 = 0.9,           # True positive rate (default)\n  Quasi = FALSE,      # Set TRUE for quasi-likelihood adjustment\n  RanEff = FALSE      # Set TRUE for sample-specific random effects\n)\n```\n\n### Multi-Region Analysis (Genome-wide/Large Scale)\nUse `runSOMNiBUS` to automatically partition data into regions and analyze them.\n```r\nouts <- runSOMNiBUS(\n  dat = data.filtered,\n  split = list(approach = \"region\", gap = 100), # Options: region, density, gene, chromatin, bed, granges\n  min.cpgs = 10,\n  max.cpgs = 2000\n)\n```\n\n## Interpreting Results\n\n### Statistical Significance\nAccess the region-wide test results (p-values for each covariate):\n```r\nout$reg.out\n```\n\n### Visualization\nPlot the smooth covariate effects (estimated methylation patterns across the region):\n```r\n# Plot all effects\nbinomRegMethModelPlot(BEM.obj = out)\n\n# Plot specific covariates with same Y-axis scale\nbinomRegMethModelPlot(out, covs = c(\"RA\", \"T_cell\"), same.range = TRUE)\n```\n\n### Prediction\nPredict methylation levels for specific groups or new data:\n```r\n# Create new data for prediction\nnewdata <- expand.grid(Position = out$uni.pos, T_cell = c(0, 1), RA = c(0, 1))\n\n# Predict proportions\npred_prop <- binomRegMethModelPred(out, newdata, type = \"proportion\")\n\n# Plot predictions\nbinomRegMethPredPlot(pred = cbind(newdata, Prop = pred_prop), \n                     pred.type = \"proportion\", \n                     pred.col = \"Prop\")\n```\n\n## Key Parameters\n- **p0 and p1**: Represent the false positive (incomplete conversion) and true positive (over-conversion) rates. Default values are 0.003 and 0.9.\n- **n.k**: The basis dimension for splines. A good rule of thumb is `number of unique CpGs / 20`.\n- **Covariates**: Must be numeric. Convert categorical factors to dummy variables (0/1) before analysis.\n\n## Reference documentation\n- [Analyzing Targeted Bisulfite Sequencing data with SOMNiBUS](./references/SOMNiBUS.md)\n- [SOMNiBUS Rmarkdown Source](./references/SOMNiBUS.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-somnibus",
+    "description": "SOMNiBUS identifies differentially methylated regions in targeted bisulfite sequencing data using a binomial regression framework within a generalized additive model. Use when user asks to identify differentially methylated regions, analyze targeted bisulfite sequencing data, or visualize smooth covariate effects across genomic regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SOMNiBUS.html"
+  }
+}

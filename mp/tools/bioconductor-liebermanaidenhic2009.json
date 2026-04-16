@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-liebermanaidenhic2009",
+  "category": "bioconductor",
+  "name": "bioconductor-liebermanaidenhic2009",
+  "description": "This package provides access to and analysis workflows for the landmark 2009 Lieberman-Aiden Hi-C dataset. Use when user asks to load chromosome 14 interaction data, generate smoothed interaction matrices, normalize for genomic distance, perform PCA to identify chromatin compartments, or correlate Hi-C data with epigenetic markers.",
+  "overview": "The `LiebermanAidenHiC2009` package is a Bioconductor experiment data package containing Hi-C interaction data for the GM06990 cell line. It specifically provides processed paired-end reads for chromosome 14 and associated ChIP-seq data (H3K27me3, H3K36me3, and DNAse1). This skill guides the user through reproducing the analysis that identified A/B chromatin compartments using interaction matrices, normalization, and Principal Component Analysis (PCA).",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/LiebermanAidenHiC2009.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "LiebermanAidenHiC2009"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/LiebermanAidenHiC2009.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-liebermanaidenhic2009\n\nname: bioconductor-liebermanaidenhic2009\ndescription: Provides access to and analysis workflows for the landmark 2009 Hi-C dataset by Lieberman-Aiden et al. Use this skill to load chromosome 14 interaction data, generate smoothed interaction matrices, normalize for genomic distance, perform PCA to identify chromatin compartments, and correlate Hi-C data with epigenetic markers (ChIP-seq).\n\n# bioconductor-liebermanaidenhic2009\n\n## Overview\nThe `LiebermanAidenHiC2009` package is a Bioconductor experiment data package containing Hi-C interaction data for the GM06990 cell line. It specifically provides processed paired-end reads for chromosome 14 and associated ChIP-seq data (H3K27me3, H3K36me3, and DNAse1). This skill guides the user through reproducing the analysis that identified A/B chromatin compartments using interaction matrices, normalization, and Principal Component Analysis (PCA).\n\n## Data Loading\nThe package contains two primary datasets: the Hi-C interaction data and the comparative ChIP-seq data.\n\n```r\nlibrary(LiebermanAidenHiC2009)\n\n# Load Hi-C paired-end read data for Chromosome 14\ndata(\"HiC_GM_chr14\")\n\n# Load ChIP-seq and DNAse1 data frames\ndata(\"ChipSeqData\")\n```\n\nThe `HiC_GM_chr14` data frame includes columns for read names, chromosome, position, strand, and restriction fragments for both ends of the paired-end reads.\n\n## Generating Interaction Matrices\nTo visualize and analyze interactions, the raw point data must be smoothed into a 2D density matrix.\n\n1. **Smoothing**: Use the `KernSmooth` package to create a 2D kernel density estimate.\n2. **Symmetrization**: Since Hi-C interactions are undirected, the matrix must be made symmetric.\n\n```r\nlibrary(KernSmooth)\npos = with(HiC_GM_chr14, cbind(position1, position2))\ngridsize = ceiling(max(pos)/2e5)\nbandwidth = 3e5\n\n# Create density estimate\nden = bkde2D(pos, bandwidth=c(1,1)*bandwidth, gridsize=c(1,1)*gridsize)\n\n# Symmetrize the matrix\nden$fhat <- den$fhat + t(den$fhat)\n\n# Visualize with exponentiation to enhance contrast\nimage(x=den$x1, y=den$x2, z=den$fhat^0.3, col=colorRampPalette(c(\"white\",\"blue\"))(256))\n```\n\n## Normalization and Correlation\nHi-C data is dominated by the \"diagonal effect\" where interaction frequency decays with genomic distance.\n\n1. **Distance Normalization**: Calculate the mean number of interactions at each genomic distance and divide the observed matrix by these expected values.\n2. **Correlation Matrix**: Calculate the Pearson correlation between rows of the normalized matrix to highlight the \"plaid\" pattern of compartments.\n\n```r\n# Calculate correlation matrix from normalized data (fhatNorm)\ncm <- cor(fhatNorm)\n\n# Visualize compartments (Red/Blue indicates different compartments)\nimage(x=den$x1, y=den$x2, z=cm, zlim=c(-1,1),\n      col=colorRampPalette(c(\"red\", \"white\",\"blue\"))(256))\n```\n\n## Compartment Identification (PCA)\nThe first principal component (PC1) of the correlation matrix typically corresponds to the A/B compartment structure.\n\n```r\n# Perform PCA\nprincp = princomp(cm)\n\n# Extract PC1 (the first eigenvector)\npc1_loadings = princp$loadings[,1]\n\n# Plot PC1 against genomic position\nplot(den$x1, pc1_loadings, type=\"l\")\n```\n\n## Comparison with Chromatin States\nTo validate compartments, compare the PC1 vector with epigenetic marks using Run-Length Encoding (`Rle`) from the `IRanges` package.\n\n```r\nlibrary(IRanges)\n\n# Convert PC1 to an Rle object for efficient genomic comparison\npc1Vec = Rle(values = princp$loadings[,1], lengths = c(den$x1[1], diff(den$x1)))\n\n# Calculate correlation between Hi-C PC1 and ChIP-seq signal\n# Note: Vectors must be aligned to the same genomic length/scale\ncor(H3K36me3[x], pc1Vec[x])\n```\n\n## Reference documentation\n- [Exploration of HiC data](./references/LiebermanAidenHiC2009.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-liebermanaidenhic2009",
+    "description": "This package provides access to and analysis workflows for the landmark 2009 Lieberman-Aiden Hi-C dataset. Use when user asks to load chromosome 14 interaction data, generate smoothed interaction matrices, normalize for genomic distance, perform PCA to identify chromatin compartments, or correlate Hi-C data with epigenetic markers.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/LiebermanAidenHiC2009.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-panelcn.mops",
+  "category": "bioconductor",
+  "name": "bioconductor-panelcn.mops",
+  "description": "bioconductor-panelcn.mops detects copy number variations in targeted next-generation sequencing panel data by comparing test samples against a pool of control samples. Use when user asks to identify exon-level copy number variations, normalize read counts for panel data, or visualize genomic regions of interest.",
+  "overview": "The `panelcn.mops` package is a specialized version of the `cn.mops` algorithm tailored for targeted Next-Generation Sequencing (NGS) panel data. It is designed to detect copy number variations (CNVs) in small regions of interest (ROIs), such as individual exons, by comparing test samples against a pool of control samples. It accounts for the high variability in read counts typical of panel data through normalization and quality control metrics.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/panelcn.mops.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "panelcn.mops"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/panelcn.mops.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-panelcn.mops\n\n## Overview\n\nThe `panelcn.mops` package is a specialized version of the `cn.mops` algorithm tailored for targeted Next-Generation Sequencing (NGS) panel data. It is designed to detect copy number variations (CNVs) in small regions of interest (ROIs), such as individual exons, by comparing test samples against a pool of control samples. It accounts for the high variability in read counts typical of panel data through normalization and quality control metrics.\n\n## Core Workflow\n\n### 1. Prepare Count Windows\nDefine the genomic regions (ROIs) from a BED file. The 4th column of the BED file must start with the Gene Name, followed by optional information separated by dots (e.g., `ATM.E1`).\n\n```R\nlibrary(panelcn.mops)\nbed_path <- \"path/to/your_panel.bed\"\ncountWindows <- getWindows(bed_path)\n```\n\n*Tip: If ROIs are very large, use `splitROIs(bed_path, \"split.bed\")` to break them into smaller bins (default 100bp) for higher resolution.*\n\n### 2. Extract Read Counts\nGenerate read counts from BAM files using the defined windows.\n\n```R\nbam_files <- c(\"sample1.bam\", \"sample2.bam\", \"control1.bam\", \"control2.bam\")\n# read.width should match the typical read length of your library\ndata_counts <- countBamListInGRanges(countWindows = countWindows, \n                                     bam.files = bam_files, \n                                     read.width = 150)\n```\n\n### 3. Run CNV Detection\nCombine test and control samples into a single GRanges object and run the algorithm.\n\n```R\n# Identify which columns are test samples (e.g., first 2)\ntest_indices <- 1:2\nselectedGenes <- c(\"ATM\", \"BRCA1\", \"BRCA2\")\n\nresultlist <- runPanelcnMops(XandCB = data_counts,\n                             testiv = test_indices,\n                             countWindows = countWindows,\n                             selectedGenes = selectedGenes)\n```\n\n### 4. Interpret and Visualize Results\nGenerate a result table and visualize specific genes.\n\n```R\n# Create a summary table for a specific test sample (e.g., the first one)\nsample_names <- colnames(elementMetadata(data_counts))\nres_table <- createResultTable(resultlist = resultlist, \n                               XandCB = data_counts,\n                               countWindows = countWindows, \n                               selectedGenes = selectedGenes, \n                               sampleNames = sample_names)\n\n# View the table for the first test sample\nhead(res_table[[1]])\n\n# Plot boxplots of normalized read counts for a gene\nplotBoxplot(result = resultlist[[1]], \n            sampleName = sample_names[1],\n            countWindows = countWindows, \n            selectedGenes = selectedGenes, \n            showGene = 1)\n```\n\n## Key Parameters and Quality Control\n\n### Adjusting Sensitivity\nThe `I` parameter in `runPanelcnMops` defines the expected fold changes for copy number classes (CN0, CN1, CN2, CN3, CN4). \n- Default: `c(0.025, 0.57, 1, 1.46, 2)`\n- To increase sensitivity for deletions: Increase the value for CN1 (e.g., from 0.57 to 0.65).\n- To increase sensitivity for duplications: Decrease the value for CN3 (e.g., from 1.46 to 1.35).\n\n### Quality Metrics\nThe `createResultTable` output includes a `lowQual` column:\n- **ROI Quality**: ROIs are flagged if they show high variation across samples or if the median read count is below the threshold (default 30).\n- **Sample Quality**: Samples are flagged if their median read count is significantly lower than the cohort median (threshold < 0.55x).\n\n### Sex Chromosome Analysis\nBy default, X-chromosomal ROIs are removed (`sex = \"mixed\"`). To analyze Chromosome X, ensure all samples in the batch have the same sex and set the `sex` parameter in `runPanelcnMops` to `\"male\"` or `\"female\"`. Note: In all-male runs, `CN2` in the output represents the normal `CN1` state.\n\n## Reference documentation\n- [panelcn.mops - CNV detection tool for targeted NGS panel data](./references/panelcn.mops.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-panelcn.mops",
+    "description": "bioconductor-panelcn.mops detects copy number variations in targeted next-generation sequencing panel data by comparing test samples against a pool of control samples. Use when user asks to identify exon-level copy number variations, normalize read counts for panel data, or visualize genomic regions of interest.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/panelcn.mops.html"
+  }
+}

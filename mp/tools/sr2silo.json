@@ -1,0 +1,47 @@
+{
+  "id": "sr2silo",
+  "category": "CLI",
+  "name": "sr2silo",
+  "description": "The sr2silo tool converts BAM alignment files into the LAPIS-SILO NDJSON format by extracting and translating nucleotide sequences into amino acids. Use when user asks to process BAM files into SILO format, translate viral reads to amino acid sequences, or submit processed genomic data to a Loculus backend.",
+  "overview": "The `sr2silo` tool is a specialized bioinformatics utility designed to bridge the gap between raw nucleotide alignments (BAM files) and the LAPIS-SILO database format. It automates the complex workflow of extracting reads, translating them into amino acid sequences based on specific gene annotations, and formatting the results into newline-delimited JSON (NDJSON). It is particularly useful for viral surveillance pipelines where short-read data must be converted into a \"cleartext\" alignment forma",
+  "homepage": "https://github.com/cbg-ethz/sr2silo",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/sr2silo/overview",
+  "github": "https://github.com/cbg-ethz/sr2silo",
+  "conda_downloads": "1.6K",
+  "conda_downloads_num": 1600,
+  "last_updated": "2026-01-27",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sr2silo_process-from-vpipe",
+      "sr2silo_submit-to-loculus"
+    ],
+    "description": "V-PIPE to SILO conversion with amino acids and special metadata. Processing only - use 'submit-to-loculus' command to upload and submit to SILO.",
+    "docker_image": "quay.io/biocontainers/sr2silo:1.8.0--pyhdfd78af_0",
+    "homepage": "https://github.com/cbg-ethz/sr2silo",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/sr2silo/overview",
+    "github": "https://github.com/cbg-ethz/sr2silo",
+    "conda_downloads": "1.6K",
+    "last_updated": "2026-01-27",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "sr2silo_process-from-vpipe.cwl",
+    "sr2silo_submit-to-loculus.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# sr2silo\n\n## Overview\n\nThe `sr2silo` tool is a specialized bioinformatics utility designed to bridge the gap between raw nucleotide alignments (BAM files) and the LAPIS-SILO database format. It automates the complex workflow of extracting reads, translating them into amino acid sequences based on specific gene annotations, and formatting the results into newline-delimited JSON (NDJSON). It is particularly useful for viral surveillance pipelines where short-read data must be converted into a \"cleartext\" alignment format for downstream analysis and public health reporting.\n\n## Core Workflows\n\n### 1. Processing BAM to SILO Format\nThe primary command for data transformation is `process-from-vpipe`. This command handles the extraction, translation, and formatting.\n\n```bash\nsr2silo process-from-vpipe \\\n    --input-file input.bam \\\n    --sample-id \"SAMPLE_001\" \\\n    --timeline-file timeline.tsv \\\n    --organism covid \\\n    --output-fp output.ndjson.zst\n```\n\n**Expert Tips:**\n- **Reference Accessions**: If your BAM contains multiple references (e.g., a combined RSV-A/B index), use `--reference-accession \"ACCESSION_ID\"` to prevent mixed-organism errors.\n- **Resource Management**: Processing requires ~6GB RAM (3GB for batching + 3GB for Diamond). Set `TMPDIR` to a high-performance disk with at least 50GB free space for Diamond's temporary files.\n- **Batching**: The tool processes 100k reads per batch by default. You can adjust this via `--chunk-size` if memory is constrained.\n\n### 2. Reference Handling\n`sr2silo` requires both nucleotide (`.fasta`) and amino acid (`.fasta`) reference files.\n\n- **Auto-fetch**: Use `--lapis-url` to automatically download and cache the correct references for the specified organism.\n- **Manual**: Provide paths via `--nuc-ref` and `--aa-ref` to override defaults or work offline.\n- **Caching**: References are stored in `~/.cache/sr2silo/references/`. Clear this directory if you suspect outdated reference metadata.\n\n### 3. Submitting to Loculus\nOnce processed, data can be uploaded to a Loculus backend.\n\n```bash\nsr2silo submit-to-loculus \\\n    --processed-file output.ndjson.zst \\\n    --nucleotide-alignment input.bam \\\n    --group-id 1 \\\n    --auto-release\n```\n\n**Configuration via Environment Variables:**\nTo avoid passing sensitive credentials in the CLI, set these variables:\n- `USERNAME` / `PASSWORD`: Loculus credentials.\n- `BACKEND_URL`: The API endpoint for the SILO backend.\n- `KEYCLOAK_TOKEN_URL`: The authentication endpoint.\n\n## Supported Organisms\nThe tool includes built-in logic for:\n- `covid`: SARS-CoV-2\n- `rsva`: Respiratory Syncytial Virus A\n\nTo add a new organism, you must provide a directory in `resources/references/{organism_id}/` containing `nuc_ref.fasta` and `aa_ref.fasta`.\n\n## Troubleshooting\n- **ZeroFilteredReadsError**: Occurs when `--reference-accession` is used but no reads in the BAM match that ID. Verify the ID using `samtools view -H file.bam | grep @SQ`.\n- **Authentication Failures**: Ensure `KEYCLOAK_TOKEN_URL` is correct for the specific Loculus instance you are targeting.\n- **Memory Issues**: If the process is killed, reduce `--chunk-size` or ensure `TMPDIR` is not pointing to a full partition.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| sr2silo process-from-vpipe | V-PIPE to SILO conversion with amino acids and special metadata. Processing only - use 'submit-to-loculus' command to upload and submit to SILO. |\n| sr2silo_submit-to-loculus | Upload processed file to S3 and submit to SILO/Loculus. |\n\n## Reference documentation\n- [Usage Configuration](./references/cbg-ethz_github_io_sr2silo_usage_configuration.md)\n- [Multi-Organism Support](./references/cbg-ethz_github_io_sr2silo_usage_organisms.md)\n- [Resource Requirements](./references/cbg-ethz_github_io_sr2silo_usage_resource_requirements.md)\n- [Loculus API Integration](./references/cbg-ethz_github_io_sr2silo_api_loculus.md)\n- [Processing API](./references/cbg-ethz_github_io_sr2silo_api_process.md)",
+  "skill_front_matter": {
+    "name": "sr2silo",
+    "description": "The sr2silo tool converts BAM alignment files into the LAPIS-SILO NDJSON format by extracting and translating nucleotide sequences into amino acids. Use when user asks to process BAM files into SILO format, translate viral reads to amino acid sequences, or submit processed genomic data to a Loculus backend.",
+    "homepage": "https://github.com/cbg-ethz/sr2silo"
+  }
+}

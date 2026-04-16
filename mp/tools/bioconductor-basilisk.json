@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-basilisk",
+  "category": "bioconductor",
+  "name": "bioconductor-basilisk",
+  "description": "The basilisk package provides a framework for Bioconductor packages to provision and manage dedicated, isolated Python environments to ensure version stability and reproducibility. Use when user asks to create a BasiliskEnvironment, execute Python code via basiliskRun, manage local Python instances for R scripts, or configure environment storage settings.",
+  "overview": "The `basilisk` package provides a framework for Bioconductor packages to provision and use their own dedicated Python instances and virtual environments. It solves the \"DLL hell\" of Python versioning by isolating the Python environment used by a specific R package from the system Python and from other R packages. It uses `reticulate` under the hood but wraps it in a process-safe, version-stable execution model.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/basilisk.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-basilisk/overview",
+  "github": "https://github.com/LTLA/basilisk",
+  "conda_downloads": "33.7K",
+  "conda_downloads_num": 33700,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "basilisk"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/basilisk.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-basilisk/overview",
+    "github": "https://github.com/LTLA/basilisk",
+    "conda_downloads": "33.7K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-basilisk\n\n## Overview\n\nThe `basilisk` package provides a framework for Bioconductor packages to provision and use their own dedicated Python instances and virtual environments. It solves the \"DLL hell\" of Python versioning by isolating the Python environment used by a specific R package from the system Python and from other R packages. It uses `reticulate` under the hood but wraps it in a process-safe, version-stable execution model.\n\n## Core Workflow for Package Developers\n\n### 1. Define the Environment\nCreate a `BasiliskEnvironment` object (typically in `R/basilisk.R`). Always specify explicit version numbers for Python and all packages to ensure reproducibility.\n\n```r\nlibrary(basilisk)\nmy_env <- BasiliskEnvironment(\n    envname=\"my_analysis_env\",\n    pkgname=\"MyPackageName\",\n    packages=c(\"pandas==2.2.3\", \"scikit-learn==1.6.1\"),\n    channels=c(\"conda-forge\") # Optional: specify conda channels\n)\n```\n\n### 2. Execute Python Code\nUse `basiliskStart()` and `basiliskRun()` to execute code within the environment. This ensures the correct Python version is loaded and prevents conflicts.\n\n```r\nmy_r_function <- function(data) {\n    # Start the environment\n    proc <- basiliskStart(my_env)\n    on.exit(basiliskStop(proc))\n\n    # Run code inside the environment\n    result <- basiliskRun(proc, function(df) {\n        pd <- reticulate::import(\"pandas\")\n        # Perform calculations...\n        return(processed_df) \n    }, df = data)\n\n    return(result)\n}\n```\n\n### 3. Critical Constraints for `basiliskRun`\n*   **Input/Output:** Arguments passed to the function and the return value must be **pure R objects**. You cannot return `reticulate` Python objects or pointers.\n*   **Self-Containment:** The function passed to `basiliskRun` should not rely on the global environment. Pass all required variables as explicit arguments.\n*   **Namespacing:** Use `::` for any non-base R functions used inside the `basiliskRun` closure (e.g., `stats::median(x)`).\n\n## Direct Analysis for End Users\n\nUsers can create local environments for specific scripts without building a full R package:\n\n```r\n# Create a local environment in a temporary directory\ntmp_env <- createLocalBasiliskEnv(\n    \"my_local_python\",\n    packages=c(\"numpy==2.2.2\", \"scipy==1.15.1\")\n)\n\n# Use it\nres <- basiliskRun(env=tmp_env, fun=function() {\n    np <- reticulate::import(\"numpy\")\n    np$array(c(1, 2, 3)) * 2\n})\n```\n\n## Troubleshooting and Configuration\n\n### Environment Variables\n*   `BASILISK_EXTERNAL_DIR`: Set this to change where environments are stored (useful if the default path is too long for Windows or lacks space).\n*   `BASILISK_USE_SYSTEM_DIR=1`: Forces installation into the R library directory (requires installation from source).\n*   `BASILISK_CUSTOM_PYTHON_3_12`: Path to a specific Python binary to override `basilisk`'s automatic installation.\n\n### Cleaning Up\nIf environments become corrupted or take up too much space:\n```r\n# Clear obsolete environments for a specific package\nbasilisk::clearExternalDir(package = \"MyPackage\", obsolete.only = TRUE)\n\n# Clear everything managed by basilisk\nbasilisk.utils::clearExternalDir()\n```\n\n### Windows Path Limits\nWindows has a 260-character path limit. If installation fails silently, set `BASILISK_EXTERNAL_DIR` to a short path like `C:\\bioc-py`.\n\n## Reference documentation\n\n- [Freezing Python versions inside Bioconductor packages](./references/motivation.md)\n- [Motivation for Basilisk](./references/motivation.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-basilisk",
+    "description": "The basilisk package provides a framework for Bioconductor packages to provision and manage dedicated, isolated Python environments to ensure version stability and reproducibility. Use when user asks to create a BasiliskEnvironment, execute Python code via basiliskRun, manage local Python instances for R scripts, or configure environment storage settings.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/basilisk.html"
+  }
+}

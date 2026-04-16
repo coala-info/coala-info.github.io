@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chippeakanno",
+  "category": "bioconductor",
+  "name": "bioconductor-chippeakanno",
+  "description": "This tool provides expert guidance for the ChIPpeakAnno R package to annotate, visualize, and compare genomic peaks from ChIP-seq, ATAC-seq, and CUT&RUN experiments. Use when user asks to convert peak files to GRanges, annotate peaks with genomic features, perform GO or pathway enrichment analysis, visualize peak distributions and overlaps, or discover DNA motifs.",
+  "overview": "The `ChIPpeakAnno` package is a comprehensive tool for the functional annotation of genomic intervals. It bridges the gap between raw peak calls and biological insights by associating peaks with genomic features (using `biomaRt`, `EnsDb`, or `TxDb`), performing enrichment analysis, and facilitating comparative studies between multiple datasets.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPpeakAnno.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chippeakanno/overview",
+  "github": "N/A",
+  "conda_downloads": "45.3K",
+  "conda_downloads_num": 45300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChIPpeakAnno"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPpeakAnno.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chippeakanno/overview",
+    "github": "N/A",
+    "conda_downloads": "45.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chippeakanno\n\nname: bioconductor-chippeakanno\ndescription: Expert guidance for the ChIPpeakAnno R package to annotate, visualize, and compare genomic peaks (ChIP-seq, ATAC-seq, CUT&RUN). Use this skill when you need to: (1) Convert peak files (BED, GFF, MACS) to GRanges, (2) Annotate peaks with nearest or overlapping genomic features (genes, TSS, exons), (3) Perform GO or Pathway enrichment analysis on annotated peaks, (4) Visualize peak distributions and overlaps (Venn diagrams, UpSet plots), or (5) Discover and summarize DNA motifs within peak regions.\n\n# bioconductor-chippeakanno\n\n## Overview\nThe `ChIPpeakAnno` package is a comprehensive tool for the functional annotation of genomic intervals. It bridges the gap between raw peak calls and biological insights by associating peaks with genomic features (using `biomaRt`, `EnsDb`, or `TxDb`), performing enrichment analysis, and facilitating comparative studies between multiple datasets.\n\n## Core Workflows\n\n### 1. Data Import and Conversion\nConvert various peak formats into `GRanges` objects, the standard input for most functions.\n```r\nlibrary(ChIPpeakAnno)\n# Convert MACS, BED, or GFF files\npeaks <- toGRanges(\"peaks.bed\", format = \"BED\", header = FALSE)\n# Supported formats: \"BED\", \"GFF\", \"MACS\", \"narrowPeak\", \"broadPeak\", \"CSV\"\n```\n\n### 2. Preparing Annotations\nAnnotations can be retrieved from `EnsDb` (recommended for Ensembl), `TxDb` (UCSC/RefSeq), or via `biomaRt`.\n```r\n# Using EnsDb (Comprehensive)\nlibrary(EnsDb.Hsapiens.v86)\nannoData <- genes(EnsDb.Hsapiens.v86)\n\n# Using biomaRt (Up-to-date)\nlibrary(biomaRt)\nmart <- useMart(biomart = \"ENSEMBL_MART_ENSEMBL\", dataset = \"hsapiens_gene_ensembl\")\nannoData_bm <- getAnnotation(mart, featureType = \"TSS\")\n```\n\n### 3. Peak Annotation\nThe `annotatePeakInBatch` function is the primary tool for associating peaks with features.\n```r\n# Peak-centric: Find nearest TSS\nannotatedPeaks <- annotatePeakInBatch(peaks, \n                                      AnnotationData = annoData, \n                                      output = \"nearestLocation\",\n                                      bindingRegion = c(-2000, 500))\n\n# Add gene symbols to the results\nlibrary(org.Hs.eg.db)\nannotatedPeaks <- addGeneIDs(annotatedPeaks, \n                             orgAnn = \"org.Hs.eg.db\", \n                             IDs2Add = \"symbol\")\n```\n\n### 4. Visualization and Quality Control\nEvaluate peak localization and replicate concordance.\n```r\n# Distribution relative to TSS\nbinOverFeature(peaks, annotationData = annoData, featureSite = \"FeatureStart\")\n\n# Genomic element distribution (Pie/Bar chart)\ngenomicElementDistribution(peaks, TxDb = TxDb.Hsapiens.UCSC.hg38.knownGene)\n\n# Overlap between replicates\nol <- findOverlapsOfPeaks(peaks1, peaks2)\nmakeVennDiagram(ol, totalTest = 10000)\n```\n\n### 5. Enrichment and Motif Analysis\nIdentify biological functions and sequence patterns.\n```r\n# GO Enrichment\nenriched.go <- getEnrichedGO(annotatedPeaks, orgAnn = \"org.Hs.eg.db\", maxP = 0.01)\n\n# Pathway Enrichment (Reactome)\nenriched.path <- getEnrichedPATH(annotatedPeaks, orgAnn = \"org.Hs.eg.db\", pathAnn = \"reactome.db\")\n\n# Motif Discovery\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\nseqs <- getAllPeakSequence(peaks, genome = BSgenome.Hsapiens.UCSC.hg38)\n# Scan for specific patterns\nsummarizePatternInPeaks(patternFilePath = \"motifs.fa\", peaks = peaks, BSgenomeName = BSgenome.Hsapiens.UCSC.hg38)\n```\n\n## Key Tips\n- **Genome Versions**: Always ensure your `AnnotationData` and `BSgenome` match the assembly used for peak calling (e.g., hg19 vs hg38).\n- **totalTest**: When using `makeVennDiagram`, the P-value is sensitive to `totalTest`. Use `peakPermTest` for a more robust, non-parametric significance measure.\n- **Feature IDs**: If `addGeneIDs` fails, check that the `feature` column in your annotated object matches the `feature_id_type` (e.g., \"ensembl_gene_id\").\n\n## Reference documentation\n- [ChIPpeakAnno: annotate, visualize, and compare peak data](./references/ChIPpeakAnno.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chippeakanno",
+    "description": "This tool provides expert guidance for the ChIPpeakAnno R package to annotate, visualize, and compare genomic peaks from ChIP-seq, ATAC-seq, and CUT&RUN experiments. Use when user asks to convert peak files to GRanges, annotate peaks with genomic features, perform GO or pathway enrichment analysis, visualize peak distributions and overlaps, or discover DNA motifs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPpeakAnno.html"
+  }
+}

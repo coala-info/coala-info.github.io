@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-peco",
+  "category": "bioconductor",
+  "name": "bioconductor-peco",
+  "description": "This tool predicts the cell cycle phase of single cells as a continuous variable using single-cell RNA sequencing data. Use when user asks to predict cell cycle position, map cells onto a unit circle, or fit cyclic trends to gene expression data.",
+  "overview": "`peco` is a supervised learning framework designed to predict the cell cycle phase of individual cells as a continuous variable. Unlike discrete classification (e.g., G1, S, G2/M), `peco` maps cells onto a unit circle (0 to 2π). It is optimized for single-cell RNA-seq data and can function effectively with a small set of well-known cyclic marker genes (e.g., *CDK1*, *UBE2C*, *TOP2A*).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/peco.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/jhsiao999/peco",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "peco"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/peco.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/jhsiao999/peco",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-peco\n\nname: bioconductor-peco\ndescription: Predicts cell cycle phase in a continuum using single-cell RNA sequencing (scRNA-seq) data. Use this skill when you need to build training datasets for cyclic gene expression or apply supervised models to predict continuous cell cycle position (angles 0 to 2π) for single cells using the peco R package.\n\n# bioconductor-peco\n\n## Overview\n\n`peco` is a supervised learning framework designed to predict the cell cycle phase of individual cells as a continuous variable. Unlike discrete classification (e.g., G1, S, G2/M), `peco` maps cells onto a unit circle (0 to 2π). It is optimized for single-cell RNA-seq data and can function effectively with a small set of well-known cyclic marker genes (e.g., *CDK1*, *UBE2C*, *TOP2A*).\n\n## Core Workflow\n\n### 1. Data Preparation\n`peco` operates on `SingleCellExperiment` (SCE) objects. The input expression data must be quantile-normalized counts-per-million (CPM).\n\n```r\nlibrary(peco)\nlibrary(SingleCellExperiment)\n\n# Transform raw counts to quantile-normalized CPM\n# This adds a 'cpm_quantNormed' assay to the SCE object\nsce <- data_transform_quantile(sce)\n```\n\n### 2. Predicting Cell Cycle Phase\nTo predict phases for a new dataset (out-sample), use `cycle_npreg_outsample`. This requires a training object (like the built-in `training_human`) which contains estimated cyclic trends (`funs_est`) and error variances (`sigma_est`).\n\n```r\ndata(\"training_human\")\n\n# Predict phases\n# Y_test: SCE object with cpm_quantNormed assay\n# sigma_est: standard error from training data\n# funs_est: cyclic functions from training data\nresults <- cycle_npreg_outsample(\n    Y_test = sce,\n    sigma_est = training_human$sigma[rownames(sce), ],\n    funs_est = training_human$cellcycle_function[rownames(sce)],\n    method.trend = \"trendfilter\",\n    ncores = 1\n)\n\n# Access predicted angles (0 to 2pi)\npredicted_phases <- colData(results$Y)$cellcycle_peco\n```\n\n### 3. Fitting Cyclic Trends\nIf you have predicted phases and want to visualize or analyze the cyclic behavior of specific genes, use `fit_cyclical_many`.\n\n```r\n# Extract predicted phases\ntheta_predict <- colData(results$Y)$cellcycle_peco\nnames(theta_predict) <- colnames(results$Y)\n\n# Fit trends for a subset of genes\nyy_input <- assay(results$Y, \"cpm_quantNormed\")[1:5, ]\nfit_cyclic <- fit_cyclical_many(Y = yy_input, theta = theta_predict)\n\n# fit_cyclic$cellcycle_function contains the fitted functions for plotting\n```\n\n## Key Functions\n\n- `data_transform_quantile()`: Prepares SCE objects by calculating CPM and performing quantile normalization.\n- `cycle_npreg_outsample()`: The primary function for predicting cell cycle phase in new samples using a reference model.\n- `fit_cyclical_many()`: Fits non-parametric cyclic trends (using trend filtering) to gene expression data given a set of cell phases.\n- `training_human`: A built-in dataset containing model parameters for 101 human cyclic genes.\n\n## Tips for Success\n\n- **Gene Matching**: Ensure the rownames of your SCE object (Gene IDs) match the IDs used in the training data (e.g., Ensembl IDs for `training_human`).\n- **Marker Genes**: While the package supports 101 genes, accurate prediction is often possible with just the top 5-10 markers like *CDK1* and *TOP2A*.\n- **Visualization**: Always perform a \"sanity check\" by plotting a known marker like *CDK1* against the predicted phase (`cellcycle_peco`). It should show a clear, smooth cyclic peak.\n\n## Reference documentation\n\n- [Predicting cell cycle phase using peco](./references/peco.Rmd)\n- [peco Vignette](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-peco",
+    "description": "This tool predicts the cell cycle phase of single cells as a continuous variable using single-cell RNA sequencing data. Use when user asks to predict cell cycle position, map cells onto a unit circle, or fit cyclic trends to gene expression data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/peco.html"
+  }
+}

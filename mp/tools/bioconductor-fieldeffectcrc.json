@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fieldeffectcrc",
+  "category": "bioconductor",
+  "name": "bioconductor-fieldeffectcrc",
+  "description": "This tool provides access to harmonized colorectal cancer transcriptome datasets and workflows for differential expression analysis. Use when user asks to retrieve CRC RNA-seq data from ExperimentHub, prepare tximport-compatible objects, or perform surrogate variable analysis to account for batch effects in colorectal tissue studies.",
+  "overview": "The `FieldEffectCrc` package provides access to a large, harmonized collection of human colorectal tissue transcriptomes. The data is stored as `SummarizedExperiment` objects on `ExperimentHub`, representing three cohorts (A, B, and C) categorized by library format (paired-end vs. single-end). This skill facilitates data retrieval and provides a standard workflow for differential expression analysis that accounts for latent batch effects.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/FieldEffectCrc.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fieldeffectcrc/overview",
+  "github": "https://github.com/Bioconductor/FieldEffectCrc",
+  "conda_downloads": "13.9K",
+  "conda_downloads_num": 13900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "FieldEffectCrc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/FieldEffectCrc.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fieldeffectcrc/overview",
+    "github": "https://github.com/Bioconductor/FieldEffectCrc",
+    "conda_downloads": "13.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fieldeffectcrc\n\nname: bioconductor-fieldeffectcrc\ndescription: Access and analyze colorectal cancer (CRC) transcriptome data from the FieldEffectCrc package. Use this skill to retrieve harmonized bulk RNA-seq datasets (Tumor, Adjacent Normal, and Healthy) from ExperimentHub and perform differential expression workflows using DESeq2 and SVA.\n\n## Overview\n\nThe `FieldEffectCrc` package provides access to a large, harmonized collection of human colorectal tissue transcriptomes. The data is stored as `SummarizedExperiment` objects on `ExperimentHub`, representing three cohorts (A, B, and C) categorized by library format (paired-end vs. single-end). This skill facilitates data retrieval and provides a standard workflow for differential expression analysis that accounts for latent batch effects.\n\n## Data Retrieval\n\nTo access the datasets, use `ExperimentHub` to query and download the specific cohorts.\n\n```r\nlibrary(FieldEffectCrc)\nlibrary(ExperimentHub)\nlibrary(SummarizedExperiment)\n\nhub <- ExperimentHub()\n# Query for FieldEffectCrc records\ncrc_query <- query(hub, \"FieldEffectCrc\")\n\n# Retrieve Cohort A (EH3524)\nse <- hub[[\"EH3524\"]]\n\n# Inspect sample types (CRC: Tumor, NAT: Normal Adjacent, HLT: Healthy)\ntable(colData(se)$sampType)\n```\n\n## Core Functions\n\n- `make_txi(se)`: A convenience function to convert the `SummarizedExperiment` object into a `tximport`-compatible list, preserving transcript length information for `DESeq2`.\n- `reorder_assays(se)`: Reorders assays within the `SummarizedExperiment` to ensure `counts` is the first assay, facilitating direct use with `DESeqDataSet()`.\n\n## Differential Expression Workflow\n\nThe recommended workflow involves using `DESeq2` for modeling and `sva` for surrogate variable analysis to handle technical artifacts across studies.\n\n### 1. Prepare DESeqDataSet\n```r\nlibrary(DESeq2)\ntxi <- make_txi(se)\ndds <- DESeqDataSetFromTximport(txi, colData(se), design = ~ sampType)\n```\n\n### 2. Estimate Latent Factors (SVA)\nBecause the data is harmonized from multiple sources, estimating surrogate variables is critical.\n```r\nlibrary(sva)\n# Normalize counts for SVA\ndat <- counts(dds, normalized=FALSE) # Or use normalized=TRUE after initial DESeq run\nidx <- rowSums(dat) > 1\ndat <- dat[idx, ]\nmod <- model.matrix(~sampType, data=colData(dds))\nmod0 <- model.matrix(~1, data=colData(dds))\n\n# Estimate surrogate variables\nsvs <- svaseq(dat, mod, mod0)\n\n# Add SVs to dds and update design\nfor (i in 1:svs$n.sv) {\n    colData(dds)[[paste0(\"sv\", i)]] <- svs$sv[, i]\n}\ndesign(dds) <- as.formula(paste(\"~\", paste0(\"sv\", 1:svs$n.sv, collapse=\"+\"), \"+ sampType\"))\n```\n\n### 3. Run Analysis and Extract Results\n```r\ndds <- DESeq(dds)\n\n# Compare Healthy (HLT) vs Tumor (CRC)\nres_hlt_crc <- results(dds, contrast=c(\"sampType\", \"HLT\", \"CRC\"), alpha=0.05)\n```\n\n## Tips and Best Practices\n\n- **Cohort Selection**: Use Cohorts A and B for paired-end analysis and Cohort C for single-end analysis. Do not mix them without careful batch correction.\n- **Assay Access**: The `SummarizedExperiment` objects contain three assays: `abundance`, `counts`, and `length`. Use `assay(se, \"counts\")` to access raw estimates.\n- **Filtering**: Always perform pre-filtering (e.g., `rowSums(counts(dds) > 10) >= (1/3)*ncol(dds)`) to remove low-count genes before running the full DESeq2/SVA pipeline to save memory and improve power.\n\n## Reference documentation\n\n- [FieldEffectCrc](./references/FieldEffectCrc.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fieldeffectcrc",
+    "description": "This tool provides access to harmonized colorectal cancer transcriptome datasets and workflows for differential expression analysis. Use when user asks to retrieve CRC RNA-seq data from ExperimentHub, prepare tximport-compatible objects, or perform surrogate variable analysis to account for batch effects in colorectal tissue studies.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/FieldEffectCrc.html"
+  }
+}

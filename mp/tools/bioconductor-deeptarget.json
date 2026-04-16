@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-deeptarget",
+  "category": "bioconductor",
+  "name": "bioconductor-deeptarget",
+  "description": "This tool integrates drug sensitivity profiles with genetic knockout screens to characterize drug mechanisms of action and identify molecular targets. Use when user asks to predict primary or secondary drug targets, assess mutant versus wild-type specificity, or analyze drug-gene interactions using DepMap-style datasets.",
+  "overview": "The `DeepTarget` package provides tools to integrate drug sensitivity profiles with genetic knockout (KO) screens (like CRISPR/Avana) to characterize drug mechanisms of action. It enables researchers to identify primary targets, discover secondary targets that mediate response when the primary is absent, and determine if a drug preferentially targets specific mutant forms of a protein.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DeepTarget.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deeptarget/overview",
+  "github": "N/A",
+  "conda_downloads": "297",
+  "conda_downloads_num": 297,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DeepTarget"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DeepTarget.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deeptarget/overview",
+    "github": "N/A",
+    "conda_downloads": "297",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-deeptarget\n\nname: bioconductor-deeptarget\ndescription: Deep characterization of cancer drugs by integrating large-scale genetic (CRISPR) and drug screens. Use this skill to predict drug primary and secondary targets, assess mutant vs. wild-type specificity, and analyze drug-gene interactions using DepMap-style datasets.\n\n# bioconductor-deeptarget\n\n## Overview\n\nThe `DeepTarget` package provides tools to integrate drug sensitivity profiles with genetic knockout (KO) screens (like CRISPR/Avana) to characterize drug mechanisms of action. It enables researchers to identify primary targets, discover secondary targets that mediate response when the primary is absent, and determine if a drug preferentially targets specific mutant forms of a protein.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package relies on three main data types: Drug Response Scores (DRS), Gene Effect Scores (KO.GES), and genomic features (mutations and expression).\n\n```r\nlibrary(DeepTarget)\ndata(\"OntargetM\")\n\n# Extract key matrices\nsec.prism <- OntargetM$secondary_prism  # Drugs (rows) x Cell Lines (cols)\nKO.GES <- OntargetM$avana_CRISPR        # Genes (rows) x Cell Lines (cols)\nmutations <- OntargetM$mutations_mat    # Genes x Cell Lines (0/1)\nexpression <- OntargetM$expression_20Q4 # Genes x Cell Lines (log2)\n```\n\n### 2. Computing Similarity (DKS Score)\nThe Drug-KO Similarity (DKS) is calculated using correlation between drug sensitivity and gene knockout effects.\n\n```r\n# Compute correlation for a specific drug\n# DRS_row should be a 1-row data frame or matrix for the drug of interest\nout <- computeCor(drug_id, DRS_row, KO.GES)\n# Returns a matrix with Correlation, P-val, and FDR for all genes\n```\n\n### 3. Target Prediction\nIdentify the most likely targets by comparing similarity scores across known targets or all genes.\n\n```r\n# Predict among known targets provided in metadata\ndrug_target_sim <- PredTarget(list_of_sim_results, metadata)\n\n# Predict best target across all genes\ndrug_gene_max_sim <- PredMaxSim(list_of_sim_results, metadata)\n```\n\n### 4. Interaction Analysis\nDetermine if drug response is modulated by the target's mutation status or expression level.\n\n```r\n# Test for mutation-specific activity\n# Returns strength and p-value of the interaction\nout_mut <- DoInteractMutant(target_info, mutations, DRS, KO.GES)\n\n# Test for expression-dependent activity (e.g., secondary targets)\n# CutOff defines 'low' expression (default often 2)\nout_expr <- DoInteractExp(target_info, expression, DRS, KO.GES, CutOff = 2)\n```\n\n## Application & Visualization\n\n### Visualizing Primary Targets\nUse `plotCor` to visualize the correlation between a drug and a specific gene.\n```r\nplotCor(drug_name, gene_name, prediction_df, drug_response_matrix, KO.GES, plot = TRUE)\n```\n\n### Mutant vs. Wild-Type Specificity\nUse `DMB` (Drug-Mutation-Binding) to compare correlations in mutant vs. wild-type cell lines.\n```r\n# Helps identify if a drug (e.g., Dabrafenib) specifically targets mutant BRAF\nout <- DMB(drug_name, gene_name, prediction_row, mutations, DRS, KO.GES, plot = TRUE)\n```\n\n### Secondary Target Discovery\nUse `DTR` (Drug-Target-Response) to see if a drug's effect is lost when the primary target is not expressed, then use `plotSim` to find genes that correlate with the drug in those specific \"low-expression\" cell lines.\n```r\n# Check if response depends on primary target expression\nout <- DTR(drug_name, primary_gene, prediction_row, expression, DRS, KO.GES, CutOff = 2)\n\n# Find secondary targets in cell lines where primary is low\n# 1. Filter cell lines where primary target expression < CutOff\n# 2. Run computeCor on that subset of cell lines\n```\n\n## Tips for Success\n- **Data Alignment**: Ensure cell line names (column names) match exactly between the drug response matrix and the CRISPR/expression matrices.\n- **Duplicate Assays**: Some drugs in PRISM have multiple Broad IDs or replicates. Process them individually or average them before analysis.\n- **Thresholds**: A common threshold for \"low expression\" in DepMap data is `log2(TPM+1) < 2`.\n- **Interpretation**: A high positive correlation (R) between drug sensitivity and gene KO suggests the gene is a functional target (i.e., killing the gene mimics the drug's effect).\n\n## Reference documentation\n- [DeepTarget Vignette](./references/DeepTarget_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-deeptarget",
+    "description": "This tool integrates drug sensitivity profiles with genetic knockout screens to characterize drug mechanisms of action and identify molecular targets. Use when user asks to predict primary or secondary drug targets, assess mutant versus wild-type specificity, or analyze drug-gene interactions using DepMap-style datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DeepTarget.html"
+  }
+}

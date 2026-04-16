@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-proloc",
+  "category": "bioconductor",
+  "name": "bioconductor-proloc",
+  "description": "The pRoloc package provides infrastructure and machine learning algorithms for the analysis and visualization of spatial proteomics data to determine sub-cellular protein localization. Use when user asks to manage quantitative proteomics data, visualize organelle separation using PCA plots, or predict protein localization using supervised machine learning and Bayesian modeling.",
+  "overview": "The `pRoloc` package is the standard Bioconductor tool for spatial proteomics. It provides infrastructure to manage quantitative proteomics data (via `MSnSet` objects) and implements specialized algorithms to determine the sub-cellular localization of proteins. The workflow typically involves importing fractionated mass-spectrometry data, performing quality control on organelle markers, and using machine learning to predict the localization of \"unknown\" proteins based on the distribution profile",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/pRoloc.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/lgatto/pRoloc",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pRoloc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pRoloc.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/lgatto/pRoloc",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-proloc\n\n## Overview\n\nThe `pRoloc` package is the standard Bioconductor tool for spatial proteomics. It provides infrastructure to manage quantitative proteomics data (via `MSnSet` objects) and implements specialized algorithms to determine the sub-cellular localization of proteins. The workflow typically involves importing fractionated mass-spectrometry data, performing quality control on organelle markers, and using machine learning to predict the localization of \"unknown\" proteins based on the distribution profiles of known \"marker\" proteins.\n\n## Core Workflow\n\n### 1. Data Import and Preparation\nData is managed in `MSnSet` containers. You can create these from CSV files containing expression data and metadata.\n\n```r\nlibrary(pRoloc)\nlibrary(MSnbase)\n\n# Import from a single CSV (ecol defines columns with quantitation data)\nmy_data <- readMSnSet2(\"data.csv\", ecol = 7:10, fnames = \"Protein.ID\")\n\n# Add markers from pRoloc's internal database\n# Supported: \"dmel\", \"hsap\", \"mmus\", \"atha\", etc.\nmy_markers <- pRolocmarkers(\"hsap\")\nmy_data <- addMarkers(my_data, my_markers)\n```\n\n### 2. Visualization and QC\nBefore classification, visualize the separation of organelle clusters.\n\n*   **PCA Plots**: The primary tool for viewing data separation.\n    ```r\n    plot2D(my_data, fcol = \"markers\")\n    addLegend(my_data, fcol = \"markers\", where = \"bottomright\", cex = 0.6)\n    ```\n*   **Profile Plots**: View protein intensity distributions across fractions.\n    ```r\n    plotDist(my_data[which(fData(my_data)$markers == \"Mitochondrion\"), ])\n    ```\n*   **Resolution Metrics**: Quantify how well organelles are separated using `QSep`.\n    ```r\n    q <- QSep(my_data)\n    plot(q)\n    ```\n\n### 3. Supervised Machine Learning (SVM Example)\nThe standard pipeline involves optimizing parameters, then running the classifier.\n\n```r\n# 1. Parameter Optimization (Grid search for sigma and cost)\nparams <- svmOptimisation(my_data, fcol = \"markers\", times = 10)\nplot(params)\nbest_params <- getParams(params)\n\n# 2. Classification\nres <- svmClassification(my_data, params)\n\n# 3. Thresholding (Filter low-confidence assignments)\n# Use orgQuants to set organelle-specific thresholds (e.g., 50th percentile)\nts <- orgQuants(res, fcol = \"svm\", t = 0.5)\nres <- getPredictions(res, fcol = \"svm\", t = ts)\n```\n\n### 4. Bayesian Modeling (TAGM)\nFor uncertainty quantification, use the T-augmented Gaussian Mixture (TAGM) models.\n\n```r\n# MAP estimation (faster)\nres_map <- tagmMapTrain(my_data)\nres_map <- tagmPredict(my_data, res_map)\n\n# MCMC (provides full uncertainty distribution)\nres_mcmc <- tagmMcmcTrain(my_data)\nres_mcmc <- tagmPredict(my_data, res_mcmc)\n```\n\n## Key Functions Reference\n\n*   `pRolocmarkers()`: Lists or retrieves default marker sets for various species.\n*   `getMarkers()`: Summarizes the number of markers per organelle.\n*   `plot2D()`: Supports PCA, t-SNE, and UMAP (via `method` argument).\n*   `highlightOnPlot()`: Overlays specific proteins of interest on a PCA plot.\n*   `orgQuants()`: Calculates score thresholds to maintain specific discovery rates.\n*   `pRolocVis()`: (from `pRolocGUI`) Launches an interactive web interface for data exploration.\n\n## Tips for Success\n*   **The \"unknown\" tag**: `pRoloc` functions expect non-marker proteins to be labeled as `\"unknown\"` in the marker column.\n*   **Class Imbalance**: If some organelles have very few markers, use `classWeights()` to balance the SVM.\n*   **Normalization**: Ensure data is normalized (usually to the sum of intensities per protein) using `normalise(obj, method = \"sum\")` before analysis.\n\n## Reference documentation\n- [Using pRoloc for spatial proteomics data analysis](./references/v01-pRoloc-tutorial.md)\n- [Machine learning techniques available in pRoloc](./references/v02-pRoloc-ml.md)\n- [Bayesian spatial proteomics with pRoloc](./references/v03-pRoloc-bayesian.md)\n- [A transfer learning algorithm for spatial proteomics](./references/v05-pRoloc-transfer-learning.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-proloc",
+    "description": "The pRoloc package provides infrastructure and machine learning algorithms for the analysis and visualization of spatial proteomics data to determine sub-cellular protein localization. Use when user asks to manage quantitative proteomics data, visualize organelle separation using PCA plots, or predict protein localization using supervised machine learning and Bayesian modeling.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pRoloc.html"
+  }
+}

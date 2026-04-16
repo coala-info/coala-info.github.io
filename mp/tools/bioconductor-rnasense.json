@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rnasense",
+  "category": "bioconductor",
+  "name": "bioconductor-rnasense",
+  "description": "RNAsense analyzes time-resolved RNA-seq data to identify stage-specific gene sets by combining differential expression analysis with switch point detection. Use when user asks to compare gene expression time curves between conditions, detect fold changes at specific time points, or identify significant up- or downregulation switches in expression profiles.",
+  "overview": "RNAsense facilitates the interpretation of time-series RNA-seq data by combining two analytical approaches:\n1. **Differential Expression (Fold Change):** Comparing two conditions at each discrete time point.\n2. **Switch Detection:** Identifying the specific time point where a gene's expression profile significantly shifts (up or down) within a single condition.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAsense.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/marcusrosenblatt/RNAsense",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RNAsense"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAsense.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/marcusrosenblatt/RNAsense",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rnasense\n\nname: bioconductor-rnasense\ndescription: Analyze time-resolved RNA-seq data to identify stage-specific gene sets. Use this skill when comparing gene expression time curves between two experimental conditions (e.g., wild-type vs. mutant) to detect fold changes at specific time points and identify \"switches\" (significant up- or downregulation) in expression profiles.\n\n# bioconductor-rnasense\n\n## Overview\n\nRNAsense facilitates the interpretation of time-series RNA-seq data by combining two analytical approaches:\n1. **Differential Expression (Fold Change):** Comparing two conditions at each discrete time point.\n2. **Switch Detection:** Identifying the specific time point where a gene's expression profile significantly shifts (up or down) within a single condition.\n\nThe package integrates these results to visualize stage-specific gene sets (SSGS) via heatmaps and Fisher's exact tests.\n\n## Workflow and Core Functions\n\n### 1. Data Preparation\nData must be formatted as a `SummarizedExperiment` object.\n- **rowData:** Must contain gene names/identifiers.\n- **colData:** Must contain `condition`, `time`, and `replicate`.\n- **Filtering:** It is recommended to filter out low-count genes before analysis.\n\n```r\nlibrary(RNAsense)\nlibrary(SummarizedExperiment)\n\n# Example filtering\nthCount <- 100\nvec2Keep <- which(vapply(1:dim(mydata)[1], function(i) \n  !Reduce(\"&\", assays(mydata)[[1]][i,] < thCount), c(TRUE)))\nmydata <- mydata[vec2Keep,]\n\n# Extract unique time points\ntimes <- unique(sort(as.numeric(colData(mydata)$time)))\n```\n\n### 2. Fold Change Analysis (`getFC`)\nCalculates differential expression between two conditions at every time point using the `NBPSeq` method.\n\n```r\nresultFC <- getFC(dataset = mydata, \n                  myanalyzeConditions = c(\"WT\", \"Mutant\"), \n                  cores = 1, \n                  mytimes = times)\n```\n\n### 3. Switch Detection (`getSwitch`)\nFits one-step and zero-step functions to a single condition's time profile to find the most likely \"switch\" point.\n\n```r\nresultSwitch <- getSwitch(dataset = mydata,\n                          experimentStepDetection = \"WT\",\n                          cores = 1,\n                          mytimes = times)\n```\n\n### 4. Integration and Visualization\nCombine the results to perform Fisher's exact tests and generate a heatmap of stage-specific gene sets.\n\n```r\n# Combine results\nresultCombined <- combineResults(resultSwitch, resultFC)\n\n# Plot SSGS Heatmap\n# Note: 'times' usually excludes the last time point for switch intervals\nplotSSGS(resultCombined, times[-length(times)], experimentStepDetection = \"WT\")\n```\n\n### 5. Exporting Results\nUse `outputGeneTables` to generate text files containing gene lists categorized by their switch and fold-change behavior.\n\n```r\noutputGeneTables(resultCombined)\n```\n\n## Tips for Success\n- **Parallelization:** The `cores` argument uses the `parallel` package. On Windows, set `cores = 1`.\n- **Time Points:** Ensure time points in `colData` are numeric or can be coerced to numeric for proper sorting.\n- **Thresholding:** Use `thCount` to remove noise from genes that are barely expressed across all samples, as this improves the power of the likelihood-ratio tests in `getSwitch`.\n\n## Reference documentation\n- [RNAsense Vignette](./references/example.md)\n- [RNAsense Analysis Workflow](./references/example.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-rnasense",
+    "description": "RNAsense analyzes time-resolved RNA-seq data to identify stage-specific gene sets by combining differential expression analysis with switch point detection. Use when user asks to compare gene expression time curves between conditions, detect fold changes at specific time points, or identify significant up- or downregulation switches in expression profiles.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAsense.html"
+  }
+}

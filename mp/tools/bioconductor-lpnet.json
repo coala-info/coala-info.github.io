@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-lpnet",
+  "category": "bioconductor",
+  "name": "bioconductor-lpnet",
+  "description": "This tool infers intracellular signal transduction networks from steady-state or time-series perturbation data using linear programming. Use when user asks to reconstruct gene or protein interaction networks from knockdown experiments, perform cross-validation to optimize penalty parameters, or integrate prior biological knowledge into network inference.",
+  "overview": "The `lpNet` package implements a linear programming (LP) approach to infer signaling networks. It treats signal transduction as a flow through a network where nodes are genes/proteins and edges represent interaction strengths. By observing how perturbations (like knockdowns) affect the system compared to a threshold ($\\delta$), the package solves an inverse problem to find the most likely network topology and edge weights.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/lpNet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lpNet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/lpNet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-lpnet\n\nname: bioconductor-lpnet\ndescription: Infer intracellular signal transduction networks from perturbation data (steady-state or time-series) using linear programming. Use this skill when you need to reconstruct gene or protein interaction networks from RNAi or knockdown experiments, perform cross-validation to find optimal penalty parameters, or integrate prior biological knowledge into network inference.\n\n## Overview\nThe `lpNet` package implements a linear programming (LP) approach to infer signaling networks. It treats signal transduction as a flow through a network where nodes are genes/proteins and edges represent interaction strengths. By observing how perturbations (like knockdowns) affect the system compared to a threshold ($\\delta$), the package solves an inverse problem to find the most likely network topology and edge weights.\n\n## Core Workflow\n\n### 1. Data Preparation\nYou need an observation matrix (or 3D array for time-series) and a perturbation vector/matrix.\n\n```R\nlibrary(lpNet)\n\n# n: number of genes, K: number of experiments\nn <- 5 \nK <- 7 \n\n# Observations: rows = genes, cols = experiments\nobs <- matrix(rnorm(n*K), nrow=n, ncol=K)\n\n# Define threshold delta (e.g., mean of observations per gene)\ndelta <- apply(obs, 1, mean)\ndelta_type <- \"perGene\"\n\n# Perturbation vector b: 0 if gene is inactivated, 1 otherwise\n# Length should be n * K\nb <- rep(1, n * K) \n# Example: knockdown gene 1 in experiment 1\nb[1] <- 0 \n```\n\n### 2. Network Inference\nUse `doILP` to infer the network and `getAdja` to extract the adjacency matrix.\n\n```R\n# Infer network with penalty parameter lambda\nres <- doILP(obs, delta, lambda=1, b, n, K, \n             T_=NULL, annot=getEdgeAnnot(n), delta_type)\n\n# Convert to adjacency matrix\nadja <- getAdja(res, n)\n```\n\n### 3. Time-Series Data\nFor time-series, `obs` must be an array `[genes, experiments, timepoints]`.\n\n```R\nT_ <- 4 # time points\nobs_ts <- array(rnorm(n*K*T_), c(n,K,T_))\n\nres_ts <- doILP(obs_ts, delta, lambda=1, b, n, K, T_, \n                annot=getEdgeAnnot(n), delta_type, \n                flag_time_series=TRUE)\n```\n\n## Parameter Optimization (Cross-Validation)\nTo find the best $\\lambda$, use Leave-One-Out (`loocv`) or K-fold (`kfoldCV`) cross-validation. This requires defining Gaussian parameters for active/inactive states.\n\n```R\nactive_mu <- 1.1; inactive_mu <- 0.9\nactive_sd <- 0.01; inactive_sd <- 0.01\n\n# Find range for lambda\nlambdas <- calcRangeLambda(obs, delta, delta_type)\n\n# Example LOOCV loop\nbest_mse <- Inf\nfor (l in lambdas) {\n  cv <- loocv(kfold=NULL, times=5, obs, delta, lambda=l, b, n, K, \n              T_=NULL, annot=getEdgeAnnot(n), annot_node=1:n,\n              active_mu, active_sd, inactive_mu, inactive_sd, \n              mu_type=\"single\", delta_type)\n  if (cv$MSE < best_mse) {\n    best_mse <- cv$MSE\n    best_edges <- cv$edges_all\n  }\n}\n\n# Get final adjacency matrix from CV results\nfinal_adja <- getSampleAdjaMAD(best_edges, n, 1:n)\n```\n\n## Integrating Prior Knowledge\nYou can constrain the LP solver using known biology.\n\n### Source and Sink Nodes\n```R\nres <- doILP(obs, delta, lambda=1, b, n, K, T_=NULL, \n             annot=getEdgeAnnot(n), delta_type, \n             sourceNode=1, sinkNode=5)\n```\n\n### Individual Edge Constraints\nDefine specific weights or directions for edges.\n```R\n# Format: c(\"edge_annotation\", objective_coefficient, \"direction\", rhs)\n# Example: weight of activating edge from 1 to 2 must be > 1\nprior <- list(c(\"w+_1_2\", 1, \">\", 1))\n\nres <- doILP(obs, delta, lambda=1, b, n, K, T_=NULL, \n             annot=getEdgeAnnot(n), delta_type, \n             prior=prior)\n```\n\n## Tips\n- **Edge Annotations**: Use `getEdgeAnnot(n)` to see how edges are named (e.g., `w+_1_2` for activation, `w-_1_2` for inhibition).\n- **Sign Constraints**: If you only expect activating edges, set `all.pos=TRUE` in `doILP` and use `getEdgeAnnot(n, allpos=TRUE)`.\n- **Real Data**: When working with RPPA or expression data, ensure replicates are summarized (e.g., using `summarizeRepl`) before computing $\\delta$ or running the ILP.\n\n## Reference documentation\n- [lpNet](./references/vignette_lpNet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-lpnet",
+    "description": "This tool infers intracellular signal transduction networks from steady-state or time-series perturbation data using linear programming. Use when user asks to reconstruct gene or protein interaction networks from knockdown experiments, perform cross-validation to optimize penalty parameters, or integrate prior biological knowledge into network inference.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/lpNet.html"
+  }
+}

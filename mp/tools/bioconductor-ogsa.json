@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ogsa",
+  "category": "bioconductor",
+  "name": "bioconductor-ogsa",
+  "description": "This tool performs Outlier Gene Set Analysis (OGSA) to identify pathway deregulation by integrating multi-omics data such as gene expression, methylation, and copy number variations. Use when user asks to identify significant gene sets across molecular domains, perform Tibshirani-Hastie or Rank Sum outlier analysis, or generate outlier maps for cancer subtype pathways.",
+  "overview": "The `OGSA` package provides a framework for global estimates of pathway deregulation by integrating significance estimates from individual pathway members. It is designed to handle multiple data types simultaneously (e.g., mRNA expression, CNV, and DNA methylation) to capture biological relationships, such as how copy number gains or promoter hypomethylation lead to increased gene expression.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/OGSA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "OGSA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/OGSA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ogsa\n\nname: bioconductor-ogsa\ndescription: Outlier Gene Set Analysis (OGSA) for integrating multi-omics data (expression, methylation, copy number) to identify pathway deregulation in cancer subtypes. Use this skill when performing outlier analysis across different molecular domains, specifically for identifying significant gene sets using Tibshirani-Hastie or Rank Sum outlier approaches.\n\n# bioconductor-ogsa\n\n## Overview\n\nThe `OGSA` package provides a framework for global estimates of pathway deregulation by integrating significance estimates from individual pathway members. It is designed to handle multiple data types simultaneously (e.g., mRNA expression, CNV, and DNA methylation) to capture biological relationships, such as how copy number gains or promoter hypomethylation lead to increased gene expression.\n\n## Core Workflow\n\n### 1. Data Preparation\nData should be organized as matrices with genes in rows and samples in columns. A phenotype vector (1 for cases, 0 for controls) is required.\n\n```r\nlibrary(OGSA)\ndata(ExampleData)\ndata(KEGG_BC_GS)\n\n# Define phenotype and match names\nphenotype <- pheno\nnames(phenotype) <- colnames(cnv)\n\n# Organize multi-omics data into a list\n# Order: Expression, Methylation, CNV\ndataSet <- list(expr, meth, cnv)\n```\n\n### 2. Defining Biological Relationships (Tails)\nSpecify the direction of outliers for each data type.\n*   **tailRLR**: Right-tail (Expr), Left-tail (Meth), Right-tail (CNV) — represents activation.\n*   **tailLRL**: Left-tail (Expr), Right-tail (Meth), Left-tail (CNV) — represents suppression.\n\n```r\ntailRLR <- c('right', 'left', 'right')\ntailLRL <- c('left', 'right', 'left')\n```\n\n### 3. Running Outlier Analysis\nUse `copaInt` to calculate outlier scores and `testGScogps` to test for gene set enrichment.\n\n**Method 1: Tibshirani-Hastie (Default)**\n```r\n# Standard analysis\ntibRLR <- copaInt(dataSet, phenotype, tails=tailRLR)\ngsTibRLR <- testGScogps(tibRLR, pathGS)\n\n# Corrected for normal outliers\ntibRLRcorr <- copaInt(dataSet, phenotype, tails=tailRLR, corr=TRUE)\ngsTibRLRcorr <- testGScogps(tibRLRcorr, pathGS)\n```\n\n**Method 2: Rank Sum Approach**\nRequires `offsets` to define the minimum biologically meaningful change (e.g., log fold change for expression, beta value for methylation).\n```r\noffsets <- c(1.0, 0.1, 0.5) # Expr, Meth, CNV thresholds\n\nrankRLRcorr <- copaInt(dataSet, phenotype, tails=tailRLR, \n                       method='Rank', corr=TRUE, offsets=offsets)\ngsRankRLRcorr <- testGScogps(rankRLRcorr, pathGS)\n```\n\n### 4. Visualization and Outlier Maps\nGenerate heatmaps to visualize which samples and genes contribute to a pathway's significance.\n\n```r\n# Calculate specific outlier calls\noutRankRLRcorr <- outCallRank(dataSet, phenotype, \n                              names=c('Expr', 'Meth', 'CNV'),\n                              tail=tailRLR, corr=TRUE, offsets=offsets)\n\n# Generate Outlier Map (Heatmap)\n# pathGS$PATHWAY_NAME selects the gene set\nmap <- outMap(outRankRLRcorr, pathGS$KEGG_ECM_RECEPTOR_INTERACTION, \n              hmName='ECM Outlier Map', \n              plotName='ECM_Outliers.pdf')\n```\n\n## Key Functions\n*   `copaInt()`: Main wrapper for outlier analysis. Supports `method='Tibshirani'` (default) and `method='Rank'`.\n*   `testGScogps()`: Performs statistical testing on gene sets based on outlier counts.\n*   `outCallTib()` / `outCallRank()`: Identifies specific outlier events for visualization.\n*   `outMap()`: Creates PDF heatmaps showing outlier distribution across samples and genes within a pathway.\n\n## Tips\n*   **Correction**: Always consider setting `corr=TRUE`. In the Tibshirani method, it corrects for outliers found in normal samples; in the Rank method, it applies the `offsets` thresholds.\n*   **Data Alignment**: Ensure the gene names (rows) and sample names (columns) are consistent across all matrices in the `dataSet` list.\n*   **Gene Sets**: The `pathGS` object should be a list where each element is a character vector of gene symbols.\n\n## Reference documentation\n- [OGSA Users Manual](./references/OGSAUsersManual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ogsa",
+    "description": "This tool performs Outlier Gene Set Analysis (OGSA) to identify pathway deregulation by integrating multi-omics data such as gene expression, methylation, and copy number variations. Use when user asks to identify significant gene sets across molecular domains, perform Tibshirani-Hastie or Rank Sum outlier analysis, or generate outlier maps for cancer subtype pathways.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/OGSA.html"
+  }
+}

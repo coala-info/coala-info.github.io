@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bindingsitefinder",
+  "category": "bioconductor",
+  "name": "bioconductor-bindingsitefinder",
+  "description": "BindingSiteFinder defines, filters, and visualizes RNA-binding protein binding sites from iCLIP crosslink data. Use when user asks to define equally sized binding sites, perform replicate reproducibility filtering, assign sites to genomic features, or conduct differential binding analysis.",
+  "overview": "The `BindingSiteFinder` package is designed for the precise definition of RNA-binding protein (RBP) binding sites from iCLIP (individual-nucleotide resolution UV crosslinking and immunoprecipitation) data. It transforms single-nucleotide crosslink sites into robust, equally sized binding sites while providing extensive diagnostic visualizations and integration with genomic annotations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BindingSiteFinder.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bindingsitefinder/overview",
+  "github": "https://github.com/ZarnackGroup/BindingSiteFinder",
+  "conda_downloads": "7.4K",
+  "conda_downloads_num": 7400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BindingSiteFinder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BindingSiteFinder.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bindingsitefinder/overview",
+    "github": "https://github.com/ZarnackGroup/BindingSiteFinder",
+    "conda_downloads": "7.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bindingsitefinder\n\nname: bioconductor-bindingsitefinder\ndescription: Expert guidance for the BindingSiteFinder R package to define, analyze, and visualize RBP binding sites from iCLIP data. Use this skill when you need to process iCLIP crosslink sites (e.g., from PureCLIP), define equally sized binding sites, perform replicate reproducibility filtering, assign sites to genomic features (genes/transcript regions), or conduct differential binding analysis between conditions.\n\n# bioconductor-bindingsitefinder\n\n## Overview\nThe `BindingSiteFinder` package is designed for the precise definition of RNA-binding protein (RBP) binding sites from iCLIP (individual-nucleotide resolution UV crosslinking and immunoprecipitation) data. It transforms single-nucleotide crosslink sites into robust, equally sized binding sites while providing extensive diagnostic visualizations and integration with genomic annotations.\n\n## Core Workflow\n\n### 1. Data Initialization\nThe central data structure is the `BSFDataSet`. It requires crosslink sites (GRanges) and iCLIP coverage (BigWig files).\n\n```r\nlibrary(BindingSiteFinder)\n\n# Define meta table (requires condition, clPlus, clMinus columns)\nmeta <- data.frame(\n  id = 1:4,\n  condition = factor(rep(\"WT\", 4)),\n  clPlus = c(\"rep1_plus.bw\", \"rep2_plus.bw\", ...),\n  clMinus = c(\"rep1_minus.bw\", \"rep2_minus.bw\", ...)\n)\n\n# Create BSFDataSet\nbds <- BSFDataSetFromBigWig(ranges = crosslink_sites_gr, meta = meta)\n```\n\n### 2. Automated Binding Site Definition\nThe `BSFind()` function is a high-level wrapper that executes the standard pipeline:\n1. **Global Filtering**: Removes low-score crosslink sites.\n2. **Width Estimation**: Direct data-driven estimation of optimal binding site width.\n3. **Gene-wise Filtering**: Retains top-performing sites per gene.\n4. **Merging**: Concatenates sites into fixed-width binding regions.\n5. **Reproducibility**: Filters for sites supported by $N-1$ replicates.\n6. **Annotation**: Assigns sites to genes and transcript regions (CDS, UTR, Intron).\n\n```r\n# Standard run\nbdsOut <- BSFind(\n  object = bds, \n  anno.genes = gns_gr, \n  anno.transcriptRegionList = regions_grl,\n  est.subsetChromosome = \"chr22\" # Optional: speed up estimation\n)\n\n# Quick visualization of the whole process\nprocessingStepsFlowChart(bdsOut)\n```\n\n### 3. Manual Refinement\nIf `BSFind()` is too automated, call utility functions individually:\n- `pureClipGlobalFilter()`: Filter by input score.\n- `estimateBsWidth()`: Find optimal width (use `estimateBsWidthPlot()` to visualize).\n- `makeBindingSites()`: Create the actual ranges.\n- `reproducibilityFilter()`: Ensure consistency across replicates.\n\n### 4. Genomic Annotation\nAssign binding sites to specific features to understand the RBP's binding preferences.\n\n```r\n# Assign to genes\nbds <- assignToGenes(bds, anno.genes = gns)\n\n# Assign to transcript regions (CDS, Intron, UTR)\nbds <- assignToTranscriptRegions(bds, anno.transcriptRegionList = regions)\n\n# Visualize results\ntargetGeneSpectrumPlot(bdsOut)\ntranscriptRegionSpectrumPlot(bdsOut, normalize = TRUE)\n```\n\n### 5. Differential Binding Analysis\nCompare binding between conditions (e.g., WT vs KO) while correcting for transcript expression changes using a DESeq2-based framework.\n\n```r\n# 1. Combine datasets from two conditions\nbds.comb <- bds.wt + bds.ko\n\n# 2. Calculate background (non-binding) counts per gene\nbds.diff <- calculateBsBackground(bds.comb, anno.genes = gns)\n\n# 3. Filter for sufficient signal\nbds.diff <- filterBsBackground(bds.diff)\n\n# 4. Calculate fold changes (Likelihood Ratio Test)\nbds.diff <- calculateBsFoldChange(bds.diff)\n\n# 5. Visualize\nplotBsMA(bds.diff, what = \"bs\")\ngeneRegulationPlot(bds.diff, plot.geneID = \"ENSG...\", anno.genes = gns)\n```\n\n## Visualization and Export\n- **Coverage Plots**: `bindingSiteCoveragePlot(bdsOut, plotIdx = 1)` shows replicate-level signal.\n- **BED Export**: `exportToBED(bdsOut, con = \"results.bed\")`.\n- **Range Extraction**: `getRanges(bdsOut)` returns a GRanges object with all metadata (scores, gene assignments, etc.).\n\n## Tips for Success\n- **Binding Site Width**: If the RBP is known to have broad binding, increase `maxBsWidth` in estimation or set `bsSize` manually.\n- **Reproducibility**: Use `reproducibilityScatterPlot()` to check if replicates correlate well before and after filtering.\n- **Memory**: For large genomes, use `est.subsetChromosome` during the estimation phase to save time and memory.\n\n## Reference documentation\n- [Definition of binding sites from iCLIP signal](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bindingsitefinder",
+    "description": "BindingSiteFinder defines, filters, and visualizes RNA-binding protein binding sites from iCLIP crosslink data. Use when user asks to define equally sized binding sites, perform replicate reproducibility filtering, assign sites to genomic features, or conduct differential binding analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BindingSiteFinder.html"
+  }
+}

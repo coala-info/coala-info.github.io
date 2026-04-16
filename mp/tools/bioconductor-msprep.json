@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msprep",
+  "category": "bioconductor",
+  "name": "bioconductor-msprep",
+  "description": "This tool performs pre-analytic processing of mass spectrometry-based metabolomics data. Use when user asks to summarize technical replicates, filter metabolites, impute missing values, or normalize metabolomics data.",
+  "overview": "`MSPrep` is a Bioconductor package designed for the pre-analytic processing of mass spectrometry (MS) metabolomics data. It provides a standardized pipeline to handle technical replicates, filter low-quality metabolites, impute missing values, and normalize data to remove batch effects or unwanted variation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MSPrep.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/KechrisLab/MSPrep",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MSPrep"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSPrep.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/KechrisLab/MSPrep",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msprep\n\nname: bioconductor-msprep\ndescription: Comprehensive pre-analytic processing for mass spectrometry-based metabolomics data. Use when Claude needs to perform summarization of technical replicates, metabolite filtering, missing value imputation, and normalization/batch correction using the MSPrep R package.\n\n# bioconductor-msprep\n\n## Overview\n\n`MSPrep` is a Bioconductor package designed for the pre-analytic processing of mass spectrometry (MS) metabolomics data. It provides a standardized pipeline to handle technical replicates, filter low-quality metabolites, impute missing values, and normalize data to remove batch effects or unwanted variation.\n\n## Data Preparation\n\nMSPrep supports two primary input formats: `SummarizedExperiment` objects and standard `Data Frames`.\n\n### Data Frame Requirements\nIf using a Data Frame, you must define how the package identifies compounds and samples:\n- **compVars**: A character vector of columns identifying unique compounds (e.g., `c(\"mz\", \"rt\")` or `c(\"Compound.Name\")`).\n- **sampleVars**: A character vector identifying sample variables embedded in column names (e.g., `c(\"batch\", \"replicate\", \"subject_id\")`).\n- **separator**: The character separating variables in column names (e.g., `_`).\n- **colExtraText**: Any constant prefix in column names to be ignored (e.g., `Neutral_Pos_`).\n\n### SummarizedExperiment\nWhen using `SummarizedExperiment`, the package automatically uses `assay` for abundances, `rowData` for compound info, and `colData` for sample info.\n\n## Core Workflow\n\n### 1. Summarizing Technical Replicates\nUse `msSummarize()` to collapse technical replicates into a single value per sample. It uses the Coefficient of Variation (CV) to decide between mean and median summarization.\n\n```r\nsummarizedDF <- msSummarize(data,\n                            cvMax = 0.50,\n                            minPropPresent = 1/3,\n                            compVars = c(\"mz\", \"rt\"),\n                            sampleVars = c(\"batch\", \"replicate\", \"subject_id\"),\n                            separator = \"_\",\n                            missingValue = 1)\n```\n\n### 2. Filtering Metabolites\nUse `msFilter()` to remove compounds that are not present in a minimum proportion of samples (default is the 80% rule).\n\n```r\nfilteredDF <- msFilter(summarizedDF,\n                       filterPercent = 0.8,\n                       compVars = c(\"mz\", \"rt\"),\n                       sampleVars = c(\"batch\", \"subject_id\"),\n                       separator = \"_\")\n```\n\n### 3. Imputation\nUse `msImpute()` to handle missing values. Supported methods:\n- `half-min`: Half the minimum observed value for that compound.\n- `bpca`: Bayesian PCA (requires `nPcs`).\n- `knn`: k-Nearest Neighbors (requires `kKnn`).\n\n```r\nimputedDF <- msImpute(filteredDF,\n                      imputeMethod = \"knn\",\n                      compVars = c(\"mz\", \"rt\"),\n                      sampleVars = c(\"batch\", \"subject_id\"),\n                      separator = \"_\")\n```\n\n### 4. Normalization and Batch Correction\nUse `msNormalize()` to transform and normalize data.\n- **Methods**: `median`, `quantile`, `ComBat`, `CRMN`, `RUV`, `SVA`.\n- **Transformations**: `log10` (default), `log2`, `ln`, or `none`.\n\n```r\nnormalizedDF <- msNormalize(imputedDF,\n                            normalizeMethod = \"quantile + ComBat\",\n                            transform = \"log10\",\n                            batch = \"batch\",\n                            compVars = c(\"mz\", \"rt\"),\n                            sampleVars = c(\"batch\", \"subject_id\"),\n                            separator = \"_\")\n```\n\n## All-in-One Pipeline\n\nThe `msPrepare()` function executes the entire pipeline (Summarize -> Filter -> Impute -> Normalize) in a single call.\n\n```r\npreparedData <- msPrepare(raw_data,\n                          minPropPresent = 1/3,\n                          filterPercent = 0.8,\n                          imputeMethod = \"bpca\",\n                          normalizeMethod = \"median\",\n                          transform = \"log10\",\n                          compVars = c(\"mz\", \"rt\"),\n                          sampleVars = c(\"batch\", \"replicate\", \"subject_id\"),\n                          separator = \"_\")\n```\n\n## Tips for Success\n- **Missing Values**: Ensure you specify the `missingValue` argument (e.g., `1` or `0`) if your raw data uses a specific placeholder for missingness.\n- **Batch Correction**: If using `ComBat`, ensure a \"batch\" variable is present in your `sampleVars` or `colData`.\n- **Return Type**: Use `returnToSE = TRUE` if you want the output to be a `SummarizedExperiment` object regardless of the input type.\n\n## Reference documentation\n- [Using MSPrep](./references/using_MSPrep.Rmd)\n- [Using MSPrep](./references/using_MSPrep.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msprep",
+    "description": "This tool performs pre-analytic processing of mass spectrometry-based metabolomics data. Use when user asks to summarize technical replicates, filter metabolites, impute missing values, or normalize metabolomics data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSPrep.html"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "taxadb",
+  "category": "CLI",
+  "name": "taxadb",
+  "description": "\"taxadb creates and queries a local mirror of the NCBI taxonomy database for high-throughput taxonomic lookups. Use when user asks to download taxonomy dumps, build a local taxonomic database, resolve TaxIDs to scientific names, retrieve lineage information, or map sequence accessions to taxonomic IDs.\"",
+  "overview": "taxadb is a Python-based utility designed to create and query a local mirror of the NCBI taxonomy database. It supports SQLite, MySQL, and PostgreSQL backends. By using a local database, it enables high-throughput taxonomic lookups that are significantly faster and more reliable than remote web service queries. It is particularly useful for bioinformatics pipelines requiring TaxID resolution for large sets of sequence accessions or scientific names.",
+  "homepage": "https://github.com/HadrienG/taxadb",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/taxadb/overview",
+  "github": "https://github.com/HadrienG/taxadb",
+  "conda_downloads": "9.5K",
+  "conda_downloads_num": 9500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "taxadb_download",
+      "taxadb_create",
+      "taxadb_query"
+    ],
+    "description": "download the files required to create the database",
+    "docker_image": "quay.io/biocontainers/taxadb:0.12.1--pyh5e36f6f_0",
+    "homepage": "https://github.com/HadrienG/taxadb",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/taxadb/overview",
+    "github": "https://github.com/HadrienG/taxadb",
+    "conda_downloads": "9.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "taxadb_create.cwl",
+    "taxadb_download.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# taxadb\n\n## Overview\ntaxadb is a Python-based utility designed to create and query a local mirror of the NCBI taxonomy database. It supports SQLite, MySQL, and PostgreSQL backends. By using a local database, it enables high-throughput taxonomic lookups that are significantly faster and more reliable than remote web service queries. It is particularly useful for bioinformatics pipelines requiring TaxID resolution for large sets of sequence accessions or scientific names.\n\n## Installation and Setup\nInstall the core package via pip. For SQLite support (default), no additional drivers are needed.\n```bash\npip install taxadb\n```\n*Note: For MySQL or PostgreSQL, install `pymysql` or `psycopg2` respectively.*\n\n### Database Initialization\nYou must build the local database before querying. This is a two-step process:\n1. **Download**: Fetch the latest taxonomy dumps from NCBI.\n   ```bash\n   taxadb download -o taxadb_data\n   ```\n2. **Create**: Parse the files and populate the local database.\n   ```bash\n   # For SQLite\n   taxadb create -i taxadb_data --dbname my_taxonomy.sqlite\n   \n   # For MySQL/PostgreSQL (Database must already exist)\n   taxadb create -i taxadb_data --dbname taxadb --dbtype mysql --username user --password pass\n   ```\n\n## Common CLI Patterns\nThe `taxadb` command-line interface is primarily used for database management. Querying is typically performed via the Python API, but the following patterns are essential for maintenance:\n\n- **Update Database**: Rerunning the `download` and `create` commands will refresh the local data.\n- **Custom Configuration**: Use a `.ini` file to store database credentials to avoid passing them in the CLI.\n  ```bash\n  taxadb create -i data --config taxadb.ini\n  ```\n\n## Python API Usage\nThe most efficient way to use taxadb is through its Python modules.\n\n### TaxID and Lineage Lookups\nUse the `TaxID` class to retrieve names and hierarchical information.\n```python\nfrom taxadb.taxid import TaxID\n\n# Initialize connection\ntaxid = TaxID(dbtype='sqlite', dbname='my_taxonomy.sqlite')\n\n# Get scientific name\nname = taxid.sci_name(9606) # Returns 'Homo sapiens'\n\n# Get full lineage names\nlineage = taxid.lineage_name(9606, reverse=True)\n# Returns ['cellular organisms', 'Eukaryota', ..., 'Homo sapiens']\n```\n\n### Accession to TaxID Mapping\nThe `AccessionID` class handles mapping sequence identifiers to taxonomic IDs.\n```python\nfrom taxadb.accessionid import AccessionID\n\naccession = AccessionID(dbtype='sqlite', dbname='my_taxonomy.sqlite')\nmy_accessions = ['X17276', 'Z12029']\n\n# Returns a generator of (accession, taxid) tuples\nfor acc, tid in accession.taxid(my_accessions):\n    print(f\"{acc} -> {tid}\")\n```\n\n### Name to TaxID Mapping\nUse `SciName` to find the TaxID associated with a specific organism name.\n```python\nfrom taxadb.names import SciName\n\nnames = SciName(dbtype='sqlite', dbname='my_taxonomy.sqlite')\ntid = names.taxid('Escherichia coli') # Returns 562\n```\n\n## Expert Tips\n- **Memory Management**: The `accession.taxid()` method returns a generator. When processing millions of accessions, iterate through the generator rather than converting it to a list to keep memory usage low.\n- **Environment Variables**: Set `TAXADB_CONFIG` to the path of your `taxadb.ini` file. This allows you to initialize classes like `TaxID()` or `AccessionID()` without arguments, making code more portable across environments.\n- **Database Choice**: Use **SQLite** for local, single-user scripts or small-scale analysis. Use **PostgreSQL or MySQL** for shared lab environments or when multiple concurrent processes need to query the taxonomy simultaneously.\n- **Cleanup**: After a successful `taxadb create` run, you can delete the `taxadb_data` directory (containing the raw `.dmp` files) to save disk space.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| taxadb_create | build the database |\n| taxadb_download | download the files required to create the database |\n\n## Reference documentation\n- [Taxadb GitHub Repository](./references/github_com_HadrienG_taxadb.md)\n- [Taxadb ReadTheDocs Index](./references/taxadb_readthedocs_io_en_latest_index.html.md)\n- [TaxID API Reference](./references/taxadb_readthedocs_io_en_latest_taxadb_taxid.html.md)\n- [AccessionID API Reference](./references/taxadb_readthedocs_io_en_latest_taxadb_accessionid.html.md)",
+  "skill_front_matter": {
+    "name": "taxadb",
+    "description": "taxadb creates and queries a local mirror of the NCBI taxonomy database for high-throughput taxonomic lookups. Use when user asks to download taxonomy dumps, build a local taxonomic database, resolve TaxIDs to scientific names, retrieve lineage information, or map sequence accessions to taxonomic IDs.",
+    "homepage": "https://github.com/HadrienG/taxadb"
+  }
+}

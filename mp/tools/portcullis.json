@@ -1,0 +1,53 @@
+{
+  "id": "portcullis",
+  "category": "CLI",
+  "name": "portcullis",
+  "description": "Portcullis filters unreliable splice junctions from pre-aligned RNA-seq data to distinguish genuine biological splice sites from mapping artifacts. Use when user asks to filter false-positive splice junctions, quantify junction metrics, or create a clean BAM file by removing reads supporting rejected junctions.",
+  "overview": "Portcullis is a \"portable\" tool designed to \"cull\" (filter) unreliable splice junctions from pre-aligned RNA-seq data. While most RNA-seq mappers are sensitive, they often produce a high number of false-positive splice junctions, especially in high-coverage datasets. Portcullis addresses this by analyzing the features of every junction in a BAM file and using a rule-based or machine-learning approach to distinguish genuine biological splice sites from mapping artifacts.",
+  "homepage": "https://github.com/maplesond/portcullis",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/portcullis/overview",
+  "github": "https://github.com/maplesond/portcullis",
+  "conda_downloads": "250.6K",
+  "conda_downloads_num": 250600,
+  "last_updated": "2025-09-09",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "portcullis_full",
+      "portcullis_prep",
+      "portcullis_junc",
+      "portcullis_filt",
+      "portcullis_bamfilt"
+    ],
+    "description": "Runs prep, junc, filter, and optionally bamfilt, as a complete pipeline. Assumes that the self-trained machine learning approach for filtering is to be used.",
+    "docker_image": "quay.io/biocontainers/portcullis:1.2.4--py39hc87ae8a_4",
+    "homepage": "https://github.com/maplesond/portcullis",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/portcullis/overview",
+    "github": "https://github.com/maplesond/portcullis",
+    "conda_downloads": "250.6K",
+    "last_updated": "2025-09-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "portcullis_bamfilt.cwl",
+    "portcullis_filt.cwl",
+    "portcullis_full.cwl",
+    "portcullis_junc.cwl",
+    "portcullis_prep.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# portcullis\n\n## Overview\nPortcullis is a \"portable\" tool designed to \"cull\" (filter) unreliable splice junctions from pre-aligned RNA-seq data. While most RNA-seq mappers are sensitive, they often produce a high number of false-positive splice junctions, especially in high-coverage datasets. Portcullis addresses this by analyzing the features of every junction in a BAM file and using a rule-based or machine-learning approach to distinguish genuine biological splice sites from mapping artifacts.\n\n## Core Workflows\n\n### 1. The Full Pipeline\nFor most users, the `full` mode is the most efficient way to process a BAM file. It executes the preparation, quantification, and filtering steps in a single command.\n\n```bash\nportcullis full --threads 8 --output ./portcullis_out genome.fasta aligned_reads.bam\n```\n\n### 2. Step-by-Step Execution\nIf you need more control over intermediate files or want to restart from a specific stage, use the individual modes:\n\n- **prep**: Initial processing of the BAM and Reference.\n  ```bash\n  portcullis prep --output ./prep_dir genome.fasta aligned_reads.bam\n  ```\n- **junc**: Calculate metrics for all junctions found in the prepared data.\n  ```bash\n  portcullis junc ./prep_dir\n  ```\n- **filter**: Apply filtering logic to separate genuine junctions from artifacts.\n  ```bash\n  portcullis filter ./prep_dir\n  ```\n- **bamfilt**: Create a new \"clean\" BAM file by removing reads that support rejected junctions.\n  ```bash\n  portcullis bamfilt --output filtered_reads.bam ./prep_dir aligned_reads.bam\n  ```\n\n### 3. Junction Manipulation with Junctools\nPortcullis includes a companion suite called `junctools` for converting and comparing junction files.\n\n- **Convert formats**: Convert between `.tab`, `.bed`, and `.gff`.\n  ```bash\n  junctools convert --input_format tab --output_format bed input.junctions.tab output.junctions.bed\n  ```\n- **Compare sets**: Compare two sets of junctions (e.g., Portcullis output vs. a reference annotation).\n  ```bash\n  junctools compare set1.bed set2.bed\n  ```\n\n## Expert Tips and Best Practices\n\n- **Memory Management**: Portcullis can be memory-intensive on very deep datasets. Ensure your environment has sufficient RAM, or process chromosomes individually if resources are limited.\n- **Input Requirements**: Input BAM files must be coordinate-sorted and indexed. If using the `full` or `prep` mode, ensure the reference FASTA is also indexed (`samtools faidx`).\n- **Strand Analysis**: Portcullis automatically performs strand analysis during the `junc` stage to determine the library's strandedness protocol. Check the logs to verify if it correctly identified your library type (e.g., FR, RF, or unstranded).\n- **Filtering Sensitivity**: If the default filtering is too aggressive or too relaxed, you can manually adjust the rules used for the positive and negative training sets during the `filter` stage. Use `portcullis filter --help` to see advanced threshold options.\n- **Downstream Integration**: Use the filtered `.bed` or `.tab` files as input for gene predictors like AUGUSTUS or Braker to significantly reduce false-positive gene models.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| portcullis bamfilt | Removes alignments associated with bad junctions from BAM file |\n| portcullis filter | Filters out junctions that are unlikely to be genuine or that have too little supporting evidence. The user can control three stages of the filtering process. First the user can perform filtering based on a random forest model self-trained on the provided data, alternatively the user can provide a pre-trained model. Second the user can specify a configuration file describing a set of filtering rules to apply. Third, the user can directly through the command line filter based on junction (intron) length, or the canonical label. |\n| portcullis full | Runs prep, junc, filter, and optionally bamfilt, as a complete pipeline. Assumes that the self-trained machine learning approach for filtering is to be used. |\n| portcullis prep | Prepares a genome and bam file(s) ready for junction analysis. This involves ensuring the bam file is sorted and indexed and the genome file is indexed. |\n| portcullis_junc | Analyses all potential junctions found in the input BAM file. |\n\n## Reference documentation\n- [Portcullis Overview](./references/ei-corebioinformatics_github_io_portcullis.md)\n- [Installation and Quickstart](./references/github_com_EI-CoreBioinformatics_portcullis.md)\n- [Release History and Versioning](./references/github_com_EI-CoreBioinformatics_portcullis_releases.md)",
+  "skill_front_matter": {
+    "name": "portcullis",
+    "description": "Portcullis filters unreliable splice junctions from pre-aligned RNA-seq data to distinguish genuine biological splice sites from mapping artifacts. Use when user asks to filter false-positive splice junctions, quantify junction metrics, or create a clean BAM file by removing reads supporting rejected junctions.",
+    "homepage": "https://github.com/maplesond/portcullis"
+  }
+}

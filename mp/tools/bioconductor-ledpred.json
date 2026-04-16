@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ledpred",
+  "category": "bioconductor",
+  "name": "bioconductor-ledpred",
+  "description": "This tool predicts cis-regulatory modules by building Support Vector Machine models based on genomic features like transcription factor binding sites and NGS signals. Use when user asks to map features to genomic coordinates, optimize SVM parameters, perform recursive feature elimination, or evaluate the performance of regulatory element prediction models.",
+  "overview": "LedPred is a Bioconductor package designed to map genomic features to sequences and build SVM-based models to identify regulatory elements like enhancers. It provides a complete workflow including feature extraction via a REST server, SVM parameter optimization (C and gamma), recursive feature elimination (RFE), and model evaluation using ROC and Precision-Recall curves.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/LedPred.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ledpred/overview",
+  "github": "https://github.com/aitgon/LedPred",
+  "conda_downloads": "24.8K",
+  "conda_downloads_num": 24800,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "LedPred"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/LedPred.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ledpred/overview",
+    "github": "https://github.com/aitgon/LedPred",
+    "conda_downloads": "24.8K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ledpred\n\nname: bioconductor-ledpred\ndescription: Predictive modeling of cis-regulatory modules (CRMs) using Support Vector Machines (SVM). Use this skill when analyzing DNA sequences to predict regulatory potential based on transcription factor binding sites (TFBS), NGS signals, or other genomic features.\n\n## Overview\n\nLedPred is a Bioconductor package designed to map genomic features to sequences and build SVM-based models to identify regulatory elements like enhancers. It provides a complete workflow including feature extraction via a REST server, SVM parameter optimization (C and gamma), recursive feature elimination (RFE), and model evaluation using ROC and Precision-Recall curves.\n\n## Typical Workflow\n\n### 1. Data Preparation and Feature Mapping\nThe package uses `mapFeaturesToCRMs` to create a training matrix. This function typically connects to a REST server to process BED files (genomic coordinates), PSSMs (TF matrices), and NGS data (BigWig/Bed).\n\n```r\nlibrary(LedPred)\n\n# Define paths to genomic data\npos_bed <- \"path/to/positive_regions.bed\"\nneg_bed <- \"path/to/negative_regions.bed\"\npssm_file <- \"path/to/tf_matrices.txt\"\n\n# Map features to create training set\n# Note: Requires active internet connection for the REST API\ncrm_feature_list <- mapFeaturesToCRMs(\n  URL = 'http://ifbprod.aitorgonzalezlab.org/map_features_to_crms.php',\n  positive.bed = pos_bed,\n  negative.bed = neg_bed,\n  pssm = pssm_file,\n  genome = \"dm3\"\n)\ncrm_features <- crm_feature_list$crm.features\n```\n\n### 2. Parameter Optimization\nUse `mcTune` to find the optimal cost (C) and gamma parameters for the SVM kernel (linear or radial).\n\n```r\ncost_vector <- c(1, 3, 10)\ngamma_vector <- c(1, 3, 10)\n\ntuning_obj <- mcTune(\n  data = crm_features, \n  ranges = list(cost = cost_vector, gamma = gamma_vector), \n  kernel = 'linear'\n)\n\nbest_c <- tuning_obj$e1071.tune.obj$best.parameters$cost\nbest_g <- tuning_obj$e1071.tune.obj$best.parameters$gamma\n```\n\n### 3. Feature Selection\nRank features using Recursive Feature Elimination (RFE) and determine the optimal number of features using Cohen's Kappa.\n\n```r\n# Rank features by importance\nranking <- rankFeatures(\n  data = crm_features, \n  cost = best_c, \n  gamma = best_g, \n  kernel = 'linear'\n)\n\n# Determine optimal number of features\nnb_tuner <- tuneFeatureNb(\n  data = crm_features, \n  feature.ranking = ranking, \n  kernel = 'linear', \n  cost = best_c, \n  gamma = best_g\n)\nbest_nb <- nb_tuner$best.feature.nb\n```\n\n### 4. Model Creation and Evaluation\nBuild the final model and evaluate its performance using cross-validation.\n\n```r\n# Create the SVM model\nfinal_model <- createModel(\n  data = crm_features, \n  cost = best_c, \n  gamma = best_g, \n  feature.ranking = ranking, \n  feature.nb = best_nb\n)\n\n# Evaluate performance (generates ROC/PR plots)\nperformance <- evaluateModelPerformance(\n  data = crm_features, \n  feature.ranking = ranking, \n  feature.nb = best_nb, \n  cost = best_c, \n  gamma = best_g\n)\n```\n\n### 5. Scoring New Sequences\nApply the trained model to score unknown genomic regions.\n\n```r\n# Score new data matrix\npredictions <- scoreData(\n  data = unknown_feature_matrix, \n  model = final_model, \n  score.file = \"predictions.tab\"\n)\n```\n\n## Automated Workflow\nThe `LedPred` function can run the entire pipeline (tuning, ranking, and model creation) in a single call if the feature matrix is already prepared.\n\n```r\nfull_results <- LedPred(\n  data = crm_features, \n  ranges = list(cost = c(1, 10), gamma = c(1, 10)), \n  kernel = \"linear\"\n)\n```\n\n## Tips and Best Practices\n- **Scaling**: The package internally scales features by dividing by the Euclidean length of the feature vector to handle the different ranges of PSSM scores and binary NGS signals.\n- **Kernel Selection**: Use `linear` for simpler datasets or when feature weights are needed for interpretation. Use `radial` for complex, non-linear relationships.\n- **Feature Weights**: You can extract feature weights from the model to see which TFs are most predictive of your CRMs.\n- **Negative Set**: If a negative BED file is not provided, the package can generate one by shuffling positive coordinates.\n\n## Reference documentation\n- [LedPred](./references/LedPred.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ledpred",
+    "description": "This tool predicts cis-regulatory modules by building Support Vector Machine models based on genomic features like transcription factor binding sites and NGS signals. Use when user asks to map features to genomic coordinates, optimize SVM parameters, perform recursive feature elimination, or evaluate the performance of regulatory element prediction models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/LedPred.html"
+  }
+}

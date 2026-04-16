@@ -1,0 +1,43 @@
+{
+  "id": "perl-parallel-forkmanager",
+  "category": "perl",
+  "name": "perl-parallel-forkmanager",
+  "description": "perl-parallel-forkmanager is a Perl module that manages and limits the number of concurrent forked child processes. Use when user asks to parallelize loops in Perl, manage process forking, or limit concurrent worker processes.",
+  "overview": "Parallel::ForkManager is a Perl module designed to simplify the management of forked child processes. Instead of manually tracking process IDs (PIDs) and handling wait signals, this tool allows you to define a maximum number of parallel workers. It automatically handles the forking and reaping process, ensuring that your script stays within defined resource limits while maximizing throughput. It is particularly effective for parallelizing `foreach` loops where each iteration is independent.",
+  "homepage": "https://github.com/dluxhu/perl-parallel-forkmanager",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-parallel-forkmanager/overview",
+  "github": "https://github.com/dluxhu/perl-parallel-forkmanager",
+  "conda_downloads": "159.4K",
+  "conda_downloads_num": 159400,
+  "last_updated": "2025-08-30",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perl-parallel-forkmanager"
+    ],
+    "description": "FAIL to generate CWL: perl-parallel-forkmanager not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/perl-parallel-forkmanager:2.04--pl5321hdfd78af_0",
+    "homepage": "https://github.com/dluxhu/perl-parallel-forkmanager",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-parallel-forkmanager/overview",
+    "github": "https://github.com/dluxhu/perl-parallel-forkmanager",
+    "conda_downloads": "159.4K",
+    "last_updated": "2025-08-30",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# perl-parallel-forkmanager\n\n## Overview\n\nParallel::ForkManager is a Perl module designed to simplify the management of forked child processes. Instead of manually tracking process IDs (PIDs) and handling wait signals, this tool allows you to define a maximum number of parallel workers. It automatically handles the forking and reaping process, ensuring that your script stays within defined resource limits while maximizing throughput. It is particularly effective for parallelizing `foreach` loops where each iteration is independent.\n\n## Core Usage Pattern\n\nThe standard workflow involves initializing the manager, wrapping your logic in a loop, and using `start` and `finish` calls to demarcate the child process code.\n\n```perl\nuse Parallel::ForkManager;\n\n# Initialize with maximum number of concurrent processes\nmy $max_procs = 5;\nmy $pm = Parallel::ForkManager->new($max_procs);\n\nDATA_LOOP:\nforeach my $item (@data_list) {\n    # Forks a child; returns PID to parent and 0 to child\n    # 'and next' ensures the parent continues the loop\n    my $pid = $pm->start and next DATA_LOOP;\n\n    # --- Child Process Logic Starts ---\n    print \"Processing $item in child process...\\n\";\n    # Perform task here\n    # --- Child Process Logic Ends ---\n\n    $pm->finish; # Terminates the child process\n}\n\n$pm->wait_all_children; # Ensure all workers finish before parent exits\n```\n\n## Expert Tips and Best Practices\n\n### Debugging Mode\nIf you encounter issues, set the maximum processes to `0`. This forces the script to run serially in the main process, making it easier to use standard debuggers or print statements without process interleaving.\n```perl\nmy $pm = Parallel::ForkManager->new(0);\n```\n\n### Handling Shared Resources\nChild processes inherit the memory state of the parent at the moment of forking. However, filehandles, database connections (DBI), and network sockets (like `LWP::UserAgent` objects) often cannot be shared safely.\n*   **Rule**: Always re-instantiate database or network handles inside the child block, or use `InactiveDestroy` for DBI handles in the parent to prevent the child from closing the connection on exit.\n\n### Data Retrieval from Children\nYou can pass data back to the parent process by providing a reference to the `finish` method. This requires setting up a `run_on_finish` callback in the parent.\n\n```perl\n$pm->run_on_finish(sub {\n    my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $data_structure_reference) = @_;\n    if (defined($data_structure_reference)) {\n        print \"Child $pid returned: \" . $$data_structure_reference . \"\\n\";\n    }\n});\n\n# Inside the loop:\n$pm->finish(0, \\$result);\n```\n\n### Dynamic Concurrency\nWhile usually set at initialization, you can adjust the maximum number of processes dynamically if your script needs to throttle based on system load.\n```perl\n$pm->set_max_procs(10);\n```\n\n### Identifying Processes\nUse identifiers to track specific tasks in callbacks. This is useful when the order of completion does not match the order of initiation.\n```perl\n$pm->start($identifier) and next;\n```\n\n## Common Pitfalls\n*   **Zombie Processes**: Always call `$pm->wait_all_children` at the end of your script to ensure all child processes are reaped and no \"zombies\" remain in the process table.\n*   **Memory Leaks**: In very long-running parent processes, be mindful of memory growth. Since children are short-lived, they usually don't leak, but the parent's management of callbacks can accumulate data if not handled carefully.\n*   **Nested Forking**: Avoid nesting `Parallel::ForkManager` instances unless you have a very specific reason and have calculated the exponential process growth (e.g., 5 parents each spawning 5 children = 25 active processes).\n\n## Reference documentation\n- [perl-parallel-forkmanager Overview](./references/anaconda_org_channels_bioconda_packages_perl-parallel-forkmanager_overview.md)\n- [GitHub Repository and Methods](./references/github_com_dluxhu_perl-parallel-forkmanager.md)\n- [Known Issues and Limitations](./references/github_com_dluxhu_perl-parallel-forkmanager_issues.md)",
+  "skill_front_matter": {
+    "name": "perl-parallel-forkmanager",
+    "description": "perl-parallel-forkmanager is a Perl module that manages and limits the number of concurrent forked child processes. Use when user asks to parallelize loops in Perl, manage process forking, or limit concurrent worker processes.",
+    "homepage": "https://github.com/dluxhu/perl-parallel-forkmanager"
+  }
+}

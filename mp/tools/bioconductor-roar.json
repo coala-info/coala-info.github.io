@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-roar",
+  "category": "bioconductor",
+  "name": "bioconductor-roar",
+  "description": "This tool identifies differential alternative poly-adenylation usage from RNA-seq data by comparing the prevalence of short versus long 3'UTR isoforms between two biological conditions. Use when user asks to identify alternative poly-adenylation sites, detect 3'UTR shortening or lengthening, or calculate roar values from BAM files.",
+  "overview": "The `roar` package detects preferential usage of shorter isoforms caused by alternative poly-adenylation. It calculates a \"ratio of a ratio\": the prevalence of the short isoform over the long one in two conditions, and then the ratio between those two values. It uses a Fisher test to detect significant shifts (shortening or lengthening) in 3'UTR usage.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/roar.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/vodkatad/roar",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "roar"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/roar.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/vodkatad/roar",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-roar\n\nname: bioconductor-roar\ndescription: Identify differential Alternative Poly-Adenylation (APA) usage from RNA-seq data using the roar (ratio of a ratio) method. Use this skill when you need to compare the prevalence of short vs. long 3'UTR isoforms between two biological conditions (e.g., treatment vs. control) using BAM alignment files and APA site annotations.\n\n# bioconductor-roar\n\n## Overview\n\nThe `roar` package detects preferential usage of shorter isoforms caused by alternative poly-adenylation. It calculates a \"ratio of a ratio\": the prevalence of the short isoform over the long one in two conditions, and then the ratio between those two values. It uses a Fisher test to detect significant shifts (shortening or lengthening) in 3'UTR usage.\n\n## Core Workflow\n\n### 1. Data Preparation\nYou need BAM files for two conditions and an annotation file (GTF or GRanges) defining the \"PRE\" (common to both isoforms) and \"POST\" (unique to the long isoform) regions.\n\n```R\nlibrary(roar)\n\n# Define annotation and BAM files\ngtf_path <- \"path/to/apa_annotation.gtf\"\ntreatment_bams <- c(\"treat1.bam\", \"treat2.bam\")\ncontrol_bams <- c(\"ctrl1.bam\", \"ctrl2.bam\")\n\n# Create the RoarDataset\nrds <- RoarDatasetFromFiles(treatment_bams, control_bams, gtf_path)\n```\n\n### 2. Counting and Computing Roar\nThe analysis follows a step-by-step progression, though calling high-level result functions will trigger preceding steps automatically.\n\n```R\n# 1. Count reads in PRE/POST regions (stranded=TRUE/FALSE)\nrds <- countPrePost(rds, stranded = FALSE)\n\n# 2. Compute m/M ratios and the final roar value\n# roar > 1: Shortening in treatment; roar < 1: Lengthening in treatment\nrds <- computeRoars(rds)\n\n# 3. Compute p-values via Fisher test\nrds <- computePvals(rds)\n```\n\n### 3. Extracting Results\nResults can be filtered by expression (FPKM) or significance.\n\n```R\n# Get all results\nres <- totalResults(rds)\n\n# Filter results: requires minimum expression and significance\n# nUnderCutoff indicates how many sample-wise comparisons passed the pvalCutoff\nfiltered_res <- pvalueFilter(rds, fpkmCutoff = 1, pvalCutoff = 0.05)\n```\n\n## Advanced Usage\n\n### Paired Experimental Design\nIf samples are paired (e.g., same patient before/after), use `computePairedPvals` to avoid exhaustive combinatorial Fisher tests.\n\n```R\nrds <- computePairedPvals(rds, treatBatches = c(1, 2), ctrlBatches = c(1, 2))\n```\n\n### Multiple APA Sites\nFor genes with more than two poly-adenylation sites, use the `RoarDatasetMultipleAPA` class. This requires a specific annotation format where `type` is \"apa\" or \"gene\".\n\n```R\n# rds_multi <- RoarDatasetMultipleAPAFromFiles(treatment_bams, control_bams, gtf_multi)\n# Workflow remains the same: countPrePost -> computeRoars -> computePvals\n```\n\n## Key Considerations\n- **Annotation Format**: GTF `gene_id` must end in `_PRE` or `_POST`. Each gene must have exactly one of each for standard analysis.\n- **Memory**: For very large BAM files, process data chromosome-by-chromosome using `roarWrapper_chrBychr`.\n- **Spanning Reads**: Reads overlapping the PRE/POST boundary are automatically assigned to the POST region (long isoform).\n- **Length Correction**: `roar` corrects for the length of the PRE and POST regions. If transcript lengths are not provided in the GTF metadata, genomic lengths are used.\n\n## Reference documentation\n- [Identify differential APA usage from RNA-seq alignments](./references/roar.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-roar",
+    "description": "This tool identifies differential alternative poly-adenylation usage from RNA-seq data by comparing the prevalence of short versus long 3'UTR isoforms between two biological conditions. Use when user asks to identify alternative poly-adenylation sites, detect 3'UTR shortening or lengthening, or calculate roar values from BAM files.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/roar.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-demixt",
+  "category": "bioconductor",
+  "name": "bioconductor-demixt",
+  "description": "DeMixT performs transcriptomic deconvolution to estimate component proportions and individual expression profiles from heterogeneous tumor samples. Use when user asks to estimate tumor purity, deconvolve mixed transcriptomic data, or reconstitute component-specific expression profiles for two or three components.",
+  "overview": "DeMixT is a frequentist-based deconvolution method for transcriptomic data from mixed samples. Unlike many methods that only provide proportions, DeMixT estimates both the proportions of each component (e.g., Tumor, Normal 1, Normal 2) and the component-specific expression profiles for each individual sample. It supports two-component (Tumor-Normal) and three-component (Tumor-Stroma-Immune) models.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DeMixT.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-demixt/overview",
+  "github": "N/A",
+  "conda_downloads": "28.1K",
+  "conda_downloads_num": 28100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DeMixT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DeMixT.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-demixt/overview",
+    "github": "N/A",
+    "conda_downloads": "28.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-demixt\n\nname: bioconductor-demixt\ndescription: Transcriptomic deconvolution of heterogeneous tumor samples using the DeMixT R package. Use this skill to estimate component-specific proportions (tumor, stroma, immune) and reconstitute individual expression profiles from mixed transcriptomic data (two or three components).\n\n# bioconductor-demixt\n\n## Overview\nDeMixT is a frequentist-based deconvolution method for transcriptomic data from mixed samples. Unlike many methods that only provide proportions, DeMixT estimates both the proportions of each component (e.g., Tumor, Normal 1, Normal 2) and the component-specific expression profiles for each individual sample. It supports two-component (Tumor-Normal) and three-component (Tumor-Stroma-Immune) models.\n\n## Core Workflow\n\n### 1. Data Preparation\nDeMixT requires raw (non-log) expression data.\n- **Mixed Samples (data.Y)**: The observed expression matrix from tumor tissues.\n- **Reference Samples (data.N1, data.N2)**: Expression matrices from known components (e.g., matched or unmatched normal/stromal/immune tissues).\n- **Preprocessing**: Use `DeMixT_preprocessing` to filter genes based on standard deviation to improve stability.\n\n```r\n# Example Preprocessing\npreprocessed_data = DeMixT_preprocessing(CountMatrix, Normal.id, Tumor.id, \n                                         selected.genes = 9000)\nPRAD_filter = preprocessed_data$count.matrix\n```\n\n### 2. Proportion Estimation\nThe primary function `DeMixT` handles the full pipeline. It defaults to the `GS` (Gene Selection) method, which uses profile likelihood.\n\n```r\nlibrary(DeMixT)\nlibrary(SummarizedExperiment)\n\n# Prepare data objects\ndata.Y = SummarizedExperiment(assays = list(counts = PRAD_filter[, Tumor.id]))\ndata.N1 = SummarizedExperiment(assays = list(counts = PRAD_filter[, Normal.id]))\n\n# Run Deconvolution\nres = DeMixT(data.Y = data.Y,\n             data.N1 = data.N1,\n             gene.selection.method = \"GS\",\n             nspikein = 5,           # Number of simulated normal samples\n             ngene.selected.for.pi = 1000,\n             nthread = 8)            # Parallel computing (Linux/Windows recommended)\n```\n\n### 3. Interpreting Results\nThe output object contains:\n- `res$pi`: A matrix of estimated proportions. For 2-component, `res$pi[2, ]` is the Tumor Proportion (PiT).\n- `res$ExprT`: Reconstituted expression profiles for the unknown (Tumor) component.\n- `res$ExprN1`: Reconstituted expression profiles for the N1 component.\n\n### 4. Advanced Functions\n- `DeMixT_GS`: Standalone function for proportion estimation using profile likelihood gene selection.\n- `DeMixT_DE`: Standalone function for proportion estimation using differential expression gene selection (faster, better for sparse data).\n- `DeMixT_S2`: Used to deconvolve expression profiles if proportions (`pi`) are already known.\n\n## Key Parameters and Tips\n- **Spike-ins**: Setting `nspikein` (e.g., 5-50) helps correct for bias when tumor proportions are skewed toward the high end.\n- **Gene Selection**: For `DeMixT_GS`, testing a range of `ngene.selected.for.pi` (e.g., 500, 1000, 1500) and choosing the one with the highest average pairwise correlation across different spike-in settings is recommended.\n- **Platform Note**: OpenMP parallelization is not supported on R 4.0+ for macOS; use Linux for large datasets to utilize `nthread`.\n- **Input Scale**: Ensure data is on the raw scale (counts or TPM), not log-transformed, as the model assumes a log-normal distribution internally.\n\n## Reference documentation\n- [DeMixT Vignette](./references/demixt.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-demixt",
+    "description": "DeMixT performs transcriptomic deconvolution to estimate component proportions and individual expression profiles from heterogeneous tumor samples. Use when user asks to estimate tumor purity, deconvolve mixed transcriptomic data, or reconstitute component-specific expression profiles for two or three components.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DeMixT.html"
+  }
+}

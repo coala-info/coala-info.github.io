@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spatialdecon",
+  "category": "bioconductor",
+  "name": "bioconductor-spatialdecon",
+  "description": "\"SpatialDecon estimates cell type abundances from spatial transcriptomics data by performing deconvolution against a reference cell profile matrix. Use when user asks to estimate cell type composition in spatial regions, create custom cell profile matrices from single-cell data, or perform deconvolution on GeoMx DSP datasets.\"",
+  "overview": "SpatialDecon is an R package designed to estimate the mixed cell type composition within spatial transcriptomics regions of interest (ROIs). It uses a constrained least-squares regression model to decompose bulk gene expression into cell type-specific contributions based on a reference \"cell profile matrix.\" It is particularly optimized for GeoMx Digital Spatial Profiling (DSP) data, offering specialized handling for background noise and tumor-specific signal contamination.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialDecon.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Nanostring-Biostats/SpatialDecon",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SpatialDecon"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialDecon.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Nanostring-Biostats/SpatialDecon",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spatialdecon\n\nname: bioconductor-spatialdecon\ndescription: Estimation of cell type abundance from spatial gene expression data (e.g., Nanostring GeoMx). Use this skill to perform deconvolution on spatial transcriptomics datasets, create custom cell profile matrices from single-cell RNA-seq data, and visualize cell type distributions.\n\n# bioconductor-spatialdecon\n\n## Overview\nSpatialDecon is an R package designed to estimate the mixed cell type composition within spatial transcriptomics regions of interest (ROIs). It uses a constrained least-squares regression model to decompose bulk gene expression into cell type-specific contributions based on a reference \"cell profile matrix.\" It is particularly optimized for GeoMx Digital Spatial Profiling (DSP) data, offering specialized handling for background noise and tumor-specific signal contamination.\n\n## Core Workflow\n\n### 1. Data Preparation\nSpatialDecon requires three primary inputs:\n- **Normalized Data**: A matrix of normalized expression values (genes in rows, observations in columns).\n- **Background Matrix**: A matrix of the same dimensions as the normalized data representing expected background noise (often derived from Negative Control probes).\n- **Cell Profile Matrix (X)**: A reference matrix of expected expression profiles for each cell type.\n\n```r\nlibrary(SpatialDecon)\n\n# Estimate background for GeoMx data\nbg = derive_GeoMx_background(norm = norm_matrix,\n                             probepool = feature_metadata$Module,\n                             negnames = \"NegProbe\")\n```\n\n### 2. Cell Profile Matrices\nYou can use pre-loaded matrices, download from the Nanostring library, or create custom ones.\n- **SafeTME**: Pre-loaded matrix for immune and stroma cells in the tumor microenvironment.\n- **Download**: Use `download_profile_matrix(species, age_group, matrixname)`.\n- **Custom**: Create from single-cell data (Seurat or matrix) using `create_profile_matrix`.\n\n```r\ncustom_mtx <- create_profile_matrix(mtx = sc_counts, \n                                    cellAnnots = sc_metadata, \n                                    cellTypeCol = \"cell_type\", \n                                    cellNameCol = \"cell_id\",\n                                    minCellNum = 5)\n```\n\n### 3. Running Deconvolution\nThere are two main entry points depending on your data object:\n- `spatialdecon()`: For standard matrices.\n- `runspatialdecon()`: For `NanoStringGeoMxSet` objects (GeomxTools).\n\n**Basic Run:**\n```r\nres = spatialdecon(norm = norm, bg = bg, X = safeTME, align_genes = TRUE)\n# Main result is the 'beta' matrix (cell abundances)\nhead(res$beta)\n```\n\n**Advanced Run (with Tumor Modeling):**\nIf analyzing tumor samples, provide a logical vector identifying pure tumor segments to allow the algorithm to model and remove cancer-specific expression.\n```r\nrestils = spatialdecon(norm = norm,\n                       raw = raw_counts,\n                       bg = bg,\n                       X = safeTME,\n                       is_pure_tumor = annot$is_tumor,\n                       n_tumor_clusters = 5,\n                       cell_counts = annot$nuclei_counts)\n```\n\n### 4. Interpreting Results\nThe output object contains:\n- `beta`: Estimated cell abundance scores.\n- `prop_of_nontumor`: Rescaled proportions of non-tumor cells.\n- `cell.counts`: Estimated total cell numbers (if `cell_counts`/nuclei were provided).\n- `yhat` / `resids`: Fitted values and residuals for QC.\n\n### 5. Visualization\n- `TIL_barplot()`: Create stacked barplots of cell abundances.\n- `florets()`: Plot cell abundances as pie-like \"florets\" on 2D coordinates (e.g., PCA or X/Y coordinates).\n\n```r\nTIL_barplot(res$beta, draw_legend = TRUE)\n\nflorets(x = pc1, y = pc2, b = res$beta, cex = 2)\n```\n\n## Advanced Functions\n- **collapseCellTypes**: Merge closely related cell types (e.g., CD8+ naive and memory) into a single score to increase stability.\n- **reverseDecon**: Model gene expression as a function of cell abundance to identify genes that vary independently of cell mixing (e.g., genes regulated by the microenvironment).\n- **mergeTumorIntoX**: Manually append tumor profiles to a reference matrix before running deconvolution.\n\n## Reference documentation\n- [Use of SpatialDecon in a small GeoMx dataset](./references/SpatialDecon_vignette.md)\n- [Use of SpatialDecon in a large GeoMx dataset with GeomxTools](./references/SpatialDecon_vignette_NSCLC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spatialdecon",
+    "description": "SpatialDecon estimates cell type abundances from spatial transcriptomics data by performing deconvolution against a reference cell profile matrix. Use when user asks to estimate cell type composition in spatial regions, create custom cell profile matrices from single-cell data, or perform deconvolution on GeoMx DSP datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialDecon.html"
+  }
+}

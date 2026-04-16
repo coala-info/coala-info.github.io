@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cyanofilter",
+  "category": "bioconductor",
+  "name": "bioconductor-cyanofilter",
+  "description": "The cyanoFilter package provides a specialized workflow for analyzing flow cytometry data from cyanobacteria. Use when user asks to filter FCS files based on metadata, clean flow cytometry data, remove margin events, filter out debris, or identify phytoplankton populations.",
+  "overview": "The `cyanoFilter` package provides a specialized workflow for the analysis of flow cytometry data, particularly tuned for cyanobacteria. It streamlines the transition from raw FCM files to identified cell populations by providing tools for metadata-driven file selection, data transformation, and a multi-step gating process (margin events -> debris -> phytoplankton).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cyanoFilter.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cyanofilter/overview",
+  "github": "https://github.com/fomotis/cyanoFilter",
+  "conda_downloads": "9.8K",
+  "conda_downloads_num": 9800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cyanoFilter"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cyanoFilter.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cyanofilter/overview",
+    "github": "https://github.com/fomotis/cyanoFilter",
+    "conda_downloads": "9.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cyanofilter\n\n## Overview\n\nThe `cyanoFilter` package provides a specialized workflow for the analysis of flow cytometry data, particularly tuned for cyanobacteria. It streamlines the transition from raw FCM files to identified cell populations by providing tools for metadata-driven file selection, data transformation, and a multi-step gating process (margin events -> debris -> phytoplankton).\n\n## Core Workflow\n\n### 1. Metadata Pre-processing and File Selection\nBefore reading FCS files, use the metadata (CSV) to identify which measurements are valid based on cell concentration.\n\n- `goodFcs()`: Labels measurements as \"good\" or \"bad\" based on a desired range of cells per microliter.\n- `retain()`: Selects a single file per sample (e.g., the one with the maximum or minimum concentration) from those labeled \"good\".\n\n```r\n# Example: Filter for concentration between 50 and 1000 cells/uL\nmetafile$Status <- goodFcs(metafile = metafile, col_cpml = \"CellspML\", mxd_cellpML = 1000, mnd_cellpML = 50)\n\n# Example: Retain the file with the highest concentration per sample group\nmetafile$Retained <- retain(meta_files = metafile_subset, make_decision = \"maxi\", Status = \"Status\", CellspML = \"CellspML\")\n```\n\n### 2. Data Loading and Cleaning\nLoad files using `flowCore` and prepare them for analysis by removing NA and negative values.\n\n- `noNA()`: Removes rows containing NA values.\n- `noNeg()`: Removes rows containing negative values.\n- `lnTrans()`: Performs logarithmic transformation on specified channels.\n\n```r\nlibrary(flowCore)\nflowfile <- read.FCS(\"path_to_file.fcs\", alter.names = TRUE)\nflowfile_clean <- noNA(flowfile) %>% noNeg()\nflowfile_trans <- lnTrans(flowfile_clean, notToTransform = c(\"SSC.W\", \"TIME\"))\n```\n\n### 3. Visualization\n- `ggpairsDens()`: Creates a panel plot of all channels with bivariate kernel smoothed color density.\n- `pairs_plot()`: A base-R version of the density scatter plot matrix.\n\n### 4. Gating Sequence\n\n#### Step A: Margin Events\nIdentify and remove particles that are too large for the detector (margin events) using the width channel.\n- `cellMargin()`: Creates a `MarginEvents` object. Use `type = 'estimate'` to automatically find the cut point.\n- `reducedFlowframe()`: Extracts the flowFrame containing only non-margin events.\n\n```r\nmargin_out <- cellMargin(flowframe = flowfile_trans, Channel = 'SSC.W', type = 'estimate')\nplot(margin_out)\nclean_frame <- reducedFlowframe(margin_out)\n```\n\n#### Step B: Debris Removal\nFilter out non-living particles/debris by leveraging chlorophyll *a* signatures.\n- `debrisNc()`: Identifies debris based on pigment channels (e.g., RED.B.HLin for chlorophyll).\n\n```r\nnodebris <- debrisNc(flowframe = clean_frame, ch_chlorophyll = \"RED.B.HLin\", ch_p2 = \"YEL.B.HLin\", ph = 0.05)\nplot(nodebris)\n```\n\n#### Step C: Phytoplankton Gating\nThe final step clusters the remaining particles into specific populations.\n- `phytoFilter()`: Uses peaks in pigment and complexity channels to segment populations.\n\n```r\nfinal_gate <- phytoFilter(flowfile = reducedFlowframe(nodebris),\n                          pig_channels = c(\"RED.B.HLin\", \"YEL.B.HLin\", \"RED.R.HLin\"),\n                          com_channels = c(\"FSC.HLin\", \"SSC.HLin\"))\nplot(final_gate)\n```\n\n## Key Classes and Methods\n- **MarginEvents**: Result of `cellMargin()`. Contains slots `@fullflowframe`, `@reducedflowframe`, and counts.\n- **PhytoFilter**: Result of `phytoFilter()`. Contains slots `@Cell_count` and `@Debris_Count`.\n- **Methods**: `plot()`, `summary()`, and `reducedFlowframe()` are implemented for these S4 classes to facilitate easy inspection of gating results.\n\n## Reference documentation\n- [cyanoFilter: A Semi-Automated Framework for Identifying Phytplanktons and Cyanobacteria Population in Flow Cytometry](./references/cyanoFilter.md)\n- [cyanoFilter Vignette Source](./references/cyanoFilter.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cyanofilter",
+    "description": "The cyanoFilter package provides a specialized workflow for analyzing flow cytometry data from cyanobacteria. Use when user asks to filter FCS files based on metadata, clean flow cytometry data, remove margin events, filter out debris, or identify phytoplankton populations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cyanoFilter.html"
+  }
+}

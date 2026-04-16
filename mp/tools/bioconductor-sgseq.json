@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sgseq",
+  "category": "bioconductor",
+  "name": "bioconductor-sgseq",
+  "description": "SGSeq analyzes alternative splicing in RNA-seq data using a splice graph representation. Use when user asks to analyze alternative splicing, construct splice graphs, quantify splice variants, calculate PSI, predict novel transcript features, or visualize splice events.",
+  "overview": "SGSeq is a Bioconductor package designed to analyze alternative splicing using a splice graph representation. It processes BAM files (from splice-aware aligners like STAR, HISAT2, or GSNAP) to identify transcript features (exons and junctions), construct splice graphs, and quantify splice variants. It supports both annotation-based analysis and *de novo* prediction of novel splice sites and exons.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SGSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SGSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SGSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sgseq\n\n## Overview\n\nSGSeq is a Bioconductor package designed to analyze alternative splicing using a splice graph representation. It processes BAM files (from splice-aware aligners like STAR, HISAT2, or GSNAP) to identify transcript features (exons and junctions), construct splice graphs, and quantify splice variants. It supports both annotation-based analysis and *de novo* prediction of novel splice sites and exons.\n\n## Core Workflow\n\n### 1. Sample Information\nSGSeq requires a `data.frame` or `DataFrame` containing sample metadata. Use `getBamInfo()` to automatically extract library statistics from BAM files.\n\n```r\nlibrary(SGSeq)\n# Required columns: sample_name, file_bam\nsi <- data.frame(\n  sample_name = c(\"N1\", \"T1\"),\n  file_bam = c(\"path/to/n1.bam\", \"path/to/t1.bam\"),\n  stringsAsFactors = FALSE\n)\n# Extract read length, fragment length, and library size\nsi <- getBamInfo(si)\n```\n\n### 2. Feature Analysis (Annotation-based)\nTo analyze splicing based on known transcripts, convert a `TxDb` object to `TxFeatures`, then to `SGFeatures`.\n\n```r\n# Extract features from TxDb\ntxf <- convertToTxFeatures(txdb)\n# Convert to splice graph features (disjoins overlapping exons)\nsgf <- convertToSGFeatures(txf)\n# Quantify features across samples\nsgfc <- analyzeFeatures(si, features = txf)\n```\n\n### 3. De Novo Prediction\nTo discover novel splice events, SGSeq can predict features directly from BAM files.\n\n```r\n# Predict features within a specific genomic range\ngr <- GRanges(\"chr16\", IRanges(87362930, 87393901), strand = \"-\")\nsgfc_pred <- analyzeFeatures(si, which = gr)\n\n# Annotate predicted features with known gene/transcript names\nsgfc_pred <- annotate(sgfc_pred, txf)\n```\n\n### 4. Splice Variant Identification and PSI\nSplice events are identified as alternative paths in the graph. Relative usage is quantified as \"Percentage Spliced In\" (PSI/$\\Psi$).\n\n```r\n# Identify variants and calculate PSI\nsgvc <- analyzeVariants(sgfc_pred)\n\n# Access PSI values (variantFreq assay)\npsi_values <- variantFreq(sgvc)\n\n# Access variant metadata (e.g., variantType like SE for skipped exon)\nmcols(sgvc)$variantType\n```\n\n### 5. Visualization\nSGSeq provides high-level plotting functions for splice graphs and heatmaps.\n\n```r\n# Plot splice graph and feature expression heatmap\nplotFeatures(sgfc, geneID = 1)\n\n# Plot specific splice event and variant usage\nplotVariants(sgvc, eventID = 1)\n\n# Plot per-base coverage and junction counts\nplotCoverage(sgfc[, 1], geneID = 1)\n```\n\n## Advanced Tasks\n\n### Variant Effect Prediction\nPredict how alternative splicing affects the protein-coding sequence.\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\nvep <- predictVariantEffects(sgvc, txdb, Hsapiens)\n```\n\n### Differential Splicing\nSGSeq does not perform statistical testing directly but provides counts compatible with `DEXSeq` or `limma`. Use `getSGVariantCounts()` to obtain a single count per variant (assay `countsVariant5pOr3p`) for these tools.\n\n```r\nsgvc_counts <- getSGVariantCounts(rowRanges(sgvc), sample_info = si)\ncounts_matrix <- counts(sgvc_counts)\n```\n\n## Tips and Constraints\n- **BAM Requirements**: BAM files must be indexed and contain the `XS` tag (provided by most splice-aware aligners) to indicate strand.\n- **Memory**: For genome-wide analysis, process by chromosome or gene clusters to manage memory. Use the `cores` argument in `analyzeFeatures` for parallelization.\n- **Library Size**: Ensure `lib_size` in sample info reflects the total aligned fragments in the original BAM, even if working with subsetted BAMs, to ensure accurate FPKM calculation.\n\n## Reference documentation\n- [Splice event prediction and quantification from RNA-seq data](./references/SGSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sgseq",
+    "description": "SGSeq analyzes alternative splicing in RNA-seq data using a splice graph representation. Use when user asks to analyze alternative splicing, construct splice graphs, quantify splice variants, calculate PSI, predict novel transcript features, or visualize splice events.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SGSeq.html"
+  }
+}

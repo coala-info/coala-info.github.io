@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-adverscarial",
+  "category": "bioconductor",
+  "name": "bioconductor-adverscarial",
+  "description": "This tool evaluates the robustness of scRNA-seq cell-type classifiers by generating and testing adversarial perturbations. Use when user asks to perform single-gene attacks, execute max-change modifications, or run cluster gradient descent to assess classifier vulnerability.",
+  "overview": "The `adverSCarial` package provides a framework to evaluate the vulnerability of scRNA-seq classifiers to adversarial perturbations. It supports three primary attack types:\n1. **Single-gene attack**: Smallest modification (one gene) to change a cell's classification.\n2. **Max-change attack**: Largest possible modification to the input without changing the classification (testing over-confidence).\n3. **Cluster Gradient Descent (CGD)**: Gradient-based iterative modification to switch cluster class",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/adverSCarial.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-adverscarial/overview",
+  "github": "N/A",
+  "conda_downloads": "1.7K",
+  "conda_downloads_num": 1700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "adverSCarial"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/adverSCarial.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-adverscarial/overview",
+    "github": "N/A",
+    "conda_downloads": "1.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-adverscarial\n\nname: bioconductor-adverscarial\ndescription: Tools for generating and evaluating adversarial attacks on scRNA-seq classifiers. Use this skill to assess the robustness of single-cell RNA sequencing cell-type classifiers using single-gene, max-change, and Cluster Gradient Descent (CGD) attacks.\n\n# bioconductor-adverscarial\n\n## Overview\nThe `adverSCarial` package provides a framework to evaluate the vulnerability of scRNA-seq classifiers to adversarial perturbations. It supports three primary attack types:\n1. **Single-gene attack**: Smallest modification (one gene) to change a cell's classification.\n2. **Max-change attack**: Largest possible modification to the input without changing the classification (testing over-confidence).\n3. **Cluster Gradient Descent (CGD)**: Gradient-based iterative modification to switch cluster classification.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad scRNA-seq data (typically as a matrix or SingleCellExperiment) and existing cell type annotations.\n\n```r\nlibrary(adverSCarial)\nlibrary(LoomExperiment)\n\n# Load example data\npbmcPath <- system.file(\"extdata\", \"pbmc_short.loom\", package=\"adverSCarial\")\nlfile <- import(pbmcPath, type=\"SingleCellLoomExperiment\")\nmatPbmc <- counts(lfile)\ncellTypes <- rowData(lfile)$cell_type\n```\n\n### 2. Formatting Classifiers\nTo use a custom classifier (e.g., CHETAH, scType, or Random Forest), it must be wrapped in a function that returns a specific format:\n\n```r\n# Required format:\n# c(prediction = \"cell_type_label\", odd = confidence_score)\n# For CGD, also include typePredictions (matrix) and cellTypes (vector)\n\nmy_classifier <- function(expr, clusters, target) {\n    # ... classification logic ...\n    return(c(prediction = pred, odd = score))\n}\n```\n\n### 3. Executing Attacks\n\n#### Single-Gene Attack\nFinds if modifying one gene (e.g., to its 99th percentile) can flip the classification.\n\n```r\ngenesMinChange <- advSingleGene(\n    matPbmc, \n    cellTypes, \n    targetCluster = \"DC\",\n    classifier = MClassifier, \n    advMethod = \"perc99\",\n    exclGenes = marker_list,\n    returnFirstFound = TRUE\n)\n```\n\n#### Max-Change Attack\nIdentifies how many genes can be \"corrupted\" before the classifier notices.\n\n```r\ngenesMaxChange <- advMaxChange(\n    matPbmc, \n    cellTypes, \n    \"Memory CD4 T\", \n    MClassifier,\n    advMethod = \"perc99\"\n)\n```\n\n#### Cluster Gradient Descent (CGD)\nA more powerful attack that follows an approximated gradient.\n\n```r\nresCGD <- advCGD(\n    as.data.frame(matPbmc), \n    cellTypes,\n    \"Memory CD4 T\", \n    MClassifier, \n    alpha = 1, \n    epsilon = 1\n)\n```\n\n### 4. Applying and Verifying Perturbations\nUse `advModifications` to generate the \"attacked\" matrix and re-run the classifier to verify success.\n\n```r\n# Apply modifications found in attack\nmatAdver <- advModifications(matPbmc, names(genesMinChange@values), cellTypes, \"DC\")\n\n# Verify\nresClassif <- MClassifier(matAdver, cellTypes, \"DC\")\n```\n\n## Vulnerability Overview\nUse `singleGeneOverview` and `maxChangeOverview` to quickly screen which cell types or classifiers are most susceptible across different modification types.\n\n```r\nmin_change_summary <- singleGeneOverview(\n    matPbmc, \n    cellTypes, \n    MClassifier,\n    modifications = list(c(\"perc1\"), c(\"perc99\"))\n)\n```\n\n## Reference documentation\n- [adverSCarial: Generate and analyze vulnerability](./references/vign01_adverSCarial.md)\n- [Vulnerability analysis overview](./references/vign02_overView_analysis.md)\n- [Adapting classifiers for adverSCarial](./references/vign03_adapt_classifier.md)\n- [Advanced Random Walk attacks](./references/vign04_advRandWalkMinChange.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-adverscarial",
+    "description": "This tool evaluates the robustness of scRNA-seq cell-type classifiers by generating and testing adversarial perturbations. Use when user asks to perform single-gene attacks, execute max-change modifications, or run cluster gradient descent to assess classifier vulnerability.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/adverSCarial.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ncdfflow",
+  "category": "bioconductor",
+  "name": "bioconductor-ncdfflow",
+  "description": "This tool provides memory-efficient storage and manipulation of large flow cytometry datasets by storing event-level data on disk in netCDF format. Use when user asks to manage large FCS files that exceed RAM, convert flowSet objects to disk-backed storage, or perform compensation, transformation, and gating on high-throughput flow cytometry data.",
+  "overview": "The `ncdfFlow` package provides a memory-efficient alternative to the standard `flowCore` data structures. By using the `ncdfFlowSet` class, event-level data is stored on disk in netCDF format rather than in RAM. This allows for the analysis of high-throughput flow cytometry experiments (hundreds or thousands of files) on standard computers. Most methods for `flowSet` (transformation, compensation, gating) are extended to work transparently with `ncdfFlowSet`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ncdfFlow.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ncdfFlow"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ncdfFlow.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ncdfflow\n\nname: bioconductor-ncdfflow\ndescription: Memory-efficient storage and manipulation of flow cytometry data using netCDF. Use when handling large FCS datasets that exceed RAM, or when performing standard flowCore operations (transformation, compensation, gating) on disk-backed ncdfFlowSet objects.\n\n# bioconductor-ncdfflow\n\n## Overview\n\nThe `ncdfFlow` package provides a memory-efficient alternative to the standard `flowCore` data structures. By using the `ncdfFlowSet` class, event-level data is stored on disk in netCDF format rather than in RAM. This allows for the analysis of high-throughput flow cytometry experiments (hundreds or thousands of files) on standard computers. Most methods for `flowSet` (transformation, compensation, gating) are extended to work transparently with `ncdfFlowSet`.\n\n## Core Workflow\n\n### 1. Creating an ncdfFlowSet\nYou can create an `ncdfFlowSet` by reading FCS files directly or by converting an existing `flowSet`.\n\n```r\nlibrary(ncdfFlow)\n\n# Read FCS files directly to disk\nfiles <- list.files(path, pattern = \".fcs\", full.names = TRUE)\nncfs <- read.ncdfFlowSet(files = files)\n\n# Convert an existing flowSet to ncdfFlowSet\ndata(GvHD)\nncfs_gvhd <- ncdfFlowSet(GvHD)\n\n# Create an empty structure to fill later\nncfs_empty <- read.ncdfFlowSet(files = files, isWriteSlice = FALSE)\n```\n\n### 2. Data Access and Metadata\n`ncdfFlowSet` supports standard `flowCore` metadata methods.\n\n```r\n# Metadata access\nsampleNames(ncfs)\ncolnames(ncfs)\npData(ncfs)\nkeyword(ncfs, \"FILENAME\")\n\n# Extracting a single flowFrame (loads into memory)\nfr <- ncfs[[1]]\nfr <- ncfs[[\"sample_name\"]]\n\n# Subsetting (returns a new ncdfFlowSet pointing to the same disk file)\nncfs_subset <- ncfs[1:3]\n```\n\n### 3. Compensation and Transformation\nThese operations return a new `ncdfFlowSet` pointing to a new netCDF file containing the processed data.\n\n```r\n# Compensation\ncomp_mat <- read.table(comp_file, header = TRUE, check.names = FALSE)\nncfs_comp <- compensate(ncfs, comp_mat)\n\n# Transformation\nasinhTrans <- arcsinhTransform(a = 1, b = 1, c = 1)\nncfs_trans <- transform(ncfs, `FL1-H` = asinhTrans(`FL1-H`))\n```\n\n### 4. Gating and Subsetting\nStandard filters and subsetting operations work as they do in `flowCore`.\n\n```r\n# Filtering\nrectGate <- rectangleGate(filterId = \"NonDebris\", \"FSC-H\" = c(200, Inf))\nresults <- filter(ncfs, rectGate)\n\n# Subsetting based on a gate\nncfs_gate <- Subset(ncfs, rectGate)\n\n# Splitting (returns an ncdfFlowList)\nncfs_list <- split(ncfs, results)\n```\n\n### 5. Iteration with ncfsApply\nWhile `fsApply` works, `ncfsApply` is recommended for functions that return a `flowFrame` (like custom transformations) to ensure the results are stored back to disk rather than bloating memory.\n\n```r\n# Apply a function and return a new ncdfFlowSet\nncfs_new <- ncfsApply(ncfs, function(fr) {\n    # Perform operation on flowFrame\n    return(fr)\n})\n```\n\n## Important Usage Tips\n\n*   **File Management**: Creating an `ncdfFlowSet` generates a physical `.nc` file on disk. Deleting the R object with `rm()` does **not** delete the disk file. You must explicitly call `unlink(ncfs)` to remove the data from the drive.\n*   **Cloning**: Use `clone.ncdfFlowSet(ncfs)` to create a physical copy of the data on disk.\n*   **Coercion**: If you need to move data back to RAM for specific legacy functions, use `as.flowSet(ncfs)`. Use the `top` argument (e.g., `as.flowSet(ncfs, top = 5)`) to sample a subset and avoid memory crashes.\n*   **Indices**: `ncdfFlow` uses sample names as primary identifiers for indexing the data matrix. Always prefer sample names over numeric indices when assigning data slices.\n\n## Reference documentation\n\n- [ncdfFlow](./references/ncdfFlow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ncdfflow",
+    "description": "This tool provides memory-efficient storage and manipulation of large flow cytometry datasets by storing event-level data on disk in netCDF format. Use when user asks to manage large FCS files that exceed RAM, convert flowSet objects to disk-backed storage, or perform compensation, transformation, and gating on high-throughput flow cytometry data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ncdfFlow.html"
+  }
+}

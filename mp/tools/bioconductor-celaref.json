@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-celaref",
+  "category": "bioconductor",
+  "name": "bioconductor-celaref",
+  "description": "The celaref package annotates single-cell RNA-seq clusters by comparing their gene expression rankings to characterized reference datasets. Use when user asks to annotate scRNA-seq clusters, compare query clusters to reference datasets, or identify cell types based on transcriptomic similarity.",
+  "overview": "The `celaref` package streamlines the annotation of scRNAseq clusters by suggesting labels based on transcriptomic similarity to characterized reference datasets. Unlike tools that operate at the individual cell level, `celaref` works at the cluster level. It ranks genes by their enrichment within a cluster (using the lower 95% CI of fold-change) and compares the distribution of \"top\" genes from a query cluster against the full rankings of a reference dataset.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/celaref.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-celaref/overview",
+  "github": "N/A",
+  "conda_downloads": "22.6K",
+  "conda_downloads_num": 22600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "celaref"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/celaref.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-celaref/overview",
+    "github": "N/A",
+    "conda_downloads": "22.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-celaref\n\n## Overview\n\nThe `celaref` package streamlines the annotation of scRNAseq clusters by suggesting labels based on transcriptomic similarity to characterized reference datasets. Unlike tools that operate at the individual cell level, `celaref` works at the cluster level. It ranks genes by their enrichment within a cluster (using the lower 95% CI of fold-change) and compares the distribution of \"top\" genes from a query cluster against the full rankings of a reference dataset.\n\n## Typical Workflow\n\n### 1. Data Loading and Preparation\n`celaref` uses `SummarizedExperiment` objects. You can load data from flat files, 10X Genomics output, or R data frames.\n\n```r\nlibrary(celaref)\n\n# From flat files\ndataset_se <- load_se_from_files(\n    counts_matrix = \"counts.tab\",\n    cell_info_file = \"cell_metadata.tab\",\n    group_col_name = \"Cluster\" # Column containing cluster assignments\n)\n\n# From 10X CellRanger output\ndataset_se <- load_dataset_10Xdata(\n    dataset_path = \"path/to/10X_output\",\n    dataset_genome = \"GRCh38\",\n    clustering_set = \"kmeans_7_clusters\"\n)\n```\n\n### 2. Pre-processing and Filtering\nIt is essential to filter low-expression genes and small clusters that lack statistical power.\n\n```r\n# Filter genes and small groups\ndataset_se <- trim_small_groups_and_low_expression_genes(\n    dataset_se,\n    min_lib_size = 1000,\n    min_group_membership = 5\n)\n\n# Optional: Convert IDs (e.g., Ensembl to Symbol)\n# Requires a 'GeneSymbol' column in rowData\ndataset_se <- convert_se_gene_ids(dataset_se, new_id='GeneSymbol', eval_col='total_count')\n```\n\n### 3. Within-Dataset Differential Expression\nThis step calculates the \"distinctiveness\" of genes for each cluster. It is the most time-consuming step and should be done for both query and reference datasets.\n\n```r\n# Parallelization is highly recommended via num_cores\nde_table.query <- contrast_each_group_to_the_rest(\n    dataset_se, \n    dataset_name = \"my_query\", \n    num_cores = 4\n)\n```\n\n### 4. Comparison and Annotation\nCompare the query rankings to the reference rankings to visualize similarity and generate labels.\n\n```r\n# 1. Visualize similarity with violin plots\n# A biased distribution near 0 (top of plot) indicates high similarity\nmake_ranking_violin_plot(de_table.test = de_table.query, de_table.ref = de_table.ref)\n\n# 2. Generate suggested cluster labels\nlabel_table <- make_ref_similarity_names(de_table.query, de_table.ref)\n# The 'shortlab' column contains the suggested names\n```\n\n## Working with Microarray References\nIf using a microarray dataset as a reference, use the `limma`-based function:\n\n```r\nde_table.microarray <- contrast_each_group_to_the_rest_for_norm_ma_with_limma(\n    norm_expression_table = microarray_expr_matrix,\n    sample_sheet_table = sample_metadata,\n    dataset_name = \"MicroarrayRef\",\n    sample_name = \"sampleId\", \n    group_name = \"celltype\"\n)\n```\n\n## Interpreting Results\n\n*   **Median Gene Rank**: A value near 0 indicates the query cluster's top genes are also highly ranked in the reference group. A value of 0.5 indicates a random distribution.\n*   **shortlab**: The suggested label. If multiple reference groups are similar (e.g., subtypes), they are separated by \"|\".\n*   **No similarity**: Reported if the distribution is not significantly different from random or if no clear frontrunner exists.\n*   **Reciprocal Matches**: Indicated in brackets `()`. These occur when the reference-to-query comparison also supports the match, providing higher confidence.\n\n## Reference documentation\n- [celaref Manual](./references/celaref_doco.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-celaref",
+    "description": "The celaref package annotates single-cell RNA-seq clusters by comparing their gene expression rankings to characterized reference datasets. Use when user asks to annotate scRNA-seq clusters, compare query clusters to reference datasets, or identify cell types based on transcriptomic similarity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/celaref.html"
+  }
+}

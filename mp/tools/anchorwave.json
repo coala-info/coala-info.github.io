@@ -1,0 +1,51 @@
+{
+  "id": "anchorwave",
+  "category": "CLI",
+  "name": "anchorwave",
+  "description": "AnchorWave performs sensitive genome-to-genome alignment by identifying conserved anchors and refining them using the wavefront alignment algorithm. Use when user asks to align genomes with high sequence diversity, perform collinear or rearrangement-aware genome alignment, or compare polyploid species.",
+  "overview": "AnchorWave (Anchored Wavefront Alignment) is designed for sensitive genome-to-genome alignment where high sequence diversity or complex structural polymorphisms exist. It operates by identifying conserved anchors—typically full-length coding sequences (CDS) or exons—to establish collinear blocks. These blocks are then refined into shorter intervals for high-sensitivity alignment using the Wavefront Alignment (WFA) algorithm. It is particularly powerful for polyploid species or comparative genomi",
+  "homepage": "https://github.com/baoxingsong/AnchorWave",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/anchorwave/overview",
+  "github": "https://github.com/baoxingsong/AnchorWave",
+  "conda_downloads": "17.1K",
+  "conda_downloads_num": 17100,
+  "last_updated": "2025-05-07",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "anchorwave_gff2seq",
+      "anchorwave_genoAli",
+      "anchorwave_proali",
+      "anchorwave_ali"
+    ],
+    "description": "Extract the longest CDS or exon sequences for each gene from a GFF/GTF file and a reference genome.",
+    "docker_image": "quay.io/biocontainers/anchorwave:1.2.6--h077b44d_0",
+    "homepage": "https://github.com/baoxingsong/AnchorWave",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/anchorwave/overview",
+    "github": "https://github.com/baoxingsong/AnchorWave",
+    "conda_downloads": "17.1K",
+    "last_updated": "2025-05-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "anchorwave_ali.cwl",
+    "anchorwave_genoAli.cwl",
+    "anchorwave_gff2seq.cwl",
+    "anchorwave_proali.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# anchorwave\n\n## Overview\nAnchorWave (Anchored Wavefront Alignment) is designed for sensitive genome-to-genome alignment where high sequence diversity or complex structural polymorphisms exist. It operates by identifying conserved anchors—typically full-length coding sequences (CDS) or exons—to establish collinear blocks. These blocks are then refined into shorter intervals for high-sensitivity alignment using the Wavefront Alignment (WFA) algorithm. It is particularly powerful for polyploid species or comparative genomics involving ancient whole-genome duplications where standard alignment tools often fail to maintain collinearity.\n\n## Core Workflow\nThe standard AnchorWave pipeline requires four primary steps to move from raw genomic data to a final alignment.\n\n### 1. Extract Anchors\nUse `gff2seq` to extract the longest full-length CDS or exon for each gene from the reference genome.\n```bash\nanchorwave gff2seq -i ref.gff3 -r ref.fa -o ref.cds.fa\n```\n*   **Tip**: Use the `-x` flag if you prefer to use exon records instead of CDS.\n*   **Tip**: Ensure the GFF3/GTF matches the reference FASTA chromosome names exactly.\n\n### 2. Lift Over Anchors\nMap the extracted anchors to both the reference and query genomes using a splice-aware aligner (minimap2 is recommended).\n```bash\n# Map to Reference\nminimap2 -x splice -t 10 -k 12 -a2 ref.fa ref.cds.fa > ref.sam\n# Map to Query\nminimap2 -x splice -t 10 -k 12 -a2 query.fa ref.cds.fa > query.sam\n```\n\n### 3. Perform Genome Alignment\nChoose between `genoAli` (collinear/global) or `proali` (rearrangements/WGD).\n\n**For genomes without major rearrangements (Collinear):**\n```bash\nanchorwave genoAli -i ref.gff3 -as ref.cds.fa -r ref.fa -a query.sam -ar ref.sam -s query.fa -n output.anchors -o output.maf\n```\n\n**For genomes with translocations, fusions, or WGD:**\n```bash\nanchorwave proali -i ref.gff3 -as ref.cds.fa -r ref.fa -a query.sam -ar ref.sam -s query.fa -n output.anchors -o output.maf\n```\n\n## Expert Tips and Best Practices\n*   **Algorithm Selection**: Use `genoAli` for closely related species or individuals of the same species where chromosomal synteny is preserved. Use `proali` for inter-species comparisons where translocations or WGD events are expected.\n*   **Memory Management**: AnchorWave is memory-intensive. A single thread typically requires ~20GB RAM for diverse genomes. Each additional thread adds approximately 10GB of memory overhead.\n*   **Handling Inversions**: If using `genoAli` and inversions are present, use the `-IV` flag to allow the algorithm to identify and align inverted regions.\n*   **WGD Parameters**: When using `proali` for polyploid genomes, tune the `-R` (reference duplication) and `-Q` (query duplication) parameters to match the known ploidy levels or duplication history.\n*   **Anchor Filtering**: If the alignment is too noisy, increase the `-m` parameter in `gff2seq` to filter out short exons (default is 20bp), which can reduce false-positive anchor matches.\n*   **Output Format**: The primary output is in MAF (Multiple Alignment Format). If downstream tools require other formats (like BAM or PAF), use external converters like `bioconvert` or `paftools`.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| anchorwave ali | Sequence alignment using AnchorWave |\n| anchorwave genoAli | Perform genome alignment using anchorwave |\n| anchorwave gff2seq | Extract the longest CDS or exon sequences for each gene from a GFF/GTF file and a reference genome. |\n| anchorwave proali | Identify collinear blocks and perform genome alignment using anchors. |\n\n## Reference documentation\n- [AnchorWave Main Documentation](./references/github_com_baoxingsong_AnchorWave.md)\n- [Bioconda Package Overview](./references/anaconda_org_channels_bioconda_packages_anchorwave_overview.md)",
+  "skill_front_matter": {
+    "name": "anchorwave",
+    "description": "AnchorWave performs sensitive genome-to-genome alignment by identifying conserved anchors and refining them using the wavefront alignment algorithm. Use when user asks to align genomes with high sequence diversity, perform collinear or rearrangement-aware genome alignment, or compare polyploid species.",
+    "homepage": "https://github.com/baoxingsong/AnchorWave"
+  }
+}

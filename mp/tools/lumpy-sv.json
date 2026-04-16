@@ -1,0 +1,48 @@
+{
+  "id": "lumpy-sv",
+  "category": "CLI",
+  "name": "lumpy-sv",
+  "description": "Lumpy-sv is a probabilistic framework that detects structural variants by integrating multiple signals from high-throughput sequencing data. Use when user asks to detect structural variants, extract discordant or split reads, or run a streamlined variant discovery workflow using lumpyexpress.",
+  "overview": "Lumpy-sv is a probabilistic framework designed to detect structural variants by integrating multiple signals from high-throughput sequencing data. It is particularly effective because it can combine evidence from various libraries and discovery types (like split-reads and discordant pairs) into a single statistical model. While the core `lumpy` tool offers high flexibility for advanced users, the `lumpyexpress` wrapper provides a streamlined, best-practice workflow for standard analyses.",
+  "homepage": "https://github.com/arq5x/lumpy-sv",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/lumpy-sv/overview",
+  "github": "https://github.com/arq5x/lumpy-sv",
+  "conda_downloads": "70.1K",
+  "conda_downloads_num": 70100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lumpy-sv",
+      "lumpy-sv_extractSplitReads_BwaMem",
+      "lumpy-sv_lumpyexpress",
+      "lumpy-sv_pairend_distro.py"
+    ],
+    "description": "Lumpy: a general probabilistic framework for structural variant discovery. (Note: The provided help text contains only container runtime error messages and no usage information.)",
+    "docker_image": "quay.io/biocontainers/lumpy-sv:0.3.1--3",
+    "homepage": "https://github.com/arq5x/lumpy-sv",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/lumpy-sv/overview",
+    "github": "https://github.com/arq5x/lumpy-sv",
+    "conda_downloads": "70.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "lumpy-sv_lumpyexpress.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# lumpy-sv\n\n## Overview\n\nLumpy-sv is a probabilistic framework designed to detect structural variants by integrating multiple signals from high-throughput sequencing data. It is particularly effective because it can combine evidence from various libraries and discovery types (like split-reads and discordant pairs) into a single statistical model. While the core `lumpy` tool offers high flexibility for advanced users, the `lumpyexpress` wrapper provides a streamlined, best-practice workflow for standard analyses.\n\n## Installation\n\nThe most reliable way to install lumpy-sv is via Bioconda:\n\n```bash\nconda install -c bioconda lumpy-sv\n```\n\nAlternatively, it can be built from source using `make`.\n\n## Pre-processing Requirements\n\nLumpy-sv requires specific input signals extracted from your primary BAM files. The input BAMs must be coordinate-sorted and contain proper `@RG` (Read Group) tags in the header.\n\n### Extracting Evidence\nIf you are not using a wrapper like `speedseq`, you must manually extract discordant and split reads:\n\n1. **Discordant Reads**: Pairs that do not map with the expected orientation or distance.\n   ```bash\n   samtools view -b -F 1294 sample.bam > sample.discordants.unsorted.bam\n   ```\n2. **Split Reads**: Reads that map to non-contiguous genomic locations.\n   ```bash\n   samtools view -h sample.bam | extractSplitReads_BwaMem -i stdin | samtools view -Sb - > sample.splitters.unsorted.bam\n   ```\n3. **Sort Evidence**:\n   ```bash\n   samtools sort sample.discordants.unsorted.bam -o sample.discordants.bam\n   samtools sort sample.splitters.unsorted.bam -o sample.splitters.bam\n   ```\n\n## Common CLI Patterns\n\n### Standard Analysis (lumpyexpress)\nFor most users, `lumpyexpress` is the recommended interface. It automates the calculation of library statistics and runs the core engine.\n\n```bash\nlumpyexpress \\\n    -B sample.bam \\\n    -S sample.splitters.bam \\\n    -D sample.discordants.bam \\\n    -o output.vcf\n```\n\n### Joint Calling (Multi-sample)\nTo call variants across multiple samples simultaneously, provide comma-separated lists to the input flags.\n\n```bash\nlumpyexpress \\\n    -B s1.bam,s2.bam \\\n    -S s1.splitters.bam,s2.splitters.bam \\\n    -D s1.discordants.bam,s2.discordants.bam \\\n    -o multi_sample.vcf\n```\n\n### Advanced Customization (lumpy)\nThe traditional `lumpy` command allows for fine-grained control over probability curves and library parameters.\n\n```bash\nlumpy \\\n    -mw 4 \\\n    -tt 0 \\\n    -pe id:sample,bam_file:sample.discordants.bam,histo_file:sample.lib.histo,mean:300,stdev:50,read_length:101,min_non_overlap:101,discordant_z:3,back_distance:10,weight:1 \\\n    -sr id:sample,bam_file:sample.splitters.bam,back_distance:10,weight:1 \\\n    > output.vcf\n```\n\n## Expert Tips and Best Practices\n\n- **Use Smoove**: The authors recommend `smoove` as the primary way to run lumpy. It simplifies the workflow further, handles parallelization, and implements additional filters to reduce false positives.\n- **Exclude Problematic Regions**: Use the `-x` flag to provide a BED file of \"blacklisted\" regions (e.g., telomeres, centromeres, or high-signal regions) to significantly improve performance and accuracy.\n- **Library Statistics**: If using the traditional `lumpy` command, ensure your `histo_file` (generated by `pairend_distro.py`) is accurate, as the probabilistic model relies heavily on the insert size distribution.\n- **CRAM Support**: While `lumpyexpress` can accept CRAM files for the main alignment (-B), the splitters (-S) and discordants (-D) must still be in BAM format.\n\n## Reference documentation\n- [Lumpy-sv GitHub Repository](./references/github_com_arq5x_lumpy-sv.md)\n- [Bioconda lumpy-sv Overview](./references/anaconda_org_channels_bioconda_packages_lumpy-sv_overview.md)",
+  "skill_front_matter": {
+    "name": "lumpy-sv",
+    "description": "Lumpy-sv is a probabilistic framework that detects structural variants by integrating multiple signals from high-throughput sequencing data. Use when user asks to detect structural variants, extract discordant or split reads, or run a streamlined variant discovery workflow using lumpyexpress.",
+    "homepage": "https://github.com/arq5x/lumpy-sv"
+  }
+}

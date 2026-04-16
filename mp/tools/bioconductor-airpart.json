@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-airpart",
+  "category": "bioconductor",
+  "name": "bioconductor-airpart",
+  "description": "This tool analyzes single-cell allelic imbalance and differential allelic imbalance using generalized fused lasso or nonparametric methods. Use when user asks to partition cell types by allelic ratio, cluster genes with similar imbalance profiles, perform quality control on allelic counts, or estimate posterior mean allelic ratios.",
+  "overview": "The `airpart` package identifies sets of genes displaying differential cell-type-specific allelic imbalance across cell types or states using single-cell RNA-seq data. It utilizes a generalized fused lasso with binomial observations or nonparametric methods to partition cell types by their allelic imbalance.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/airpart.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-airpart/overview",
+  "github": "https://github.com/Wancen/airpart",
+  "conda_downloads": "10.6K",
+  "conda_downloads_num": 10600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "airpart"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/airpart.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-airpart/overview",
+    "github": "https://github.com/Wancen/airpart",
+    "conda_downloads": "10.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-airpart\n\nname: bioconductor-airpart\ndescription: Analyze single-cell allelic imbalance (AI) and differential allelic imbalance (DAI) using the airpart R package. Use this skill to partition cell types by allelic ratio, cluster genes with similar imbalance profiles, and perform quality control on allelic counts.\n\n## Overview\n\nThe `airpart` package identifies sets of genes displaying differential cell-type-specific allelic imbalance across cell types or states using single-cell RNA-seq data. It utilizes a generalized fused lasso with binomial observations or nonparametric methods to partition cell types by their allelic imbalance.\n\n## Core Workflow\n\n### 1. Data Preparation\n`airpart` requires a `SingleCellExperiment` (SCE) object with:\n- `colData(sce)$x`: A factor representing discrete cell types.\n- `assays(sce)[[\"a1\"]]`: Counts for the effect allele.\n- `assays(sce)[[\"a2\"]]`: Counts for the non-effect allele.\n\n```r\nlibrary(airpart)\nlibrary(SingleCellExperiment)\n\n# Preprocess to add pseudo-counts for clustering/visualization\nsce <- preprocess(sce)\n```\n\n### 2. Quality Control\nPerform QC on both cells and genes to ensure robust allelic ratio estimates.\n\n```r\n# Cell QC\ncellQCmetrics <- cellQC(sce, mad_detected = 4)\nsce <- sce[, cellQCmetrics$filter_sum | cellQCmetrics$filter_detected]\n\n# Gene QC (filter for expression in >25% of cells and high variation)\nfeatureQCmetric <- featureQC(sce)\nsce <- sce[featureQCmetric$filter_celltype & featureQCmetric$filter_sd, ]\n```\n\n### 3. Gene Clustering\nCluster genes by their allelic imbalance profile to increase power and speed.\n\n```r\n# Gaussian Mixture Modeling (Default)\nsce <- geneCluster(sce, G = 1:4)\n\n# View cluster sizes\ntable(mcols(sce)$cluster)\n```\n\n### 4. Cell Type Partitioning\nIdentify which cell types share similar allelic ratios for a specific gene cluster.\n\n**Option A: Fused Lasso (Binomial Likelihood)**\nBest for data following a binomial distribution.\n```r\nsce_sub <- fusedLasso(sce, model = \"binomial\", genecluster = 1)\n# If niter > 1, use consensusPart\nsce_sub <- consensusPart(sce_sub)\n```\n\n**Option B: Mann-Whitney-Wilcoxon Extension**\nBest for data with high over-dispersion (small `theta`).\n```r\nthrs <- 10^seq(-2, -0.4, by = 0.2)\nsce_sub <- wilcoxExt(sce, genecluster = 1, threshold = thrs)\n```\n\n### 5. Allelic Ratio Estimation\nCalculate posterior mean allelic ratios and credible intervals using a beta-binomial model.\n\n```r\n# Estimate ratios and test for Dynamic Allelic Imbalance (DAI)\nsce_sub <- allelicRatio(sce_sub, DAItest = TRUE)\n\n# Extract results (ar, svalue, lower, upper)\nresults <- extractResult(sce_sub)\n```\n\n## Visualization\n\n- **Heatmap**: `makeHeatmap(sce_sub)` - Shows allelic ratios across cells and genes, optionally ordered by partition.\n- **Forest Plot**: `makeForest(sce_sub)` - Displays posterior means and credible intervals per cell type.\n- **Violin Plot**: `makeViolin(sce_sub)` - Shows distribution of posterior mean allelic ratios.\n- **Step Plot**: `makeStep(sce_sub[genes,])` - Visualizes allelic ratio changes across cell types for specific genes.\n\n## Statistical Inference\n\n- **Allelic Imbalance (AI)**: Look for `svalue < 0.005` or credible intervals not overlapping 0.5.\n- **Dynamic Allelic Imbalance (DAI)**: Check `mcols(sce_sub)$adj.p.value < 0.05` for significant differences across the cell type partition.\n\n## Reference documentation\n\n- [Differential cell-type-specific allelic imbalance with airpart](./references/airpart.md)\n- [airpart Vignette Source](./references/airpart.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-airpart",
+    "description": "This tool analyzes single-cell allelic imbalance and differential allelic imbalance using generalized fused lasso or nonparametric methods. Use when user asks to partition cell types by allelic ratio, cluster genes with similar imbalance profiles, perform quality control on allelic counts, or estimate posterior mean allelic ratios.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/airpart.html"
+  }
+}

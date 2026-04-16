@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-netsmooth",
+  "category": "bioconductor",
+  "name": "bioconductor-netsmooth",
+  "description": "netSmooth implements a network-smoothing framework that uses graph-based diffusion to reduce noise and dropout effects in omics datasets. Use when user asks to smooth single-cell RNA-seq data using protein-protein interaction networks, optimize diffusion parameters for clustering, or identify robust cell populations.",
+  "overview": "`netSmooth` is an R package that implements a network-smoothing framework for omics datasets, particularly single-cell RNA-seq. It uses a graph-based diffusion process where gene expression values are smoothed based on their neighbors in a provided network (like a PPI). The intuition is that genes connected in a network should have predictive expression patterns for one another. This process helps overcome the \"dropout\" effect and high noise levels typical in single-cell data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/netSmooth.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/BIMSBbioinfo/netSmooth",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "netSmooth"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/netSmooth.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/BIMSBbioinfo/netSmooth",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-netsmooth\n\n## Overview\n\n`netSmooth` is an R package that implements a network-smoothing framework for omics datasets, particularly single-cell RNA-seq. It uses a graph-based diffusion process where gene expression values are smoothed based on their neighbors in a provided network (like a PPI). The intuition is that genes connected in a network should have predictive expression patterns for one another. This process helps overcome the \"dropout\" effect and high noise levels typical in single-cell data.\n\n## Core Workflow\n\n### 1. Prepare Input Data\nYou need two primary inputs:\n- **Expression Matrix**: A genes-by-samples matrix (or a `SingleCellExperiment` object).\n- **Adjacency Matrix**: A square matrix representing the network, where row and column names match the gene IDs in the expression matrix.\n\n### 2. Basic Smoothing\nUse the `netSmooth()` function to perform the diffusion.\n\n```r\nlibrary(netSmooth)\nlibrary(SingleCellExperiment)\n\n# Load example data\ndata(smallPPI)\ndata(smallscRNAseq)\n\n# Smooth with a fixed alpha (0 = no smoothing, 1 = maximum diffusion)\nsmoothed_exp <- netSmooth(smallscRNAseq, smallPPI, alpha=0.5)\n\n# Result is a SummarizedExperiment; convert to SCE if needed\nsce_smoothed <- SingleCellExperiment(\n    assays=list(counts=assay(smoothed_exp)),\n    colData=colData(smoothed_exp)\n)\n```\n\n### 3. Optimizing Alpha\nThe `alpha` parameter controls the diffusion distance. You can let the package find an optimal value automatically based on robust clustering performance.\n\n```r\n# Automated alpha optimization\nsmoothed_auto <- netSmooth(smallscRNAseq, smallPPI, alpha='auto')\n```\n\n### 4. Robust Clustering\nThe package provides `robustClusters()` which uses the `clusterExperiment` framework to find stable cell populations.\n\n```r\n# Cluster the smoothed data\nclustering_results <- robustClusters(smoothed_auto, \n                                     makeConsensusMinSize=2, \n                                     makeConsensusProportion=0.9)\n\n# Access cluster assignments (-1 indicates unassigned/noise)\nclusters <- clustering_results$clusters\n```\n\n### 5. Dimensionality Reduction Selection\nDifferent datasets respond better to different DR methods (PCA, t-SNE, UMAP). `netSmooth` can pick the best one by calculating the entropy of the 2D embedding.\n\n```r\n# Calculate embeddings\nlibrary(scater)\nsce <- runPCA(smallscRNAseq, ncomponents=2)\nsce <- runTSNE(sce, ncomponents=2)\n\n# Pick the method with the highest information content (entropy)\nbest_dr <- pickDimReduction(sce)\n```\n\n## Building Networks from StringDB\nIf you do not have a pre-computed adjacency matrix, you can build one using `STRINGdb`:\n\n1.  Retrieve the graph for your species (e.g., 9606 for Human).\n2.  Filter for high-confidence edges (e.g., top 10% of `combined_score`).\n3.  Convert the graph to an adjacency matrix using `igraph::as_adjacency_matrix()`.\n4.  Map Protein IDs to Gene IDs (Ensembl) using `biomaRt` to match your expression data.\n\n## Tips and Troubleshooting\n- **Gene Mismatch**: If genes in your expression matrix are missing from the network, `netSmooth` will keep the original values for those genes and attach them to the smoothed matrix.\n- **Performance**: For large datasets, ensure R is linked against optimized BLAS libraries (like openBLAS) to speed up matrix operations.\n- **Data Scale**: It is common to visualize results using `log2(assay(sce) + 1)` for heatmaps after smoothing.\n\n## Reference documentation\n- [Building PPIs from StringDB](./references/buildingPPIsFromStringDB.md)\n- [Introduction to netSmooth package](./references/netSmoothIntro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-netsmooth",
+    "description": "netSmooth implements a network-smoothing framework that uses graph-based diffusion to reduce noise and dropout effects in omics datasets. Use when user asks to smooth single-cell RNA-seq data using protein-protein interaction networks, optimize diffusion parameters for clustering, or identify robust cell populations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/netSmooth.html"
+  }
+}

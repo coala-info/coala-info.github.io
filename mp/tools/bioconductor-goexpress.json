@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-goexpress",
+  "category": "bioconductor",
+  "name": "bioconductor-goexpress",
+  "description": "This tool visualizes and ranks Gene Ontology terms from gene expression data to identify biological processes that best discriminate between experimental groups. Use when user asks to identify significant GO terms using supervised clustering, rank gene sets based on expression profiles, or generate heatmaps and dendrograms for specific biological functions.",
+  "overview": "GOexpress is a Bioconductor package designed for the exploration of multifactorial transcriptomics data. It uses a supervised approach to rank Gene Ontology (GO) terms based on the ability of their associated genes to discriminate between predefined experimental groups. It is particularly useful for visualizing how specific biological processes or molecular functions behave across different treatments, time-points, or genotypes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GOexpress.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-goexpress/overview",
+  "github": "https://github.com/kevinrue/GOexpress",
+  "conda_downloads": "25.0K",
+  "conda_downloads_num": 25000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GOexpress"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GOexpress.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-goexpress/overview",
+    "github": "https://github.com/kevinrue/GOexpress",
+    "conda_downloads": "25.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-goexpress\n\nname: bioconductor-goexpress\ndescription: Visualise gene expression data (microarray/RNA-seq) using Gene Ontology (GO) annotations. Use this skill to identify GO terms that best classify sample groups using supervised clustering (Random Forest or ANOVA) and to generate high-quality gene expression profiles, heatmaps, and dendrograms.\n\n## Overview\n\nGOexpress is a Bioconductor package designed for the exploration of multifactorial transcriptomics data. It uses a supervised approach to rank Gene Ontology (GO) terms based on the ability of their associated genes to discriminate between predefined experimental groups. It is particularly useful for visualizing how specific biological processes or molecular functions behave across different treatments, time-points, or genotypes.\n\n## Core Workflow\n\n### 1. Data Preparation\nGOexpress requires an `ExpressionSet` object containing a normalized expression matrix and phenotypic metadata.\n\n```R\nlibrary(GOexpress)\nlibrary(Biobase)\n\n# Load example data\ndata(AlvMac)\n\n# Ensure the grouping factor is an R factor\nAlvMac$Treatment <- factor(AlvMac$Treatment)\n```\n\n### 2. Running the Analysis\nThe `GO_analyse()` function is the primary engine. It scores genes using `randomForest` (default) or `one-way ANOVA`.\n\n```R\n# Using local annotations (recommended for speed and reproducibility)\n# Requires GO_genes, all_GO, and all_genes mapping objects\nset.seed(4543)\nresults <- GO_analyse(\n  eSet = AlvMac, \n  f = \"Treatment\",\n  GO_genes = AlvMac_GOgenes, \n  all_GO = AlvMac_allGO, \n  all_genes = AlvMac_allgenes\n)\n\n# Note: If local annotations are omitted, the package will attempt \n# to fetch them from Ensembl via biomaRt (slower).\n```\n\n### 3. Statistical Significance\nAssess the significance of GO term rankings using permutation-based P-values.\n\n```R\n# N=1000 is recommended for publication-quality P-values\nresults.pVal <- pValue_GO(result = results, N = 100)\n```\n\n### 4. Filtering and Subsetting\nFilter results by ontology type (BP, MF, CC), minimum gene count, or P-value.\n\n```R\n# Filter for Biological Process with at least 5 genes and p < 0.05\nBP.filtered <- subset_scores(\n  result = results.pVal,\n  namespace = \"biological_process\",\n  total = 5,\n  p.val = 0.05\n)\n```\n\n## Visualization Functions\n\n### Heatmaps and Clustering\nVisualize sample clustering based on genes associated with a specific GO term.\n\n```R\n# Heatmap for a specific GO ID\nheatmap_GO(\n  go_id = \"GO:0034142\", \n  result = BP.filtered, \n  eSet = AlvMac, \n  labRow = AlvMac$Group\n)\n\n# Hierarchical clustering dendrogram\ncluster_GO(\n  go_id = \"GO:0034142\", \n  result = BP.filtered, \n  eSet = AlvMac, \n  f = \"Group\"\n)\n```\n\n### Gene Expression Profiles\nPlot the expression of individual genes across experimental factors.\n\n```R\n# Plot by Gene ID (e.g., Ensembl)\nexpression_plot(\n  gene_id = \"ENSBTAG00000047107\", \n  result = results, \n  eSet = AlvMac, \n  x_var = \"Timepoint\"\n)\n\n# Plot by Gene Symbol\nexpression_plot_symbol(\n  gene_symbol = \"BIKBA\", \n  result = results, \n  eSet = AlvMac, \n  x_var = \"Timepoint\"\n)\n\n# Individual sample series (tracking specific subjects/replicates)\nexpression_profiles_symbol(\n  gene_symbol = \"TNIP3\", \n  result = results, \n  eSet = AlvMac, \n  x_var = \"Timepoint\", \n  seriesF = \"Animal.Treatment\"\n)\n```\n\n## Advanced Usage Tips\n\n- **Custom Annotations**: To work offline or with unsupported species, provide custom data frames to `GO_genes` (mapping), `all_genes` (descriptions), and `all_GO` (GO descriptions).\n- **On-the-fly Subsetting**: Use the `subset` argument in most functions (e.g., `subset = list(Time = c(\"24H\", \"48H\"))`) to analyze or visualize specific groups without creating new `ExpressionSet` objects.\n- **Reranking**: Use `rerank(result, rank.by = \"score\")` or `rank.by = \"p.val\"` to change the sorting order of the results table.\n- **ANOVA vs Random Forest**: Use `method = \"anova\"` in `GO_analyse` for a faster, univariate approach. Use the default `randomForest` to capture multivariate interactions between genes.\n\n## Reference documentation\n\n- [GOexpress User's Guide](./references/GOexpress-UsersGuide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-goexpress",
+    "description": "This tool visualizes and ranks Gene Ontology terms from gene expression data to identify biological processes that best discriminate between experimental groups. Use when user asks to identify significant GO terms using supervised clustering, rank gene sets based on expression profiles, or generate heatmaps and dendrograms for specific biological functions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GOexpress.html"
+  }
+}

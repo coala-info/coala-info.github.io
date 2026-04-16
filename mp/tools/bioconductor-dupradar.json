@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dupradar",
+  "category": "bioconductor",
+  "name": "bioconductor-dupradar",
+  "description": "bioconductor-dupradar provides quality control for RNA-Seq data by analyzing the relationship between gene expression levels and duplication rates. Use when user asks to mark duplicates, calculate duplication matrices, generate diagnostic plots, or assess PCR artifacts in sequencing experiments.",
+  "overview": "The `dupRadar` package provides quality control for RNA-Seq experiments by analyzing the relationship between gene expression levels (RPK) and duplication rates. In RNA-Seq, high duplication is expected for highly expressed genes, while high duplication in lowly expressed genes typically indicates technical PCR artifacts. This skill guides you through marking duplicates, calculating duplication matrices, and interpreting diagnostic plots.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/dupRadar.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dupradar/overview",
+  "github": "N/A",
+  "conda_downloads": "67.2K",
+  "conda_downloads_num": 67200,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "dupRadar"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dupRadar.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dupradar/overview",
+    "github": "N/A",
+    "conda_downloads": "67.2K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dupradar\n\n## Overview\n\nThe `dupRadar` package provides quality control for RNA-Seq experiments by analyzing the relationship between gene expression levels (RPK) and duplication rates. In RNA-Seq, high duplication is expected for highly expressed genes, while high duplication in lowly expressed genes typically indicates technical PCR artifacts. This skill guides you through marking duplicates, calculating duplication matrices, and interpreting diagnostic plots.\n\n## Core Workflow\n\n### 1. Data Preparation\n`dupRadar` requires BAM files where duplicates have been marked (e.g., via Picard or BamUtil). You can use the internal wrapper if the tools are installed on your system.\n\n```r\nlibrary(dupRadar)\n\n# Optional: Mark duplicates using a system tool wrapper\nbamDuprm <- markDuplicates(dupremover=\"bamutil\",\n                           bam=\"input.bam\",\n                           path=\"/path/to/bin\",\n                           rminput=FALSE)\n```\n\n### 2. Duplication Rate Analysis\nThe core function `analyzeDuprates` calculates a duplication matrix. You must specify the strandedness and library type.\n\n```r\n# Parameters:\n# stranded: 0 (unstranded), 1 (stranded), 2 (reversely stranded)\n# paired: TRUE/FALSE\ndm <- analyzeDuprates(bam=\"marked_duplicates.bam\", \n                      gtf=\"annotation.gtf\", \n                      stranded=2, \n                      paired=FALSE, \n                      threads=4)\n```\n\n### 3. Visualization and Interpretation\nThe primary diagnostic tool is the 2D density scatter plot.\n\n```r\n# 2D Density scatter plot (The \"Blue Cloud\")\nduprateExpDensPlot(DupMat=dm)\n```\n\n**Interpretation:**\n*   **Good Experiment:** A \"cloud\" that starts low at low RPK values and rises only as expression increases.\n*   **Failed Experiment:** High duplication rates even at low RPK values (high intercept), indicating PCR over-amplification.\n\n### 4. Modeling and Metrics\nTo automate QC, fit a logistic regression model to the duplication data.\n\n```r\nfit <- duprateExpFit(DupMat=dm)\ncat(\"Intercept (duplication at low counts):\", fit$intercept, \"\\n\")\ncat(\"Slope (progression of duplication):\", fit$slope, \"\\n\")\n```\n\n### 5. Additional Diagnostics\n*   **Boxplots:** View duplication distribution across expression bins.\n    ```r\n    duprateExpBoxplot(DupMat=dm)\n    ```\n*   **Expression Histogram:** Check for skewed RPK distributions.\n    ```r\n    expressionHist(DupMat=dm)\n    ```\n*   **Distribution of Reads:** See how much of the library is consumed by the top 5% of expressed genes.\n    ```r\n    readcountExpBoxplot(DupMat=dm)\n    ```\n\n## Advanced Analysis\n\n### Multimapping Analysis\nYou can derive multimapping rates from the duplication matrix by comparing `allCountsMulti` and `allCounts`.\n\n```r\n# Calculate fraction of multimappers per gene\ndm$mhRate <- (dm$allCountsMulti - dm$allCounts) / dm$allCountsMulti\n\n# Identify genes covered exclusively by multimappers\nexclusive_multi <- dm[dm$mhRate == 1, \"ID\"]\n```\n\n### GC Content Bias\nCombine `dupRadar` with `biomaRt` to check if PCR artifacts are linked to GC content.\n\n```r\n# After obtaining GC content (e.g., from biomaRt) and merging with dm:\npar(mfrow=c(1,2))\nduprateExpDensPlot(dm.gc[dm.gc$gc <= 45,], main=\"Low GC\")\nduprateExpDensPlot(dm.gc[dm.gc$gc > 45,], main=\"High GC\")\n```\n\n## Reference documentation\n- [Using the dupRadar package](./references/dupRadar.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dupradar",
+    "description": "bioconductor-dupradar provides quality control for RNA-Seq data by analyzing the relationship between gene expression levels and duplication rates. Use when user asks to mark duplicates, calculate duplication matrices, generate diagnostic plots, or assess PCR artifacts in sequencing experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dupRadar.html"
+  }
+}

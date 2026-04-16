@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metmashr",
+  "category": "bioconductor",
+  "name": "bioconductor-metmashr",
+  "description": "MetMashR is an R package designed to manage, standardize, and merge metabolomics annotation data from various software tools and databases. Use when user asks to import metabolomics results, build modular annotation workflows, perform database lookups via APIs, or combine and resolve multiple annotation sources.",
+  "overview": "MetMashR is an R package built on the `struct` framework designed to manage metabolomics annotation data. It provides a standardized way to \"mash\" together results from different software tools and databases. The package centers around `annotation_source` objects (like `lcms_table` or `annotation_database`) and uses a modular workflow approach where steps (models) are added together using the `+` operator and executed via `model_apply()`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MetMashR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/computational-metabolomics/MetMashR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MetMashR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetMashR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/computational-metabolomics/MetMashR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metmashr\n\n## Overview\nMetMashR is an R package built on the `struct` framework designed to manage metabolomics annotation data. It provides a standardized way to \"mash\" together results from different software tools and databases. The package centers around `annotation_source` objects (like `lcms_table` or `annotation_database`) and uses a modular workflow approach where steps (models) are added together using the `+` operator and executed via `model_apply()`.\n\n## Core Workflow Patterns\n\n### 1. Initializing and Reading Sources\nMetMashR supports specific importers for common software outputs.\n```r\nlibrary(MetMashR)\nlibrary(struct)\n\n# Import LipidSearch results\nat <- ls_source(source = \"path/to/lipidsearch_output.txt\")\nat <- read_source(at)\n\n# Import Compound Discoverer results\ncd <- cd_source(source = \"path/to/cd_output.xlsx\")\ncd <- read_source(cd)\n\n# Access the underlying data.frame\ndf <- at$data\n```\n\n### 2. Building a Model Sequence\nWorkflows are constructed by chaining models. The `import_source()` model is typically the first step to allow the workflow to be applied to a source object.\n```r\n# Define a cleaning and filtering workflow\nwf <- import_source() +\n    filter_labels(\n        column_name = \"Grade\",\n        labels = c(\"A\", \"B\"),\n        mode = \"include\"\n    ) +\n    normalise_strings(\n        search_column = \"LipidName\",\n        output_column = \"clean_name\",\n        dictionary = racemic_dictionary\n    )\n\n# Execute the workflow\nresults <- model_apply(wf, at)\n\n# Extract the processed annotation table\nfinal_table <- predicted(results)\n```\n\n### 3. Database Lookups and REST APIs\nMetMashR integrates with several external APIs and local databases to add identifiers (InChIKey, CID, etc.).\n```r\n# Lookup PubChem CIDs based on metabolite names\nwf_api <- import_source() +\n    pubchem_compound_lookup(\n        query_column = \"metabolite_name\",\n        search_by = \"name\",\n        output = \"cids\"\n    )\n\n# Use a local database (e.g., MTox700+) for lookup\nwf_db <- import_source() +\n    database_lookup(\n        query_column = \"inchikey\",\n        database = MTox700plus_database(),\n        database_column = \"inchikey\",\n        include = \"hmdb_id\"\n    )\n```\n\n### 4. Combining and Resolving Records\nWhen merging sources or handling one-to-many database matches, use `combine_sources` and `combine_records`.\n```r\n# Combine multiple tables vertically\ncombined <- combine_sources(\n    source_list = list(table1, table2),\n    matching_columns = c(name = \"compound\", adduct = \"ion\")\n)\n\n# Collapse multiple rows (e.g., multiple hits for one peak)\ncr <- combine_records(\n    group_by = \"metabolite_name\",\n    default_fcn = fuse_unique(separator = \"; \")\n)\n```\n\n## Key Functions and Objects\n- `annotation_table()` / `lcms_table()`: Containers for experimental annotations.\n- `annotation_database()`: Containers for reference metadata.\n- `model_apply(model, source)`: The primary execution function.\n- `predicted(model_seq)`: Retrieves the output of the last step in a sequence.\n- `read_source()` / `read_database()`: Methods to load data into objects or data.frames.\n- `filter_labels()`, `filter_range()`, `filter_na()`: Standard cleaning steps.\n\n## Tips for Success\n- **Indexing Workflows**: You can access intermediate results of a sequence using brackets, e.g., `predicted(wf[2])` returns the data after the second step.\n- **Caching**: For REST API calls, always provide a cache object (e.g., `rds_database(source = \"cache.rds\")`) to avoid redundant network requests.\n- **Dictionaries**: Use built-in dictionaries like `greek_dictionary` or `racemic_dictionary` within `normalise_strings()` to improve hit rates for name-based lookups.\n- **LCMS Specifics**: Use `lcms_table` if you need to perform `mz_match()` or `rt_match()`, as these require specific m/z and retention time columns.\n\n## Reference documentation\n- [Extending MetMashR](./references/Extending_MetMashR.md)\n- [Annotation of mixtures of standards](./references/annotate_mixtures.md)\n- [Exploring the MTox700+ library](./references/exploring_mtox.md)\n- [Using MetMashR](./references/using_MetMashR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metmashr",
+    "description": "MetMashR is an R package designed to manage, standardize, and merge metabolomics annotation data from various software tools and databases. Use when user asks to import metabolomics results, build modular annotation workflows, perform database lookups via APIs, or combine and resolve multiple annotation sources.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetMashR.html"
+  }
+}

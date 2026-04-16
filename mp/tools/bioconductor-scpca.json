@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scpca",
+  "category": "bioconductor",
+  "name": "bioconductor-scpca",
+  "description": "This tool performs Sparse Contrastive Principal Component Analysis and Contrastive PCA to extract relevant signals from high-dimensional biological data by comparing target and background datasets. Use when user asks to remove technical effects or batch noise, isolate biological signals using a control dataset, or perform dimensionality reduction with sparse feature selection.",
+  "overview": "The `scPCA` package provides methods for dimensionality reduction that specifically target variation present in a \"target\" dataset but absent in a \"background\" dataset. It combines the strengths of Contrastive PCA (cPCA) for signal enrichment and Sparse PCA (sPCA) for feature selection. This is particularly useful in single-cell genomics for removing batch effects or isolating specific biological responses while ensuring the resulting principal components are composed of a small, interpretable s",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scPCA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/PhilBoileau/scPCA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scPCA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scPCA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/PhilBoileau/scPCA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scpca\n\nname: bioconductor-scpca\ndescription: Perform Sparse Contrastive Principal Component Analysis (scPCA) and Contrastive PCA (cPCA) to extract stable, interpretable, and relevant signals from high-dimensional biological data. Use this skill when you need to remove technical effects (like batch effects or cell cycle noise) by comparing a target dataset against a background (control) dataset, or when you require sparse loadings for better feature interpretability in dimensionality reduction.\n\n# bioconductor-scpca\n\n## Overview\n\nThe `scPCA` package provides methods for dimensionality reduction that specifically target variation present in a \"target\" dataset but absent in a \"background\" dataset. It combines the strengths of Contrastive PCA (cPCA) for signal enrichment and Sparse PCA (sPCA) for feature selection. This is particularly useful in single-cell genomics for removing batch effects or isolating specific biological responses while ensuring the resulting principal components are composed of a small, interpretable subset of genes.\n\n## Main Functions and Workflows\n\n### Core Function: `scPCA()`\n\nThe primary interface is the `scPCA()` function. It can perform both cPCA (by setting penalties to 0) and scPCA (by providing a range of L1 penalties).\n\n```r\nlibrary(scPCA)\n\n# Basic cPCA (Contrastive only)\ncpca_results <- scPCA(\n  target = target_matrix,      # n x p matrix (observations x features)\n  background = background_matrix, # m x p matrix\n  n_centers = 4,               # Expected number of clusters (for hyperparameter tuning)\n  penalties = 0,               # No sparsification\n  n_eigen = 2                  # Number of components to return\n)\n\n# Basic scPCA (Sparse and Contrastive)\nscpca_results <- scPCA(\n  target = target_matrix,\n  background = background_matrix,\n  n_centers = 4,\n  penalties = exp(seq(log(0.01), log(0.5), length.out = 10)),\n  alg = \"var_proj\"             # Recommended algorithm for speed\n)\n```\n\n### Key Arguments\n\n- `target`: The dataset containing the signal of interest.\n- `background`: The control dataset representing background noise or technical effects.\n- `n_centers`: A critical hyperparameter used by the internal clustering-based heuristic to select the optimal contrastive parameter ($\\gamma$).\n- `penalties`: A vector of L1 penalty terms. If multiple are provided, the best is selected via the internal heuristic.\n- `alg`: The optimization framework. Options include `\"iterative\"` (Zou et al.), `\"var_proj\"` (Erichson et al.), and `\"rand_var_proj\"` (Randomized, best for very large datasets).\n- `cv`: Number of folds for cross-validation (e.g., `cv = 3`) to ensure hyperparameter generalizability.\n\n### Integration with SingleCellExperiment\n\n`scPCA` integrates directly with Bioconductor containers. Results are typically stored in the `reducedDims` slot.\n\n```r\nlibrary(SingleCellExperiment)\n\n# Assuming tg_sce and bg_sce are SingleCellExperiment objects\n# Extract log-counts (features in columns)\ntarget_data <- t(log1p(counts(tg_sce)))\nbg_data <- t(log1p(counts(bg_sce)))\n\nscpca_out <- scPCA(\n  target = target_data,\n  background = bg_data,\n  n_centers = 2,\n  n_eigen = 2,\n  alg = \"var_proj\"\n)\n\n# Store back in the SCE object\nreducedDim(tg_sce, \"scPCA\") <- scpca_out$x\n```\n\n## Performance and Parallelization\n\nFor large genomic datasets, use the following optimizations:\n\n1.  **Algorithm Choice**: Use `alg = \"rand_var_proj\"` for the fastest performance on high-dimensional data.\n2.  **Parallelization**: Set `parallel = TRUE`. This requires registering a backend via `BiocParallel`.\n    ```r\n    library(BiocParallel)\n    register(MulticoreParam())\n    res <- scPCA(..., parallel = TRUE)\n    ```\n3.  **Approximation**: Set `scaled_matrix = TRUE` to use the `ScaledMatrix` framework, which speeds up covariance calculations at a slight cost to numerical precision.\n\n## Interpreting Results\n\nThe output object contains:\n- `x`: The reduced-dimension embeddings (principal components).\n- `rotation`: The loadings matrix. In `scPCA`, many entries in this matrix will be zero, indicating the specific features (genes) that contribute to that component.\n- `contrast`: The optimal contrastive parameter selected.\n- `penalty`: The optimal L1 penalty selected.\n\n## Reference documentation\n\n- [Sparse contrastive principal component analysis](./references/scpca_intro.md)\n- [Sparse contrastive principal component analysis (RMarkdown source)](./references/scpca_intro.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-scpca",
+    "description": "This tool performs Sparse Contrastive Principal Component Analysis and Contrastive PCA to extract relevant signals from high-dimensional biological data by comparing target and background datasets. Use when user asks to remove technical effects or batch noise, isolate biological signals using a control dataset, or perform dimensionality reduction with sparse feature selection.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scPCA.html"
+  }
+}

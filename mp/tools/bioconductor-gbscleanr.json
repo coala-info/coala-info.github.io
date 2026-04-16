@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gbscleanr",
+  "category": "bioconductor",
+  "name": "bioconductor-gbscleanr",
+  "description": "GBScleanR performs error correction and genotype estimation for NGS-based genotyping data using a Hidden Markov Model. Use when user asks to filter genotype calls, estimate true genotypes from allele read counts, or correct errors in GBS and RAD-seq data for mapping populations.",
+  "overview": "GBScleanR is a Bioconductor package designed for error correction of genotype data obtained via NGS-based methods like RAD-seq and GBS. It uses a Hidden Markov Model (HMM) to estimate true genotypes from allele read counts, supporting diploid and polyploid mapping populations derived from two or more parents. The package utilizes the Genomic Data Structure (GDS) for efficient handling of large datasets and is compatible with other Bioconductor tools like SNPRelate and GWASTools.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GBScleanR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gbscleanr/overview",
+  "github": "https://github.com/tomoyukif/GBScleanR",
+  "conda_downloads": "5.5K",
+  "conda_downloads_num": 5500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GBScleanR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GBScleanR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gbscleanr/overview",
+    "github": "https://github.com/tomoyukif/GBScleanR",
+    "conda_downloads": "5.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gbscleanr\n\n## Overview\nGBScleanR is a Bioconductor package designed for error correction of genotype data obtained via NGS-based methods like RAD-seq and GBS. It uses a Hidden Markov Model (HMM) to estimate true genotypes from allele read counts, supporting diploid and polyploid mapping populations derived from two or more parents. The package utilizes the Genomic Data Structure (GDS) for efficient handling of large datasets and is compatible with other Bioconductor tools like SNPRelate and GWASTools.\n\n## Core Workflow\n\n### 1. Data Initialization\nConvert a VCF file to GDS format and load it into an R session.\n```r\nlibrary(GBScleanR)\n\nvcf_fn <- \"data.vcf\"\ngds_fn <- \"data.gds\"\n\n# Convert VCF to GDS\ngbsrVCF2GDS(vcf_fn = vcf_fn, out_fn = gds_fn, force = TRUE)\n\n# Load GDS (specify ploidy if not diploid)\ngds <- loadGDS(gds_fn, ploidy = 2)\n```\n\n### 2. Data Summarization and Visualization\nCalculate statistics to assess data quality before filtering.\n```r\n# Summarize counts\ngds <- countGenotype(gds)\ngds <- countRead(gds)\n\n# Visualize statistics (missing rate, heterozygosity, read depth)\nhistGBSR(gds, stats = \"missing\")\nhistGBSR(gds, stats = \"dp\")\nplotGBSR(gds, stats = \"raf\") # Reference allele frequency along chromosomes\n```\n\n### 3. Filtering\nFilter markers, samples, or individual genotype calls.\n```r\n# Filter calls based on read depth (highly recommended)\n# Use ref_qtile/alt_qtile to handle over-represented reads from mismapping\ngds <- setCallFilter(gds, ref_qtile = c(0, 0.9), alt_qtile = c(0, 0.9))\n\n# Filter markers and samples\ngds <- setMarFilter(gds, missing = 0.2, maf = 0.05)\ngds <- setSamFilter(gds, missing = 0.8)\n\n# Thin markers to reduce redundancy (e.g., one marker per 150bp)\ngds <- thinMarker(gds, range = 150)\n```\n\n### 4. Genotype Estimation (Error Correction)\nThis is the core functionality. It requires defining parents and the breeding scheme.\n\n#### Set Parents\n```r\n# Identify parent sample IDs\np1 <- \"Parent_A\"\np2 <- \"Parent_B\"\ngds <- setParents(gds, parents = c(p1, p2), mono = TRUE, bi = TRUE)\n```\n\n#### Define Breeding Scheme\n```r\n# Simple scheme (e.g., selfed F2)\ngds <- makeScheme(gds, generation = 2, crosstype = \"self\")\n\n# Complex/Manual scheme\ngds <- initScheme(gds, mating = rbind(1, 2)) # Parent 1 x Parent 2\ngds <- addScheme(gds, crosstype = \"selfing\")\n```\n\n#### Run Estimation\n```r\n# node = \"filt\" uses the filtered read counts\ngds <- estGeno(gds, node = \"filt\", iter = 4)\n```\n\n### 5. Exporting Results\nRetrieve corrected genotypes or export to standard formats.\n```r\n# Get corrected genotypes (0, 1, 2 format)\ncor_geno <- getGenotype(gds, node = \"cor\")\n\n# Export to VCF\ngbsrGDS2VCF(gds, \"corrected_data.vcf.gz\", node = \"cor\")\n\n# Export to CSV (optionally formatted for R/qtl)\ngbsrGDS2CSV(gds, \"qtl_data.csv\", format = \"qtl\")\n```\n\n## Key Functions Reference\n- `gbsrVCF2GDS()`: Converts VCF to GDS.\n- `loadGDS()`: Loads GDS file into a GbsrGenotypeData object.\n- `setParents()`: Defines founder samples.\n- `makeScheme()`: Quickly sets up common breeding pedigrees.\n- `estGeno()`: Performs HMM-based genotype estimation and error correction.\n- `setCallFilter()`: Filters individual data points (DP, AD).\n- `plotDosage()`: Visualizes estimated allele dosage against raw read ratios.\n- `closeGDS()`: Safely closes the GDS file connection.\n\n## Tips for Success\n- **Memory Efficiency**: GBScleanR uses GDS to avoid loading entire datasets into RAM. Always use `closeGDS(gds)` at the end of a session.\n- **Filtering Strategy**: The HMM is robust to low coverage. Focus filtering on removing extremely high-coverage calls (potential mismapping) using `ref_qtile` and `alt_qtile` rather than aggressive missing-data filtering.\n- **Replicates**: If you have technical replicates, use `setReplicates()` before `estGeno()` to jointly evaluate read counts.\n- **Polyploidy**: Set the `ploidy` argument in `loadGDS()` to enable polyploid haplotype estimation.\n\n## Reference documentation\n- [Basic usage of GBScleanR](./references/BasicUsageOfGBScleanR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gbscleanr",
+    "description": "GBScleanR performs error correction and genotype estimation for NGS-based genotyping data using a Hidden Markov Model. Use when user asks to filter genotype calls, estimate true genotypes from allele read counts, or correct errors in GBS and RAD-seq data for mapping populations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GBScleanR.html"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "aquila",
+  "category": "CLI",
+  "name": "aquila",
+  "description": "Aquila performs diploid genome assembly and comprehensive variant discovery using linked-read sequencing data. Use when user asks to perform diploid genome assembly, partition genomic fragments into haplotypes, call assembly-based variants, or phase genomic variants.",
+  "overview": "Aquila is a bioinformatic suite designed for diploid genome assembly and comprehensive variant discovery. It utilizes the long-range information provided by linked-reads to partition genomic fragments into two distinct haplotypes. By performing local assemblies on these partitioned reads, Aquila can reconstruct a diploid genome and identify a wide range of variants—including complex structural variants—that are often missed by standard short-read pipelines. It is particularly effective for resea",
+  "homepage": "https://github.com/maiziex/Aquila",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/aquila/overview",
+  "github": "https://github.com/maiziex/Aquila",
+  "conda_downloads": "3.1K",
+  "conda_downloads_num": 3100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "aquila_Aquila_step0_sortbam",
+      "aquila_Aquila_step1",
+      "aquila_Aquila_step2"
+    ],
+    "description": "sort bam by qname",
+    "docker_image": "quay.io/biocontainers/aquila:1.0.0--py_0",
+    "homepage": "https://github.com/maiziex/Aquila",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/aquila/overview",
+    "github": "https://github.com/maiziex/Aquila",
+    "conda_downloads": "3.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "aquila_Aquila_step0_sortbam.cwl",
+    "aquila_Aquila_step1.cwl",
+    "aquila_Aquila_step2.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# aquila\n\n## Overview\nAquila is a bioinformatic suite designed for diploid genome assembly and comprehensive variant discovery. It utilizes the long-range information provided by linked-reads to partition genomic fragments into two distinct haplotypes. By performing local assemblies on these partitioned reads, Aquila can reconstruct a diploid genome and identify a wide range of variants—including complex structural variants—that are often missed by standard short-read pipelines. It is particularly effective for researchers needing phased variant data and high-quality contig assemblies from 10X Genomics data.\n\n## Core Workflow and CLI Patterns\n\n### 1. Pre-processing (Optional)\nIf your computing environment is prone to interruptions, run the sorting step first to save time during the main assembly.\n```bash\npython Aquila/bin/Aquila_step0_sortbam.py --bam_file possorted_bam.bam --out_dir Assembly_results_S12878 --num_threads_for_samtools_sort 30\n```\n\n### 2. Step 1: Fragment Partitioning\nThis step performs haplotype-aware partitioning. It requires a barcode-aware BAM (from Longranger) and a VCF (from FreeBayes or 1000 Genomes).\n```bash\nAquila_step1.py --bam_file <input.bam> --vcf_file <input.vcf> --sample_name <sample_id> --out_dir <output_dir> --uniq_map_dir <uniqueness_map_path>\n```\n*   **Expert Tip**: Use `23` to represent `chrX`. Note that `chrY` is currently not supported.\n*   **Memory Note**: This is the most resource-intensive step. 60X coverage typically requires ~100GB RAM for a single chromosome or ~450GB for WGS on a single node.\n\n### 3. Step 2: Local Assembly\nAssembles the partitioned fragments into contigs using SPAdes.\n```bash\nAquila_step2.py --out_dir <output_dir_from_step1> --num_threads 30 --reference <ref.fa>\n```\n*   **Optimization**: `--num_threads` controls how many files are assembled simultaneously, while `--num_threads_spades` (default 5) controls threads per SPAdes instance.\n\n### 4. Assembly-Based Variant Calling\nGenerates a VCF containing SNPs, indels, and SVs based on the contigs produced in Step 2.\n```bash\nAquila_assembly_based_variants_call.py --assembly_dir <step2_out_dir> --out_dir <variants_dir> --ref_file <ref.fa>\n```\n*   **Indel/SV Cutoff**: Use `--var_size` (default 1) to set the minimum size for indel and SV detection.\n*   **Compound SVs**: Use `--all_regions_flag 1` to split compound SVs into heterozygous SVs, which is the recommended mode for comprehensive reporting.\n\n### 5. Phasing All Variants\nCombines the assembly-based calls with the original VCF to produce a final phased output.\n```bash\nAquila_phasing_all_variants.py --assembly_vcf <variants_dir>/Aquila_final_sorted.vcf --vcf_file <original.vcf> --assembly_dir <step2_out_dir>\n```\n\n## Best Practices and Resource Management\n\n*   **Input Requirements**: \n    *   BAM files must be generated by a barcode-aware aligner like `longranger align`.\n    *   VCF files should ideally be generated by `FreeBayes`.\n*   **Parallelization**: For Whole Genome Sequencing (WGS), it is highly recommended to run Step 1 and Step 2 for chromosomes in parallel across multiple nodes to reduce wall-clock time.\n*   **Reference Files**: Ensure you have the `Uniqness_map` and the correct reference FASTA (hg38/GRCh38). These can be downloaded using the `install.sh` script or manually from Zenodo.\n*   **Output Files**:\n    *   Final Contigs: Found in `Assembly_results/Assembly_Contigs_files`.\n    *   Final Phased VCF: `Aquila_all_phased_sorted.vcf` (coordinates start at 1).\n    *   Unsorted Variant VCF: `Aquila_final_sorted.vcf` (coordinates start at 0).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| Aquila_step0_sortbam | sort bam by qname |\n| python3 Aquila_step1 | Aquila_step1 tool for assembly |\n| python3 Aquila_step2 | Aquila_step2 |\n\n## Reference documentation\n- [Aquila Main README](./references/github_com_maiziex_Aquila_blob_master_README.md)\n- [Assembly-based Variant Calling Guide](./references/github_com_maiziex_Aquila_blob_master_Assembly_based_variants_call_README.md)\n- [Input Preparation (BAM/VCF)](./references/github_com_maiziex_Aquila_blob_master_src_How_to_get_bam_and_vcf.md)",
+  "skill_front_matter": {
+    "name": "aquila",
+    "description": "Aquila performs diploid genome assembly and comprehensive variant discovery using linked-read sequencing data. Use when user asks to perform diploid genome assembly, partition genomic fragments into haplotypes, call assembly-based variants, or phase genomic variants.",
+    "homepage": "https://github.com/maiziex/Aquila"
+  }
+}

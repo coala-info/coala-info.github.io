@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-copywriter",
+  "category": "bioconductor",
+  "name": "bioconductor-copywriter",
+  "description": "This tool detects DNA copy number variations from off-target reads in targeted sequencing data. Use when user asks to extract copy number information from whole exome sequencing or gene panels, generate reference helper files, or perform circular binary segmentation and plotting.",
+  "overview": "CopywriteR is a Bioconductor package designed to detect DNA copy number variations (CNV) from off-target reads in targeted sequencing data. By focusing on off-target reads, it avoids biases associated with capture enrichment and provides a profile similar to low-depth Whole Genome Sequencing (WGS). The workflow consists of three main stages: generating reference helper files, calculating binned read counts from BAM files, and performing segmentation/plotting.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/CopywriteR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/PeeperLab/CopywriteR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CopywriteR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/CopywriteR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/PeeperLab/CopywriteR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-copywriter\n\nname: bioconductor-copywriter\ndescription: DNA copy number detection from off-target sequence data using the CopywriteR R package. Use this skill when you need to extract copy number information from targeted sequencing (e.g., Whole Exome Sequencing or gene panels) by utilizing off-target reads. It covers the full workflow from generating helper files and processing BAM files to segmentation and plotting.\n\n## Overview\n\nCopywriteR is a Bioconductor package designed to detect DNA copy number variations (CNV) from off-target reads in targeted sequencing data. By focusing on off-target reads, it avoids biases associated with capture enrichment and provides a profile similar to low-depth Whole Genome Sequencing (WGS). The workflow consists of three main stages: generating reference helper files, calculating binned read counts from BAM files, and performing segmentation/plotting.\n\n## Analysis Workflow\n\n### 1. Initialization and Helper Files\nBefore processing samples, you must create helper files for GC-content and mappability based on your reference genome and desired bin size.\n\n```R\nlibrary(CopywriteR)\nlibrary(BiocParallel)\n\n# Define output folder\ndata.folder <- getwd()\n\n# Generate helper files\n# bin.size: 20000 (20kb) recommended for WES; 50000 (50kb) for small panels\n# ref.genome: \"hg18\", \"hg19\", \"hg38\", \"mm9\", or \"mm10\"\npreCopywriteR(output.folder = data.folder,\n              bin.size = 20000,\n              ref.genome = \"hg19\")\n```\n\n### 2. Running CopywriteR\nThis step processes BAM files to calculate read counts. You must define a `sample.control` data frame where the first column is the sample path and the second is the control path (used for peak calling). If no germline control is available, use the sample itself as the control.\n\n```R\n# Prepare sample-control matrix\nbam.files <- list.files(path = \"path/to/bams\", pattern = \".bam$\", full.names = TRUE)\n# Example: using the same file for peak calling (self-control)\nsample.control <- data.frame(samples = bam.files, controls = bam.files)\n\n# Set up parallel processing\nbp.param <- SnowParam(workers = 4, type = \"SOCK\")\n\n# Execute main function\nCopywriteR(sample.control = sample.control,\n           destination.folder = data.folder,\n           reference.folder = file.path(data.folder, \"hg19_20kb\"),\n           bp.param = bp.param)\n```\n\n### 3. Segmentation and Plotting\nThe final step performs Circular Binary Segmentation (CBS) and generates copy number profiles.\n\n```R\n# This creates a 'plots' folder and 'segment.Rdata' inside 'CNAprofiles'\nplotCNA(destination.folder = data.folder)\n```\n\n## Key Functions and Outputs\n\n- `preCopywriteR()`: Creates `GC_mappability.rda` and `blacklist.rda`.\n- `CopywriteR()`: Creates a `CNAprofiles` directory containing:\n    - `read_counts.txt`: Raw and compensated read counts.\n    - `log2_read_counts.igv`: Log2-transformed ratios for visualization in IGV.\n    - `qc/`: Quality control plots for GC-content correction.\n- `plotCNA()`: Produces:\n    - `segment.Rdata`: The DNAcopy object containing segmented values.\n    - `plots/`: PDF/PNG profiles for each chromosome and genome-wide.\n\n## Tips for Success\n\n- **Bin Size Selection**: Use 20 kb for Whole Exome Sequencing (WES). For smaller gene panels with lower off-target coverage, increase the bin size to 50 kb or 100 kb to maintain signal-to-noise ratios.\n- **Reference Genomes**: Ensure the `ref.genome` string matches the version used for alignment.\n- **Parallelization**: `CopywriteR` processes one sample per core. Adjust `workers` in `SnowParam` based on available RAM, as BAM processing is memory-intensive.\n- **Capture Regions**: While not required, providing a BED file to the `capture.regions.file` argument in `CopywriteR()` allows the tool to calculate the overlap between called peaks and targeted regions.\n\n## Reference documentation\n\n- [CopywriteR](./references/CopywriteR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-copywriter",
+    "description": "This tool detects DNA copy number variations from off-target reads in targeted sequencing data. Use when user asks to extract copy number information from whole exome sequencing or gene panels, generate reference helper files, or perform circular binary segmentation and plotting.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/CopywriteR.html"
+  }
+}

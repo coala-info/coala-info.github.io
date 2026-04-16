@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nparc",
+  "category": "bioconductor",
+  "name": "bioconductor-nparc",
+  "description": "This tool performs non-parametric analysis of response curves to detect significant thermal shifts in thermal proteome profiling data. Use when user asks to fit sigmoid melting curves to protein abundance data, perform F-tests with empirical degrees of freedom, or identify drug-target binding through stability changes.",
+  "overview": "NPARC is designed to analyze TPP data by fitting non-linear models to melting curves. It addresses the challenge of correlated measurements across temperatures by using a non-parametric approach to estimate degrees of freedom for F-statistics. The package helps identify proteins that show significant stability changes between experimental conditions (e.g., vehicle vs. treatment).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NPARC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NPARC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NPARC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nparc\n\nname: bioconductor-nparc\ndescription: Non-parametric analysis of response curves (NPARC) for thermal proteome profiling (TPP) data. Use this skill to fit sigmoid melting curves to protein abundance data, compare null and alternative models, and perform hypothesis testing to detect significant thermal shifts (e.g., drug-target binding).\n\n## Overview\nNPARC is designed to analyze TPP data by fitting non-linear models to melting curves. It addresses the challenge of correlated measurements across temperatures by using a non-parametric approach to estimate degrees of freedom for F-statistics. The package helps identify proteins that show significant stability changes between experimental conditions (e.g., vehicle vs. treatment).\n\n## Typical Workflow\n\n### 1. Data Preparation\nData should be in a \"tidy\" format with columns for protein ID, temperature, relative abundance, and experimental group (e.g., compound concentration).\n\n```r\nlibrary(NPARC)\nlibrary(dplyr)\n\n# Load example data\ndata(\"stauro_TPP_data_tidy\")\ndf <- stauro_TPP_data_tidy %>%\n  filter(uniquePeptideMatches >= 1, !is.na(relAbundance))\n```\n\n### 2. Model Fitting\nThe package provides `NPARCfit` to fit both null models (one curve for all data) and alternative models (separate curves for each group) across all proteins.\n\n```r\n# Fit models\n# groupsNull = NULL fits one curve to all data\n# groupsAlt = df$compoundConcentration fits separate curves per concentration\nfits <- NPARCfit(x = df$temperature, \n                 y = df$relAbundance, \n                 id = df$uniqueID, \n                 groupsNull = NULL, \n                 groupsAlt = df$compoundConcentration,\n                 returnModels = FALSE)\n\n# Access results\nmetrics <- fits$metrics\npredictions <- fits$predictions\n```\n\n### 3. Hypothesis Testing\nUse `NPARCtest` to compute F-statistics and p-values. It is highly recommended to use `dfType = \"empirical\"` to estimate degrees of freedom from the data distribution rather than using theoretical values, which are often anti-conservative for TPP data.\n\n```r\n# Perform F-test with empirical degrees of freedom\nfStats <- NPARCtest(metrics, dfType = \"empirical\")\n\n# Identify significant hits (e.g., adjusted p-value < 0.01)\ntopHits <- fStats %>%\n  filter(pAdj <= 0.01) %>%\n  arrange(desc(fStat))\n```\n\n### 4. Single Protein Analysis\nFor detailed inspection of a specific protein, use the internal fitting function (accessible via `:::`) or filter the global results.\n\n```r\n# Fit a single sigmoid for one protein\n# Note: fitSingleSigmoid is not exported, use NPARC:::fitSingleSigmoid\nstk4 <- filter(df, uniqueID == \"STK4_IPI00011488\")\nnullFit <- NPARC:::fitSingleSigmoid(x = stk4$temperature, y = stk4$relAbundance)\n```\n\n## Key Functions\n- `NPARCfit()`: High-level function to fit sigmoid models to multiple proteins in parallel.\n- `NPARCtest()`: Computes F-statistics and performs hypothesis testing using theoretical or empirical degrees of freedom.\n- `runNPARC()`: Wrapper function that executes the entire pipeline (fitting and testing) in one call.\n\n## Tips for Success\n- **Full Curves**: Ensure proteins have measurements at all temperature points before fitting to improve model stability.\n- **Parallelization**: `NPARCfit` supports `BiocParallel`. Use `BPPARAM = BiocParallel::MulticoreParam()` on Linux/Mac to speed up processing for large datasets.\n- **Model Convergence**: Check the `conv` column in the metrics output; `FALSE` indicates the non-linear least squares (NLS) model failed to converge for that protein.\n- **Degrees of Freedom**: Always visualize the p-value histogram. If the distribution is not flat (with a peak at 0), the empirical degree of freedom estimation is likely necessary.\n\n## Reference documentation\n- [Analysing thermal proteome profiling data with the NPARC package](./references/NPARC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nparc",
+    "description": "This tool performs non-parametric analysis of response curves to detect significant thermal shifts in thermal proteome profiling data. Use when user asks to fit sigmoid melting curves to protein abundance data, perform F-tests with empirical degrees of freedom, or identify drug-target binding through stability changes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NPARC.html"
+  }
+}

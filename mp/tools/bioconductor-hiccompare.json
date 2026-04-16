@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hiccompare",
+  "category": "bioconductor",
+  "name": "bioconductor-hiccompare",
+  "description": "This tool performs joint normalization and differential chromatin interaction detection for Hi-C datasets. Use when user asks to compare Hi-C contact matrices, normalize Hi-C data using LOESS, or identify statistically significant differences in chromatin interactions.",
+  "overview": "`HiCcompare` is an R package designed for the comparative analysis of Hi-C datasets. It provides a non-parametric joint normalization method (LOESS-based) to remove biases between two Hi-C matrices and a robust statistical framework (Z-score based) to detect differential chromatin interactions. The core workflow involves creating a `hic.table` object, performing joint normalization with `hic_loess`, and detecting differences with `hic_compare`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCcompare.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hiccompare/overview",
+  "github": "https://github.com/dozmorovlab/HiCcompare",
+  "conda_downloads": "36.1K",
+  "conda_downloads_num": 36100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HiCcompare"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCcompare.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hiccompare/overview",
+    "github": "https://github.com/dozmorovlab/HiCcompare",
+    "conda_downloads": "36.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hiccompare\n\nname: bioconductor-hiccompare\ndescription: Joint normalization and differential chromatin interaction detection for Hi-C data. Use when comparing two or more Hi-C contact matrices to identify statistically significant differences in interaction frequencies. Supports sparse matrix, BEDPE, .hic, and .cool formats.\n\n# bioconductor-hiccompare\n\n## Overview\n\n`HiCcompare` is an R package designed for the comparative analysis of Hi-C datasets. It provides a non-parametric joint normalization method (LOESS-based) to remove biases between two Hi-C matrices and a robust statistical framework (Z-score based) to detect differential chromatin interactions. The core workflow involves creating a `hic.table` object, performing joint normalization with `hic_loess`, and detecting differences with `hic_compare`.\n\n## Core Workflow\n\n### 1. Data Preparation and Import\n\n`HiCcompare` works with intrachromosomal interaction matrices. You can import data from various formats:\n\n```r\nlibrary(HiCcompare)\n\n# From sparse upper triangular matrices (3 columns: region1, region2, IF)\ndata(\"HMEC.chr22\")\ndata(\"NHEK.chr22\")\n\n# Create the hic.table object\n# 'scale = TRUE' performs total sum scaling by default\nchr22.table <- create.hic.table(HMEC.chr22, NHEK.chr22, chr = 'chr22')\n\n# From .cool files\n# dat <- cooler2bedpe(path = \"file.cool\")\n\n# From HiC-Pro\n# dat <- hicpro2bedpe(matrix_file, bed_file)\n```\n\n### 2. Handling CNVs and Blacklists\n\nTo reduce false positives, exclude regions with Copy Number Variations (CNV) or known sequencing artifacts (blacklists).\n\n```r\n# Load provided blacklists\ndata('hg19_blacklist')\n\n# Use the exclude.regions parameter during table creation\n# exclude.overlap: percentage of bin overlap to trigger exclusion (default 0.2)\nchr22.table <- create.hic.table(HMEC.chr22, NHEK.chr22, chr = 'chr22', \n                                exclude.regions = hg19_blacklist)\n```\n\n### 3. Joint Normalization (hic_loess)\n\nThis step removes technical biases between the two datasets using an MD plot (M = log2 fold change, D = unit distance).\n\n```r\n# Jointly normalize a single chromosome\n# span = NA triggers automatic smoothing parameter selection\nhic.table <- hic_loess(chr22.table, Plot = TRUE)\n\n# For multiple chromosomes, use a list and parallel processing\n# hic.list <- list(chr10.table, chr22.table)\n# hic.list <- hic_loess(hic.list, parallel = TRUE)\n```\n\n### 4. Difference Detection (hic_compare)\n\nCalculates Z-scores and p-values for differential interactions. It is critical to filter out low average expression (A) values to avoid artifacts.\n\n```r\n# Determine optimal filtering threshold\nfilter_params(hic.table)\n\n# Perform comparison\n# A.min: minimum average expression to include (if NA, uses 10th percentile)\n# adjust.dist: whether to calculate Z-scores per distance (recommended)\nhic.table <- hic_compare(hic.table, A.min = 15, adjust.dist = TRUE, p.method = 'fdr')\n```\n\n## Key Functions and Utilities\n\n- `total_sum()`: Performs total sum scaling across a list of `hic.table` objects (recommended for whole-genome analysis).\n- `make_InteractionSet()`: Converts `hic.table` results to an `InteractionSet` object for integration with other Bioconductor tools.\n- `sparse2full()` / `full2sparse()`: Convert between sparse and full matrix formats.\n- `MD.plot2()`: Visualizes the MD plot with optional p-value coloring.\n- `hic_simulate()`: Generates simulated Hi-C matrices with known differences for benchmarking.\n\n## Tips for Success\n\n- **Resolution**: High-resolution matrices (e.g., 1kb - 50kb) are often too sparse for `HiCcompare`. Resolutions of 100kb, 500kb, or 1Mb are typically more robust.\n- **Intrachromosomal Only**: The package is currently optimized for intrachromosomal interactions.\n- **Memory Management**: For high-resolution data, manually setting the `span` in `hic_loess` (e.g., `span = 0.1`) significantly reduces computation time compared to automatic selection.\n- **Parallelization**: Use `BiocParallel` by setting `parallel = TRUE` in `hic_loess` and `hic_compare` when processing a list of multiple chromosomes.\n\n## Reference documentation\n\n- [HiCcompare Vignette](./references/HiCcompare-vignette.md)\n- [HiCcompare Rmarkdown Source](./references/HiCcompare-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-hiccompare",
+    "description": "This tool performs joint normalization and differential chromatin interaction detection for Hi-C datasets. Use when user asks to compare Hi-C contact matrices, normalize Hi-C data using LOESS, or identify statistically significant differences in chromatin interactions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCcompare.html"
+  }
+}

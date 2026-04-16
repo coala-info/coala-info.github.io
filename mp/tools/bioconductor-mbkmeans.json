@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mbkmeans",
+  "category": "bioconductor",
+  "name": "bioconductor-mbkmeans",
+  "description": "The mbkmeans package implements a memory-efficient mini-batch k-means algorithm for clustering large-scale genomic data, specifically optimized for single-cell RNA-sequencing datasets. Use when user asks to perform fast clustering on large datasets, run k-means on SingleCellExperiment objects, or use on-disk data representations to minimize memory overhead.",
+  "overview": "The `mbkmeans` package implements the mini-batch k-means algorithm for large-scale data, with a specific focus on single-cell RNA-sequencing (scRNA-seq). Unlike standard k-means, this algorithm uses small, random subsamples (\"mini-batches\") in each iteration, significantly reducing memory overhead and increasing speed without substantial loss in accuracy. It is designed to interface seamlessly with `DelayedArray` and `HDF5Array`, allowing for \"on-disk\" computations where data is only loaded into",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mbkmeans.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/drisso/mbkmeans",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mbkmeans"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mbkmeans.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/drisso/mbkmeans",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mbkmeans\n\n## Overview\n\nThe `mbkmeans` package implements the mini-batch k-means algorithm for large-scale data, with a specific focus on single-cell RNA-sequencing (scRNA-seq). Unlike standard k-means, this algorithm uses small, random subsamples (\"mini-batches\") in each iteration, significantly reducing memory overhead and increasing speed without substantial loss in accuracy. It is designed to interface seamlessly with `DelayedArray` and `HDF5Array`, allowing for \"on-disk\" computations where data is only loaded into memory as needed.\n\n## Main Functions\n\n- `mbkmeans()`: The primary S4 generic function for performing mini-batch k-means.\n- `blocksize()`: Helper to determine an optimal `batch_size` based on available system RAM.\n- `mini_batch()`: A lower-level function (observations in rows) intended as a replacement for `ClusterR::MiniBatchKmeans`.\n\n## Typical Workflow\n\n### 1. Data Preparation\n`mbkmeans` expects genomic data orientation (genes in rows, cells in columns) for `SummarizedExperiment` or `SingleCellExperiment` objects.\n\n```r\nlibrary(mbkmeans)\nlibrary(SingleCellExperiment)\n\n# Example: Using a SingleCellExperiment object 'sce'\n# Ensure data is normalized (e.g., logcounts)\n```\n\n### 2. Determining Batch Size\nFor large datasets, use `blocksize()` to calculate a batch size that fits your available memory.\n\n```r\n# Calculate reasonable batch size for the current machine\nb_size <- blocksize(sce)\n```\n\n### 3. Running Clustering\nYou can run clustering on specific assays or reduced dimensions (like PCA).\n\n```r\n# Clustering on PCA results (default for SCE objects)\nres <- mbkmeans(sce, clusters = 10, reduceMethod = \"PCA\")\n\n# Clustering on a specific assay (e.g., logcounts)\nres <- mbkmeans(sce, clusters = 5, reduceMethod = NA, whichAssay = \"logcounts\")\n\n# Access results\nclusters <- res$Clusters\ncentroids <- res$centroids\n```\n\n### 4. Selecting k (Elbow Method)\nBecause `mbkmeans` is fast, you can iterate over multiple values of $k$ to find the inflection point of the Within-Cluster Sum of Squares (WCSS).\n\n```r\nks <- 5:15\nresults <- lapply(ks, function(k) {\n    mbkmeans(sce, clusters = k, reduceMethod = \"PCA\", calc_wcss = TRUE)\n})\nwcss <- sapply(results, function(x) sum(x$WCSS_per_cluster))\nplot(ks, wcss, type = \"b\")\n```\n\n## Integration with bluster\n\nThe `bluster` framework can dispatch to `mbkmeans` using `MbkmeansParam`. Note that `bluster` expects observations in rows, so transpose your matrix if passing a `DelayedMatrix` directly.\n\n```r\nlibrary(bluster)\n# Using PCA matrix (cells in rows)\nmat <- reducedDim(sce, \"PCA\")\nclusterRows(mat, MbkmeansParam(centers = 5, batch_size = 100))\n```\n\n## Usage Tips\n\n- **Memory Efficiency**: For massive datasets (e.g., 1 million+ cells), keep `batch_size` between 1,000 and 10,000. Larger batches do not necessarily improve accuracy but will increase memory usage.\n- **Initialization**: The default `initializer = \"kmeans++\"` is generally superior to random initialization.\n- **Initialization Fraction**: Avoid setting `init_fraction` too high on large datasets, as the initialization step itself could then exceed memory limits. The default is automatically scaled to the `batch_size`.\n- **Classic K-means**: You can recover classic k-means behavior by setting `batch_size` to the total number of columns, `init_fraction = 1`, and `initializer = \"random\"`.\n\n## Reference documentation\n\n- [An introduction to mbkmeans](./references/Vignette.md)\n- [An introduction to mbkmeans (RMarkdown)](./references/Vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-mbkmeans",
+    "description": "The mbkmeans package implements a memory-efficient mini-batch k-means algorithm for clustering large-scale genomic data, specifically optimized for single-cell RNA-sequencing datasets. Use when user asks to perform fast clustering on large datasets, run k-means on SingleCellExperiment objects, or use on-disk data representations to minimize memory overhead.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mbkmeans.html"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "rust-mdbg",
+  "category": "CLI",
+  "name": "rust-mdbg",
+  "description": "rust-mdbg is a high-speed assembler that performs genome assembly in minimizer-space for high-accuracy PacBio HiFi reads. Use when user asks to assemble genomes or metagenomes, construct minimizer-space graphs, or convert assembly graphs to base-space.",
+  "overview": "`rust-mdbg` is a specialized assembler that operates in \"minimizer-space.\" By representing reads, assembly graphs, and the final assembly as ordered lists of minimizers rather than nucleotide strings, it achieves significant performance gains. It can assemble a human genome in approximately 10 minutes using minimal RAM. While it offers high speed, it is generally less contiguous than state-of-the-art assemblers like hifiasm and requires high-accuracy reads (PacBio HiFi); it is not suitable for h",
+  "homepage": "https://github.com/ekimb/rust-mdbg",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/rust-mdbg/overview",
+  "github": "https://github.com/ekimb/rust-mdbg",
+  "conda_downloads": "6.4K",
+  "conda_downloads_num": 6400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rust-mdbg"
+    ],
+    "description": "Original implementation of minimizer-space de Bruijn graphs (mdBG) for genome assembly.",
+    "docker_image": "quay.io/biocontainers/rust-mdbg:1.0.1--h4ac6f70_3",
+    "homepage": "https://github.com/ekimb/rust-mdbg",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/rust-mdbg/overview",
+    "github": "https://github.com/ekimb/rust-mdbg",
+    "conda_downloads": "6.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "rust-mdbg.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# rust-mdbg\n\n## Overview\n\n`rust-mdbg` is a specialized assembler that operates in \"minimizer-space.\" By representing reads, assembly graphs, and the final assembly as ordered lists of minimizers rather than nucleotide strings, it achieves significant performance gains. It can assemble a human genome in approximately 10 minutes using minimal RAM. While it offers high speed, it is generally less contiguous than state-of-the-art assemblers like hifiasm and requires high-accuracy reads (PacBio HiFi); it is not suitable for high-error Nanopore data.\n\n## Core Workflow\n\nThe assembly process typically involves three stages: graph construction, simplification, and base-space conversion.\n\n### 1. Input Preparation\n`rust-mdbg` requires FASTA/FASTQ files that are formatted with single-line sequences and uppercase characters. If your reads do not meet this criteria, format them using `seqtk`:\n```bash\nseqtk seq -AU reads.unformatted.fq > reads.fa\n```\n\n### 2. Recommended Assembly (Multi-k)\nFor the best contiguity, use the multi-k iterative strategy. This automatically determines the largest $k$ and yields better results than a single-k run, though it takes roughly 7x longer.\n```bash\nutils/multik <reads.fq.gz> <output_prefix> <threads>\n```\n\n### 3. Standard Assembly (Single-k)\nIf you prefer manual control or maximum speed, run the components individually:\n\n**Step A: Construct the minimizer-space graph**\n```bash\nrust-mdbg <reads.fa.gz> -k 21 --density 0.003 -l 14 --minabund 2 --prefix my_assembly\n```\n\n**Step B: Simplify and convert to base-space**\nThe `magic_simplify` script wraps `gfatools` and `to_basespace` to produce the final FASTA and GFA files.\n```bash\nutils/magic_simplify my_assembly\n```\n\n## Parameter Tuning\n\nIf not using the `multik` script, you must tune the three primary parameters:\n- **k**: The k-min-mer value (recommended range: 20-40).\n- **l**: Minimizer length (recommended range: 10-14).\n- **d (density)**: Minimizer density (recommended range: 0.001-0.005).\n\n**Expert Tip**: A successful strategy is to set $k$ and $d$ such that the ratio $k/d$ is slightly below the average read length.\n\n## Common CLI Patterns\n\n### Metagenome Assembly\nFor metagenomic data, use the specific metagenome simplification script which is less aggressive in pruning:\n```bash\nrust-mdbg <meta_reads.fa.gz> -k 21 -l 14 --density 0.003 --prefix meta_out\nutils/magic_simplify_meta meta_out\n```\n\n### Manual Base-Space Conversion\nIf you need to convert a GFA to base-space without any graph simplification:\n```bash\n# Using gfatools (faster)\ngfatools asm -u example.gfa > example.unitigs.gfa\nto_basespace --gfa example.unitigs.gfa --sequences example\n\n# Without gfatools\nutils/complete_gfa.py example example.gfa\n```\n\n### Converting GFA to FASTA\nTo extract sequences from the final GFA:\n```bash\nbash utils/gfa2fasta.sh my_assembly.complete.gfa\n```\n\n## Limitations and Requirements\n- **Coverage**: Requires at least 40x to 50x coverage for optimal results.\n- **Accuracy**: Only supports high-accuracy reads (PacBio HiFi). Do not use for standard ONT reads.\n- **Polishing**: No internal polishing is performed; the assembly accuracy will match the input read accuracy.\n\n## Reference documentation\n- [rust-mdbg GitHub Repository](./references/github_com_ekimb_rust-mdbg.md)\n- [Bioconda Package Overview](./references/anaconda_org_channels_bioconda_packages_rust-mdbg_overview.md)",
+  "skill_front_matter": {
+    "name": "rust-mdbg",
+    "description": "rust-mdbg is a high-speed assembler that performs genome assembly in minimizer-space for high-accuracy PacBio HiFi reads. Use when user asks to assemble genomes or metagenomes, construct minimizer-space graphs, or convert assembly graphs to base-space.",
+    "homepage": "https://github.com/ekimb/rust-mdbg"
+  }
+}

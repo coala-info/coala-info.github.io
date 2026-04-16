@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-regparallel",
+  "category": "bioconductor",
+  "name": "bioconductor-regparallel",
+  "description": "This tool performs high-throughput parallelized regression analyses on large dataframes using multi-core processing. Use when user asks to run thousands of linear, logistic, or Cox regression models, perform omics-wide association studies, or parallelize statistical testing across genomic variables.",
+  "overview": "RegParallel is designed to overcome the computational bottleneck of running thousands of independent regression models in R. It wraps standard functions like `lm()`, `glm()`, `coxph()`, and `clogit()` into a parallelized framework. By using \"nested\" parallel processing, it can process thousands of variables in seconds, making it ideal for \"omics\" data where each feature must be tested individually against a clinical endpoint.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RegParallel.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kevinblighe/RegParallel",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RegParallel"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RegParallel.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kevinblighe/RegParallel",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-regparallel\n\nname: bioconductor-regparallel\ndescription: Perform high-throughput parallelized regression analyses (linear, logistic, Cox, conditional logistic) on large dataframes. Use this skill when you need to test thousands of variables (e.g., genomic probes, metabolites) against a trait while adjusting for covariates using multi-core processing.\n\n# bioconductor-regparallel\n\n## Overview\n\nRegParallel is designed to overcome the computational bottleneck of running thousands of independent regression models in R. It wraps standard functions like `lm()`, `glm()`, `coxph()`, and `clogit()` into a parallelized framework. By using \"nested\" parallel processing, it can process thousands of variables in seconds, making it ideal for \"omics\" data where each feature must be tested individually against a clinical endpoint.\n\n## Core Workflow\n\nThe primary function is `RegParallel()`. It divides the variables to be tested into blocks and distributes them across available CPU cores.\n\n### 1. Data Preparation\nData should be in a standard R `data.frame`. Typically, metadata (traits, covariates) and feature data (gene expression, SNPs) are merged into one wide-format dataframe.\n\n```r\n# Example: Merging metadata and expression\n# data should have samples as rows and variables as columns\nmy_data <- data.frame(trait = metadata$trait, \n                      age = metadata$age, \n                      t(expression_matrix))\n```\n\n### 2. Running RegParallel\nYou must specify the formula using a special `[*]` placeholder for the variable being iterated.\n\n```r\nlibrary(RegParallel)\n\nres <- RegParallel(\n  data = my_data,\n  formula = 'trait ~ [*] + age', # [*] is the placeholder for each variable\n  FUN = function(formula, data)\n    glm(formula = formula, data = data, family = binomial(link = 'logit')),\n  FUNtype = 'glm',\n  variables = colnames(my_data)[3:ncol(my_data)], # variables to iterate over\n  blocksize = 500,\n  cores = 2,\n  nestedParallel = TRUE,\n  p.adjust = \"BH\"\n)\n```\n\n### 3. Supported Model Types\nSet the `FUN` and `FUNtype` arguments based on the analysis:\n\n*   **Linear Regression**: `FUNtype = 'lm'`, `FUN = function(f, d) lm(f, d)`\n*   **Logistic Regression**: `FUNtype = 'glm'`, `FUN = function(f, d) glm(f, d, family = binomial)`\n*   **Cox Proportional Hazards**: `FUNtype = 'coxph'`, `FUN = function(f, d) coxph(f, d)`\n*   **Conditional Logistic**: `FUNtype = 'clogit'`, `FUN = function(f, d) clogit(f, d)`\n\n## Optimization and Advanced Features\n\n### Speeding up Processing\n*   **blocksize**: Controls how many variables are processed per core per iteration. Larger blocks (e.g., 2000-5000) are generally faster for very large datasets but require more RAM.\n*   **nestedParallel**: When `TRUE`, it uses `foreach` with a parallel backend to further parallelize the processing of blocks.\n*   **cores**: Set this to the number of physical cores available.\n\n### Filtering Output\nUse `excludeTerms` to remove covariates from the final results table, keeping only the statistics for the `[*]` variable.\n\n```r\nres <- RegParallel(\n  ...,\n  excludeTerms = c('age', 'sex'),\n  excludeIntercept = TRUE\n)\n```\n\n### Confidence Intervals\nAdjust the `conflevel` parameter (default is 95) to change the `ORlower` and `ORupper` (or `HRlower`/`HRupper`) calculations.\n\n## Tips for Success\n1.  **Variable Names**: Ensure variable names in the `variables` vector do not contain special characters that break R formulas (e.g., hyphens). RegParallel often prepends an 'X' to names starting with numbers.\n2.  **Memory Management**: Parallel processing clones the data across threads. If you have a massive dataframe, monitor RAM usage.\n3.  **Method 'glm.fit'**: For logistic regression, using `method = 'glm.fit'` inside the `glm` function can provide significant speedups.\n\n## Reference documentation\n- [Standard regression functions in R enabled for parallel processing over large data-frames](./references/RegParallel.Rmd)\n- [Standard regression functions in R enabled for parallel processing over large data-frames](./references/RegParallel.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-regparallel",
+    "description": "This tool performs high-throughput parallelized regression analyses on large dataframes using multi-core processing. Use when user asks to run thousands of linear, logistic, or Cox regression models, perform omics-wide association studies, or parallelize statistical testing across genomic variables.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/RegParallel.html"
+  }
+}

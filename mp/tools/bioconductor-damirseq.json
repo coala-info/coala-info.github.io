@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-damirseq",
+  "category": "bioconductor",
+  "name": "bioconductor-damirseq",
+  "description": "DaMiRseq provides a comprehensive pipeline for RNA-Seq data mining, normalization, and feature selection to build robust ensemble classification models. Use when user asks to normalize count data, remove batch effects using surrogate variable analysis, perform feature selection, or train ensemble learning models for sample classification.",
+  "overview": "DaMiRseq (Data Mining for RNA-Seq) is a comprehensive pipeline designed to transform raw RNA-Seq count data into robust classification models. It addresses the \"curse of dimensionality\" by integrating data cleaning, normalization, and multi-step feature selection with ensemble learning techniques.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DaMiRseq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-damirseq/overview",
+  "github": "N/A",
+  "conda_downloads": "22.3K",
+  "conda_downloads_num": 22300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DaMiRseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DaMiRseq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-damirseq/overview",
+    "github": "N/A",
+    "conda_downloads": "22.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-damirseq\n\nname: bioconductor-damirseq\ndescription: Expert guidance for the DaMiRseq R/Bioconductor package. Use this skill to perform end-to-end RNA-Seq data mining, including data normalization, sample filtering, surrogate variable analysis (SVA) for batch effect removal, feature selection (PLS-based), and building robust ensemble classification models (Stacking).\n\n# bioconductor-damirseq\n\n## Overview\nDaMiRseq (Data Mining for RNA-Seq) is a comprehensive pipeline designed to transform raw RNA-Seq count data into robust classification models. It addresses the \"curse of dimensionality\" by integrating data cleaning, normalization, and multi-step feature selection with ensemble learning techniques.\n\n## Core Workflow\n\n### 1. Data Import and Preparation\nDaMiRseq utilizes the `SummarizedExperiment` class. If starting from raw tables, use `DaMiR.makeSE`.\n\n```R\nlibrary(DaMiRseq)\n# count_data: matrix of raw integer counts\n# covariate_data: data.frame with a 'class' column and other variables\nSE <- DaMiR.makeSE(count_data, covariate_data)\n```\n\n### 2. Preprocessing and Normalization\nFilter low-expression and hyper-variant features, then normalize using Variance Stabilizing Transformation (VST) or rlog.\n\n```R\n# Filtering and VST normalization\ndata_norm <- DaMiR.normalization(SE, minCounts=10, fSample=0.7, hyper=\"yes\", th.cv=3)\n\n# Sample filtering based on correlation\ndata_filt <- DaMiR.sampleFilt(data_norm, th.corr=0.9)\n```\n\n### 3. Adjusting for Unwanted Variation (Batch Effects)\nIdentify and remove surrogate variables (sv) that may represent technical noise or confounding factors.\n\n```R\n# Identify SVs using the 'Fraction of Explained Variance' (fve) method\nsv <- DaMiR.SV(data_filt, method=\"fve\", th.fve=0.95)\n\n# Visualize correlation between SVs and known covariates\nDaMiR.corrplot(sv, colData(data_filt))\n\n# Adjust data using selected number of SVs\ndata_adjust <- DaMiR.SVadjust(data_filt, sv, n.sv=4)\n```\n\n### 4. Feature Selection\nReduce the feature space to the most informative, non-redundant predictors.\n\n```R\n# Transpose and clean feature names\ndata_clean <- DaMiR.transpose(assay(data_adjust))\n\n# Step A: PLS-based variable selection\ndata_reduced <- DaMiR.FSelect(data_clean, colData(data_adjust), th.corr=0.4)\n\n# Step B: Remove highly correlated (redundant) features\ndata_red2 <- DaMiR.FReduct(data_reduced$data, th.corr=0.85)\n\n# Step C: Rank features by importance (RReliefF)\ndf_importance <- DaMiR.FSort(data_red2, colData(data_adjust))\n\n# Step D: Select top N predictors\nfinal_features <- DaMiR.FBest(data_red2, ranking=df_importance, n.pred=5)\n```\n\n### 5. Classification and Prediction\nBuild an ensemble \"meta-learner\" using a weighted majority voting approach (RF, SVM, NB, LDA, LR, kNN, etc.).\n\n```R\n# Assess feature robustness via Bootstrap\nClassification_res <- DaMiR.EnsembleLearning(final_features$data, \n                                             classes=colData(data_adjust)$class, \n                                             iter=100)\n\n# Train a specific model for future predictions\nensl_model <- DaMiR.EnsL_Train(TR_set, cl_type=c(\"RF\", \"LR\"))\n\n# Predict on new samples\npredictions <- DaMiR.EnsL_Predict(new_data, bestModel=ensl_model)\n```\n\n## Diagnostic Visualizations\nUse `DaMiR.Allplot` at any stage to assess data quality via Heatmaps, MDS plots, and RLE boxplots.\n\n```R\n# Comprehensive QC plot\nDaMiR.Allplot(data_adjust, colData(data_adjust))\n\n# Feature importance plot\n# (Generated automatically during DaMiR.FSort or via dotchart)\n```\n\n## Key Tips\n- **Class Column**: The metadata must contain a column exactly named `class`.\n- **Normalization Choice**: `vst` is significantly faster than `rlog` for large datasets.\n- **Batch Correction**: Always check `DaMiR.corrplot` before adjusting. If an SV correlates strongly with your `class` variable, do not include it in `n.sv` to avoid over-correction.\n- **Reproducibility**: Set a seed (`set.seed()`) before running `DaMiR.FSelect` and `DaMiR.EnsembleLearning` as they involve stochastic processes.\n\n## Reference documentation\n- [DaMiRseq](./references/DaMiRseq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-damirseq",
+    "description": "DaMiRseq provides a comprehensive pipeline for RNA-Seq data mining, normalization, and feature selection to build robust ensemble classification models. Use when user asks to normalize count data, remove batch effects using surrogate variable analysis, perform feature selection, or train ensemble learning models for sample classification.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DaMiRseq.html"
+  }
+}

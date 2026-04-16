@@ -1,0 +1,50 @@
+{
+  "id": "pangenie",
+  "category": "CLI",
+  "name": "pangenie",
+  "description": "PanGenie is a k-mer based genotyper that uses a pangenome graph and a panel of known haplotypes to infer genotypes from short-read data. Use when user asks to genotype short reads against a pangenome graph, infer genotypes for structural variants, or perform k-mer based genotyping using a reference panel.",
+  "overview": "PanGenie is a k-mer based genotyper that leverages a pangenome graph and a panel of known, fully assembled haplotypes to infer genotypes from short-read data. Unlike traditional linear mappers, PanGenie uses paths through the graph to account for complex variation and structural variants. It is designed for diploid individuals and requires a specific VCF format where variants are represented as bubbles in a directed acyclic graph.",
+  "homepage": "https://github.com/eblerjana/pangenie",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pangenie/overview",
+  "github": "https://github.com/eblerjana/pangenie",
+  "conda_downloads": "358",
+  "conda_downloads_num": 358,
+  "last_updated": "2025-10-20",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pangenie",
+      "pangenie_PanGenie-index",
+      "pangenie_PanGenie",
+      "pangenie_PanGenie-vcf"
+    ],
+    "description": "FAIL to generate CWL: pangenie not found in Singularity image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/pangenie:4.2.1--h077b44d_0",
+    "homepage": "https://github.com/eblerjana/pangenie",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pangenie/overview",
+    "github": "https://github.com/eblerjana/pangenie",
+    "conda_downloads": "358",
+    "last_updated": "2025-10-20",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pangenie_PanGenie-index.cwl",
+    "pangenie_PanGenie-vcf.cwl",
+    "pangenie_PanGenie.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pangenie\n\n## Overview\n\nPanGenie is a k-mer based genotyper that leverages a pangenome graph and a panel of known, fully assembled haplotypes to infer genotypes from short-read data. Unlike traditional linear mappers, PanGenie uses paths through the graph to account for complex variation and structural variants. It is designed for diploid individuals and requires a specific VCF format where variants are represented as bubbles in a directed acyclic graph.\n\n## Input Requirements\n\nPanGenie is sensitive to input VCF formatting. Ensure your input variants (-v) meet these criteria:\n- **Multi-sample**: Must contain haplotype information for at least one known sample.\n- **Fully-phased**: Haplotypes must be phased into a single block from start to end. Tools like WhatsHap are generally unsuitable as they produce multiple blocks.\n- **Non-overlapping**: Overlapping variants must be merged into a single multi-allelic record.\n- **Sequence-resolved**: REF and ALT sequences must be explicitly defined; symbolic records (e.g., `<DEL>`) are not supported.\n\n## Core Workflow\n\nThe recommended approach uses a two-step process to save memory and allow for multi-sample genotyping using a shared index.\n\n### 1. Preprocessing (Indexing)\nGenerate the k-mer index from the pangenome graph and reference genome.\n```bash\nPanGenie-index -v <variants.vcf> -r <reference.fa> -t <threads> -o <index_prefix>\n```\n\n### 2. Genotyping\nRun the genotyper using the generated index and the subject's short reads.\n```bash\nPanGenie -f <index_prefix> -i <reads.fastq> -s <sample_name> -j <kmer_threads> -t <genotyping_threads> -o <output_prefix>\n```\n\n## Handling Complex VCFs\n\n### Overlapping Variants\nIf your VCF contains overlapping records (common in `vg deconstruct` output), filter it with `vcfbub` before running PanGenie:\n```bash\nvcfbub -l 0 -r 100000 --input <input.vcf> > pangenie-ready.vcf\n```\n\n### Nested Variants (Decomposition)\nGraph bubbles often contain multiple nested variants. To extract genotypes for these individual alleles, use the `convert-to-biallelic.py` script after genotyping:\n```bash\ncat <pangenie_output.vcf> | python3 convert-to-biallelic.py <callset.vcf> > <final_biallelic.vcf>\n```\n*Note: This requires a \"callset VCF\" that defines the individual variant IDs referenced in the graph VCF's INFO field.*\n\n## Expert Tips and Best Practices\n\n- **Memory Management**: Always use the two-step (`PanGenie-index` followed by `PanGenie -f`) workflow for large pangenomes to minimize memory overhead.\n- **Haplotype Sampling**: If the input panel contains more than 100 haplotypes, PanGenie automatically switches to haplotype sampling (defaulting to 15) to maintain efficiency.\n- **Read Input**: PanGenie expects all reads in a single FASTA or FASTQ file. If you have paired-end data, concatenate them or provide them as a single stream.\n- **Thread Allocation**: Use `-j` for k-mer counting (I/O and memory intensive) and `-t` for the actual genotyping (CPU intensive).\n- **Serialization**: Use the `-w` flag to serialize genotyping results if you intend to generate the final VCF separately using `PanGenie-vcf`.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| PanGenie | Genotyping based on kmer-counting and known haplotype sequences. |\n| PanGenie-index | PanGenie - genotyping based on kmer-counting and known haplotype sequences. Indexing step. |\n| PanGenie-vcf | Genotyping based on kmer-counting and known haplotype sequences using serialized genotyping results. |\n\n## Reference documentation\n- [PanGenie Main Documentation](./references/github_com_eblerjana_pangenie.md)\n- [Genotyping variation nested inside of bubbles](./references/github_com_eblerjana_pangenie_wiki_A_--Genotyping-variation-nested-inside-of-bubbles.md)\n- [Creating PanGenie input VCFs from assemblies](./references/github_com_eblerjana_pangenie_wiki_B_-Creating-PanGenie-input-VCFs-from-haplotype_E2_80_90resolved-assemblies.md)",
+  "skill_front_matter": {
+    "name": "pangenie",
+    "description": "PanGenie is a k-mer based genotyper that uses a pangenome graph and a panel of known haplotypes to infer genotypes from short-read data. Use when user asks to genotype short reads against a pangenome graph, infer genotypes for structural variants, or perform k-mer based genotyping using a reference panel.",
+    "homepage": "https://github.com/eblerjana/pangenie"
+  }
+}

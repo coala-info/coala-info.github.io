@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-imcrtools",
+  "category": "bioconductor",
+  "name": "bioconductor-imcrtools",
+  "description": "This tool performs spatial analysis and processing of highly multiplexed imaging data such as Imaging Mass Cytometry. Use when user asks to read segmentation outputs, perform spillover correction, construct spatial graphs, detect cellular neighborhoods, or perform neighborhood permutation testing for cell-cell interactions.",
+  "overview": "The `imcRtools` package is designed for the processing and spatial analysis of highly multiplexed imaging data, particularly Imaging Mass Cytometry (IMC). It bridges the gap between image segmentation pipelines (like steinbock or CellProfiler) and downstream single-cell analysis in R using `SpatialExperiment` or `SingleCellExperiment` objects. Key capabilities include spillover compensation, spatial graph construction, neighborhood aggregation, and statistical testing of spatial relationships.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/imcRtools.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-imcrtools/overview",
+  "github": "https://github.com/BodenmillerGroup/imcRtools",
+  "conda_downloads": "8.0K",
+  "conda_downloads_num": 8000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "imcRtools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/imcRtools.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-imcrtools/overview",
+    "github": "https://github.com/BodenmillerGroup/imcRtools",
+    "conda_downloads": "8.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-imcrtools\n\nname: bioconductor-imcrtools\ndescription: Analysis of Imaging Mass Cytometry (IMC) and highly multiplexed imaging data. Use this skill to read segmentation outputs (steinbock, CellProfiler), perform spillover correction, construct spatial graphs, detect cellular neighborhoods/communities, and perform neighborhood permutation testing for cell-cell interactions.\n\n# bioconductor-imcrtools\n\n## Overview\nThe `imcRtools` package is designed for the processing and spatial analysis of highly multiplexed imaging data, particularly Imaging Mass Cytometry (IMC). It bridges the gap between image segmentation pipelines (like steinbock or CellProfiler) and downstream single-cell analysis in R using `SpatialExperiment` or `SingleCellExperiment` objects. Key capabilities include spillover compensation, spatial graph construction, neighborhood aggregation, and statistical testing of spatial relationships.\n\n## Core Workflows\n\n### 1. Data Import\nLoad single-cell data and metadata from common segmentation pipelines.\n\n```r\nlibrary(imcRtools)\n\n# From steinbock output\nspe <- read_steinbock(path = \"path/to/steinbock_folder\")\n\n# From CellProfiler output\nspe <- read_cpout(path = \"path/to/cpout_folder\", \n                  graph_file = \"Object_relationships.csv\")\n\n# From raw .txt files (Hyperion) into CytoImageList\nimages <- readImagefromTXT(path = \"path/to/raw_txt\")\n```\n\n### 2. Spillover Correction\nCorrect for signal leakage between adjacent mass channels.\n\n```r\n# 1. Read single-metal spots\nsce_spill <- readSCEfromTXT(path = \"path/to/spillover_txts\")\n\n# 2. QC and Filter pixels (using CATALYST)\nlibrary(CATALYST)\nsce_spill <- assignPrelim(sce_spill, bc_key = as.numeric(unique(sce_spill$sample_mass)))\nsce_spill <- applyCutoffs(estCutoffs(sce_spill))\nsce_spill <- filterPixels(sce_spill)\n\n# 3. Compute and apply matrix\nsce_spill <- computeSpillmat(sce_spill)\nsm <- metadata(sce_spill)$spillover_matrix\n# Apply to main data using CATALYST::compCytof\n```\n\n### 3. Spatial Graph Construction\nBuild graphs where cells are nodes and spatial proximity defines edges.\n\n```r\n# Expansion: radius-based (e.g., 20um)\nspe <- buildSpatialGraph(spe, img_id = \"sample_id\", type = \"expansion\", threshold = 20)\n\n# KNN: k-nearest neighbors\nspe <- buildSpatialGraph(spe, img_id = \"sample_id\", type = \"knn\", k = 5)\n\n# Delaunay triangulation\nspe <- buildSpatialGraph(spe, img_id = \"sample_id\", type = \"delaunay\")\n```\n\n### 4. Spatial Analysis & Clustering\nIdentify cellular neighborhoods (CN) and spatial contexts (SC).\n\n```r\n# Aggregate neighbor phenotypes\nspe <- aggregateNeighbors(spe, colPairName = \"knn_interaction_graph\", \n                          aggregate_by = \"metadata\", count_by = \"celltype\")\n\n# Detect Spatial Context (SC) - higher level organization\nspe <- detectSpatialContext(spe, entry = \"aggregatedNeighborhood\", threshold = 0.9)\n\n# Detect Spatial Communities (Louvain/Walktrap)\nspe <- detectCommunity(spe, colPairName = \"expansion_interaction_graph\")\n```\n\n### 5. Interaction Testing\nTest if cell types interact more (attraction) or less (avoidance) than expected by chance.\n\n```r\n# Permutation testing\nout <- testInteractions(spe, \n                        group_by = \"sample_id\", \n                        label = \"celltype\", \n                        method = \"classic\", \n                        colPairName = \"knn_interaction_graph\",\n                        iter = 1000)\n\n# Visualize results\nplotInteractions(out, spe, group_by = \"sample_id\", label = \"celltype\")\n```\n\n### 6. Visualization\nVisualize cells and graphs in spatial coordinates.\n\n```r\nplotSpatial(spe, \n            img_id = \"sample_id\", \n            node_color_by = \"celltype\", \n            draw_edges = TRUE, \n            colPairName = \"knn_interaction_graph\")\n```\n\n## Tips and Best Practices\n- **Object Types**: Functions primarily return `SpatialExperiment` objects. Access spatial coordinates via `spatialCoords(spe)`.\n- **Border Cells**: Use `findBorderCells()` to flag cells near the edge of an image to avoid edge-effect artifacts in spatial statistics.\n- **Patch Detection**: Use `patchDetection()` to identify contiguous regions of specific cell types (e.g., tumor nests).\n- **Distances**: Use `distToCells()` to calculate the distance of every cell to the nearest cell of a specific class (e.g., distance of T-cells to the nearest tumor patch).\n\n## Reference documentation\n- [Tools for IMC data analysis](./references/imcRtools.Rmd)\n- [imcRtools Vignette](./references/imcRtools.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-imcrtools",
+    "description": "This tool performs spatial analysis and processing of highly multiplexed imaging data such as Imaging Mass Cytometry. Use when user asks to read segmentation outputs, perform spillover correction, construct spatial graphs, detect cellular neighborhoods, or perform neighborhood permutation testing for cell-cell interactions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/imcRtools.html"
+  }
+}

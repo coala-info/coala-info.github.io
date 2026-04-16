@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-epiregulon",
+  "category": "bioconductor",
+  "name": "bioconductor-epiregulon",
+  "description": "This tool constructs gene regulatory networks and infers transcription factor activity by integrating single-cell RNA-seq and ATAC-seq data. Use when user asks to identify peak-to-gene links, construct regulons using ChIP-seq or motif data, prune regulatory networks, or calculate single-cell transcription factor activity scores.",
+  "overview": "The `epiregulon` package constructs gene regulatory networks (GRNs) and infers transcription factor (TF) activity at the single-cell level. It integrates scATAC-seq (chromatin accessibility) and scRNA-seq (gene expression) data, incorporating public bulk TF ChIP-seq data (from ChIP-Atlas/ENCODE) or motif information to define \"regulons\"—sets of target genes regulated by specific TFs through identified regulatory elements.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/epiregulon.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epiregulon/overview",
+  "github": "https://github.com/xiaosaiyao/epiregulon",
+  "conda_downloads": "496",
+  "conda_downloads_num": 496,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "epiregulon"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/epiregulon.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epiregulon/overview",
+    "github": "https://github.com/xiaosaiyao/epiregulon",
+    "conda_downloads": "496",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-epiregulon\n\nname: bioconductor-epiregulon\ndescription: Comprehensive gene regulatory network (GRN) construction and transcription factor (TF) activity inference from single-cell multi-omics data (scRNA-seq and scATAC-seq). Use when Claude needs to: (1) Integrate scRNA-seq and scATAC-seq data to identify peak-to-gene links, (2) Construct \"regulons\" using bulk TF ChIP-seq or motif data, (3) Prune and weight regulatory networks, or (4) Calculate single-cell TF activity scores.\n\n# bioconductor-epiregulon\n\n## Overview\n\nThe `epiregulon` package constructs gene regulatory networks (GRNs) and infers transcription factor (TF) activity at the single-cell level. It integrates scATAC-seq (chromatin accessibility) and scRNA-seq (gene expression) data, incorporating public bulk TF ChIP-seq data (from ChIP-Atlas/ENCODE) or motif information to define \"regulons\"—sets of target genes regulated by specific TFs through identified regulatory elements.\n\n## Installation\n\nInstall via Bioconductor:\n\n```r\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"epiregulon\")\nlibrary(epiregulon)\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires three main components, typically stored in `SingleCellExperiment` or `MultiAssayExperiment` objects:\n- **Peak Matrix**: scATAC-seq chromatin accessibility.\n- **Expression Matrix**: scRNA-seq gene expression.\n- **Reduced Dimensions**: Dimensionality reduction (e.g., LSI or UMAP) for cell aggregation.\n\n### 2. Retrieve TF Binding Information\nRetrieve binding sites (GRangesList) for TFs. ChIP-seq is recommended over motifs for better accuracy.\n\n```r\n# For ChIP-seq (default)\ngrl <- getTFMotifInfo(genome = \"hg38\")\n\n# For Motifs\ngrl.motif <- getTFMotifInfo(genome = \"hg38\", mode = \"motif\", peaks = rowRanges(PeakMatrix))\n```\n\n### 3. Link Peaks to Genes (P2G)\nIdentify regulatory elements (RE) near target genes (TG) based on correlation.\n\n```r\n# Optional: Optimize metacell aggregation size\ncellNum <- optimizeMetacellNumber(peakMatrix = PeakMatrix, expMatrix = GeneExpressionMatrix, reducedDim = reducedDimMatrix)\n\n# Calculate links\np2g <- calculateP2G(peakMatrix = PeakMatrix, expMatrix = GeneExpressionMatrix, reducedDim = reducedDimMatrix, cellNum = cellNum)\n```\n\n### 4. Construct and Prune Regulons\nMap TFs to the peak-to-gene links and filter the network for statistical significance.\n\n```r\n# Overlap peaks with TF binding sites\noverlap <- addTFMotifInfo(grl = grl, p2g = p2g, peakMatrix = PeakMatrix)\n\n# Generate initial regulon object\nregulon <- getRegulon(p2g = p2g, overlap = overlap)\n\n# Prune the network (Highly Recommended)\n# Uses binomial or chi-square tests to ensure TF, RE, and TG are not independently expressed\npruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix, peakMatrix = PeakMatrix, regulon = regulon, test = \"chi.sq\", clusters = GeneExpressionMatrix$Clusters)\n```\n\n### 5. Weighting and Annotation\nEstimate the strength of regulation and optionally add log fold change (logFC) data.\n\n```r\n# Add weights (methods: \"wilcox\", \"corr\", or \"mi\")\nregulon.w <- addWeights(regulon = pruned.regulon, expMatrix = GeneExpressionMatrix, peakMatrix = PeakMatrix, clusters = GeneExpressionMatrix$Clusters, method = \"wilcox\")\n\n# Optional: Add logFC for specific conditions\nregulon.w <- addLogFC(regulon = regulon.w, clusters = GeneExpressionMatrix$Condition, expMatrix = GeneExpressionMatrix, logFC_condition = \"Treatment\", logFC_ref = \"Control\")\n```\n\n### 6. Calculate TF Activity\nCompute the final activity scores for each TF in every cell.\n\n```r\ntf_activity <- calculateActivity(expMatrix = GeneExpressionMatrix, regulon = regulon.w, mode = \"weight\", method = \"weightedMean\")\n```\n\n## Key Functions Reference\n\n- `getTFMotifInfo`: Fetches TF binding site data for hg19, hg38, or mm10.\n- `calculateP2G`: Links ATAC peaks to RNA genes within a window (default ±250kb).\n- `pruneRegulon`: Removes noise by testing the independence of TF-RE-TG triplets.\n- `addWeights`: Assigns regulatory potential to each edge in the network.\n- `calculateActivity`: Generates a TF-by-cell matrix of activity scores.\n\n## Reference documentation\n\n- [Epiregulon tutorial with MultiAssayExperiment](./references/multiome.mae.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-epiregulon",
+    "description": "This tool constructs gene regulatory networks and infers transcription factor activity by integrating single-cell RNA-seq and ATAC-seq data. Use when user asks to identify peak-to-gene links, construct regulons using ChIP-seq or motif data, prune regulatory networks, or calculate single-cell transcription factor activity scores.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/epiregulon.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fraser",
+  "category": "bioconductor",
+  "name": "bioconductor-fraser",
+  "description": "FRASER detects rare aberrant splicing events in RNA-seq data by modeling read count ratios and correcting for latent confounders using a denoising autoencoder. Use when user asks to identify splice site defects, quantify alternative splicing or intron retention, and call splicing outliers in rare disease diagnostics.",
+  "overview": "FRASER (Find RAre Splicing Events in RNA-seq) is a Bioconductor package designed for diagnostics in rare diseases. It detects aberrant splicing by modeling read count ratios using a beta-binomial distribution and automatically controlling for latent confounders with a denoising autoencoder. It supports de novo splice site detection and quantifies alternative donor/acceptor usage and intron retention.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/FRASER.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fraser/overview",
+  "github": "https://github.com/gagneurlab/FRASER",
+  "conda_downloads": "36.3K",
+  "conda_downloads_num": 36300,
+  "last_updated": "2025-10-31",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "FRASER"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/FRASER.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fraser/overview",
+    "github": "https://github.com/gagneurlab/FRASER",
+    "conda_downloads": "36.3K",
+    "last_updated": "2025-10-31",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fraser\n\nname: bioconductor-fraser\ndescription: Statistical method for detecting rare aberrant splicing events in RNA-seq data. Use this skill when analyzing RNA-seq data for rare diseases to identify splice site defects, alternative splicing, or intron retention. It covers the full workflow from read counting and metric calculation (Intron Jaccard Index, psi, theta) to denoising with autoencoders and calling outliers.\n\n## Overview\n\nFRASER (Find RAre Splicing Events in RNA-seq) is a Bioconductor package designed for diagnostics in rare diseases. It detects aberrant splicing by modeling read count ratios using a beta-binomial distribution and automatically controlling for latent confounders with a denoising autoencoder. It supports de novo splice site detection and quantifies alternative donor/acceptor usage and intron retention.\n\n## Core Workflow\n\n### 1. Data Preparation\nCreate a `FraserDataSet` (fds) using a sample annotation table and BAM files.\n\n```r\nlibrary(FRASER)\n\n# Define sample metadata\nsampleTable <- data.table(\n  sampleID = c(\"S1\", \"S2\"),\n  bamFile = c(\"path/to/s1.bam\", \"path/to/s2.bam\"),\n  pairedEnd = TRUE\n)\n\n# Initialize object\nfds <- FraserDataSet(colData=sampleTable, workingDir=\"FRASER_output\")\n\n# Count reads (extracts split and non-split reads)\nfds <- countRNAData(fds)\n```\n\n### 2. Metric Calculation and Filtering\nFRASER 2.0+ defaults to the **Intron Jaccard Index**, which combines alternative splicing and intron retention into a single robust metric.\n\n```r\n# Calculate splicing metrics (psi5, psi3, theta, and jaccard)\nfds <- calculatePSIValues(fds)\n\n# Filter lowly expressed junctions (recommended: at least 20 reads in one sample)\nfds <- filterExpressionAndVariability(fds, \n                                      minExpressionInOneSample=20, \n                                      filter=TRUE)\n```\n\n### 3. Fitting the Model\nThe `FRASER()` function is a wrapper that performs:\n1. Latent space dimension (q) estimation.\n2. Autoencoder fitting to correct for confounders.\n3. P-value calculation.\n\n```r\n# Run the full pipeline\n# q is the number of latent components; can be estimated via estimateBestQ()\nfds <- FRASER(fds, q=c(jaccard=2))\n```\n\n### 4. Annotation and Results\nAnnotate genomic ranges with gene symbols before extracting results.\n\n```r\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\nlibrary(org.Hs.eg.db)\n\n# Annotate\nfds <- annotateRangesWithTxDb(fds, \n                              txdb=TxDb.Hsapiens.UCSC.hg19.knownGene, \n                              orgDb=org.Hs.eg.db)\n\n# Extract significant outliers (default: padj <= 0.05, |deltaPsi| >= 0.3)\nres <- results(fds, padjCutoff=0.05, deltaPsiCutoff=0.3)\n\n# For gene-level results\nres_gene <- results(fds, aggregate=TRUE)\n```\n\n## Visualization\n\nFRASER provides several plotting functions to evaluate results and QC:\n\n*   **Volcano Plot**: `plotVolcano(fds, sampleID=\"S1\", type=\"jaccard\")`\n*   **Expression Plot**: `plotExpression(fds, type=\"jaccard\", result=res[1])`\n*   **Sample Correlation**: `plotCountCorHeatmap(fds, type=\"jaccard\", normalized=TRUE)`\n*   **Sashimi Plot**: `plotBamCoverageFromResultTable(fds, result=res[1])` (requires BAM access)\n\n## Key Tips\n*   **Sample Size**: For best performance in correcting confounders, at least 50 samples are recommended.\n*   **FRASER 2.0**: Always prefer the `jaccard` metric over the older `psi5`, `psi3`, and `theta` metrics for improved sensitivity and specificity.\n*   **Latent Space**: If the autoencoder doesn't seem to remove correlations, use `estimateBestQ(fds)` to find the optimal `q`.\n*   **Strand Specificity**: Ensure the `strandMode` is correctly set in the `FraserDataSet` if your library prep was stranded.\n\n## Reference documentation\n- [FRASER: Find RAre Splicing Events in RNA-seq Data](./references/FRASER.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fraser",
+    "description": "FRASER detects rare aberrant splicing events in RNA-seq data by modeling read count ratios and correcting for latent confounders using a denoising autoencoder. Use when user asks to identify splice site defects, quantify alternative splicing or intron retention, and call splicing outliers in rare disease diagnostics.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/FRASER.html"
+  }
+}

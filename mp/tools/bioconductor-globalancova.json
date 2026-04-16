@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-globalancova",
+  "category": "bioconductor",
+  "name": "bioconductor-globalancova",
+  "description": "This tool performs statistical testing of differential gene expression in groups of genes using a linear model framework. Use when user asks to perform global tests for association between gene expression profiles and clinical phenotypes, adjust for covariates, test specific pathways or GO terms, and generate diagnostic gene or subject plots.",
+  "overview": "The `GlobalAncova` package provides a robust framework for testing whether groups of genes are differentially expressed across different biological conditions. Unlike single-gene tests, it evaluates the intersection of null hypotheses for all genes in a set, increasing power and reducing multiple testing burdens. It uses an extra sum of squares principle within a linear model framework, making it flexible enough to handle categorical groups, continuous variables, time trends, and gene-gene inter",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GlobalAncova.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-globalancova/overview",
+  "github": "N/A",
+  "conda_downloads": "45.1K",
+  "conda_downloads_num": 45100,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GlobalAncova"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GlobalAncova.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-globalancova/overview",
+    "github": "N/A",
+    "conda_downloads": "45.1K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-globalancova\n\nname: bioconductor-globalancova\ndescription: Statistical testing of differential gene expression in groups of genes (pathways, GO terms, genomic regions) using Analysis of Covariance (ANCOVA). Use this skill to perform global tests for association between gene expression profiles and clinical phenotypes, adjust for covariates, perform hierarchical testing, and generate diagnostic plots (Gene and Subject plots).\n\n# bioconductor-globalancova\n\n## Overview\nThe `GlobalAncova` package provides a robust framework for testing whether groups of genes are differentially expressed across different biological conditions. Unlike single-gene tests, it evaluates the intersection of null hypotheses for all genes in a set, increasing power and reducing multiple testing burdens. It uses an extra sum of squares principle within a linear model framework, making it flexible enough to handle categorical groups, continuous variables, time trends, and gene-gene interactions.\n\n## Core Workflow\n\n### 1. Basic Global Testing\nTo test for differential expression between groups (e.g., ALL vs. AML) for all genes or a specific subset:\n\n```R\nlibrary(GlobalAncova)\n\n# Simple group comparison\n# xx: expression matrix (genes in rows, samples in columns)\n# group: vector defining clinical groups\nga.result <- GlobalAncova(xx = exprs(golubX), group = golubX$ALL.AML, perm = 1000)\n\n# Testing a specific pathway (gene set)\n# test.genes: vector of gene identifiers matching rownames of xx\nga.cc <- GlobalAncova(xx = exprs(golubX), group = gr, test.genes = cellcycle, method = \"both\")\n```\n\n### 2. General Linear Model Framework\nFor complex designs (multiple factors, interactions, or continuous covariates), use formula-based calls:\n\n```R\n# Compare a full model to a reduced model\n# formula.full: model with the effect of interest\n# formula.red: model without the effect of interest (null model)\nga.complex <- GlobalAncova(xx = vantVeer, \n                           formula.full = ~ metastases + ERstatus, \n                           formula.red = ~ ERstatus, \n                           model.dat = phenodata, \n                           test.genes = p53_pathway)\n```\n\n### 3. Testing Public Gene Sets (GO and Broad)\nThe package integrates with `globaltest` to facilitate testing of standard collections:\n\n```R\n# Gene Ontology (GO) with focus level procedure (hierarchical adjustment)\ngago <- GAGO(xx = exprs(golubX), formula.full = ~ ALL.AML, \n             annotation = \"hu6800\", ontology = \"BP\", multtest = \"focuslevel\")\n\n# Broad Institute Gene Sets (MSigDB)\n# Requires loading Broad sets via GSEABase::getBroadSets\nga.broad <- GABroad(xx = exprs(golubX), formula.full = ~ ALL.AML, \n                    category = \"c1\", collection = broad_sets, annotation = \"hu6800\")\n```\n\n### 4. Diagnostic Visualizations\nUse these plots to identify which genes or subjects drive the global significance:\n\n*   **Gene Plot**: Shows the influence of individual genes on the test statistic.\n    ```R\n    Plot.genes(xx = vantVeer, group = metastases, test.genes = p53)\n    ```\n*   **Subjects Plot**: Visualizes how well individual samples fit the phenotype pattern.\n    ```R\n    Plot.subjects(xx = vantVeer, group = metastases, test.genes = p53)\n    ```\n\n### 5. Decomposition of Sum of Squares\nFor multi-factor models, use `GlobalAncova.decomp` to see the contribution of each term (Sequential or Type III):\n\n```R\n# Sequential decomposition (order matters)\nGlobalAncova.decomp(xx = vantVeer, formula = ~ grade + metastases + ERstatus, \n                    model.dat = phenodata, method = \"sequential\")\n\n# Type III decomposition (every term adjusted for all others)\nGlobalAncova.decomp(xx = vantVeer, formula = ~ grade + metastases + ERstatus, \n                    model.dat = phenodata, method = \"type3\")\n```\n\n### 6. Generalized GlobalAncova (gGlobalAncova)\nUse for non-quantitative data (e.g., SNPs, categorical variables) or mixed data types using a likelihood ratio approach:\n\n```R\n# Testing binary variables\ng.res <- gGlobalAncova(X, formula.full = ~ group, model.dat = bindata, perm = 1000)\n\n# Hierarchical testing (testing subclusters within a dendrogram)\nres.hier <- gGlobalAncova.hierarchical(X, H = dendrogram, formula.full = ~ group, \n                                       model.dat = bindata, alpha = 0.05)\n```\n\n## Tips and Best Practices\n*   **Missing Values**: `GlobalAncova` does not allow missing values in the expression matrix. Impute data or remove genes with NAs before analysis.\n*   **P-value Methods**: \n    *   `method = \"perm\"`: Permutation-based (robust against non-normality/correlations).\n    *   `method = \"approx\"`: Asymptotic approximation (faster for many tests, but limited to group sizes < 2500).\n*   **Multiple Testing**: When testing many pathways simultaneously, use `GlobalAncova.closed` for a closed testing procedure that maintains the family-wise error rate without the stringency of Bonferroni.\n*   **Global Covariates**: If you have \"normal\" tissue samples for the same subjects, use the `zz` argument in `GlobalAncova.decomp` to adjust for baseline patient variability.\n\n## Reference documentation\n- [GlobalAncova](./references/GlobalAncova.md)\n- [GlobalAncovaDecomp](./references/GlobalAncovaDecomp.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-globalancova",
+    "description": "This tool performs statistical testing of differential gene expression in groups of genes using a linear model framework. Use when user asks to perform global tests for association between gene expression profiles and clinical phenotypes, adjust for covariates, test specific pathways or GO terms, and generate diagnostic gene or subject plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GlobalAncova.html"
+  }
+}

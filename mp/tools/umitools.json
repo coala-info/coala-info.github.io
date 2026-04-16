@@ -1,0 +1,51 @@
+{
+  "id": "umitools",
+  "category": "CLI",
+  "name": "umitools",
+  "description": "umitools manages Unique Molecular Identifiers (UMIs) in sequencing data to identify and handle PCR duplicates. Use when user asks to parse UMI sequences from FASTQ files, reformat reads for alignment, or mark PCR duplicates in BAM files.",
+  "overview": "umitools is a specialized toolset designed to manage Unique Molecular Identifiers (UMIs) in high-throughput sequencing workflows. It addresses the challenge of PCR duplication by providing utilities to parse UMI sequences from raw reads and subsequently mark or remove duplicates in aligned data. It is particularly effective for small RNA-seq and standard RNA-seq pipelines where distinguishing between biological replicates and technical artifacts is critical.",
+  "homepage": "https://github.com/weng-lab/umitools",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/umitools/overview",
+  "github": "https://github.com/weng-lab/umitools",
+  "conda_downloads": "12.1K",
+  "conda_downloads_num": 12100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "umitools_reformat_fastq",
+      "umitools_mark_duplicates",
+      "umitools_reformat_sra_fastq",
+      "umitools_simulate"
+    ],
+    "description": "A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI. This script is also known as umitools extract.",
+    "docker_image": "quay.io/biocontainers/umitools:0.3.4--py36_0",
+    "homepage": "https://github.com/weng-lab/umitools",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/umitools/overview",
+    "github": "https://github.com/weng-lab/umitools",
+    "conda_downloads": "12.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "umitools_mark_duplicates.cwl",
+    "umitools_reformat_fastq.cwl",
+    "umitools_reformat_sra_fastq.cwl",
+    "umitools_simulate.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# umitools\n\n## Overview\n\numitools is a specialized toolset designed to manage Unique Molecular Identifiers (UMIs) in high-throughput sequencing workflows. It addresses the challenge of PCR duplication by providing utilities to parse UMI sequences from raw reads and subsequently mark or remove duplicates in aligned data. It is particularly effective for small RNA-seq and standard RNA-seq pipelines where distinguishing between biological replicates and technical artifacts is critical.\n\n## Installation\n\nInstall the toolset using pip:\n\n```bash\npip3 install umitools\n```\n\n## Common Workflows\n\n### 1. Processing Small RNA-seq Data\nSmall RNA-seq typically involves identifying UMIs at both the 5' and 3' ends.\n\n**Identify and Reformat UMIs:**\n```bash\numitools reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq\n```\n*   `-i`: Input clipped FASTQ file.\n*   `-o`: Output for non-duplicate reads.\n*   `-d`: Output for identified duplicates.\n\n**Troubleshooting Quality:**\nTo identify reads with improper or missing UMIs for quality control:\n```bash\numitools reformat_sra_fastq -i clipped.fq.gz -o sra.umi.fq -d sra.dup.fq --reads-with-improper-umi sra.improper_umi.fq\n```\n\n### 2. Processing Standard RNA-seq Data\nFor standard RNA-seq, UMIs are usually parsed from paired-end reads before alignment.\n\n**Step 1: Parse UMIs from Paired-End Reads**\n```bash\numitools reformat_fastq -l r1.fq.gz -r r2.fq.gz -L r1.fmt.fq.gz -R r2.fmt.fq.gz\n```\n*   `-l` / `-r`: Input left and right reads.\n*   `-L` / `-R`: Output reformatted left and right reads containing UMI info.\n\n**Step 2: Mark PCR Duplicates**\nAfter aligning the reformatted reads (e.g., using STAR) and generating a BAM file:\n```bash\numitools mark_duplicates -f aligned_sorted.bam -p 8\n```\n*   `-f`: Input BAM file.\n*   `-p`: Number of threads to use.\n*   **Result**: Produces a file (e.g., `aligned_sorted.deumi.sorted.bam`) where duplicates are marked with the `0x400` SAM flag.\n\n## Advanced Configuration\n\n### Customizing UMI Locators\nIf your library preparation uses non-standard UMI locators, you must specify them to ensure proper parsing.\n\n**For RNA-seq:**\nDefault locators are `GGG`, `TCA`, and `ATC`.\n```bash\numitools reformat_fastq [options] --umi-locator GGG,TCA,ATC,TAG\n```\n\n**For Small RNA-seq:**\nUse patterns where `N` represents the UMI and specific bases represent the fixed locator.\n```bash\numitools reformat_sra_fastq [options] --umi-pattern-5 NNNCGANNNTACNNN --umi-pattern-3 NNNGTCNNNTAGNNN\n```\n\n## Expert Tips\n\n*   **Duplicate Removal**: `umitools mark_duplicates` only marks the reads. To physically remove them for downstream tools that don't recognize the `0x400` flag, use samtools:\n    ```bash\n    samtools view -b -h -F 0x400 input.deumi.sorted.bam > output.filtered.bam\n    ```\n*   **Pre-processing**: Always remove adapters before running `reformat_sra_fastq`. A common adapter for small RNA-seq is `TGGAATTCTCGGGTGCCAAGG`.\n*   **Alternative Command Names**: Subcommands can be called as standalone scripts (e.g., `umitools mark_duplicates` is equivalent to `umi_mark_duplicates`).\n*   **Simulation**: Use `umi_simulator` to run in silico PCR simulations to test your UMI recovery rates and deduplication logic.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| umi_mark_duplicates | A pair of FASTQ files are first reformatted using reformat_umi_fastq.py and then is aligned to get the bam file. This script can parse the umi barcode in the name of each read to mark duplicates. This script is also known as umitools mark. |\n| umi_reformat_fastq | A script to reformat reads in a UMI fastq file so that the name of each record contains the UMI. This script is also known as umitools extract. |\n| umi_reformat_sra_fastq | A script to process reads in from UMI small RNA-seq. This script can handle gzipped files transparently. This script is also known as umitools extract_small. |\n| umitools | See https://github.com/weng-lab/umitools for more information.               For UMI RNA-seq: First, use umitools reformat_fastq to identify               UMIs in UMI RNA-seq. Then, use umitools mark_duplicates to mark               PCR duplicates. For UMI small RNA-seq: Use umitools               reformat_sra_fastq to identify UMIs and PCR duplicates. To               simulate UMIs, use umitools simulate. |\n\n## Reference documentation\n- [umitools GitHub Repository](./references/github_com_weng-lab_umitools.md)",
+  "skill_front_matter": {
+    "name": "umitools",
+    "description": "umitools manages Unique Molecular Identifiers (UMIs) in sequencing data to identify and handle PCR duplicates. Use when user asks to parse UMI sequences from FASTQ files, reformat reads for alignment, or mark PCR duplicates in BAM files.",
+    "homepage": "https://github.com/weng-lab/umitools"
+  }
+}

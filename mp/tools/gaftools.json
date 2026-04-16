@@ -1,0 +1,61 @@
+{
+  "id": "gaftools",
+  "category": "CLI",
+  "name": "gaftools",
+  "description": "gaftools is a suite of utilities for processing pangenome graph alignments and managing rGFA-based graph structures. Use when user asks to convert GFA to rGFA, order graph bubbles, sort GAF files, realign sequences using WFA, index alignments, or extract specific paths and statistics from pangenome data.",
+  "overview": "`gaftools` is a specialized suite of utilities designed to bridge the gap between pangenome graph structures and sequence alignments. It is particularly useful for researchers working with rGFA-based graphs (like those from minigraph-cactus) and GAF files. The toolkit provides essential operations for pangenome data management, including coordinate conversion, alignment realignment using Wavefront Alignment (WFA), and bubble-based graph ordering to facilitate better visualization and sorting.",
+  "homepage": "https://github.com/marschall-lab/gaftools",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/gaftools/overview",
+  "github": "https://github.com/marschall-lab/gaftools",
+  "conda_downloads": "601",
+  "conda_downloads_num": 601,
+  "last_updated": "2026-01-28",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gaftools_find_path",
+      "gaftools_gfa2rgfa",
+      "gaftools_index",
+      "gaftools_order_gfa",
+      "gaftools_phase",
+      "gaftools_realign",
+      "gaftools_sort",
+      "gaftools_stat",
+      "gaftools_view"
+    ],
+    "description": "Find the genomic sequence of a given connected GFA path.",
+    "docker_image": "quay.io/biocontainers/gaftools:1.3.1--pyhdfd78af_0",
+    "homepage": "https://github.com/marschall-lab/gaftools",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/gaftools/overview",
+    "github": "https://github.com/marschall-lab/gaftools",
+    "conda_downloads": "601",
+    "last_updated": "2026-01-28",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "gaftools_find_path.cwl",
+    "gaftools_gfa2rgfa.cwl",
+    "gaftools_index.cwl",
+    "gaftools_order_gfa.cwl",
+    "gaftools_phase.cwl",
+    "gaftools_realign.cwl",
+    "gaftools_sort.cwl",
+    "gaftools_stat.cwl",
+    "gaftools_view.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# gaftools\n\n## Overview\n`gaftools` is a specialized suite of utilities designed to bridge the gap between pangenome graph structures and sequence alignments. It is particularly useful for researchers working with rGFA-based graphs (like those from minigraph-cactus) and GAF files. The toolkit provides essential operations for pangenome data management, including coordinate conversion, alignment realignment using Wavefront Alignment (WFA), and bubble-based graph ordering to facilitate better visualization and sorting.\n\n## Core Workflows and CLI Patterns\n\n### 1. Graph Preparation and Conversion\nBefore analyzing alignments, ensure your graph is in the correct format. `gaftools` relies heavily on rGFA tags (`SN`, `SO`, `SR`).\n\n*   **Convert GFA to rGFA**: Use W-lines (walks) to generate a reference-stable rGFA.\n    ```bash\n    gaftools gfa2rgfa --reference-name CHM13 input.gfa --output output.rgfa.gz\n    ```\n*   **Order Graph Bubbles**: Establish a linear order for biconnected components (bubbles). This adds `BO` (Bubble Order) and `NO` (Node Order) tags.\n    ```bash\n    gaftools order_gfa --outdir ordered_graph/ input.rgfa\n    ```\n\n### 2. Alignment Processing\nOnce the graph is ordered, you can perform advanced alignment manipulations.\n\n*   **Sort GAF Files**: Sorting is critical for efficient viewing and requires a graph ordered with `BO`/`NO` tags.\n    ```bash\n    gaftools sort --bgzip -o sorted.gaf.gz input.gaf ordered_graph.rgfa\n    ```\n*   **Realign with WFA**: Improve alignment quality using the Wavefront Alignment algorithm.\n    ```bash\n    gaftools realign --fasta reads.fa input.gaf graph.gfa > realigned.gaf\n    ```\n\n### 3. Subsetting and Statistics\n*   **Index for Rapid Access**: Create a `.gvi` index to allow random access by node ID or region.\n    ```bash\n    gaftools index input.gaf graph.rgfa\n    ```\n*   **View Specific Regions**: Extract alignments covering specific nodes or genomic regions.\n    ```bash\n    gaftools view --region \"node_100-node_200\" input.gaf\n    ```\n*   **Generate Statistics**: Get a quick summary of alignment lengths, identities, and mapping qualities.\n    ```bash\n    gaftools stat input.gaf\n    ```\n\n### 4. Path Extraction\n*   **Retrieve Sequences**: Extract the actual DNA sequence for a specific path through the graph.\n    ```bash\n    gaftools find_path -p \">s1>s2<s3\" --fasta graph.gfa -o path_sequence.fa\n    ```\n\n## Expert Tips\n*   **Memory Management**: When working with massive pangenomes, use the `--without-sequence` flag in `order_gfa` to strip DNA sequences from the output graph, significantly reducing memory and disk usage for visualization-only tasks.\n*   **Branching Graphs**: If `order_gfa` fails due to complex graph topology, use `--ignore-branching` to enforce a linear order along the primary reference path while ignoring side-branches.\n*   **BGZF Compression**: Always prefer `.gz` extensions and the `--bgzip` flag where available. `gaftools` is optimized for Blocked GNU Zip Format, which allows for indexed random access.\n*   **Coordinate Stability**: Use `gfa2rgfa` to move from unstable segment-relative coordinates to stable, reference-based coordinates, which is essential for comparing pangenome alignments to standard linear reference results.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| gaftools find_path | Find the genomic sequence of a given connected GFA path. |\n| gaftools gfa2rgfa | Converting a GFA file to rGFA format using the W-lines and the acyclic reference path. (e.g., minigraph-based graphs) |\n| gaftools order_gfa | Order bubbles in the GFA by adding BO and NO tags. |\n| gaftools realign | Realign a GAF file using wavefront alignment algorithm (WFA). |\n| gaftools_index | Index a GAF file for the view functionality. |\n| gaftools_phase | Add phasing information to the GAF file from a haplotag TSV file. |\n| gaftools_sort | Sort the GAF alignments using BO and NO tags of the corresponding graph. |\n| gaftools_stat | Calculate statistics of the given GAF file. |\n| gaftools_view | View, subset or convert a GAF file (GAF file should be indexed first, using gaftools index). |\n\n## Reference documentation\n- [gaftools User Guide](./references/gaftools_readthedocs_io_en_latest_guide.html.md)\n- [gaftools Overview](./references/github_com_marschall-lab_gaftools_blob_main_README.md)\n- [Change Log and Version Features](./references/gaftools_readthedocs_io_en_latest_changes.html.md)",
+  "skill_front_matter": {
+    "name": "gaftools",
+    "description": "gaftools is a suite of utilities for processing pangenome graph alignments and managing rGFA-based graph structures. Use when user asks to convert GFA to rGFA, order graph bubbles, sort GAF files, realign sequences using WFA, index alignments, or extract specific paths and statistics from pangenome data.",
+    "homepage": "https://github.com/marschall-lab/gaftools"
+  }
+}

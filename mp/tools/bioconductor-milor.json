@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-milor",
+  "category": "bioconductor",
+  "name": "bioconductor-milor",
+  "description": "Milo performs differential abundance analysis on single-cell data using k-nearest neighbor graphs to identify changes in cell state composition between experimental conditions. Use when user asks to perform differential abundance analysis, identify shifts in cell state abundance without discrete clustering, or analyze single-cell composition using KNN neighborhoods.",
+  "overview": "`miloR` implements Milo, a method for differential abundance (DA) analysis on single-cell datasets. Unlike cluster-based DA, Milo uses partially overlapping neighborhoods on a KNN graph to detect changes in composition. This approach avoids the need for discrete clustering and can identify subtle shifts in cell states along trajectories or within complex populations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/miloR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/MarioniLab/miloR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "miloR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/miloR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/MarioniLab/miloR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-milor\n\nname: bioconductor-milor\ndescription: Differential abundance analysis for single-cell data using k-nearest neighbor (KNN) graphs and neighborhoods. Use when you need to identify cell state abundance changes between experimental conditions in replicated multi-condition single-cell experiments (SingleCellExperiment, Seurat, or AnnData objects).\n\n# bioconductor-milor\n\n## Overview\n\n`miloR` implements Milo, a method for differential abundance (DA) analysis on single-cell datasets. Unlike cluster-based DA, Milo uses partially overlapping neighborhoods on a KNN graph to detect changes in composition. This approach avoids the need for discrete clustering and can identify subtle shifts in cell states along trajectories or within complex populations.\n\nThe workflow follows three main stages:\n1.  **Neighborhood Sampling**: Defining representative neighborhoods on a KNN graph.\n2.  **Cell Counting**: Quantifying cells from each experimental sample within these neighborhoods.\n3.  **DA Testing**: Using a Generalized Linear Model (GLM) framework (via `edgeR`) to test for abundance changes, followed by a weighted Spatial FDR correction.\n\n## Core Workflow\n\n### 1. Initialization and Graph Building\nConvert your data (e.g., `SingleCellExperiment`) to a `Milo` object and construct the KNN graph.\n\n```r\nlibrary(miloR)\nlibrary(SingleCellExperiment)\n\n# Create Milo object\nmilo <- Milo(sce_object)\n\n# Build KNN graph (k=30 and d=30 are common starting points)\n# 'd' is the number of reduced dimensions (e.g., PCA) to use\nmilo <- buildGraph(milo, k = 30, d = 30, reduced.dim = \"PCA\")\n```\n\n### 2. Defining Neighborhoods\nSample representative cells to serve as neighborhood indices.\n\n```r\n# prop: proportion of cells to sample (0.1 for <30k cells, 0.05 for larger)\nmilo <- makeNhoods(milo, prop = 0.1, k = 30, d = 30, refined = TRUE)\n\n# Diagnostic: Check neighborhood size distribution (aim for peak between 50-100)\nplotNhoodSizeHist(milo)\n```\n\n### 3. Counting and Experimental Design\nCount cells per sample in each neighborhood and define the metadata for testing.\n\n```r\n# Count cells\nmilo <- countCells(milo, meta.data = as.data.frame(colData(milo)), samples = \"SampleID\")\n\n# Prepare design matrix (must be unique per sample)\ndesign_df <- data.frame(colData(milo))[, c(\"SampleID\", \"Condition\", \"Batch\")]\ndesign_df <- unique(design_df)\nrownames(design_df) <- design_df$SampleID\n\n# Reorder to match count matrix columns\ndesign_df <- design_df[colnames(nhoodCounts(milo)), ]\n```\n\n### 4. Differential Abundance Testing\nCalculate neighborhood distances for Spatial FDR and run the GLM.\n\n```r\n# Calculate distances (required for Spatial FDR)\nmilo <- calcNhoodDistance(milo, d = 30)\n\n# Run test\nda_results <- testNhoods(milo, design = ~ Batch + Condition, design.df = design_df)\n\n# Significant results (SpatialFDR < 0.1)\nhead(da_results[order(da_results$SpatialFDR), ])\n```\n\n## Advanced Comparisons (Contrasts)\n\nFor experiments with >2 groups, use contrasts to specify comparisons.\n\n```r\n# Example: Comparing GroupA vs GroupB in a multi-level 'Condition' variable\n# Use ~ 0 + Condition in the design to get separate levels\nda_results <- testNhoods(milo, \n                         design = ~ 0 + Condition, \n                         design.df = design_df, \n                         model.contrasts = \"ConditionGroupA - ConditionGroupB\")\n```\n\n## Visualization and Interpretation\n\n### Spatial Visualization\nProject DA results onto the single-cell embedding (UMAP/TSNE).\n\n```r\nmilo <- buildNhoodGraph(milo)\nplotNhoodGraphDA(milo, da_results, alpha = 0.1) + \n  plotReducedDim(milo, \"UMAP\", colour_by = \"Condition\")\n```\n\n### Annotation and Beeswarm Plots\nAssign cell type labels to neighborhoods based on majority voting.\n\n```r\nda_results <- annotateNhoods(milo, da_results, coldata_col = \"celltype\")\nplotDAbeeswarm(da_results, group.by = \"celltype\")\n```\n\n### Finding Marker Genes\nIdentify genes that characterize specific DA neighborhood groups.\n\n```r\n# Group neighborhoods by LFC and connectivity\nda_results <- groupNhoods(milo, da_results, max.lfc.delta = 2)\n\n# Find markers for a specific group\nmarkers <- findNhoodGroupMarkers(milo, da_results, \n                                 aggregate.samples = TRUE, \n                                 sample_col = \"SampleID\",\n                                 subset.groups = \"1\")\n```\n\n## Tips for Success\n- **Batch Correction**: If your data is batch-corrected (e.g., via `fastMNN`), ensure you build the graph using the corrected reduced dimensions (e.g., `reduced.dim = \"pca.corrected\"`).\n- **K-selection**: If `plotNhoodSizeHist` shows very small neighborhoods (mean < 20), increase `k` or `prop`.\n- **Replicates**: Milo requires biological replicates to estimate variance. Do not run DA testing on single-sample-per-condition datasets.\n\n## Reference documentation\n\n- [Making comparisons for differential abundance using contrasts](./references/milo_contrasts.md)\n- [Differential abundance testing with Milo](./references/milo_demo.md)\n- [Differential abundance testing with Milo - Mouse gastrulation example](./references/milo_gastrulation.md)\n- [GLMM for differential abundance testing](./references/milo_glmm.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-milor",
+    "description": "Milo performs differential abundance analysis on single-cell data using k-nearest neighbor graphs to identify changes in cell state composition between experimental conditions. Use when user asks to perform differential abundance analysis, identify shifts in cell state abundance without discrete clustering, or analyze single-cell composition using KNN neighborhoods.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/miloR.html"
+  }
+}

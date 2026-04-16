@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tdbasedufeadv",
+  "category": "bioconductor",
+  "name": "bioconductor-tdbasedufeadv",
+  "description": "This tool performs advanced tensor decomposition-based unsupervised feature extraction for multi-omics data integration. Use when user asks to integrate datasets sharing features or samples, perform unsupervised feature extraction using HOSVD, or conduct drug-disease integration and multi-omics projection.",
+  "overview": "The `TDbasedUFEadv` package extends the `TDbasedUFE` framework to handle complex multi-omics integration scenarios. It allows for unsupervised feature extraction (typically genes) from multiple data sources by constructing tensors or using SVD-based projections. It is particularly effective for datasets with small sample sizes and large feature sets.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TDbasedUFEadv.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/tagtag/TDbasedUFEadv",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TDbasedUFEadv"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TDbasedUFEadv.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/tagtag/TDbasedUFEadv",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tdbasedufeadv\n\nname: bioconductor-tdbasedufeadv\ndescription: Advanced Tensor Decomposition (TD) based Unsupervised Feature Extraction (UFE) for multi-omics data integration. Use this skill to perform integrated analysis of multiple datasets sharing either features or samples, including drug-disease integration, multi-omics projection, and enrichment analysis of selected features.\n\n# bioconductor-tdbasedufeadv\n\n## Overview\n\nThe `TDbasedUFEadv` package extends the `TDbasedUFE` framework to handle complex multi-omics integration scenarios. It allows for unsupervised feature extraction (typically genes) from multiple data sources by constructing tensors or using SVD-based projections. It is particularly effective for datasets with small sample sizes and large feature sets.\n\nKey capabilities include:\n- Integrating datasets sharing features (e.g., drug-treated vs. disease cell lines).\n- Integrating datasets sharing samples (e.g., mRNA, methylation, and mutation data for the same patients).\n- Memory-efficient analysis using partial summation and SVD.\n- Projection-based integration for multiple omics layers.\n\n## Core Workflow\n\n### 1. Data Preparation and Tensor Construction\n\nDepending on whether features or samples are shared, use specific preparation functions.\n\n```r\nlibrary(TDbasedUFEadv)\nlibrary(TDbasedUFE)\n\n# Case A: Features are shared (e.g., two expression matrices)\n# Z will be a tensor of dimension Features x Samples1 x Samples2\nZ <- prepareTensorfromMatrix(matrix1, matrix2)\n\n# Case B: Multiple datasets sharing samples\n# Z will be a bundle of top singular value vectors\nZ_list <- prepareTensorfromList(list_of_matrices, n_components = 10)\n\n# Wrap in SummarizedExperiment container for the package\nZ_se <- PrepareSummarizedExperimentTensor(\n    feature = rownames(matrix1),\n    sample = colnames(matrix1),\n    value = Z\n)\n```\n\n### 2. Decomposition\n\nApply Higher-Order Singular Value Decomposition (HOSVD) to the constructed tensor.\n\n```r\nHOSVD <- computeHosvd(Z_se)\n```\n\n### 3. Feature Selection\n\nFeature selection involves identifying singular value vectors that represent the biological signal of interest (e.g., treatment effect or disease state).\n\n**Interactive Mode (Recommended for discovery):**\n```r\n# Define conditions for the modes (e.g., treatment vs control)\ncond <- list(NULL, treatment_vector, class_vector)\n\n# Interactively select vectors and optimize standard deviation (de)\nindex <- selectFeature(HOSVD, cond) \n```\n\n**Batch Mode (For reproducible scripts):**\n```r\n# input_all specifies which singular value vectors to use\nindex <- selectFeatureProj(HOSVD, Multi_list, cond, de = 1e-3, input_all = 3)\n```\n\n### 4. Results Extraction\n\n```r\n# View top selected features\nhead(tableFeatures(Z_se, index))\n\n# Extract gene symbols for downstream analysis\nselected_genes <- unlist(lapply(strsplit(tableFeatures(Z_se, index)[,1], \"|\", fixed=TRUE), \"[\", 1))\n```\n\n## Advanced Integration Strategies\n\n### Memory-Efficient SVD (Partial Summation)\nWhen tensors are too large for memory, use `computeSVD` on the product of matrices.\n```r\nSVD_res <- computeSVD(exprs(data1), exprs(data2))\n# Follow with selectFeatureRect()\n```\n\n### Multi-Omics Projection\nTo integrate multiple omics layers (mRNA, Methylation, etc.) sharing the same samples:\n1. Use `prepareTensorfromList` to bundle SVD components.\n2. Apply `computeHosvd`.\n3. Use `selectFeatureSquare` to map back to original features in each omics layer.\n\n```r\nindex_all <- selectFeatureSquare(HOSVD, input_all, original_data_list, de = c(0.5, 0.1, 0.1, 1))\n```\n\n## Enrichment Analysis\n\nSelected features can be validated using standard enrichment tools.\n\n```r\n# Using enrichR\nlibrary(enrichR)\ndbs <- c(\"GO_Biological_Process_2021\", \"KEGG_2021_Human\")\nenriched <- enrichr(selected_genes, dbs)\n\n# Using STRINGdb for PPI networks\nlibrary(STRINGdb)\nstring_db <- STRINGdb$new(version=\"11.5\", species=9606)\nmapped <- string_db$map(data.frame(genes=selected_genes), \"genes\")\nstring_db$plot_network(mapped$STRING_id)\n```\n\n## Reference documentation\n\n- [Enrichment Analysis Guide](./references/Enrichment.md)\n- [Theoretical Explanation of TDbasedUFEadv](./references/Explanation_of_TDbasedUFEadv.md)\n- [Main User Guide](./references/How_to_use_TDbasedUFEadv.md)\n- [Quick Start: Two Omics Integration](./references/QuickStart.md)\n- [Quick Start 2: Multi-Omics and Shared Features](./references/QuickStart2.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tdbasedufeadv",
+    "description": "This tool performs advanced tensor decomposition-based unsupervised feature extraction for multi-omics data integration. Use when user asks to integrate datasets sharing features or samples, perform unsupervised feature extraction using HOSVD, or conduct drug-disease integration and multi-omics projection.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TDbasedUFEadv.html"
+  }
+}

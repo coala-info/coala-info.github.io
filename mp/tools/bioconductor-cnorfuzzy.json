@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnorfuzzy",
+  "category": "bioconductor",
+  "name": "bioconductor-cnorfuzzy",
+  "description": "This tool trains signaling pathway maps to biochemical data using Constrained Fuzzy Logic to model continuous protein activity levels. Use when user asks to train signaling models with fuzzy logic, optimize prior knowledge networks against quantitative data, or visualize fits between simulations and experimental signaling data.",
+  "overview": "CNORfuzzy extends the CellNOptR package by implementing Constrained Fuzzy Logic (cFL). While boolean models represent protein activity as binary (0 or 1), cFL allows for continuous activity levels, providing a more granular fit to quantitative biochemical data. The workflow typically involves taking a Prior Knowledge Network (PKN) and a CNOlist (data object), defining transfer functions (Hill functions), and using a Genetic Algorithm (GA) followed by a refinement step to find the optimal model p",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CNORfuzzy.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNORfuzzy"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNORfuzzy.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnorfuzzy\n\nname: bioconductor-cnorfuzzy\ndescription: Use this skill to train signaling pathway maps to biochemical data using Constrained Fuzzy Logic (cFL). This skill is appropriate for modeling quantitative signaling data that exceeds the capabilities of boolean logic, allowing for continuous values between 0 and 1. Use it to optimize Prior Knowledge Networks (PKN) against perturbation data (CNOlist), perform multi-run optimizations, and visualize the fit between model simulations and experimental data.\n\n## Overview\n\nCNORfuzzy extends the CellNOptR package by implementing Constrained Fuzzy Logic (cFL). While boolean models represent protein activity as binary (0 or 1), cFL allows for continuous activity levels, providing a more granular fit to quantitative biochemical data. The workflow typically involves taking a Prior Knowledge Network (PKN) and a CNOlist (data object), defining transfer functions (Hill functions), and using a Genetic Algorithm (GA) followed by a refinement step to find the optimal model parameters.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the package and your data. CNORfuzzy relies on the `CNOlist` class from CellNOptR.\n\n```R\nlibrary(CNORfuzzy)\nlibrary(CellNOptR)\n\n# Load example data or your own\ndata(CNOlistToy, package=\"CellNOptR\")\ndata(ToyModel, package=\"CellNOptR\")\n\n# Ensure data is in the correct CNOlist class\ncnolist <- CNOlist(CNOlistToy)\npkn_model <- ToyModel\n```\n\n### 2. Parameter Configuration\nInitialize default parameters and customize the Genetic Algorithm or Fuzzy Logic settings.\n\n```R\nparams <- defaultParametersFuzzy(cnolist, pkn_model)\n\n# Genetic Algorithm settings\nparams$popSize <- 50\nparams$maxGens <- 100\nparams$maxTime <- 300 # seconds\n\n# Fuzzy Logic Transfer Functions (Hill functions: g, n, k)\n# Type1Funs are for internal gates; Type2Funs are for stimuli-to-species\nparams$type1Funs[,2] <- c(3, 3, 3, 3, 3, 3, 1.01) # Hill coefficients (n)\nparams$redThres <- c(0, 0.0001, 0.001, 0.01)     # Reduction thresholds\n```\n\n### 3. Optimization\nRun the optimization wrapper. For complex models, it is recommended to run multiple iterations (N > 1) to ensure convergence.\n\n```R\nN <- 5 # Number of runs\nallRes <- list()\n\nfor (i in 1:N) {\n  allRes[[i]] <- CNORwrapFuzzy(cnolist, pkn_model, paramsList = params)\n}\n\n# Compile results from multiple runs\nsummary <- compileMultiRes(allRes, show = TRUE)\n```\n\n### 4. Visualization and Interpretation\nEvaluate the Mean Squared Error (MSE) against the reduction threshold to choose the best model complexity.\n\n```R\n# Plot the fit (simulated vs experimental)\n# The first argument is the chosen reduction threshold (e.g., 0.01)\nplotMeanFuzzyFit(0.01, summary$allFinalMSEs, allRes)\n\n# Export the optimized network to files (SIF, DOT, etc.)\nwriteFuzzyNetwork(0.01, summary$allFinalMSEs, allRes, \"my_optimized_model\")\n```\n\n## Key Functions\n\n- `defaultParametersFuzzy(CNOlist, model)`: Generates the required parameter list with default Hill function values and GA settings.\n- `CNORwrapFuzzy(CNOlist, model, paramsList)`: The primary wrapper that performs preprocessing, GA optimization, and refinement.\n- `compileMultiRes(allRes, show)`: Aggregates results from multiple `CNORwrapFuzzy` runs and plots the trade-off between MSE and number of parameters.\n- `plotMeanFuzzyFit(threshold, allFinalMSEs, allRes)`: Visualizes the experimental data with simulated data overlaid as dashed lines. Background colors indicate the error magnitude.\n- `writeFuzzyNetwork(threshold, allFinalMSEs, allRes, filename)`: Saves the optimized model as a .dot and .sif file for use in Cytoscape.\n\n## Tips for Success\n\n- **Threshold Selection**: Use the plot from `compileMultiRes` to find the \"elbow\" where the MSE starts to increase significantly. Choose a threshold just before this jump to balance model simplicity and accuracy.\n- **Hill Coefficients**: A Hill coefficient ($n$) of exactly 1 can be numerically unstable; use 1.01 instead.\n- **Computational Time**: Optimization is CPU-intensive. If runs are too slow, reduce `params$optimisation$maxtime` or `params$maxGens`.\n- **Missing Links**: If a specific node (e.g., NFkB) consistently shows a poor fit (red/pink boxes in `plotMeanFuzzyFit`), it often indicates a missing interaction in your Prior Knowledge Network.\n\n## Reference documentation\n- [Training Signalling Pathway Maps to Biochemical Data with Constrained Fuzzy Logic using CNORfuzzy](./references/CNORfuzzy-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnorfuzzy",
+    "description": "This tool trains signaling pathway maps to biochemical data using Constrained Fuzzy Logic to model continuous protein activity levels. Use when user asks to train signaling models with fuzzy logic, optimize prior knowledge networks against quantitative data, or visualize fits between simulations and experimental signaling data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNORfuzzy.html"
+  }
+}

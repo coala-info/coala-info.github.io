@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pasillatranscriptexpr",
+  "category": "bioconductor",
+  "name": "bioconductor-pasillatranscriptexpr",
+  "description": "This package provides metadata and quantification workflows for the pasilla Drosophila RNA-seq dataset. Use when user asks to retrieve experimental design information, download raw SRA data, or process transcript-level counts for Drosophila melanogaster samples.",
+  "overview": "The `PasillaTranscriptExpr` package is a Bioconductor data experiment package that provides the metadata and processing framework for the pasilla dataset (Brooks et al., 2011). This dataset is used to study exons regulated by the pasilla protein in *Drosophila melanogaster*. The package facilitates the transition from raw SRA data to transcript-level counts using the kallisto quantification workflow.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/PasillaTranscriptExpr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PasillaTranscriptExpr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/PasillaTranscriptExpr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pasillatranscriptexpr\n\nname: bioconductor-pasillatranscriptexpr\ndescription: Access metadata and quantification workflows for the pasilla Drosophila RNA-seq dataset. Use this skill to retrieve experimental design information (SraRunInfo), download raw data, or process transcript-level counts generated via kallisto for Drosophila melanogaster samples.\n\n## Overview\nThe `PasillaTranscriptExpr` package is a Bioconductor data experiment package that provides the metadata and processing framework for the pasilla dataset (Brooks et al., 2011). This dataset is used to study exons regulated by the pasilla protein in *Drosophila melanogaster*. The package facilitates the transition from raw SRA data to transcript-level counts using the kallisto quantification workflow.\n\n## Accessing Experimental Metadata\nThe package includes a comprehensive metadata file (`SraRunInfo.csv`) that describes the 7 biologically independent samples (4 control, 3 knockdown) and their sequencing specifications (single-end vs. paired-end).\n\n```r\nlibrary(PasillaTranscriptExpr)\n\n# Locate and read the metadata\ndata_dir <- system.file(\"extdata\", package = \"PasillaTranscriptExpr\")\nsri <- read.table(file.path(data_dir, \"SraRunInfo.csv\"), \n                  stringsAsFactors = FALSE, sep = \",\", header = TRUE)\n\n# Filter for the specific experimental samples (Untreated and CG8144 RNAi)\nkeep <- grep(\"CG8144|Untreated-\", sri$LibraryName)\nsri <- sri[keep, ]\n```\n\n## Data Retrieval Workflow\nThe metadata contains direct download paths for the SRA files. You can automate the download process within R:\n\n```r\n# Download SRA files based on metadata paths\nsra_files <- basename(sri$download_path)\nfor(i in 1:nrow(sri)) {\n    download.file(sri$download_path[i], sra_files[i])\n}\n```\n\n## Transcript Quantification Workflow\nThe package outlines a workflow using `kallisto`. While `kallisto` itself is an external command-line tool, `PasillaTranscriptExpr` provides the R logic to manage the inputs and outputs:\n\n1.  **Metadata Preparation**: Organize samples by `LibraryLayout` (PAIRED vs SINGLE) and `avgLength` (required for single-end quantification).\n2.  **Index Building**: Reference the Drosophila genome FASTA (e.g., BDGP5.70).\n3.  **Quantification**: Generate `abundance.txt` files for each sample.\n\n## Merging and Annotating Results\nAfter quantification, use R to aggregate individual sample files into a single expression matrix and map transcript IDs to gene IDs.\n\n```r\n# Example of merging multiple kallisto abundance files\n# Assuming 'metadata' contains 'UniqueName' (folder paths) and 'SampleName'\nlibrary(rtracklayer)\n\n# Load GTF to create a mapping between transcript_id and gene_id\ngtf <- import(\"Drosophila_melanogaster.BDGP5.70.gtf\")\ngt <- unique(mcols(gtf)[, c(\"gene_id\", \"transcript_id\")])\nrownames(gt) <- gt$transcript_id\n\n# Merge logic (simplified)\n# 1. Read abundance.txt for each sample\n# 2. Use Reduce(merge, ...) to combine by 'target_id'\n# 3. Add gene_id column: counts$gene_id <- gt[counts$feature_id, \"gene_id\"]\n```\n\n## Key Data Considerations\n- **Paired-end vs Single-end**: The dataset contains both. Single-end samples require the average fragment length (`avgLength` in metadata) for accurate quantification.\n- **Sample GSM461179**: This specific sample was sequenced using different read lengths. The workflow recommends quantifying each length separately and then summing the expected counts.\n- **Conditions**: Samples are labeled as `CTL` (Control/Untreated) or `KD` (Knockdown/CG8144_RNAi).\n\n## Reference documentation\n- [PasillaTranscriptExpr](./references/PasillaTranscriptExpr.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pasillatranscriptexpr",
+    "description": "This package provides metadata and quantification workflows for the pasilla Drosophila RNA-seq dataset. Use when user asks to retrieve experimental design information, download raw SRA data, or process transcript-level counts for Drosophila melanogaster samples.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/PasillaTranscriptExpr.html"
+  }
+}

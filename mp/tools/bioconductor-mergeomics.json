@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mergeomics",
+  "category": "bioconductor",
+  "name": "bioconductor-mergeomics",
+  "description": "\"Mergeomics integrates summary-level association data with biological pathways and gene regulatory networks to identify causal mechanisms and key driver genes. Use when user asks to perform marker set enrichment analysis, identify key driver genes within a network context, integrate GWAS or EWAS results with functional genomics, or conduct meta-analysis across independent omics studies.\"",
+  "overview": "Mergeomics is a computational pipeline designed to integrate summary-level association data (e.g., P-values from GWAS/EWAS) with functional genomics (e.g., eQTLs), biological pathways, and gene regulatory networks. It identifies causal biological pathways (MSEA) and the specific \"key driver\" genes (wKDA) that regulate those pathways within a network context.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Mergeomics.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Mergeomics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Mergeomics.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mergeomics\n\n## Overview\nMergeomics is a computational pipeline designed to integrate summary-level association data (e.g., P-values from GWAS/EWAS) with functional genomics (e.g., eQTLs), biological pathways, and gene regulatory networks. It identifies causal biological pathways (MSEA) and the specific \"key driver\" genes (wKDA) that regulate those pathways within a network context.\n\n## Typical Workflow\n\n### 1. Data Preparation\nMergeomics requires specific input formats (tab-delimited):\n*   **Marker-Disease Association**: Columns `MARKER` (ID) and `VALUE` (-log10 P-value).\n*   **Gene-Marker Mapping**: Columns `GENE` and `MARKER`.\n*   **Gene-Sets (Modules)**: Columns `MODULE` and `GENE`.\n*   **Regulatory Network**: Columns `HEAD`, `TAIL`, and `WEIGHT`.\n\n### 2. One-Step Analysis\nThe simplest way to run the full pipeline (MSEA followed by wKDA) is using `MSEA.KDA.onestep`.\n\n```r\nlibrary(Mergeomics)\n\nplan <- list()\nplan$label <- \"study_label\"\nplan$folder <- \"Results\"\nplan$genfile <- \"path/to/gene_marker_map.txt\"\nplan$marfile <- \"path/to/marker_association.txt\"\nplan$modfile <- \"path/to/modules.txt\"\nplan$inffile <- \"path/to/module_info.txt\"\nplan$netfile <- \"path/to/network.txt\"\n\n# Parameters\nplan$permtype <- \"gene\" # Recommended\nplan$nperm <- 20000    # Recommended for publication\nplan$mingenes <- 10\nplan$maxgenes <- 500\n\nresults <- MSEA.KDA.onestep(plan, apply.MSEA=TRUE, apply.KDA=TRUE, \n                            maxoverlap.genesets=0.33, symbol.transfer.needed=FALSE)\n```\n\n### 3. Step-by-Step Marker Set Enrichment Analysis (MSEA)\nUse this to identify enriched pathways before moving to driver analysis.\n\n```r\njob.msea <- list(label=\"HDLC\", folder=\"./Results\", nperm=100)\njob.msea$genfile <- \"genes.txt\"\njob.msea$marfile <- \"markers.txt\"\njob.msea$modfile <- \"modules.txt\"\njob.msea$inffile <- \"info.txt\"\n\njob.msea <- ssea.start(job.msea)\njob.msea <- ssea.prepare(job.msea)\njob.msea <- ssea.control(job.msea)\njob.msea <- ssea.analyze(job.msea)\njob.msea <- ssea.finish(job.msea)\n```\n\n### 4. Weighted Key Driver Analysis (wKDA)\nIdentifies central regulators of the modules identified in MSEA.\n\n```r\n# Convert MSEA results to KDA input\n# rmax: overlap threshold to merge redundant modules\njob.kda <- ssea2kda(job.msea, rmax=0.33)\n\njob.kda$netfile <- \"network.txt\"\njob.kda <- kda.configure(job.kda)\njob.kda <- kda.start(job.kda)\njob.kda <- kda.prepare(job.kda)\njob.kda <- kda.analyze(job.kda)\njob.kda <- kda.finish(job.kda)\n\n# Export for Cytoscape visualization\njob.kda <- kda2cytoscape(job.kda)\n```\n\n## Key Functions and Parameters\n*   `ssea.meta()`: Performs Meta-MSEA to combine results from multiple independent studies (e.g., different ethnicities or species).\n*   `tool.translate()`: Useful for converting gene symbols between species (e.g., Human to Mouse) during integration.\n*   `permtype`: Set to `\"gene\"` for gene-level permutation (robust) or `\"locus\"` for marker-level.\n*   `edgefactor`: In wKDA, determines how much edge weight influences the analysis (0 to 1).\n*   `depth`: In wKDA, defines the search distance in the network (default is 1, meaning immediate neighbors).\n\n## Tips for Success\n1.  **Pruning**: Use the external `MDPrune` tool (C++) if markers have high Linkage Disequilibrium (LD), as dependency can bias enrichment scores.\n2.  **Module Merging**: Pathways from different databases often overlap. Use `ssea2kda` with an `rmax` (e.g., 0.33) to merge redundant modules into independent clusters before KDA.\n3.  **Permutations**: While 100-1000 permutations are fine for testing, use 20,000 for final results to ensure stable FDR estimates.\n\n## Reference documentation\n- [Mergeomics: Integrative Network Analysis of Omics Data](./references/Mergeomics.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mergeomics",
+    "description": "Mergeomics integrates summary-level association data with biological pathways and gene regulatory networks to identify causal mechanisms and key driver genes. Use when user asks to perform marker set enrichment analysis, identify key driver genes within a network context, integrate GWAS or EWAS results with functional genomics, or conduct meta-analysis across independent omics studies.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Mergeomics.html"
+  }
+}

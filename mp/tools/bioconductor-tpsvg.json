@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tpsvg",
+  "category": "bioconductor",
+  "name": "bioconductor-tpsvg",
+  "description": "This tool identifies spatially variable genes in spatially-resolved transcriptomics data using Poisson or Gaussian modeling. Use when user asks to identify genes with spatial expression patterns, model raw counts with a Poisson distribution, or account for biological covariates in spatial transcriptomics analysis.",
+  "overview": "`tpSVG` is an R package for identifying Spatially Variable Genes (SVG) in spatially-resolved transcriptomics (SRT) datasets. It provides a scalable solution that can model gene expression using either Poisson distributions (for raw counts) or Gaussian distributions (for log-transformed data). A key advantage of `tpSVG` is its ability to account for technical variation via offsets and biological covariates (like tissue anatomy or cell type composition) via design matrices.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/tpSVG.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/boyiguo1/tpSVG",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tpSVG"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tpSVG.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/boyiguo1/tpSVG",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tpsvg\n\nname: bioconductor-tpsvg\ndescription: Detect spatially variable genes (SVG) in spatially-resolved transcriptomics (SRT) data using the tpSVG R package. Use this skill when analyzing SRT data (e.g., 10x Visium, seqFISH) to identify genes with spatial expression patterns. It is particularly useful for modeling raw counts with a Poisson distribution to avoid the mean-rank bias often found in Gaussian models of log-transformed data.\n\n# bioconductor-tpsvg\n\n## Overview\n\n`tpSVG` is an R package for identifying Spatially Variable Genes (SVG) in spatially-resolved transcriptomics (SRT) datasets. It provides a scalable solution that can model gene expression using either Poisson distributions (for raw counts) or Gaussian distributions (for log-transformed data). A key advantage of `tpSVG` is its ability to account for technical variation via offsets and biological covariates (like tissue anatomy or cell type composition) via design matrices.\n\n## Installation\n\nInstall the package from Bioconductor:\n\n```r\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"tpSVG\")\n```\n\n## Core Workflow\n\n### 1. Data Preparation\n`tpSVG` typically operates on `SpatialExperiment` (SPE) objects. Ensure your data includes spatial coordinates and a count matrix.\n\n```r\nlibrary(tpSVG)\nlibrary(SpatialExperiment)\nlibrary(scuttle)\n\n# Example: Calculate library size/size factors for the offset\nspe$total <- colSums(counts(spe))\n# Or use scuttle to get size factors\nspe <- logNormCounts(spe)\n```\n\n### 2. Modeling Raw Counts (Poisson)\nModeling raw counts is recommended to avoid distorting low-expressed genes. Use the `offset` argument to account for technical variation (library size).\n\n```r\nspe_poisson <- tpSVG(\n  input = spe,\n  family = poisson(),\n  assay_name = \"counts\",\n  offset = log(spe$total) # Use natural log of library size\n)\n```\n\n### 3. Modeling Log-transformed Data (Gaussian)\nIf working with normalized, log-transformed data, use the Gaussian family.\n\n```r\nspe_gauss <- tpSVG(\n  input = spe,\n  family = gaussian(),\n  assay_name = \"logcounts\",\n  offset = NULL\n)\n```\n\n### 4. Covariate-adjusted Modeling\nTo find spatial variation that exists *beyond* known biological structures (e.g., tissue layers), provide a covariate matrix or vector to the `X` argument.\n\n```r\n# Ensure no missing values in the covariate\nspe <- spe[, !is.na(spe$ground_truth)]\n\nspe_cov <- tpSVG(\n  input = spe,\n  X = spe$ground_truth,\n  family = poisson(),\n  assay_name = \"counts\",\n  offset = log(spe$total)\n)\n```\n\n## Function Reference: `tpSVG()`\n\nThe primary function for SVG detection.\n\n- `input`: A `SpatialExperiment` object or a gene expression matrix.\n- `family`: The distribution family (e.g., `poisson()`, `gaussian()`).\n- `assay_name`: The name of the assay in the SPE object to use (e.g., \"counts\", \"logcounts\").\n- `offset`: A numeric vector used as an offset in the model (essential for Poisson models to account for library size).\n- `X`: A vector or matrix of covariates for adjustment.\n- `...`: Additional arguments passed to the underlying modeling functions.\n\n## Interpreting Results\n\nThe results are stored in the `rowData` of the returned `SpatialExperiment` object. Key columns include:\n\n- `test_stat`: The calculated test statistic for spatial variability.\n- `raw_p`: The raw p-value.\n- `runtime`: Time taken to process the specific gene.\n\nTo identify top SVGs, rank genes by their test statistic or p-value:\n\n```r\nresults <- as.data.frame(rowData(spe_poisson))\ntop_genes <- results[order(results$raw_p), ]\nhead(top_genes)\n```\n\n## Tips for Performance\n- **Gene Filtering**: For large datasets, filter out lowly expressed genes before running `tpSVG` to reduce computation time.\n- **Parallelization**: `tpSVG` is designed to be scalable, but for very large image-based SRT data (e.g., seqFISH with >10k cells), consider processing genes in batches if memory is limited.\n\n## Reference documentation\n- [Introduction to tpSVG](./references/intro_to_tpSVG.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tpsvg",
+    "description": "This tool identifies spatially variable genes in spatially-resolved transcriptomics data using Poisson or Gaussian modeling. Use when user asks to identify genes with spatial expression patterns, model raw counts with a Poisson distribution, or account for biological covariates in spatial transcriptomics analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tpSVG.html"
+  }
+}

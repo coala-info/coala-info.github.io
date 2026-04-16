@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-discorhythm",
+  "category": "bioconductor",
+  "name": "bioconductor-discorhythm",
+  "description": "DiscoRhythm analyzes periodicity and rhythmicity in large-scale temporal biological datasets. Use when user asks to perform rhythmicity analysis, detect outliers in temporal data, combine biological replicates, or estimate oscillation characteristics using methods like Cosinor and JTK Cycle.",
+  "overview": "DiscoRhythm is a Bioconductor package designed to characterize rhythmicity in high-throughput temporal data. It provides a standardized workflow to estimate cyclical characteristics such as period, phase, and amplitude. The package is particularly useful for circadian studies and supports various experimental designs, including those with uneven sampling or biological replicates.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DiscoRhythm.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-discorhythm/overview",
+  "github": "https://github.com/matthewcarlucci/DiscoRhythm",
+  "conda_downloads": "16.6K",
+  "conda_downloads_num": 16600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DiscoRhythm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DiscoRhythm.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-discorhythm/overview",
+    "github": "https://github.com/matthewcarlucci/DiscoRhythm",
+    "conda_downloads": "16.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-discorhythm\n\nname: bioconductor-discorhythm\ndescription: Analysis of periodicity in large-scale temporal biological datasets (e.g., circadian transcriptomics). Use this skill to perform rhythmicity analysis in R, including data import, outlier detection, PCA, replicate analysis, and oscillation detection using methods like Cosinor, JTK Cycle, ARSER, and Lomb-Scargle.\n\n## Overview\n\nDiscoRhythm is a Bioconductor package designed to characterize rhythmicity in high-throughput temporal data. It provides a standardized workflow to estimate cyclical characteristics such as period, phase, and amplitude. The package is particularly useful for circadian studies and supports various experimental designs, including those with uneven sampling or biological replicates.\n\n## Core Workflow\n\n### 1. Data Import and Formatting\n\nDiscoRhythm uses `SummarizedExperiment` objects. Data can be imported from a CSV-style data frame where metadata is encoded in column names.\n\n**Column Naming Convention:** `PrefixTime_UniqueId_ReplicateId` (e.g., `CT24_SampleA_1`).\n\n```R\nlibrary(DiscoRhythm)\nlibrary(SummarizedExperiment)\n\n# Load example data or your own data frame\nindata <- discoGetSimu() \n\n# Convert data frame to SummarizedExperiment\n# Metadata is automatically parsed from column names\nse <- discoDFtoSE(indata)\n\n# Check for missing or constant values\nse <- discoCheckInput(se)\n```\n\n### 2. Outlier Detection\n\nIdentify problematic samples using inter-sample correlation and Principal Component Analysis (PCA).\n\n```R\n# 1. Inter-sample correlation\ncor_res <- discoInterCorOutliers(se, cor_method=\"pearson\", threshold=3)\n\n# 2. PCA-based outlier detection\npca_res <- discoPCAoutliers(se, threshold=3, scale=TRUE)\n\n# Filter the dataset\nse_filtered <- se[, !cor_res$outliers & !pca_res$outliers]\n```\n\n### 3. Replicate Analysis and Row Selection\n\nHandle technical replicates by combining them (mean/median) and optionally filtering rows based on ANOVA signal-to-noise ratio.\n\n```R\n# Combine replicates and perform ANOVA\n# aov_method: \"Equal Variance\", \"Welch\", or \"None\"\nres_rep <- discoRepAnalysis(se_filtered, \n                            aov_method=\"Equal Variance\", \n                            avg_method=\"Median\")\nse_final <- res_rep$se\n```\n\n### 4. Period Detection\n\nDetermine the dominant periodicity across the entire dataset before performing feature-wise testing.\n\n```R\n# Test a range of periods\nperiod_res <- discoPeriodDetection(se_final, timeType=\"linear\", main_per=24)\n\n# Inspect median R-squared values to find the strongest period\n```\n\n### 5. Oscillation Detection (ODA)\n\nQuantify rhythmicity for each feature using one or more algorithms.\n\n```R\n# Run rhythm detection (CS=Cosinor, JTK=JTK Cycle, LS=Lomb-Scargle, ARS=ARSER)\n# discoODAs automatically selects valid methods based on data properties\noda_results <- discoODAs(se_final, \n                         period=24, \n                         method=c(\"CS\", \"JTK\"), \n                         circular_t=FALSE)\n\n# Access results for a specific method\nhead(oda_results$CS)\n```\n\n## Algorithm Selection Guide\n\n| Method | Best For | Restrictions |\n| :--- | :--- | :--- |\n| **Cosinor (CS)** | General sinusoid fitting | None (very flexible) |\n| **JTK Cycle** | Non-parametric, outlier robust | Requires even/integer intervals |\n| **Lomb-Scargle (LS)** | Unevenly spaced data | No ARSER-style detrending |\n| **ARSER (ARS)** | Non-stationary time-series | No missing values or replicates |\n\n## Batch Execution\n\nFor a quick, automated run of the entire pipeline with a generated HTML report:\n\n```R\nresults <- discoBatch(indata = my_df,\n                      report = \"my_report.html\",\n                      main_per = 24,\n                      osc_method = \"CS\")\n```\n\n## Reference documentation\n\n- [Introduction to DiscoRhythm](./references/disco_workflow_vignette.md)\n- [DiscoRhythm Workflow Rmd](./references/disco_workflow_vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-discorhythm",
+    "description": "DiscoRhythm analyzes periodicity and rhythmicity in large-scale temporal biological datasets. Use when user asks to perform rhythmicity analysis, detect outliers in temporal data, combine biological replicates, or estimate oscillation characteristics using methods like Cosinor and JTK Cycle.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DiscoRhythm.html"
+  }
+}

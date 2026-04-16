@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bumhmm",
+  "category": "bioconductor",
+  "name": "bioconductor-bumhmm",
+  "description": "This tool performs statistical modeling of RNA structure probing data using a Beta-Uniform Mixture hidden Markov model to identify modified nucleotides. Use when user asks to process per-nucleotide coverage and drop-off counts, stabilize variance in log-drop-off rate ratios, or compute posterior probabilities of RNA modification.",
+  "overview": "BUMHMM is a probabilistic pipeline for analyzing RNA structure probing data. It compares drop-off rates (RT stop counts divided by coverage) between treatment and control replicates. By modeling the null distribution of variability between control replicates, it identifies positions where treatment drop-off rates are significantly higher than expected by chance. The final output is a transcriptome-wide probability of modification for each nucleotide.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BUMHMM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bumhmm/overview",
+  "github": "N/A",
+  "conda_downloads": "24.8K",
+  "conda_downloads_num": 24800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BUMHMM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BUMHMM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bumhmm/overview",
+    "github": "N/A",
+    "conda_downloads": "24.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bumhmm\n\nname: bioconductor-bumhmm\ndescription: Statistical modeling of RNA structure probing data (SHAPE, ChemModSeq, DMS) using the Beta-Uniform Mixture hidden Markov model (BUM-HMM). Use this skill to process per-nucleotide coverage and drop-off counts into posterior probabilities of modification, including variance stabilization and sequence bias correction.\n\n## Overview\nBUMHMM is a probabilistic pipeline for analyzing RNA structure probing data. It compares drop-off rates (RT stop counts divided by coverage) between treatment and control replicates. By modeling the null distribution of variability between control replicates, it identifies positions where treatment drop-off rates are significantly higher than expected by chance. The final output is a transcriptome-wide probability of modification for each nucleotide.\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be stored in a `SummarizedExperiment` object with three assays: `coverage`, `dropoff_count`, and `dropoff_rate`.\n\n```R\nlibrary(BUMHMM)\nlibrary(SummarizedExperiment)\n\n# se is a SummarizedExperiment with 3 assays and colData indicating 'replicate' (control/treatment)\n# Example: 3 controls (C1-C3), 3 treatments (T1-T3)\nNc <- 3\nNt <- 3\nt <- 1 # Coverage threshold\n```\n\n### 2. Nucleotide Selection and Scaling\nIdentify valid nucleotides (coverage $\\ge t$ and drop-off $> 0$) and scale rates to a common median to ensure inter-replicate comparability.\n\n```R\n# Select positions for pairwise comparisons\nnuclSelection <- selectNuclPos(se, Nc, Nt, t)\n\n# Scale drop-off rates\nassay(se, \"dropoff_rate\") <- scaleDOR(se, nuclSelection, Nc, Nt)\n```\n\n### 3. Bias Correction (Variance Stabilization)\nCorrect for coverage-dependent bias in the log-drop-off rate ratios (LDRs).\n\n```R\nvarStab <- stabiliseVariance(se, nuclSelection, Nc, Nt)\nLDR_C <- varStab$LDR_C   # Control-control LDRs (null distribution)\nLDR_CT <- varStab$LDR_CT # Treatment-control LDRs\n```\n\n### 4. Defining Stretches and Sequence Patterns\nThe HMM requires continuous stretches of nucleotides. For large datasets, you can also correct for sequence-specific bias.\n\n```R\n# Compute uninterrupted stretches for HMM\nstretches <- computeStretches(se, t)\n\n# Optional: Sequence bias correction (recommended for transcriptome-wide)\n# sequence <- subject(rowData(se)$nucl)\n# patterns <- nuclPerm(3) # 3-mer patterns\n# nuclPosition <- findPatternPos(patterns, sequence, '+')\n\n# For single molecules or small datasets, use a single null distribution:\nnuclPosition <- list(1:nrow(se))\n```\n\n### 5. Computing Posterior Probabilities\nRun the HMM to calculate the probability of modification.\n\n```R\nposteriors <- computeProbs(LDR_C, LDR_CT, Nc, Nt, '+', nuclPosition,\n                           nuclSelection$analysedC, \n                           nuclSelection$analysedCT,\n                           stretches)\n\n# posteriors[, 1] is Unmodified probability\n# posteriors[, 2] is Modified probability\n```\n\n## Interpreting Results\nThe HMM identifies the nucleotide where the RT dropped off. Because the RT stops *before* the modified base, you must shift the probabilities up by one position to align them with the actual modified nucleotide.\n\n```R\n# Shift probabilities to align with modified sites\nshifted_probs <- matrix(NA, nrow=nrow(posteriors), ncol=1)\nshifted_probs[1:(nrow(posteriors) - 1)] <- posteriors[2:nrow(posteriors), 2]\n```\n\n## Tips\n- **Replicates:** BUMHMM requires at least 2 control replicates to build a null distribution of variability.\n- **Coverage:** Low coverage regions are noisy; ensure the threshold `t` is appropriate for your sequencing depth.\n- **Optimization:** The `computeProbs` function has an `optimise` parameter for EM-based parameter estimation, but it is often stable with default settings (NULL).\n\n## Reference documentation\n- [BUMHMM: Probabilistic computational pipeline for modelling RNA structure probing data](./references/BUMHMM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bumhmm",
+    "description": "This tool performs statistical modeling of RNA structure probing data using a Beta-Uniform Mixture hidden Markov model to identify modified nucleotides. Use when user asks to process per-nucleotide coverage and drop-off counts, stabilize variance in log-drop-off rate ratios, or compute posterior probabilities of RNA modification.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BUMHMM.html"
+  }
+}

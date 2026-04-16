@@ -1,0 +1,41 @@
+{
+  "id": "r-permute",
+  "category": "R",
+  "name": "r-permute",
+  "description": "The permute package generates restricted and hierarchical permutations for randomization tests. Use when user asks to shuffle data with constraints, generate permutation sets for time series or spatial grids, or handle nested experimental designs like blocks and plots.",
+  "overview": "The `permute` package provides a powerful framework for generating restricted permutations of data, which is essential for valid randomization tests when data are not freely exchangeable. It supports various structures including time series (line transects), spatial grids, and nested designs (plots within blocks). It is the engine behind the permutation schemes in the `vegan` package and is modeled after the logic used in Canoco.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-permute\n\n## Overview\n\nThe `permute` package provides a powerful framework for generating restricted permutations of data, which is essential for valid randomization tests when data are not freely exchangeable. It supports various structures including time series (line transects), spatial grids, and nested designs (plots within blocks). It is the engine behind the permutation schemes in the `vegan` package and is modeled after the logic used in Canoco.\n\n## Installation\n\nTo install the package from CRAN:\n\n```r\ninstall.packages(\"permute\")\nlibrary(permute)\n```\n\n## Core Workflow\n\nThe package uses a hierarchical approach to define how data should be shuffled.\n\n### 1. Define the Design with `how()`\nThe `how()` function is the central configuration tool. It defines the permutation strategy.\n\n```r\n# Default: Free exchangeability (simple random shuffle)\nctrl <- how(nperm = 999)\n\n# Time series: Preserve temporal order (cyclic shifts)\nctrl_series <- how(within = Within(type = \"series\"))\n\n# Spatial Grid: 3x3 grid\nctrl_grid <- how(within = Within(type = \"grid\", ncol = 3, nrow = 3))\n```\n\n### 2. Generate Permutations\nUse `shuffle()` for a single permutation or `shuffleSet()` for a matrix of multiple permutations (more efficient for loops).\n\n```r\n# Single vector of indices\nperm_idx <- shuffle(n = 10, control = ctrl)\n\n# Matrix of 99 permutations (rows = permutations)\nperm_matrix <- shuffleSet(n = 10, nset = 99, control = ctrl)\n```\n\n## Restricted Permutation Types\n\nThe `Within()` and `Plots()` functions control the logic at different levels:\n\n*   **`type = \"free\"`**: Unrestricted shuffling (default).\n*   **`type = \"series\"`**: Cyclic shifts. If `mirror = TRUE`, the sequence can also be reversed.\n*   **`type = \"grid\"`**: Toroidal shifts in 2D. Requires `ncol` and `nrow`.\n*   **`type = \"none\"`**: No shuffling at that specific level.\n\n## Handling Hierarchical Data\n\n### Blocks\nBlocks are the highest level. Samples are never swapped between blocks, and blocks themselves are never shuffled.\n\n```r\n# Permute only within blocks defined by a factor\nmy_blocks <- factor(rep(c(\"A\", \"B\"), each = 5))\nctrl <- how(blocks = my_blocks)\n```\n\n### Plots (Split-Plots)\nPlots are groups of samples that can be shuffled as units, or have their internal samples shuffled.\n\n```r\n# Permute whole plots, but keep samples within plots in original order\nmy_plots <- factor(rep(1:4, each = 5))\nctrl <- how(plots = Plots(strata = my_plots, type = \"free\"),\n            within = Within(type = \"none\"))\n```\n\n## Integration in Functions\n\nWhen writing a permutation test, use `shuffleSet` to minimize overhead and facilitate parallel processing.\n\n```r\n# Example: Permutation p-value for difference in means\nperm_test <- function(x, group, nperm = 999) {\n    obs_diff <- mean(x[group == \"A\"]) - mean(x[group == \"B\"])\n    N <- length(x)\n    \n    # Generate set\n    pset <- shuffleSet(N, nset = nperm)\n    \n    # Calculate null distribution\n    null_dist <- apply(pset, 1, function(idx) {\n        g_perm <- group[idx]\n        mean(x[g_perm == \"A\"]) - mean(x[g_perm == \"B\"])\n    })\n    \n    # P-value (including observed)\n    (sum(null_dist >= obs_diff) + 1) / (nperm + 1)\n}\n```\n\n## Tips for Package Authors\n*   **Accessors**: Use `getNperm(ctrl)`, `getType(ctrl)`, etc., instead of accessing list elements directly.\n*   **Setters**: Use `setNperm(ctrl) <- 199` to update design objects.\n*   **Validation**: Use `check(n, control)` to verify if the requested number of permutations is possible given the design.\n\n## Reference documentation\n\n- [Restricted permutations; using the permute package](./references/permutations.Rmd)",
+  "skill_front_matter": {
+    "name": "r-permute",
+    "description": "The permute package generates restricted and hierarchical permutations for randomization tests. Use when user asks to shuffle data with constraints, generate permutation sets for time series or spatial grids, or handle nested experimental designs like blocks and plots.",
+    "homepage": "https://cloud.r-project.org/web/packages/permute/index.html"
+  }
+}

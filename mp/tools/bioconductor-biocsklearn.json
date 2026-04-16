@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biocsklearn",
+  "category": "bioconductor",
+  "name": "bioconductor-biocsklearn",
+  "description": "BiocSklearn provides an R interface to the scikit-learn library for Bioconductor workflows. Use when user asks to perform PCA, run incremental PCA on large datasets, compute pairwise distances, or interface with HDF5 matrices.",
+  "overview": "`BiocSklearn` provides an R interface to the Python `scikit-learn` library, specifically tailored for Bioconductor workflows. It leverages `reticulate` and `basilisk` to ensure a stable Python environment. Its primary strength lies in handling large-scale data that may not fit in memory, offering \"incremental\" versions of standard algorithms like PCA.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocSklearn.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocsklearn/overview",
+  "github": "N/A",
+  "conda_downloads": "35.6K",
+  "conda_downloads_num": 35600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BiocSklearn"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocSklearn.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocsklearn/overview",
+    "github": "N/A",
+    "conda_downloads": "35.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biocsklearn\n\n## Overview\n\n`BiocSklearn` provides an R interface to the Python `scikit-learn` library, specifically tailored for Bioconductor workflows. It leverages `reticulate` and `basilisk` to ensure a stable Python environment. Its primary strength lies in handling large-scale data that may not fit in memory, offering \"incremental\" versions of standard algorithms like PCA.\n\n## Basic Setup and Data Import\n\nTo use the package, you must load the library. It uses `basilisk` internally to manage Python dependencies like `numpy` and `scikit-learn`.\n\n```r\nlibrary(BiocSklearn)\n\n# Importing data for Python handling using numpy via reticulate\nnp <- reticulate::import(\"numpy\", convert=FALSE, delay_load=TRUE)\nirloc <- system.file(\"csv/iris.csv\", package=\"BiocSklearn\")\nirismat <- np$genfromtxt(irloc, delimiter=',')\n\n# Accessing submatrices (numpy 'take' method)\n# Note: 0L indicates integer type for Python indexing\nnp$take(irismat, 0:2, 0L) \n```\n\n## Dimensionality Reduction (PCA)\n\n### Standard PCA\nFor datasets that fit in memory, use `skPCA`.\n\n```r\n# Perform PCA\nppca <- skPCA(data.matrix(iris[,1:4]))\n\n# Retrieve the projected coordinates (transformed data)\ntx <- getTransformed(ppca)\nhead(tx)\n```\n\n### Incremental PCA (Out-of-Memory)\nFor very large datasets, `skIncrPCA` allows processing in batches to bound memory consumption.\n\n```r\n# Using a specific batch size\nippcab <- skIncrPCA(irismat, batch_size=25L)\ntransformed_data <- getTransformed(ippcab)\n```\n\n### Manual Chunking\nIf data is arriving as a stream or in manual chunks, use `skPartialPCA_step`.\n\n```r\n# Initialize and update PCA object iteratively\nipc <- skPartialPCA_step(np$take(irismat, 0:49, 0L))\nipc <- skPartialPCA_step(np$take(irismat, 50:99, 0L), obj=ipc)\nipc <- skPartialPCA_step(np$take(irismat, 100:149, 0L), obj=ipc)\n\n# Apply the final model to new data\nipc$transform(np$take(irismat, 0:5, 0L))\n```\n\n## Working with HDF5\nThe package provides utilities to interface with HDF5 matrices, which are common in single-cell genomics.\n\n```r\n# Create a reference to an HDF5 matrix via h5py\n# Example using internal package data\nexample(H5matref)\n```\n\n## Specialized Metrics\nYou can compute pairwise distances using the scikit-learn backend, which is often highly optimized.\n\n```r\n# Compute pairwise distances\n# mat: an R matrix or compatible object\ndistances <- skPWD(data.matrix(iris[,1:4]), metric=\"euclidean\")\n```\n\n## Tips for Success\n1. **Type Safety**: When passing arguments to Python (like `batch_size` or axis indices), use the `L` suffix (e.g., `0L`, `25L`) to ensure they are treated as integers rather than floats.\n2. **Object Persistence**: Objects returned by functions like `skPCA` are often pointers to Python objects. Use `getTransformed()` to pull the numerical results back into R.\n3. **Environment Management**: `BiocSklearn` uses `basilisk`. If you encounter Python configuration errors, ensure your R session is clean and not conflicting with other `reticulate` configurations.\n\n## Reference documentation\n- [BiocSklearn](./references/BiocSklearn.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biocsklearn",
+    "description": "BiocSklearn provides an R interface to the scikit-learn library for Bioconductor workflows. Use when user asks to perform PCA, run incremental PCA on large datasets, compute pairwise distances, or interface with HDF5 matrices.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocSklearn.html"
+  }
+}

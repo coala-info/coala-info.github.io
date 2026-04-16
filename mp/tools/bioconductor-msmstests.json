@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msmstests",
+  "category": "bioconductor",
+  "name": "bioconductor-msmstests",
+  "description": "\"This package performs statistical tests for identifying differentially expressed proteins in label-free LC-MS/MS experiments using spectral counts. Use when user asks to identify differentially expressed proteins from spectral count data, perform differential proteomics analysis using GLMs, or apply reproducibility filters to LC-MS/MS results.\"",
+  "overview": "The `msmsTests` package provides statistical tools for identifying differentially expressed proteins in LC-MS/MS experiments based on spectral counts (SpC). It addresses the high-dimensionality and low-replicate nature of proteomics data by implementing Generalized Linear Models (GLMs) and a critical post-test \"reproducibility filter.\" This filter excludes features with low signal strength or small effect sizes, which often lead to false positives in spectral counting.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/msmsTests.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "msmsTests"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msmsTests.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msmstests\n\nname: bioconductor-msmstests\ndescription: Statistical tests for label-free LC-MS/MS differential expression analysis using spectral counts. Use this skill when performing differential proteomics analysis to identify differentially expressed proteins (DEPs) using Poisson, Quasi-likelihood, or Negative Binomial GLMs, and when applying post-test filters (signal strength and effect size) to improve reproducibility.\n\n# bioconductor-msmstests\n\n## Overview\n\nThe `msmsTests` package provides statistical tools for identifying differentially expressed proteins in LC-MS/MS experiments based on spectral counts (SpC). It addresses the high-dimensionality and low-replicate nature of proteomics data by implementing Generalized Linear Models (GLMs) and a critical post-test \"reproducibility filter.\" This filter excludes features with low signal strength or small effect sizes, which often lead to false positives in spectral counting.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package works with `MSnSet` objects. Data should be pre-processed to remove null features (rows with all zeros).\n\n```r\nlibrary(msmsTests)\ndata(msms.spk)\n\n# Pre-process: remove all-zero rows\ne <- pp.msms.data(msms.spk)\n\n# Define normalization factors (column sums)\ndiv <- apply(exprs(e), 2, sum)\n```\n\n### 2. Statistical Testing\nChoose a GLM based on your experimental design and number of replicates:\n\n*   **Poisson GLM (`msms.glm.pois`)**: Best for very few replicates (2-3) where biological variability is expected to be low.\n*   **Quasi-likelihood GLM (`msms.glm.qlll`)**: Distribution-free model that accounts for overdispersion. Recommended when you have 4+ replicates.\n*   **Negative Binomial GLM (`msms.edgeR`)**: Uses `edgeR`'s empirical Bayes methods to share information across features. Suitable for low replicates (2+) while allowing for overdispersion.\n\n```r\nnull.f <- \"y ~ 1\"\nalt.f <- \"y ~ treat\"\n\n# Example: Quasi-likelihood\nres <- msms.glm.qlll(e, alt.f, null.f, div=div)\n\n# Example: Negative Binomial (requires treatment factor name)\nres.nb <- msms.edgeR(e, alt.f, null.f, div=div, fnm=\"treat\")\n```\n\n### 3. Handling Batch Effects\nIf samples were processed in different batches, include a blocking factor in the model to improve sensitivity.\n\n```r\nnull.f <- \"y ~ batch\"\nalt.f <- \"y ~ treat + batch\"\nres.blocked <- msms.glm.qlll(e, alt.f, null.f, div=div)\n```\n\n### 4. Post-test Filter for Reproducibility\nUse `test.results` to apply the recommended reproducibility filters:\n*   **minSpC**: Minimum average spectral counts in the most abundant condition (default: 2).\n*   **minLFC**: Minimum Log2 Fold Change (default: 1).\n\n```r\n# Apply filter: Adjusted p-value < 0.05, SpC > 2, LFC > 1\nfinal.tbl <- test.results(res, e, pData(e)$treat, \"ConditionA\", \"ConditionB\", \n                          div, alpha=0.05, minSpC=2, minLFC=1, method=\"BH\")$tres\n\n# Identify Differentially Expressed Proteins (DEPs)\ndeps <- rownames(final.tbl)[final.tbl$DEP]\n```\n\n## Visualization\n\n### Volcano Plots\nVisualize the relationship between effect size and statistical significance, highlighting filtered results.\n\n```r\nres.volcanoplot(final.tbl, max.pval=0.05, min.LFC=1)\n```\n\n### P-value Distribution by Fold Change\nCheck the distribution of p-values across different fold-change bins to validate filter cut-offs.\n\n```r\npval.by.fc(final.tbl$adjp, final.tbl$LogFC)\n```\n\n## Tips for Success\n*   **Normalization**: Always provide the `div` parameter (usually column sums of the spectral counts) to account for differences in total sampling depth between runs.\n*   **Filtering**: The post-test filter is often more effective at controlling False Discovery Rate (FDR) than strict p-value adjustment alone in proteomics.\n*   **Model Selection**: If the Poisson model yields too many significant results that don't replicate, switch to Quasi-likelihood or Negative Binomial to account for overdispersion.\n\n## Reference documentation\n- [msmsTests package: LC-MS/MS post test filters to improve reproducibility](./references/msmsTests-Vignette.md)\n- [msmsTests package: Blocks design to compensate batch effects](./references/msmsTests-Vignette2.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msmstests",
+    "description": "This package performs statistical tests for identifying differentially expressed proteins in label-free LC-MS/MS experiments using spectral counts. Use when user asks to identify differentially expressed proteins from spectral count data, perform differential proteomics analysis using GLMs, or apply reproducibility filters to LC-MS/MS results.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msmsTests.html"
+  }
+}

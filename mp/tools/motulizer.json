@@ -1,0 +1,49 @@
+{
+  "id": "motulizer",
+  "category": "CLI",
+  "name": "motulizer",
+  "description": "mOTUlizer is a bioinformatics suite for clustering metagenome-assembled genomes into taxonomic units and performing Bayesian pangenome analysis. Use when user asks to cluster genomes based on average nucleotide identity, identify species boundaries, or estimate core functional traits while accounting for genome incompleteness.",
+  "overview": "mOTUlizer is a specialized bioinformatics suite designed to handle the inherent \"dubious origin\" of metagenomic data, such as incompleteness and contamination. It provides a workflow to transition from raw genomic sequences to taxonomically meaningful clusters (mOTUs) and subsequently analyze the pangenome of those clusters. It is particularly useful for researchers working with MAGs who need to establish species boundaries (typically at 95% ANI) and identify core functional traits across varyin",
+  "homepage": "https://github.com/moritzbuck/mOTUlizer/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/motulizer/overview",
+  "github": "https://github.com/moritzbuck/mOTUlizer",
+  "conda_downloads": "17.2K",
+  "conda_downloads_num": 17200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "motulizer_mOTUlize.py",
+      "motulizer_mOTUpan.py",
+      "motulizer_mOTUconvert.py"
+    ],
+    "description": "From a set of genomes, makes metagenomic Operational Taxonomic Units (mOTUs). By default it makes a graph of 95% (reciprocal) ANI (with fastANI) connected MAGs (with completeness > 40%, contamination < 5%). The mOTUs will be the connected components of this graph, to which smaller \"SUBs\" with ANI > 95% are recruited. If similarities provided, it should be a TAB-separated file with columns as query, subject and similarity (in percent, e.g. [0-100]) if you also provide fasta-files (for stats purpouses) query and names should correspond to the fasta-files you provide. If the columns are file names, the folders are removed (mainly so it can read fastANI output directly).",
+    "docker_image": "quay.io/biocontainers/motulizer:0.3.2--pyhdfd78af_0",
+    "homepage": "https://github.com/moritzbuck/mOTUlizer/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/motulizer/overview",
+    "github": "https://github.com/moritzbuck/mOTUlizer",
+    "conda_downloads": "17.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "motulizer_mOTUconvert.py.cwl",
+    "motulizer_mOTUlize.py.cwl",
+    "motulizer_mOTUpan.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# motulizer\n\n## Overview\n\nmOTUlizer is a specialized bioinformatics suite designed to handle the inherent \"dubious origin\" of metagenomic data, such as incompleteness and contamination. It provides a workflow to transition from raw genomic sequences to taxonomically meaningful clusters (mOTUs) and subsequently analyze the pangenome of those clusters. It is particularly useful for researchers working with MAGs who need to establish species boundaries (typically at 95% ANI) and identify core functional traits across varying quality genomes.\n\n## Core Workflows\n\n### 1. Clustering Genomes with mOTUlize.py\nThis tool builds a network of genomes based on similarity (ANI) and identifies connected components as mOTUs.\n\n*   **Basic Clustering**:\n    `mOTUlize.py --fnas path/to/genomes/*.fna -o clusters.tsv`\n*   **Using Quality Metadata**:\n    Provide a CheckM-style file to distinguish between high-quality MAGs (used to seed the network) and lower-quality SUBs (recruited to existing clusters).\n    `mOTUlize.py --fnas *.fna --checkm checkm_results.txt -o clusters.tsv`\n*   **Custom Thresholds**:\n    While 95% is the default species-level cutoff, you can adjust it based on your specific taxonomic needs.\n    `mOTUlize.py --fnas *.fna --similarity-cutoff 97 -o clusters.tsv`\n*   **Efficiency Tip**:\n    If running multiple iterations, save the similarity file to skip the expensive `fastANI` step in subsequent runs.\n    `mOTUlize.py --fnas *.fna --keep-simi-file -o clusters.tsv`\n    Then reuse: `mOTUlize.py --similarities mOTUlizer_simis.tsv --similarity-cutoff 99 -o new_clusters.tsv`\n\n### 2. Pangenome Analysis with mOTUpan.py\nThis tool uses a Bayesian approach to estimate the likelihood of a gene being \"core,\" accounting for the completeness of the input genomes.\n\n*   **Basic Pangenome**:\n    `mOTUpan.py --faas path/to/proteomes/*.faa -o pangenome_results.tsv`\n*   **Refining with Completeness Priors**:\n    Improve accuracy by providing known completeness estimates (e.g., from CheckM).\n    `mOTUpan.py --faas *.faa --checkm checkm_stats.txt -o pangenome_results.tsv`\n*   **Using Custom Traits**:\n    Instead of protein sequences, you can provide a JSON or TAB-separated file of traits (e.g., COGs, KEGG Orthologs).\n    `mOTUpan.py --cog_file traits.json -o core_traits.tsv`\n*   **Validation via Bootstrapping**:\n    Use the `--boots` flag to estimate false positive rates and recall for your core genome set.\n    `mOTUpan.py --faas *.faa --boots 100 -o validated_pangenome.tsv`\n\n### 3. Format Conversion with mOTUconvert.py\nmOTUlizer can ingest data from other popular pangenome tools to perform its Bayesian core-genome estimation.\n\n*   **Supported Inputs**: mmseqs2, Roary, PPanGGOLiN, eggNOG-mapper, and anvi'o.\n*   **Example (Roary)**:\n    `mOTUconvert.py --roary gene_presence_absence.csv -o motupan_input.tsv`\n\n## Expert Tips and Best Practices\n\n*   **The 95% Rule**: The default 95% ANI cutoff is a widely accepted proxy for circumscribing microbial species. Only deviate from this if you have specific evidence for your lineage.\n*   **Handling \"SUBs\"**: Use the `--MAG-completeness` and `--MAG-contamination` flags to strictly define your \"anchor\" genomes. Genomes falling below these thresholds but above the `--SUB` thresholds will be recruited to the nearest MAG-based cluster rather than forming their own.\n*   **Iterative Pangenomics**: mOTUpan iteratively updates completeness priors based on the identified core genome. If your genomes have highly variable quality, ensure you provide an initial `--checkm` file to help the model converge on a more accurate biological reality.\n*   **Memory Management**: `fastANI` can be memory-intensive. mOTUlize.py handles this by running in blocks, but ensure your environment has sufficient RAM for the number of genomes provided.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| mOTUconverts.py | Converts output of diverse software generatig COGs, or genetically encoded traits into a genome2gene_clusters-JSON file useable by mOTUpan |\n| mOTUlize | From a set of genomes, makes metagenomic Operational Taxonomic Units (mOTUs). By default it makes a graph of 95% (reciprocal) ANI (with fastANI) connected MAGs (with completeness > 40%, contamination < 5%). The mOTUs will be the connected components of this graph, to which smaller \"SUBs\" with ANI > 95% are recruited. If similarities provided, it should be a TAB-separated file with columns as query, subject and similarity (in percent, e.g. [0-100]) if you also provide fasta-files (for stats purpouses) query and names should correspond to the fasta-files you provide. If the columns are file names, the folders are removed (mainly so it can read fastANI output directly). |\n| mOTUpan.py | From a buch of amino-acid sequences or COG-sets, computes concensus AA/COG sets. Returns all to stdout by default. |\n\n## Reference documentation\n- [mOTUlizer GitHub README](./references/github_com_moritzbuck_mOTUlizer_blob_master_README.md)\n- [mOTUlizer Repository Overview](./references/github_com_moritzbuck_mOTUlizer.md)",
+  "skill_front_matter": {
+    "name": "motulizer",
+    "description": "mOTUlizer is a bioinformatics suite for clustering metagenome-assembled genomes into taxonomic units and performing Bayesian pangenome analysis. Use when user asks to cluster genomes based on average nucleotide identity, identify species boundaries, or estimate core functional traits while accounting for genome incompleteness.",
+    "homepage": "https://github.com/moritzbuck/mOTUlizer/"
+  }
+}

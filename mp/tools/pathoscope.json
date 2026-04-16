@@ -1,0 +1,53 @@
+{
+  "id": "pathoscope",
+  "category": "CLI",
+  "name": "pathoscope",
+  "description": "PathoScope is a modular framework that transforms raw metagenomic sequencing reads into detailed taxonomic profiles by identifying target genomes and estimating their relative abundance. Use when user asks to construct genomic libraries, align reads to reference genomes while filtering host sequences, resolve ambiguous read mappings for strain identification, or generate taxonomic reports.",
+  "overview": "PathoScope 2.0 is a modular framework for sequencing-based metagenomic profiling. It transforms raw, unassembled sequencing reads into a detailed taxonomic profile by identifying which target genomes are present and estimating their relative abundance. The tool is specifically designed to handle the ambiguity of reads that map to multiple genomes, providing high-resolution strain attribution that distinguishes it from general metagenomic classifiers.",
+  "homepage": "https://github.com/PathoScope/PathoScope",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pathoscope/overview",
+  "github": "https://github.com/PathoScope/PathoScope",
+  "conda_downloads": "11.5K",
+  "conda_downloads_num": 11500,
+  "last_updated": "2025-09-10",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pathoscope_LIB",
+      "pathoscope_creation",
+      "pathoscope_MAP",
+      "pathoscope_ID",
+      "pathoscope_REP",
+      "pathoscope_sequencing"
+    ],
+    "description": "PathoScope LIB module for creating reference libraries and mapping gi to taxonomy ids.",
+    "docker_image": "quay.io/biocontainers/pathoscope:2.0.7--pyhdfd78af_2",
+    "homepage": "https://github.com/PathoScope/PathoScope",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pathoscope/overview",
+    "github": "https://github.com/PathoScope/PathoScope",
+    "conda_downloads": "11.5K",
+    "last_updated": "2025-09-10",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pathoscope_ID.cwl",
+    "pathoscope_LIB.cwl",
+    "pathoscope_MAP.cwl",
+    "pathoscope_REP.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pathoscope\n\n## Overview\nPathoScope 2.0 is a modular framework for sequencing-based metagenomic profiling. It transforms raw, unassembled sequencing reads into a detailed taxonomic profile by identifying which target genomes are present and estimating their relative abundance. The tool is specifically designed to handle the ambiguity of reads that map to multiple genomes, providing high-resolution strain attribution that distinguishes it from general metagenomic classifiers.\n\n## Core Workflow and CLI Patterns\n\nPathoScope operates through several core modules. The standard execution follows the sequence: LIB -> MAP -> ID -> REP.\n\n### 1. PathoLib (LIB): Library Construction\nUse this module to extract specific target or filter (host) genome libraries from a local copy of the NCBI nucleotide database.\n\n*   **Basic Library Extraction:**\n    ```bash\n    python pathoscope.py LIB -genomeFile nt.fasta -taxonIds 10239 --subTax -outPrefix virus\n    ```\n    *   `-taxonIds`: The NCBI Taxonomy ID (e.g., 10239 for viruses).\n    *   `--subTax`: Includes all descendant taxa in the taxonomy tree.\n*   **Memory Management:** Searching the full `nt` database is memory-intensive (~6GB+ RAM). For repeated runs, it is more efficient to use a pre-indexed `nt_ti.fa` file where TaxIDs are already prepended to headers.\n\n### 2. PathoMap (MAP): Read Alignment and Filtering\nThis module aligns reads to your target library and removes reads that match the \"filter\" (host) library. It typically uses Bowtie2 as the underlying aligner.\n\n*   **Standard Mapping:**\n    ```bash\n    python pathoscope.py MAP -1 reads_1.fastq -2 reads_2.fastq -target target_ref.fasta -filter host_ref.fasta -outDir output_map\n    ```\n*   **Key Tip:** Ensure your reference fasta files are indexed by the aligner (e.g., `bowtie2-build`) before running PathoMap if the module does not trigger it automatically.\n\n### 3. PathoID (ID): Strain Identification\nThis is the statistical core of PathoScope. It applies a Bayesian reassignment algorithm to resolve reads that map to multiple reference genomes.\n\n*   **Executing Identification:**\n    ```bash\n    python pathoscope.py ID -i input_alignment.sam -outDir output_id\n    ```\n*   **Expert Tip:** PathoID is critical when your sample contains closely related strains where reads are not unique to a single genome.\n\n### 4. PathoReport (REP): Result Generation\nGenerates the final human-readable and machine-parseable reports.\n\n*   **Generating Reports:**\n    ```bash\n    python pathoscope.py REP -i pathoid_output.xml -outPrefix sample_report\n    ```\n*   **Outputs:**\n    *   `.tsv`: A summary table containing read counts and proportions for each identified genome.\n    *   `.xml`: A detailed report including coverage information and read assignments.\n\n## Expert Tips and Best Practices\n*   **Pre-processing:** Always run `PathoQC` or a similar tool (like Fastp or Trimmomatic) before PathoMap to remove low-quality bases and adapter sequences, as high error rates can interfere with accurate strain attribution.\n*   **Database Setup:** For high-throughput environments, set up a local MySQL database to store taxonomy information. This significantly speeds up the `PathoLib` module compared to remote NCBI queries.\n*   **PhiX Filtering:** Always include the PhiX174 genome in your filter library to remove common Illumina sequencing controls.\n*   **Strain Resolution:** If PathoScope reports multiple strains of the same species, check the \"Unique Reads\" column in the TSV report. High total counts but zero unique reads for a strain may indicate a false positive driven by shared genomic regions.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| pathoscope LIB | PathoScope LIB module for creating reference libraries and mapping gi to taxonomy ids. |\n| pathoscope MAP | PathoScope MAP module for mapping reads to target and filter reference genomes using Bowtie2 |\n| pathoscope REP | PathoScope REP module for generating reports from SAM alignment files, including optional MySQL database integration for taxonomy mapping. |\n| pathoscope id | PathoScope ID: Identification and quantification of microbes from sequencing data |\n\n## Reference documentation\n- [PathoScope Wiki Home](./references/github_com_PathoScope_PathoScope_wiki.md)\n- [Building Library Module](./references/github_com_PathoScope_PathoScope_wiki_Building-Library.md)\n- [PathoID Module](./references/github_com_PathoScope_PathoScope_wiki_PathoID.md)\n- [PathoMap Module](./references/github_com_PathoScope_PathoScope_wiki_PathoMap.md)\n- [PathoReport Module](./references/github_com_PathoScope_PathoScope_wiki_PathoReport.md)",
+  "skill_front_matter": {
+    "name": "pathoscope",
+    "description": "PathoScope is a modular framework that transforms raw metagenomic sequencing reads into detailed taxonomic profiles by identifying target genomes and estimating their relative abundance. Use when user asks to construct genomic libraries, align reads to reference genomes while filtering host sequences, resolve ambiguous read mappings for strain identification, or generate taxonomic reports.",
+    "homepage": "https://github.com/PathoScope/PathoScope"
+  }
+}

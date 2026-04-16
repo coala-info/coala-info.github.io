@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-viper",
+  "category": "bioconductor",
+  "name": "bioconductor-viper",
+  "description": "The bioconductor-viper package infers protein activity from gene expression data by analyzing the enrichment of downstream targets within a regulatory network. Use when user asks to infer transcription factor activity, perform master regulator analysis, transform gene expression matrices into protein activity profiles, or identify synergistic regulators.",
+  "overview": "The `viper` package implements the VIPER (Virtual Inference of Protein-activity by Enriched Regulon analysis) algorithm. It uses the expression of known downstream targets of a protein (its \"regulon\") as a reporter for that protein's activity. This allows for the computational inference of protein activity—including transcription factors and signal transduction proteins—on an individual sample basis, even when mRNA levels of the regulator itself are not predictive of its functional state.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/viper.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "viper"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/viper.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-viper\n\n## Overview\nThe `viper` package implements the VIPER (Virtual Inference of Protein-activity by Enriched Regulon analysis) algorithm. It uses the expression of known downstream targets of a protein (its \"regulon\") as a reporter for that protein's activity. This allows for the computational inference of protein activity—including transcription factors and signal transduction proteins—on an individual sample basis, even when mRNA levels of the regulator itself are not predictive of its functional state.\n\n## Core Workflow\n\n### 1. Data Preparation and Regulon Generation\nVIPER requires a gene expression signature (or matrix) and a cell context-specific regulatory network (a `regulon` object).\n\n```R\nlibrary(viper)\nlibrary(bcellViper)\n\n# Load example data\ndata(bcellViper)\n\n# Generate a regulon object from an ARACNe .adj file\n# adjfile <- \"path/to/aracne_output.adj\"\n# regul <- aracne2regulon(adjfile, expression_dataset)\n```\n\n### 2. Master Regulator Analysis (msVIPER)\nUse `msVIPER` for multi-sample analysis (e.g., comparing cases vs. controls) to identify top master regulators.\n\n```R\n# 1. Generate a Gene Expression Signature (GES) using Student's t-test\nsignature <- rowTtest(dset, \"description\", c(\"CB\", \"CC\"), \"N\")\n# Convert p-values to z-scores\nges <- (qnorm(signature$p.value/2, lower.tail = FALSE) * sign(signature$statistic))[, 1]\n\n# 2. Generate a NULL model by sample permutations (to account for gene correlations)\nnullmodel <- ttestNull(dset, \"description\", c(\"CB\", \"CC\"), \"N\", per = 1000)\n\n# 3. Run msVIPER\nmrs <- msviper(ges, regulon, nullmodel)\n\n# 4. Summarize and Plot\nsummary(mrs)\nplot(mrs)\n```\n\n### 3. Single Sample VIPER\nTransform a gene expression matrix into a protein activity matrix.\n\n```R\n# Basic implementation (scaling genes)\nvpres <- viper(dset, regulon)\n\n# Advanced: Using a reference set for signatures\nvpsig <- viperSignature(dset, \"description\", \"N\")\nvpres <- viper(vpsig, regulon)\n\n# The result is a matrix of Normalized Enrichment Scores (NES)\n# Rows = Regulators, Cols = Samples\nactivity_matrix <- exprs(vpres)\n```\n\n## Advanced Analyses\n\n### Shadow Analysis\nDetermines if a regulator's activity is simply a \"shadow\" of another regulator due to shared targets.\n```R\nmrshadow <- shadow(mrs, regulators = 25)\nsummary(mrshadow)\n```\n\n### Synergy Analysis\nIdentifies pairs of regulators that synergistically regulate a gene expression signature.\n```R\nmrs <- msviperCombinatorial(mrs, regulators = 25)\nmrs <- msviperSynergy(mrs)\nplot(mrs)\n```\n\n### Leading-Edge Analysis\nIdentifies the specific target genes driving the enrichment score for a regulator.\n```R\nmrs <- ledge(mrs)\nsummary(mrs) # Shows 'Ledge' column with driving genes\n```\n\n## Tips for Success\n*   **Regulon Quality:** The accuracy of VIPER depends heavily on the quality of the regulatory network. Use ARACNe-inferred networks specific to the tissue/cell type being studied.\n*   **Signature Scaling:** When running `viper()` on single samples, ensure the data is properly normalized. Using `viperSignature` with a set of reference (normal) samples is recommended over simple row-scaling.\n*   **Distance Metrics:** For protein activity matrices generated by VIPER, use `viperSimilarity()` to compute sample similarities. This is more robust than standard correlation for NES values.\n\n## Reference documentation\n- [Using viper, a package for Virtual Inference of Protein-activity by Enriched Regulon analysis](./references/viper.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-viper",
+    "description": "The bioconductor-viper package infers protein activity from gene expression data by analyzing the enrichment of downstream targets within a regulatory network. Use when user asks to infer transcription factor activity, perform master regulator analysis, transform gene expression matrices into protein activity profiles, or identify synergistic regulators.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/viper.html"
+  }
+}

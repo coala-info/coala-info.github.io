@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-qplexanalyzer",
+  "category": "bioconductor",
+  "name": "bioconductor-qplexanalyzer",
+  "description": "This package provides a pipeline for the statistical analysis and differential expression of qPLEX-RIME and TMT/iTRAQ proteomics data. Use when user asks to perform quality control, normalize quantitative proteomics data, aggregate peptides to proteins, or identify differentially expressed proteins in multiplexed experiments.",
+  "overview": "The `qPLEXanalyzer` package is designed for the analysis of qPLEX-RIME (Quantitative Proteomics of Immobilized Enzymes) data, which combines RIME with multiplex TMT chemical isobaric labeling. It is also applicable to standard TMT or iTRAQ total proteome datasets. The package provides a structured pipeline to transform raw peptide intensities into statistically significant protein-level insights, specifically addressing challenges like bait-protein dependency and non-specific binding in pull-dow",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/qPLEXanalyzer.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/crukci-bioinformatics/qPLEXanalyzer",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "qPLEXanalyzer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qPLEXanalyzer.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/crukci-bioinformatics/qPLEXanalyzer",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-qplexanalyzer\n\nname: bioconductor-qplexanalyzer\ndescription: Statistical analysis of qPLEX-RIME and TMT/iTRAQ proteomics data. Use this skill to perform quality control, normalization, peptide-to-protein aggregation, bait-protein regression, and differential expression analysis using the limma-based qPLEXanalyzer workflow.\n\n# bioconductor-qplexanalyzer\n\n## Overview\n\nThe `qPLEXanalyzer` package is designed for the analysis of qPLEX-RIME (Quantitative Proteomics of Immobilized Enzymes) data, which combines RIME with multiplex TMT chemical isobaric labeling. It is also applicable to standard TMT or iTRAQ total proteome datasets. The package provides a structured pipeline to transform raw peptide intensities into statistically significant protein-level insights, specifically addressing challenges like bait-protein dependency and non-specific binding in pull-down assays.\n\n## Core Workflow\n\n### 1. Data Import and Object Creation\nThe package uses the `MSnSet` class from the `MSnbase` package to store quantitative data and metadata.\n\n```r\nlibrary(qPLEXanalyzer)\n\n# Create MSnSet from intensity matrix and metadata\n# indExpData: indices of columns containing quantitative data\n# Sequences/Accessions: indices of columns for peptide sequences and protein IDs\nMSnset_data <- convertToMSnset(exp_data$intensities,\n                               metadata = exp_data$metadata,\n                               indExpData = c(7:16),\n                               Sequences = 2,\n                               Accessions = 6)\n```\n\n### 2. Quality Control\nAssess data quality and identify outliers using various visualization functions:\n\n- `intensityPlot(MSnset_data)` / `intensityBoxplot(MSnset_data)`: Check intensity distributions across samples.\n- `rliPlot(MSnset_data)`: Relative Log Intensity plot to visualize unwanted variation.\n- `corrPlot(MSnset_data)`: Sample-to-sample correlation matrix.\n- `pcaPlot(MSnset_data, labelColumn = \"Group\")`: Principal Component Analysis to identify batch effects or groupings.\n- `coveragePlot(MSnset_data, ProteinID = \"P12345\", fastaFile = \"path/to/fasta\")`: Visualize bait protein sequence coverage.\n\n### 3. Normalization\nChoose a normalization method based on the experiment type:\n\n- `normalizeScaling(MSnset_data, scalingFunction = median)`: Aligns central tendencies (recommended for most cases).\n- `groupScaling(MSnset_data, groupingColumn = \"SampleGroup\")`: Normalizes within groups (essential for qPLEX-RIME to keep IgG controls separate from bait samples).\n- `normalizeQuantiles(MSnset_data)`: Strongest normalization; use primarily for total proteome, not pull-downs.\n- `rowScaling(MSnset_data)`: Scales each feature by its mean/median across samples.\n\n### 4. Aggregation and Merging\nConvert peptide-level data to protein-level data:\n\n```r\n# Summarize peptides to proteins\nMSnset_P <- summarizeIntensities(MSnset_norm,\n                                 summarizationFunction = sum,\n                                 annotation = annotation_df)\n\n# Visualize specific protein aggregation\npeptideIntensityPlot(MSnset_data, combinedIntensities = MSnset_P, ProteinID = \"P03372\")\n```\n\nFor PTM studies (Phospho/Acetyl), use `mergePeptides` or `mergeSites` to unify redundant sequences or modified sites.\n\n### 5. Bait Regression Analysis\nIn qPLEX-RIME, captured proteins may depend on the amount of bait pulled down. `regressIntensity` removes this dependency by fitting a linear model and using the residuals.\n\n```r\n# Exclude IgG controls from regression\nIgG_indices <- which(pData(MSnset_P)$SampleGroup == \"IgG\")\nMSnset_reg <- regressIntensity(MSnset_P, controlInd = IgG_indices, ProteinId = \"Bait_Accession\")\n```\n\n### 6. Differential Expression Analysis\nUses `limma` to identify significantly enriched proteins.\n\n```r\n# Define contrasts\ncontrasts <- c(Condition_vs_Control = \"Condition - Control\")\ndiffstats <- computeDiffStats(MSnset_P, contrasts = contrasts)\n\n# Extract results and filter against IgG background\n# controlGroup: specifies the mock/IgG group for background filtering\nresults <- getContrastResults(diffstats, \n                              contrast = \"Condition_vs_Control\", \n                              controlGroup = \"IgG\")\n\n# Visualization\nmaVolPlot(diffstats, contrast = \"Condition_vs_Control\", plotType = \"Volcano\")\n```\n\n## Tips for Success\n- **Missing Values**: `qPLEXanalyzer` functions expect a complete matrix. Impute missing values using `MSnbase` methods or filter them out during `convertToMSnset`.\n- **IgG Handling**: Always normalize IgG samples separately (using `groupScaling`) to avoid over-correcting low-intensity background signals.\n- **Specific Interactors**: Use the `controlLogFoldChange` column in the results to filter for proteins that are significantly higher than the IgG control (e.g., log2FC > 1).\n\n## Reference documentation\n- [qPLEXanalyzer](./references/qPLEXanalyzer.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-qplexanalyzer",
+    "description": "This package provides a pipeline for the statistical analysis and differential expression of qPLEX-RIME and TMT/iTRAQ proteomics data. Use when user asks to perform quality control, normalize quantitative proteomics data, aggregate peptides to proteins, or identify differentially expressed proteins in multiplexed experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qPLEXanalyzer.html"
+  }
+}

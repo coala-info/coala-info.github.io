@@ -1,0 +1,51 @@
+{
+  "id": "dbg2olc",
+  "category": "CLI",
+  "name": "dbg2olc",
+  "description": "DBG2OLC is a hybrid assembly framework that combines short-read contigs with long, noisy reads to efficiently assemble large genomes. Use when user asks to perform hybrid genome assembly, bridge short-read and long-read sequencing data, or generate a consensus backbone from de Bruijn graph contigs and long reads.",
+  "overview": "DBG2OLC (De Bruijn Graph to Overlap-Layout-Consensus) is a hybrid assembly framework that bridges the gap between short-read and long-read sequencing technologies. Instead of using raw short reads directly, it utilizes pre-assembled contigs from a de Bruijn Graph (DBG) assembler as \"anchors\" to organize and layout long, noisy reads. This approach significantly reduces the computational complexity and time required for large genome assemblies compared to pure long-read OLC methods.",
+  "homepage": "https://github.com/yechengxi/DBG2OLC",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/dbg2olc/overview",
+  "github": "https://github.com/yechengxi/DBG2OLC",
+  "conda_downloads": "16.7K",
+  "conda_downloads_num": 16700,
+  "last_updated": "2025-08-21",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "dbg2olc_SparseAssembler",
+      "dbg2olc_DBG2OLC",
+      "dbg2olc_Sparc",
+      "dbg2olc_SelectLongestReads"
+    ],
+    "description": "Sparse assembler for long reads.",
+    "docker_image": "quay.io/biocontainers/dbg2olc:20200723--h077b44d_4",
+    "homepage": "https://github.com/yechengxi/DBG2OLC",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/dbg2olc/overview",
+    "github": "https://github.com/yechengxi/DBG2OLC",
+    "conda_downloads": "16.7K",
+    "last_updated": "2025-08-21",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "dbg2olc_DBG2OLC.cwl",
+    "dbg2olc_SelectLongestReads.cwl",
+    "dbg2olc_Sparc.cwl",
+    "dbg2olc_SparseAssembler.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# dbg2olc\n\n## Overview\nDBG2OLC (De Bruijn Graph to Overlap-Layout-Consensus) is a hybrid assembly framework that bridges the gap between short-read and long-read sequencing technologies. Instead of using raw short reads directly, it utilizes pre-assembled contigs from a de Bruijn Graph (DBG) assembler as \"anchors\" to organize and layout long, noisy reads. This approach significantly reduces the computational complexity and time required for large genome assemblies compared to pure long-read OLC methods.\n\n## Core Workflow\n\n### Step 1: Generate Initial Contigs\nBefore running DBG2OLC, you must generate accurate, raw contigs using a DBG assembler like `SparseAssembler`.\n**Critical:** Do not use gap-closing or scaffolding features in the DBG step, as heuristics can introduce errors that propagate through the hybrid pipeline.\n\n```bash\n# Example using SparseAssembler\n./SparseAssembler k 51 g 15 NodeCovTh 1 EdgeCovTh 0 GS 12000000 f short_reads.fastq\n```\n\n### Step 2: Overlap and Layout (DBG2OLC)\nFeed the resulting `Contigs.txt` and your long reads into DBG2OLC.\n\n```bash\n./DBG2OLC k 17 AdaptiveTh 0.0001 KmerCovTh 2 MinOverlap 20 RemoveChimera 1 Contigs Contigs.txt f long_reads.fasta\n```\n\n### Step 3: Consensus Calling\nThe output `backbone_raw.fasta` requires consensus polishing. Use tools like `Sparc` or `pbdagcon` along with `blasr` to generate the final assembly.\n\n## Parameter Tuning Guide\n\nThe quality of the assembly (N50) is highly sensitive to three primary parameters:\n\n| Parameter | Description | Suggested Range (10x-20x) | Suggested Range (50x-100x) |\n| :--- | :--- | :--- | :--- |\n| `KmerCovTh` | Fixed k-mer matching threshold for anchors. | 2 - 5 | 2 - 10 |\n| `MinOverlap` | Minimum overlap score between long read pairs. | 10 - 30 | 50 - 150 |\n| `AdaptiveTh` | Adaptive matching threshold (M < AdaptiveTh * Length). | 0.001 - 0.01 | 0.01 - 0.02 |\n\n### Expert Tips\n- **K-mer Size (`k`)**: A value of 17 is generally optimal for most datasets.\n- **Chimeras**: Always set `RemoveChimera 1` if your long-read coverage is >10x.\n- **High Coverage (>100x)**: Increase `ChimeraTh` and `ContigTh` to 2 to apply more stringent filtering during multiple alignment.\n- **Iterative Loading**: Use `LD 1` to load previously computed compressed/anchored reads to save time while fine-tuning parameters.\n\n## Common CLI Patterns\n\n**For Low Coverage PacBio (10x-20x):**\n```bash\n./DBG2OLC k 17 AdaptiveTh 0.001 KmerCovTh 2 MinOverlap 20 RemoveChimera 1 Contigs Contigs.txt f reads.fasta\n```\n\n**For High Coverage PacBio (50x+):**\n```bash\n./DBG2OLC k 17 AdaptiveTh 0.01 KmerCovTh 5 MinOverlap 100 RemoveChimera 1 ChimeraTh 2 ContigTh 2 Contigs Contigs.txt f reads.fasta\n```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| DBG2OLC | DBG2OLC is a tool for correcting long reads using a de Bruijn graph. |\n| Sparc | dbg2olc_Sparc tool for generating consensus sequences. |\n| dbg2olc_SelectLongestReads | Selects the longest reads from a FASTA/FASTQ file based on total length. |\n| dbg2olc_SparseAssembler | Sparse assembler for long reads. |\n\n## Reference documentation\n- [GitHub Repository Overview](./references/github_com_yechengxi_DBG2OLC.md)\n- [Anaconda Bioconda Package](./references/anaconda_org_channels_bioconda_packages_dbg2olc_overview.md)",
+  "skill_front_matter": {
+    "name": "dbg2olc",
+    "description": "DBG2OLC is a hybrid assembly framework that combines short-read contigs with long, noisy reads to efficiently assemble large genomes. Use when user asks to perform hybrid genome assembly, bridge short-read and long-read sequencing data, or generate a consensus backbone from de Bruijn graph contigs and long reads.",
+    "homepage": "https://github.com/yechengxi/DBG2OLC"
+  }
+}

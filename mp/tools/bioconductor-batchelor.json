@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-batchelor",
+  "category": "bioconductor",
+  "name": "bioconductor-batchelor",
+  "description": "The batchelor package provides methods for correcting batch effects in single-cell RNA sequencing data using mutual nearest neighbors and other integration techniques. Use when user asks to correct batch effects, integrate single-cell datasets, perform multi-batch normalization, or run fastMNN.",
+  "overview": "The `batchelor` package provides a suite of methods for correcting batch effects in single-cell RNA sequencing data. Unlike bulk methods, `batchelor` does not require prior knowledge of population structure. Its primary strength is the Mutual Nearest Neighbors (MNN) approach, which identifies similar cell types across batches to calculate correction vectors. It integrates seamlessly with the `SingleCellExperiment` (SCE) framework.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/batchelor.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-batchelor/overview",
+  "github": "N/A",
+  "conda_downloads": "48.5K",
+  "conda_downloads_num": 48500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "batchelor"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/batchelor.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-batchelor/overview",
+    "github": "N/A",
+    "conda_downloads": "48.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-batchelor\n\n## Overview\n\nThe `batchelor` package provides a suite of methods for correcting batch effects in single-cell RNA sequencing data. Unlike bulk methods, `batchelor` does not require prior knowledge of population structure. Its primary strength is the Mutual Nearest Neighbors (MNN) approach, which identifies similar cell types across batches to calculate correction vectors. It integrates seamlessly with the `SingleCellExperiment` (SCE) framework.\n\n## Core Workflow\n\n### 1. Data Preparation\nBefore correction, datasets must be comparable. This involves subsetting to common genes and performing multi-batch normalization to handle differences in sequencing depth.\n\n```r\nlibrary(batchelor)\nlibrary(scuttle)\n\n# 1. Subset to common genes\nuniverse <- intersect(rownames(sce1), rownames(sce2))\nsce1 <- sce1[universe,]\nsce2 <- sce2[universe,]\n\n# 2. Multi-batch normalization\n# Adjusts library sizes so batches are on the same scale\nout <- multiBatchNorm(sce1, sce2)\nsce1 <- out[[1]]\nsce2 <- out[[2]]\n\n# 3. Identify Highly Variable Genes (HVGs)\n# Usually performed using scran to focus correction on biological signal\nlibrary(scran)\ndec1 <- modelGeneVar(sce1)\ndec2 <- modelGeneVar(sce2)\ncombined.dec <- combineVar(dec1, dec2)\nchosen.hvgs <- getTopHVGs(combined.dec, n=5000)\n```\n\n### 2. Batch Correction Methods\n\n#### Fast MNN (Recommended)\n`fastMNN()` is the standard choice. It performs PCA on the HVGs and identifies MNNs in the low-dimensional space, making it faster and less noisy than the original method.\n\n```r\nset.seed(101)\n# Returns an SCE with a 'corrected' reducedDim\nf.out <- fastMNN(sce1, sce2, subset.row=chosen.hvgs)\n\n# Access corrected coordinates for clustering/visualization\nreducedDim(f.out, \"corrected\")\n\n# Check batch origin\ntable(f.out$batch)\n```\n\n#### Cluster-based MNN\nUse `clusterMNN()` if you have already characterized clusters in each batch and want to group matching clusters into \"meta-clusters.\"\n\n```r\nclust.out <- clusterMNN(sce1, sce2, \n                        clusters=list(sce1$cluster_labels, sce2$cluster_labels),\n                        subset.row=chosen.hvgs)\n```\n\n#### Rescaling and Regression\nFor simpler technical replicates where population composition is identical:\n* `rescaleBatches()`: Centers batches in log-expression space (preserves sparsity).\n* `regressBatches()`: Performs linear regression to remove batch effects.\n\n### 3. High-Level Interface\nThe `correctExperiments()` function is a wrapper that preserves metadata from the original SCE objects.\n\n```r\n# Use NoCorrectParam() for diagnostic plots (checking if batch effect exists)\ncombined_unweighted <- correctExperiments(A=sce1, B=sce2, PARAM=NoCorrectParam())\n\n# Use FastMnnParam() for actual correction\ncombined_corrected <- correctExperiments(A=sce1, B=sce2, PARAM=FastMnnParam())\n```\n\n## Advanced Utilities\n\n### Multi-batch PCA\n`multiBatchPCA()` ensures each batch contributes equally to the rotation vectors, preventing large batches from dominating the low-dimensional space.\n\n```r\npca.out <- multiBatchPCA(sce1, sce2, subset.row=chosen.hvgs)\n```\n\n### Restricted Correction\nIf you have known \"control\" cells (e.g., the same cell line run in both batches), use the `restrict` argument to calculate the correction based only on those cells and extrapolate to the rest.\n\n```r\n# Pretend first 100 cells in each are controls\nrescale.out <- rescaleBatches(sce1, sce2, restrict=list(1:100, 1:100))\n```\n\n## Tips for Success\n* **Gene Selection**: Always use HVGs for `fastMNN()` to improve speed and reduce noise.\n* **Corrected Values**: The output of `fastMNN()` is a low-dimensional matrix (PC scores). While you can obtain \"corrected\" expression values via the rotation vectors, these should be used cautiously for gene-level downstream analysis (like DE).\n* **Merge Order**: By default, `fastMNN` merges batches in an order determined by the number of MNN pairs. You can manually specify `merge.order` if one batch is a known high-quality reference.\n\n## Reference documentation\n- [Correcting batch effects in single-cell RNA-seq data](./references/correction.md)\n- [Extending dispatch to more batch correction methods](./references/extension.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-batchelor",
+    "description": "The batchelor package provides methods for correcting batch effects in single-cell RNA sequencing data using mutual nearest neighbors and other integration techniques. Use when user asks to correct batch effects, integrate single-cell datasets, perform multi-batch normalization, or run fastMNN.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/batchelor.html"
+  }
+}

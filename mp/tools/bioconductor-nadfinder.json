@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nadfinder",
+  "category": "bioconductor",
+  "name": "bioconductor-nadfinder",
+  "description": "This tool analyzes Nucleolar-Associated Domains (NADs) from NAD-seq data by performing read counting, normalization, and peak calling. Use when user asks to count reads in sliding windows, normalize log2 ratios, smooth genomic signals, or call peaks for single or replicated NAD-seq samples.",
+  "overview": "The `NADfinder` package is designed for the analysis of NAD-seq data, which identifies genomic regions (Nucleolar-Associated Domains) that physically associate with the nucleolus. The workflow typically involves comparing a nucleolus-enriched DNA sample against a whole genomic DNA (input) background. The package supports sliding window analysis, normalization of ratios, local background correction, and statistical peak calling for both single pairs and replicated experiments.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NADfinder.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NADfinder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NADfinder.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nadfinder\n\nname: bioconductor-nadfinder\ndescription: Analysis of Nucleolar-Associated Domains (NADs) from NAD-seq data. Use this skill for bioinformatic workflows including read counting in sliding windows, log2 ratio normalization, background correction, smoothing, and peak calling for single or replicated samples.\n\n# bioconductor-nadfinder\n\n## Overview\n\nThe `NADfinder` package is designed for the analysis of NAD-seq data, which identifies genomic regions (Nucleolar-Associated Domains) that physically associate with the nucleolus. The workflow typically involves comparing a nucleolus-enriched DNA sample against a whole genomic DNA (input) background. The package supports sliding window analysis, normalization of ratios, local background correction, and statistical peak calling for both single pairs and replicated experiments.\n\n## Core Workflow\n\n### 1. Data Preparation and Counting\nThe process begins by counting reads in sliding windows across the genome using BAM files.\n\n```r\nlibrary(NADfinder)\nlibrary(BSgenome.Mmusculus.UCSC.mm10)\n\n# Define window and step size (NADs are typically broad, e.g., 50kb)\nws <- 50000\nstep <- 5000\n\n# Count reads\nse <- tileCount(reads = c(\"nucleolus.bam\", \"genome.bam\"),\n                genome = Mmusculus,\n                windowSize = ws,\n                step = step,\n                mode = IntersectionNotStrict)\n```\n\n### 2. Normalization and Smoothing\nCalculate log2 ratios between the nucleolus and genome samples, then smooth the signal to reduce noise.\n\n```r\n# Calculate log2 ratios\ndat <- log2se(se, \n              nucleolusCols = \"nucleolus.bam\", \n              genomeCols = \"genome.bam\", \n              transformation = \"log2CPMRatio\")\n\n# Smooth ratios by chromosome (corrects for 5' to 3' bias)\ndatList <- smoothRatiosByChromosome(dat, chr = paste0(\"chr\", 1:19))\n```\n\n### 3. Peak Calling (Single Pair)\nFor a single pair of samples, use `trimPeaks` which utilizes a background percentage to determine significance.\n\n```r\n# Call and trim peaks\n# backgroundPercentage 0.25 uses the lower 25% of ratios for background training\npeaks <- lapply(datList, trimPeaks, \n                backgroundPercentage = 0.25, \n                cutoffAdjPvalue = 0.05, \n                countFilter = 1000)\n\n# Convert to GRanges\npeaks.gr <- unlist(GRangesList(peaks))\n```\n\n### 4. Peak Calling (Replicates)\nWhen biological replicates are available, `NADfinder` uses `limma` for more robust statistical testing.\n\n```r\n# Calculate ratios for multiple columns\nse <- log2se(se, \n             nucleolusCols = c(\"N_rep1.bam\", \"N_rep2.bam\"),\n             genomeCols = c(\"G_rep1.bam\", \"G_rep2.bam\"))\n\nseList <- smoothRatiosByChromosome(se)\n\n# Use callPeaks for replicated data\npeaks <- lapply(seList, callPeaks, cutoffAdjPvalue = 0.05)\npeaks.gr <- unlist(GRangesList(peaks))\n```\n\n## Visualization and Export\n\n### Quality Assessment\nUse `cumulativePercentage` to check the distribution of reads. A uniform genomic background should appear as a near-straight line, while the nucleolus sample should show enrichment.\n\n```r\ncumulativePercentage(datList[[\"chr1\"]])\n```\n\n### Plotting Results\nVisualize peaks along an ideogram:\n\n```r\nideo <- readRDS(system.file(\"extdata\", \"ideo.mm10.rds\", package = \"NADfinder\"))\nplotSig(ideo = ideo, grList = GRangesList(peaks.gr), mcolName = \"AveSig\",\n        layout = list(\"chr18\"), parameterList = list(types = \"heatmap\"))\n```\n\n### Exporting\n```r\nlibrary(rtracklayer)\nexport(peaks.gr, \"NAD_peaks.bed\", \"BED\")\nwrite.csv(as.data.frame(peaks.gr), \"NAD_peaks.csv\")\n```\n\n## Key Parameters\n- `windowSize`: Usually set large (50kb+) because NADs are broad heterochromatic regions.\n- `backgroundPercentage`: The fraction of lowest ratios used to model the null distribution.\n- `countFilter`: Minimum read count required to consider a window for peak calling.\n\n## Reference documentation\n- [NADfinder Guide](./references/NADfinder.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nadfinder",
+    "description": "This tool analyzes Nucleolar-Associated Domains (NADs) from NAD-seq data by performing read counting, normalization, and peak calling. Use when user asks to count reads in sliding windows, normalize log2 ratios, smooth genomic signals, or call peaks for single or replicated NAD-seq samples.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NADfinder.html"
+  }
+}

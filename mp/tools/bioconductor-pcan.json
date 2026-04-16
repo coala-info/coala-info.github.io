@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pcan",
+  "category": "bioconductor",
+  "name": "bioconductor-pcan",
+  "description": "This package assesses the relationship between genes and human phenotypes to prioritize candidate genes for Mendelian disorders. Use when user asks to compare gene-associated phenotypes to a set of interest, compute semantic similarity between HPO terms, or prioritize candidate genes using direct associations or pathway consensus.",
+  "overview": "The `PCAN` package provides methods to assess the relationship between a gene and a set of human phenotypes. It is particularly useful for prioritizing candidate genes identified in sequencing studies of Mendelian disorders. The package uses Information Content (IC) and semantic similarity (Resnik method) to compare phenotypes associated with a gene (or its pathways/interactors) against a user-defined set of phenotypes of interest.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PCAN.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PCAN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PCAN.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pcan\n\n## Overview\n\nThe `PCAN` package provides methods to assess the relationship between a gene and a set of human phenotypes. It is particularly useful for prioritizing candidate genes identified in sequencing studies of Mendelian disorders. The package uses Information Content (IC) and semantic similarity (Resnik method) to compare phenotypes associated with a gene (or its pathways/interactors) against a user-defined set of phenotypes of interest.\n\n## Core Workflow\n\n### 1. Data Preparation and Prior Knowledge\nPCAN relies on several internal datasets linking genes, traits (OMIM), and phenotypes (HPO).\n\n```r\nlibrary(PCAN)\ndata(geneByTrait, traitDef, geneDef, hpByTrait, hpDef, package=\"PCAN\")\ndata(hp_descendants, hp_ancestors, package=\"PCAN\")\n\n# Define phenotypes of interest (HPO terms)\nhpOfInterest <- c(\"HP:0000483\", \"HP:0000510\", \"HP:0000518\", \"HP:0000639\")\n\n# Create a gene-to-phenotype mapping (excluding known associations if testing)\ngeneByHp <- unique(merge(geneByTrait, hpByTrait, by=\"id\")[,c(\"entrez\", \"hp\")])\n```\n\n### 2. Computing Information Content (IC)\nIC measures the specificity of an HPO term based on the number of genes associated with it and its descendants.\n\n```r\n# Group genes by HP term\ninfo <- unstack(geneByHp, entrez ~ hp)\n# Compute IC for all terms\nic <- computeHpIC(info, hp_descendants)\n```\n\n### 3. Direct Gene-Phenotype Comparison\nCompare a candidate gene's associated phenotypes directly to the phenotypes of interest.\n\n```r\n# Get phenotypes for a specific gene (e.g., Entrez ID 57545)\ngenId <- \"57545\"\ngenHp <- geneByHp[which(geneByHp$entrez == genId), \"hp\"]\n\n# Compute similarity matrix\ncompMat <- compareHPSets(\n    hpSet1 = genHp, \n    hpSet2 = hpOfInterest,\n    IC = ic,\n    ancestors = hp_ancestors,\n    method = \"Resnik\",\n    BPPARAM = SerialParam()\n)\n\n# Summarize similarity into a single score\nscore <- hpSetCompSummary(compMat, method=\"bma\", direction=\"symSim\")\n```\n\n### 4. Candidate Prioritization\nTo assess significance, compare the candidate's score against the distribution of scores for all genes.\n\n```r\n# 1. Compute similarity between all HPO terms and phenotypes of interest\nhpGeneResnik <- compareHPSets(names(ic), hpOfInterest, ic, hp_ancestors, method=\"Resnik\")\n\n# 2. Group results by gene and compute scores\nhpByGene <- unstack(geneByHp, hp ~ entrez)\nresnSss <- unlist(lapply(hpByGene, function(x) {\n    hpSetCompSummary(hpGeneResnik[x, , drop=FALSE], method=\"bma\", direction=\"symSim\")\n}))\n\n# 3. Calculate rank\ncandRank <- sum(resnSss >= score)\nrelRank <- candRank / length(resnSss) # Lower is more significant\n```\n\n### 5. Pathway Consensus Approach\nIf a gene has no known phenotype associations, use its pathway members or protein interactors to calculate a consensus relevance score.\n\n```r\n# Using Reactome pathways\ndata(hsEntrezByRPath, rPath, package=\"PCAN\")\n\n# Find pathway for candidate gene\ncandPath <- names(hsEntrezByRPath)[which(sapply(hsEntrezByRPath, function(x) genId %in% x))]\n\n# Assess relevance of the entire pathway\nrPathRes <- hpGeneListComp(\n    geneList = hsEntrezByRPath[[candPath]],\n    ssMatByGene = hpMatByGene, # List of matrices per gene\n    geneSSScore = resnSss\n)\n\n# Visualize with a heatmap\nhpGeneHeatmap(rPathRes, genesOfInterest=genId, hpLabels=hpDef$name)\n```\n\n## Key Functions\n- `computeHpIC`: Calculates Information Content for HPO terms.\n- `calcHpSim`: Calculates semantic similarity between two HPO terms.\n- `compareHPSets`: Creates a similarity matrix between two sets of HPO terms.\n- `hpSetCompSummary`: Reduces a similarity matrix to a single score (e.g., Best Match Average).\n- `hpGeneListComp`: Performs Wilcoxon test to see if a gene list (pathway) is enriched for high similarity scores.\n\n## Reference documentation\n- [PCAN](./references/PCAN.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pcan",
+    "description": "This package assesses the relationship between genes and human phenotypes to prioritize candidate genes for Mendelian disorders. Use when user asks to compare gene-associated phenotypes to a set of interest, compute semantic similarity between HPO terms, or prioritize candidate genes using direct associations or pathway consensus.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PCAN.html"
+  }
+}

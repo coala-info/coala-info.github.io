@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-philr",
+  "category": "bioconductor",
+  "name": "bioconductor-philr",
+  "description": "PhILR transforms compositional microbiome data into an orthogonal space using phylogenetic trees to define balances between clades. Use when user asks to transform OTU tables into isometric log-ratios, perform phylogenetic compositional data analysis, or identify evolutionary balances that distinguish sample groups.",
+  "overview": "PhILR (Phylogenetic Isometric Log-Ratio) transforms compositional data (e.g., microbiome OTU tables) into an orthogonal, unconstrained real space. This transformation uses a phylogenetic tree to define \"balances\" at each internal node, representing the log-ratio of the geometric mean abundance of the two descending clades. This allows the application of standard statistical tools (MDS, linear models, etc.) to compositional data while maintaining evolutionary interpretation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/philr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/jsilve24/philr",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "philr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/philr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/jsilve24/philr",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-philr\n\n## Overview\n\nPhILR (Phylogenetic Isometric Log-Ratio) transforms compositional data (e.g., microbiome OTU tables) into an orthogonal, unconstrained real space. This transformation uses a phylogenetic tree to define \"balances\" at each internal node, representing the log-ratio of the geometric mean abundance of the two descending clades. This allows the application of standard statistical tools (MDS, linear models, etc.) to compositional data while maintaining evolutionary interpretation.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nEnsure the phylogenetic tree is rooted and binary. Use `ape::multi2di` if the tree has multichotomies.\n\n```r\nlibrary(philr)\nlibrary(ape)\nlibrary(mia)\n\n# Example with TreeSummarizedExperiment (TreeSE)\ndata(GlobalPatterns, package = \"mia\")\n\n# 1. Filter low abundance/prevalence\ntse <- subsetByPrevalentTaxa(GlobalPatterns, detection = 3, prevalence = 0.2)\n\n# 2. Ensure tree matches filtered taxa and is binary\ntree <- ape::keep.tip(rowTree(tse), rowLinks(tse)$nodeNum)\nif(!is.binary(tree)) tree <- multi2di(tree)\nif(!is.rooted(tree)) tree <- root(tree, outgroup = 1, resolve.root = TRUE)\n\n# 3. Add pseudocount (PhILR requires non-zero values)\nassays(tse)$counts.shifted <- assays(tse)$counts + 1\n```\n\n### 2. PhILR Transformation\n\nThe `philr()` function is a wrapper that handles the Sequential Binary Partition (SBP) and weight calculations.\n\n```r\n# Using a TreeSE object\ngp.philr <- philr(tse, \n                  abund_values = \"counts.shifted\",\n                  part.weights = 'enorm.x.gm.counts', \n                  ilr.weights = 'blw.sqrt')\n\n# Using a matrix and tree\n# otu.table should be (samples x taxa)\n# gp.philr <- philr(otu.table, tree, part.weights='enorm.x.gm.counts', ilr.weights='blw.sqrt')\n```\n\n### 3. Statistical Analysis\n\nOnce transformed, use standard Euclidean-based methods.\n\n```r\n# Ordination (MDS)\ngp.dist <- dist(gp.philr, method = \"euclidean\")\ncmd <- as.data.frame(cmdscale(gp.dist))\n\n# Supervised Learning (e.g., identifying balances distinguishing groups)\nlibrary(glmnet)\nfit <- glmnet(gp.philr, y_vector, family = \"binomial\")\n```\n\n### 4. Interpreting and Naming Balances\n\nBalances are named after internal nodes (e.g., \"n1\"). Use `name.balance` to find the consensus taxonomy for the numerator (+) and denominator (-) of a balance.\n\n```r\n# Get taxonomy table\ntax <- as.data.frame(rowData(tse))\n\n# Name a specific balance (e.g., node 'n10')\nname.balance(tree, tax, 'n10')\n\n# Get detailed voting information\nvotes <- name.balance(tree, tax, 'n10', return.votes = c('up', 'down'))\n```\n\n### 5. Visualization\n\nUse `ggtree` to visualize balances on the phylogeny and `convert_to_long` for distribution plots.\n\n```r\nlibrary(ggtree)\n\n# Map balance names to node numbers\nnode_idx <- name.to.nn(tree, \"n10\")\n\n# Highlight balance on tree\nggtree(tree) + \n  geom_balance(node = node_idx, fill = \"steelblue\", alpha = 0.5) +\n  annotate_balance(tree, \"n10\", labels = c(\"n10+\", \"n10-\"))\n\n# Boxplots of balance values\ndf_long <- convert_to_long(gp.philr, colData(tse)$GroupVariable)\nggplot(df_long, aes(x = labels, y = value)) + \n  geom_boxplot() + \n  facet_wrap(~coord, scales = \"free\")\n```\n\n## Tips for Success\n\n- **Taxa Weighting**: `part.weights = 'enorm.x.gm.counts'` is recommended to down-weight low-abundance taxa.\n- **ILR Weighting**: `ilr.weights = 'blw.sqrt'` weights balances by the branch lengths of the tree, accounting for evolutionary distance.\n- **Node Naming**: Always name your internal nodes (e.g., `tree <- makeNodeLabel(tree, prefix='n')`) before transformation to ensure coordinates in the output matrix are identifiable.\n- **Zero Handling**: PhILR cannot handle zeros. Always apply a pseudocount or a multiplicative replacement method before transformation.\n\n## Reference documentation\n\n- [Introduction to PhILR](./references/philr-intro.Rmd)\n- [Introduction to PhILR (Markdown)](./references/philr-intro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-philr",
+    "description": "PhILR transforms compositional microbiome data into an orthogonal space using phylogenetic trees to define balances between clades. Use when user asks to transform OTU tables into isometric log-ratios, perform phylogenetic compositional data analysis, or identify evolutionary balances that distinguish sample groups.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/philr.html"
+  }
+}

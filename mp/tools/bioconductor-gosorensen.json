@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gosorensen",
+  "category": "bioconductor",
+  "name": "bioconductor-gosorensen",
+  "description": "This tool performs equivalence testing and calculates functional dissimilarity between gene lists based on Gene Ontology enrichment and the Sorensen-Dice index. Use when user asks to calculate functional dissimilarity between gene lists, perform equivalence testing to prove biological similarity, generate irrelevance-threshold dissimilarity matrices, or visualize gene list relationships via dendrograms and MDS biplots.",
+  "overview": "The `goSorensen` package provides an inferential framework to compare gene lists based on their functional profiles in the Gene Ontology. Unlike descriptive methods, it uses equivalence testing to determine if the biological difference between lists is negligible (below a user-defined \"irrelevance limit\" $d_0$). It supports Biological Process (BP), Cellular Component (CC), and Molecular Function (MF) ontologies across various GO levels.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/goSorensen.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gosorensen/overview",
+  "github": "N/A",
+  "conda_downloads": "5.1K",
+  "conda_downloads_num": 5100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "goSorensen"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/goSorensen.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gosorensen/overview",
+    "github": "N/A",
+    "conda_downloads": "5.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gosorensen\n\nname: bioconductor-gosorensen\ndescription: Statistical method for comparing gene lists using equivalence tests based on the Sorensen-Dice dissimilarity and Gene Ontology (GO) enrichment. Use this skill when you need to: (1) Calculate functional dissimilarity between gene lists, (2) Perform equivalence testing to prove biological similarity, (3) Generate irrelevance-threshold dissimilarity matrices, or (4) Visualize gene list relationships via dendrograms and MDS biplots.\n\n## Overview\n\nThe `goSorensen` package provides an inferential framework to compare gene lists based on their functional profiles in the Gene Ontology. Unlike descriptive methods, it uses equivalence testing to determine if the biological difference between lists is negligible (below a user-defined \"irrelevance limit\" $d_0$). It supports Biological Process (BP), Cellular Component (CC), and Molecular Function (MF) ontologies across various GO levels.\n\n## Core Workflow\n\n### 1. Setup and Data Preparation\nYou must provide a gene universe (all genes in the species) and the gene lists (Entrez IDs).\n\n```r\nlibrary(goSorensen)\nlibrary(org.Hs.eg.db)\n\n# Get the gene universe for the species (e.g., Human)\nhumanEntrezIDs <- keys(org.Hs.eg.db, keytype = \"ENTREZID\")\n\n# Example data: a list of character vectors containing Entrez IDs\ndata(\"allOncoGeneLists\")\n```\n\n### 2. Building Enrichment Contingency Tables\nBefore testing, the package identifies enriched GO terms and builds $2 \\times 2$ contingency tables.\n\n```r\n# For a specific ontology and level\ncont_tabs <- buildEnrichTable(allOncoGeneLists,\n                              geneUniverse = humanEntrezIDs,\n                              orgPackg = \"org.Hs.eg.db\",\n                              onto = \"BP\",\n                              GOLevel = 4)\n\n# For multiple ontologies and levels (3 to 10)\nall_cont_tabs <- allBuildEnrichTable(allOncoGeneLists,\n                                     geneUniverse = humanEntrezIDs,\n                                     orgPackg = \"org.Hs.eg.db\",\n                                     ontos = c(\"BP\", \"CC\", \"MF\"),\n                                     GOLevels = 3:10)\n```\n\n### 3. Equivalence Testing\nTest if the Sorensen-Dice dissimilarity $d_S$ is significantly less than an irrelevance limit $d_0$. Common $d_0$ values are 0.4444 or 0.2857.\n\n```r\n# Perform tests on the contingency tables\neq_tests <- equivTestSorensen(cont_tabs, d0 = 0.4444, conf.level = 0.95)\n\n# Access results\ngetPvalue(eq_tests)\ngetDissimilarity(eq_tests)\n```\n\n### 4. Irrelevance-Threshold Dissimilarity Matrix\nThis matrix quantifies the smallest equivalence threshold required to declare two lists equivalent, adjusted for multiple testing (default: Holm's method).\n\n```r\n# Compute the matrix\ndiss_matrix <- sorenThreshold(cont_tabs)\n\n# For multiple levels\nall_diss_matrices <- allSorenThreshold(all_cont_tabs)\n```\n\n### 5. Visualization and Interpretation\nVisualize the relationships between gene lists using the dissimilarity matrix.\n\n```r\n# Dendrogram\nclust <- hclustThreshold(diss_matrix)\nplot(clust)\n\n# Multidimensional Scaling (MDS) Biplot\nmds <- as.data.frame(cmdscale(diss_matrix, k = 2))\n# Plot using ggplot2 to see clusters of functionally similar lists\n```\n\n## Key Functions and Parameters\n\n- `enrichedIn`: Identifies enriched GO terms for one or more lists.\n- `equivTestSorensen`: Main testing function. Use `boot = TRUE` for bootstrap distribution if joint enrichment is low.\n- `upgrade`: Quickly update a test object with new parameters (e.g., different $d_0$ or `conf.level`) without recomputing enrichment.\n- `getDissimilarity`, `getPvalue`, `getSE`, `getUpper`: Accessor functions for test results.\n- `sorenThreshold`: Generates the inferential dissimilarity matrix.\n\n## Tips for AI Agents\n- **Species Annotation**: Always ensure the correct `org.XX.eg.db` package is loaded for the species being analyzed.\n- **Efficiency**: If performing multiple operations (testing and matrix generation), build the contingency tables once using `buildEnrichTable` and pass that object to subsequent functions.\n- **GO Levels**: Functional similarity is highly dependent on the GO level. Levels 4-6 are often the most informative for Biological Process.\n- **Indeterminacy**: `NaN` p-values usually occur when there is zero joint enrichment ($n_{11} = 0$) between two lists.\n\n## Reference documentation\n- [Working with the Irrelevance-threshold Matrix of Dissimilarities](./references/Dissimilarities_Matrix.md)\n- [An Introduction to the goSorensen R Package](./references/goSorensen_Introduction.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gosorensen",
+    "description": "This tool performs equivalence testing and calculates functional dissimilarity between gene lists based on Gene Ontology enrichment and the Sorensen-Dice index. Use when user asks to calculate functional dissimilarity between gene lists, perform equivalence testing to prove biological similarity, generate irrelevance-threshold dissimilarity matrices, or visualize gene list relationships via dendrograms and MDS biplots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/goSorensen.html"
+  }
+}

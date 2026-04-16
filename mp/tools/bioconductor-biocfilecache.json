@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biocfilecache",
+  "category": "bioconductor",
+  "name": "bioconductor-biocfilecache",
+  "description": "BiocFileCache manages local and remote resource files by providing a centralized, persistent location to track and cache data via a SQLite database. Use when user asks to cache remote resources, track experimental results with metadata, manage local file versions, or retrieve persistent file paths for R objects.",
+  "overview": "BiocFileCache is a Bioconductor package designed to manage local and remote resource files. It provides a centralized, persistent location to organize files, tracking them via a SQLite database. It is particularly useful for:\n1. **Caching remote resources**: Storing local copies of web files (e.g., Ensembl GTF, large datasets) to avoid repeated downloads.\n2. **Tracking experimental results**: Saving R objects or files with descriptive metadata instead of relying on cryptic file naming.\n3. **Vers",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocFileCache.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocfilecache/overview",
+  "github": "https://github.com/Bioconductor/BiocFileCache",
+  "conda_downloads": "278.4K",
+  "conda_downloads_num": 278400,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BiocFileCache"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocFileCache.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biocfilecache/overview",
+    "github": "https://github.com/Bioconductor/BiocFileCache",
+    "conda_downloads": "278.4K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biocfilecache\n\n## Overview\n\nBiocFileCache is a Bioconductor package designed to manage local and remote resource files. It provides a centralized, persistent location to organize files, tracking them via a SQLite database. It is particularly useful for:\n1. **Caching remote resources**: Storing local copies of web files (e.g., Ensembl GTF, large datasets) to avoid repeated downloads.\n2. **Tracking experimental results**: Saving R objects or files with descriptive metadata instead of relying on cryptic file naming.\n3. **Version Control**: Checking if remote resources have changed (via etags or last-modified headers) and updating local copies only when necessary.\n\n## Core Workflow\n\n### 1. Initialize the Cache\nCreate or load a cache object. If no path is specified, it uses a default user-specific directory.\n\n```r\nlibrary(BiocFileCache)\n\n# Create/Load default cache\nbfc <- BiocFileCache(ask = FALSE)\n\n# Or specify a custom location\nbfc <- BiocFileCache(\"~/my_project_cache\", ask = FALSE)\n\n# Check cache location and item count\nbfccache(bfc)\nlength(bfc)\n```\n\n### 2. Adding Resources\nThere are two primary ways to add files:\n\n*   **`bfcadd()`**: Use for existing local files or remote URLs.\n*   **`bfcnew()`**: Use to reserve a path for a new file you are about to create (e.g., saving an RDS).\n\n```r\n# Add a remote resource (downloads automatically by default)\nurl <- \"https://example.com/data.csv\"\npath <- bfcadd(bfc, rname = \"MyData\", fpath = url)\n\n# Add a local file (copy, move, or asis)\nlocal_file <- \"results.txt\"\npath <- bfcadd(bfc, rname = \"Experiment1\", fpath = local_file, action = \"copy\")\n\n# Reserve a path for a new R object\nnew_path <- bfcnew(bfc, \"ProcessedMatrix\", ext = \".rds\")\nsaveRDS(my_matrix, file = new_path)\n```\n\n### 3. Retrieving and Querying\nResources are identified by a unique Resource ID (`rid`, e.g., \"BFC1\").\n\n```r\n# Search for resources by keyword in rname, rpath, or fpath\nres <- bfcquery(bfc, \"MyData\")\nrid <- res$rid\n\n# Get the local path for a specific rid\npath <- bfcrpath(bfc, rids = rid)\n\n# Shortcut: Get path by URL (adds to cache if not present)\npath <- bfcrpath(bfc, \"https://example.com/data.csv\")\n```\n\n### 4. Managing Updates\nFor web resources, BiocFileCache can check if the remote file has changed.\n\n```r\n# Check if updates are needed (returns TRUE, FALSE, or NA)\nneeds_update <- bfcneedsupdate(bfc, rid)\n\n# Download the latest version if stale\nif (!isFALSE(needs_update)) {\n    bfcdownload(bfc, rid, ask = FALSE)\n}\n```\n\n### 5. Metadata and Maintenance\nYou can attach custom data frames as metadata tables to the cache.\n\n```r\n# Add metadata\nmeta_df <- data.frame(rid = \"BFC1\", sample_type = \"Control\", batch = 1)\nbfcmeta(bfc, name = \"SampleInfo\") <- meta_df\n\n# List all tracked files\nbfcinfo(bfc)\n\n# Remove a resource (deletes the file if stored inside the cache)\nbfcremove(bfc, rid)\n```\n\n## Best Practices for Package Developers\nWhen using BiocFileCache within a package to manage data:\n1. Define a internal helper function (e.g., `.get_cache()`) using `tools::R_user_dir(\"PackageName\", which=\"cache\")`.\n2. Use `bfcrpath()` to provide users with a seamless \"download-once, use-many\" experience.\n3. Use the `FUN` argument in `bfcdownload()` if you need to process a file (e.g., unzip or filter) before it is officially saved into the cache.\n\n## Troubleshooting\n*   **Lock Files**: If you encounter \"Cannot lock file\" errors, ensure you have write permissions or set the `BFC_CACHE` environment variable to a directory on a filesystem that supports file locking.\n*   **Proxies**: If behind a firewall, pass proxy configuration to `bfcadd` or `bfcdownload` using the `proxy` or `config` (list of curl options) arguments.\n\n## Reference documentation\n- [BiocFileCache: Managing File Resources Across Sessions](./references/BiocFileCache.md)\n- [BiocFileCache Troubleshooting](./references/BiocFileCache_Troubleshooting.md)\n- [BiocFileCache Use Cases](./references/BiocFileCache_UseCases.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biocfilecache",
+    "description": "BiocFileCache manages local and remote resource files by providing a centralized, persistent location to track and cache data via a SQLite database. Use when user asks to cache remote resources, track experimental results with metadata, manage local file versions, or retrieve persistent file paths for R objects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiocFileCache.html"
+  }
+}

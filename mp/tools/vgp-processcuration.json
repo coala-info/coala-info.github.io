@@ -1,0 +1,49 @@
+{
+  "id": "vgp-processcuration",
+  "category": "CLI",
+  "name": "vgp-processcuration",
+  "description": "The vgp-processcuration toolkit automates the final processing of curated genome assemblies to generate submission-ready files. Use when user asks to split AGP files by haplotype, reconcile FASTA sequences with curation instructions, assign chromosome names, or reorient secondary haplotypes.",
+  "overview": "The vgp-processcuration toolkit (also known as ProcessCurated) is designed for the final stages of genome assembly curation. It bridges the gap between manual curation—typically performed in PretextView—and the generation of submission-ready files. The toolset automates the reconciliation of AGP files with FASTA sequences, handles haplotype splitting, assigns chromosome names to scaffolds, and ensures that the secondary haplotype is correctly oriented and named relative to the primary haplotype.",
+  "homepage": "https://github.com/vgl-hub/vgl-curation",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/vgp-processcuration/overview",
+  "github": "https://github.com/vgl-hub/vgl-curation",
+  "conda_downloads": "64",
+  "conda_downloads_num": 64,
+  "last_updated": "2026-01-24",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vgp-processcuration_split_agp",
+      "vgp-processcuration_chromosome_assignment",
+      "vgp-processcuration_sak_generation"
+    ],
+    "description": "Correct AGP for sequence lengths, split the agp per haplotype, assign unlocs and remove duplicated haplotigs",
+    "docker_image": "quay.io/biocontainers/vgp-processcuration:1.1--pyhdfd78af_0",
+    "homepage": "https://github.com/vgl-hub/vgl-curation",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/vgp-processcuration/overview",
+    "github": "https://github.com/vgl-hub/vgl-curation",
+    "conda_downloads": "64",
+    "last_updated": "2026-01-24",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "vgp-processcuration_chromosome_assignment.cwl",
+    "vgp-processcuration_sak_generation.cwl",
+    "vgp-processcuration_split_agp.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# vgp-processcuration\n\n## Overview\n\nThe vgp-processcuration toolkit (also known as ProcessCurated) is designed for the final stages of genome assembly curation. It bridges the gap between manual curation—typically performed in PretextView—and the generation of submission-ready files. The toolset automates the reconciliation of AGP files with FASTA sequences, handles haplotype splitting, assigns chromosome names to scaffolds, and ensures that the secondary haplotype is correctly oriented and named relative to the primary haplotype.\n\n## Core Workflow and CLI Usage\n\n### 1. Splitting and Correcting AGP Files\nThe first step involves splitting the combined haplotype AGP and correcting sequence lengths.\n\n```bash\nsplit_agp -f <combined_assembly.fasta> -a <curated.agp> -o <output_dir>\n```\n*   **Input**: Combined FASTA and the AGP file exported from PretextView.\n*   **Output**: Corrected AGP files and haplotype-specific AGP files (e.g., `hap.unlocs.no_hapdups.agp`).\n\n### 2. Reconciling FASTA with AGP\nUse `gfastats` (a required dependency) to apply the AGP instructions to the FASTA file and sort by size.\n\n```bash\n# For Haplotype 1\ngfastats <fasta> --agp-to-path Hap_1/hap.unlocs.no_hapdups.agp -o Hap_1/hap.unlocs.no_hapdups.fa\ngfastats Hap_1/hap.unlocs.no_hapdups.fa --sort largest -o Hap_1/hap.sorted.fa\n\n# Repeat for Haplotype 2\n```\n\n### 3. Chromosome Assignment\nMap scaffolds to their final chromosomal assignments.\n\n```bash\nchromosome_assignment -a Hap_1/hap.unlocs.no_hapdups.agp -f Hap_1/hap.sorted.fa -o Hap_1\n```\n*   **Output**: `inter_chr.tsv` (mapping table) and `hap.chr_level.fa` (chromosome-level FASTA).\n\n### 4. Haplotype Reorientation (Hap 2 to Hap 1)\nTo ensure Haplotype 2 matches Haplotype 1, align them with MashMap and generate a SAK (Sequence Alteration Kit) file.\n\n```bash\n# 1. Align\nmashmap -r Hap_1/hap.chr_level.fa -q Hap_2/hap.chr_level.fa -f one-to-one -s 50000 --pi 90 -o mashmap.out\n\n# 2. Generate SAK instructions\nsak_generation -1 Hap_1/inter_chr.tsv -2 Hap_2/inter_chr.tsv -r Hap_1 -q Hap_2 -a corrected.agp -m mashmap.out -o tagged_pairs/\n\n# 3. Apply reorientation using gfastats\ngfastats Hap_2/tmpnamed.fa -k tagged_pairs/reversing_renaming.sak -o Hap_2/hap2.reoriented.renamed.fasta\n```\n\n## Expert Tips and Best Practices\n\n*   **Automated Pipeline**: For most standard VGP workflows, use the provided wrapper script `curation_2.0_pipe.sh` to run the entire process in one command.\n    ```bash\n    sh curation_2.0_pipe.sh -f <combined.fasta> -a <curated.agp> -s <Heterogametic_Chr>\n    ```\n*   **Temporary Suffixes**: When reorienting Haplotype 2, always add a temporary suffix (e.g., `_oldname`) to the FASTA headers before running `sak_generation` and `gfastats`. This prevents naming collisions during the renaming process.\n*   **Unloc Handling**: The `split_agp` tool automatically handles \"unlocs\" (unlocalized scaffolds). Ensure you use the `hap.unlocs.no_hapdups.agp` output for subsequent steps to ensure these are correctly placed.\n*   **Heterogametic Chromosomes**: When running the full pipeline or `sak_generation`, specify the heterogametic chromosome (e.g., `X`, `Y`, `Z`, or `W`) using the `-s` flag to ensure sex chromosomes are handled correctly during homology mapping.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| chromosome_assignment | Modify scaffold names to reflect chromosomal assignment. |\n| filter_mashmap_with_tagged_pairs | Filter Mashmap output to keep only Scaffolds paired with the tags Hap_1 and Hap_2 |\n| split_agp | Correct AGP for sequence lengths, split the agp per haplotype, assign unlocs and remove duplicated haplotigs |\n\n## Reference documentation\n- [Process Curated Genome Assembly README](./references/github_com_vgl-hub_vgl-curation_blob_main_README.md)\n- [Tool Usage and Pipeline Details](./references/github_com_vgl-hub_vgl-curation_blob_main_README.rst.md)\n- [Version 1.1 Bug Fixes and Technical Details](./references/github_com_vgl-hub_vgl-curation_blob_main_CHANGES.md)",
+  "skill_front_matter": {
+    "name": "vgp-processcuration",
+    "description": "The vgp-processcuration toolkit automates the final processing of curated genome assemblies to generate submission-ready files. Use when user asks to split AGP files by haplotype, reconcile FASTA sequences with curation instructions, assign chromosome names, or reorient secondary haplotypes.",
+    "homepage": "https://github.com/vgl-hub/vgl-curation"
+  }
+}

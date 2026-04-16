@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-coexnet",
+  "category": "bioconductor",
+  "name": "bioconductor-coexnet",
+  "description": "\"bioconductor-coexnet constructs and analyzes co-expression networks from raw microarray data. Use when user asks to download GEO datasets, normalize AffyBatch data, identify differentially expressed genes, determine network thresholds, or build and compare co-expression and protein-protein interaction networks.\"",
+  "overview": "The `coexnet` package provides a complete workflow for transforming raw microarray data into biological networks. It handles the entire pipeline from data acquisition (GEO) and normalization to advanced network analysis, including the identification of Common Connection Patterns (CCP) across different phenotypes.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/coexnet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "coexnet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/coexnet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-coexnet\n\nname: bioconductor-coexnet\ndescription: Analysis and construction of co-expression networks from microarray data. Use this skill to download GEO datasets, normalize raw AffyBatch data, identify differentially expressed genes (SAM/ACDE), determine optimal network thresholds, and build/compare co-expression or PPI networks.\n\n## Overview\n\nThe `coexnet` package provides a complete workflow for transforming raw microarray data into biological networks. It handles the entire pipeline from data acquisition (GEO) and normalization to advanced network analysis, including the identification of Common Connection Patterns (CCP) across different phenotypes.\n\n## Core Workflow\n\n### 1. Data Acquisition and Preparation\nDownload raw data and chip information from GEO using GSE and GPL identifiers.\n\n```R\nlibrary(coexnet)\n\n# Download raw .CEL files and .soft chip info\ngetInfo(GSE = \"GSE8216\", GPL = \"GPL2025\", directory = \".\")\n\n# Load raw data into an AffyBatch object\n# Note: Ensure the directory contains the GSE folder created by getInfo\naffy <- getAffy(GSE = \"GSE8216\", directory = \".\")\n\n# Map probesets to Gene Symbols/IDs\ngene_table <- geneSymbol(GPL = \"GPL2025\", directory = \".\")\n# Clean table: remove NAs and empty IDs\ngene_table <- na.omit(gene_table)\ngene_table <- gene_table[gene_table$ID != \"\", ]\n```\n\n### 2. Normalization and Expression Matrix\nConvert raw probe data into a summarized expression matrix.\n\n```R\n# Normalize using 'rma' or 'vsn'\n# SummaryMethod can be 'median' or 'max' (representative probeset)\nexp_matrix <- exprMat(affy = affy, \n                      genes = gene_table, \n                      NormalizeMethod = \"rma\", \n                      SummaryMethod = \"median\", \n                      BatchCorrect = FALSE)\n```\n\n### 3. Differential Expression Analysis\nIdentify significant genes to reduce network complexity.\n\n```R\n# Define treatment vector (0 for control, 1 for case)\ngroup_vec <- c(rep(0, 10), rep(1, 10))\n\n# Methods: \"sam\" (Significance Analysis of Microarrays) or \"acde\"\ndiff_genes <- difExprs(expData = exp_matrix, \n                       treatment = group_vec, \n                       fdr = 0.05, \n                       DifferentialMethod = \"sam\")\n```\n\n### 4. Network Construction\nDetermine the statistical threshold and build the adjacency network.\n\n```R\n# Find optimal threshold based on Clustering Coefficient and Degree Distribution\nthreshold_val <- findThreshold(expData = diff_genes, method = \"correlation\")\n\n# Create igraph object\nnet <- createNet(expData = diff_genes, \n                 threshold = threshold_val, \n                 method = \"correlation\")\n\n# Visualize\nplot(net)\n```\n\n### 5. Network Comparison and PPI\nCompare multiple networks or integrate Protein-Protein Interaction data from STRING.\n\n```R\n# Find Common Connection Patterns (CCP) - shared connected subgraphs\ncommon_net <- CCP(net1, net2)\n\n# Find shared solitary nodes (components present in both but not connected)\nshared_nodes <- sharedComponents(net1, net2)\n\n# Build a PPI network from a list of Gene Symbols\nppi <- ppiNet(molecularIDs = c(\"FN1\", \"HAMP\", \"ILK\"), \n              evidence = c(\"neighborhood\", \"experiments\"))\n```\n\n## Tips and Best Practices\n- **Memory Management**: `vsn` normalization can be computationally intensive for large datasets; `rma` is generally faster.\n- **ID Mapping**: If a probeset matches multiple genes, `coexnet` joins them with a hyphen (e.g., \"GENEA-GENEB\").\n- **Thresholding**: Use `findThreshold` rather than arbitrary values to ensure the resulting network follows biological network assumptions (non-normal degree distribution).\n- **Batch Effects**: If samples were processed at different times, set `BatchCorrect = TRUE` in `exprMat` to utilize scan dates for correction.\n\n## Reference documentation\n- [coexnet](./references/coexnet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-coexnet",
+    "description": "bioconductor-coexnet constructs and analyzes co-expression networks from raw microarray data. Use when user asks to download GEO datasets, normalize AffyBatch data, identify differentially expressed genes, determine network thresholds, or build and compare co-expression and protein-protein interaction networks.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/coexnet.html"
+  }
+}

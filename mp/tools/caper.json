@@ -1,0 +1,63 @@
+{
+  "id": "caper",
+  "category": "CLI",
+  "name": "caper",
+  "description": "Caper is a Python-based wrapper for the Cromwell engine that simplifies running and managing WDL pipelines across various computing backends. Use when user asks to initialize a workflow environment, run or submit WDL pipelines, manage HPC leader jobs, or handle file localization between local and cloud storage.",
+  "overview": "Caper (Cromwell Assisted Pipeline ExecutoR) is a Python-based wrapper for the Cromwell workflow engine. It simplifies the process of running WDL (Workflow Description Language) pipelines by automatically handling backend configuration, input file composition, and data localization. It allows users to seamlessly move files between local storage, S3, Google Storage, and HTTP URLs while executing tasks in Docker, Singularity, or Conda environments.",
+  "homepage": "https://github.com/ENCODE-DCC/caper",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/caper/overview",
+  "github": "https://github.com/ENCODE-DCC/caper",
+  "conda_downloads": "54.1K",
+  "conda_downloads_num": 54100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "caper_init",
+      "caper_run",
+      "caper_server",
+      "caper_submit",
+      "caper_abort",
+      "caper_unhold",
+      "caper_list",
+      "caper_metadata",
+      "caper_troubleshoot",
+      "caper_debug"
+    ],
+    "description": "Initialize Caper for a given platform.",
+    "docker_image": "quay.io/biocontainers/caper:1.1.0--py_0",
+    "homepage": "https://github.com/ENCODE-DCC/caper",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/caper/overview",
+    "github": "https://github.com/ENCODE-DCC/caper",
+    "conda_downloads": "54.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "caper_abort.cwl",
+    "caper_debug.cwl",
+    "caper_init.cwl",
+    "caper_list.cwl",
+    "caper_metadata.cwl",
+    "caper_run.cwl",
+    "caper_server.cwl",
+    "caper_submit.cwl",
+    "caper_troubleshoot.cwl",
+    "caper_unhold.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# caper\n\n## Overview\n\nCaper (Cromwell Assisted Pipeline ExecutoR) is a Python-based wrapper for the Cromwell workflow engine. It simplifies the process of running WDL (Workflow Description Language) pipelines by automatically handling backend configuration, input file composition, and data localization. It allows users to seamlessly move files between local storage, S3, Google Storage, and HTTP URLs while executing tasks in Docker, Singularity, or Conda environments.\n\n## Core Workflows\n\n### 1. Initialization\nBefore running pipelines, initialize Caper for your specific environment to generate the default configuration file (`~/.caper/default.conf`) and download required Cromwell/Womtool JARs.\n\n```bash\n# Supported backends: local, slurm, sge, pbs, lsf, gcp, aws\ncaper init <backend>\n```\n\n### 2. Running Workflows\nThere are two primary ways to execute a WDL:\n\n**Run Mode (Single Workflow):**\nBest for testing or one-off runs.\n```bash\ncaper run workflow.wdl -i inputs.json --docker\n```\n\n**Server Mode (Production/Multiple Workflows):**\nStart a persistent server and submit jobs to it.\n```bash\n# Start the server in one session\ncaper server\n\n# Submit jobs in another session\ncaper submit workflow.wdl -i inputs.json -s \"my_experiment_label\"\n```\n\n### 3. HPC Submission (Leader Job Pattern)\nOn clusters (SLURM, SGE, etc.), use the `hpc` subcommand to submit Caper as a \"leader job\" that manages child task submissions.\n\n```bash\ncaper hpc submit workflow.wdl -i inputs.json --singularity --leader-job-name experiment_v1\n```\n\n## Expert Tips and Best Practices\n\n### File Localization and Deepcopy\nCaper automatically transfers remote URIs (gs://, s3://, http://) to the target backend's temporary directory.\n- **Deepcopy**: Enabled by default. It recursively copies all files defined in `.json`, `.tsv`, and `.csv` inputs to the remote storage.\n- **Disable Deepcopy**: Use `--no-deepcopy` if you want to prevent automatic transfers.\n\n### Environment Management\n- **Singularity on HPC**: Most HPCs do not allow Docker. Use `--singularity` to run tasks in containers.\n- **Conda**: Use `--conda <env_name>`. Caper runs `conda run -n` internally, so you do not need to activate the environment manually.\n- **Precedence**: Environments defined in the WDL task's `runtime` section will always override CLI flags like `--docker` or `--singularity`.\n\n### Call-Caching and Resuming\nTo reuse outputs from previous successful runs and resume failed workflows:\n- Use a persistent database: `--file-db <path_to_db_file>`.\n- If you encounter connection errors with multiple runs, ensure you are using a `caper server` or specify unique `--file-db` paths per run.\n\n### Monitoring and Troubleshooting\n- **Labeling**: Always use `-s` or `--str-label` when submitting. This allows you to search and manage workflows by a human-readable string instead of a long UUID.\n- **Listing**: `caper list <label_or_uuid>` (supports wildcards like `*`).\n- **Debugging**: If a workflow fails, use the debug command to parse metadata and identify the specific task failure.\n  ```bash\n  caper debug <uuid_or_label>\n  ```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| caper abort | List of workflow IDs to find matching workflows to commit a specified action (list, metadata and abort). Wildcards (* and ?) are allowed. |\n| caper debug | Debug workflows |\n| caper list | List workflows, metadata, and abort workflows. |\n| caper metadata | List of workflow IDs to find matching workflows to commit a specified action (list, metadata and abort). |\n| caper run | Run a WDL script with Caper |\n| caper server | Start Caper server |\n| caper submit | Submit a WDL workflow to Caper. |\n| caper troubleshoot | List of workflow IDs to find matching workflows to commit a specified action (list, metadata and abort). Wildcards (* and ?) are allowed. |\n| caper unhold | List of workflow IDs to find matching workflows to commit a specified action (list, metadata and abort). Wildcards (* and ?) are allowed. |\n| caper_init | Initialize Caper for a given platform. |\n\n## Reference documentation\n- [Caper README](./references/github_com_ENCODE-DCC_caper_blob_master_README.md)\n- [Caper Detailed Usage](./references/github_com_ENCODE-DCC_caper_blob_master_DETAILS.md)",
+  "skill_front_matter": {
+    "name": "caper",
+    "description": "Caper is a Python-based wrapper for the Cromwell engine that simplifies running and managing WDL pipelines across various computing backends. Use when user asks to initialize a workflow environment, run or submit WDL pipelines, manage HPC leader jobs, or handle file localization between local and cloud storage.",
+    "homepage": "https://github.com/ENCODE-DCC/caper"
+  }
+}

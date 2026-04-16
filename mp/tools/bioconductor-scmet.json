@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scmet",
+  "category": "bioconductor",
+  "name": "bioconductor-scmet",
+  "description": "This tool uses Bayesian modeling to quantify mean methylation and biological overdispersion in single-cell DNA methylation data. Use when user asks to identify highly variable features, perform differential methylation testing, perform differential variability testing, or model sparse single-cell DNA methylation data.",
+  "overview": "scMET is a Bayesian framework designed for sparse single-cell DNA methylation data. It uses a hierarchical beta-binomial (BB) model coupled with a generalized linear model (GLM) to disentangle technical noise from biological variability. It captures a mean-overdispersion trend to derive \"residual overdispersion\" ($\\epsilon$), which identifies cell-to-cell variability not confounded by mean methylation levels.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scMET.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/andreaskapou/scMET",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scMET"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scMET.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/andreaskapou/scMET",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scmet\n\nname: bioconductor-scmet\ndescription: Bayesian modelling of single-cell DNA methylation (scBS-seq) data to quantify mean methylation and biological overdispersion. Use this skill to identify highly variable features (HVFs), perform differential methylation (DM) and differential variability (DV) testing, and handle sparse CpG coverage by sharing information across cells and genomic features.\n\n# bioconductor-scmet\n\n## Overview\nscMET is a Bayesian framework designed for sparse single-cell DNA methylation data. It uses a hierarchical beta-binomial (BB) model coupled with a generalized linear model (GLM) to disentangle technical noise from biological variability. It captures a mean-overdispersion trend to derive \"residual overdispersion\" ($\\epsilon$), which identifies cell-to-cell variability not confounded by mean methylation levels.\n\n## Core Workflow\n\n### 1. Data Preparation\nscMET requires data in a long-format `data.table` or a `SingleCellExperiment` object.\n\n**Input Format (data.table):**\n- `Feature`: Genomic region ID.\n- `Cell`: Cell ID.\n- `total_reads`: Total CpG sites covered ($n_{ij}$).\n- `met_reads`: Number of methylated CpG sites ($Y_{ij}$).\n\n**Optional Covariates (X):**\nA matrix where rows are features and columns are covariates (e.g., CpG density). The first column must be an intercept (all 1s).\n\n### 2. Model Inference\nUse the `scmet` function to estimate parameters.\n\n```r\nlibrary(scMET)\n\n# Using Variational Bayes (VB) for large datasets\nfit_obj <- scmet(Y = scmet_dt$Y, X = scmet_dt$X, L = 4, iter = 20000)\n\n# Using MCMC for smaller datasets (more stable/accurate)\nfit_obj <- scmet(Y = scmet_dt$Y, X = scmet_dt$X, L = 4, use_mcmc = TRUE)\n```\n- `L`: Number of radial basis functions for the mean-overdispersion trend.\n- `iter`: Number of iterations (recommend 20,000 for VB convergence).\n\n### 3. Feature Selection (HVF)\nIdentify highly variable features based on residual overdispersion ($\\epsilon$).\n\n```r\n# Identify HVFs\nfit_obj <- scmet_hvf(scmet_obj = fit_obj, \n                     delta_e = 0.75, \n                     evidence_thresh = 0.8, \n                     efdr = 0.1)\n\n# View summary\nhead(fit_obj$hvf$summary)\n```\n\n### 4. Differential Analysis\nCompare two groups (e.g., Group A vs Group B) for differences in mean (DM) or variability (DV).\n\n```r\n# 1. Fit models for each group separately\nfit_A <- scmet(Y = data_A, X = X_A, iter = 20000)\nfit_B <- scmet(Y = data_B, X = X_B, iter = 20000)\n\n# 2. Run differential test\ndiff_obj <- scmet_differential(obj_A = fit_A, obj_B = fit_B,\n                               evidence_thresh_m = 0.7,\n                               evidence_thresh_e = 0.7,\n                               group_label_A = \"A\",\n                               group_label_B = \"B\")\n\n# Access results\nhead(diff_obj$diff_mu_summary)      # Mean differences\nhead(diff_obj$diff_epsilon_summary) # Variability differences\n```\n\n### 5. Visualization\nscMET provides built-in plotting functions:\n- `scmet_plot_mean_var()`: Visualize the mean-overdispersion trend.\n- `scmet_plot_volcano()`: Volcano plots for differential testing.\n- `scmet_plot_ma()`: MA plots for differential testing.\n- `scmet_plot_efdr_efnr_grid()`: Calibration of evidence thresholds.\n\n## Interoperability with SingleCellExperiment\nConvert between formats to integrate with other Bioconductor tools.\n\n```r\n# scMET to SCE\nsce_obj <- scmet_to_sce(Y = scmet_dt$Y, X = scmet_dt$X)\n\n# SCE to scMET\nscmet_input <- sce_to_scmet(sce = sce_obj)\n```\nNote: The SCE object stores methylated counts in the `met` assay and total counts in the `total` assay.\n\n## Tips for Success\n- **Convergence**: Always check the ELBO plot or messages. If VB does not converge, increase `iter`.\n- **Shrinkage**: scMET performs better than Maximum Likelihood Estimation (MLE) because it shrinks feature-specific estimates toward the population trend, which is critical for sparse data.\n- **Residual Overdispersion**: Use `epsilon` rather than `gamma` for clustering or HVF selection to avoid bias from mean methylation levels.\n\n## Reference documentation\n- [scMET Bayesian modelling of DNA methylation heterogeneity at single-cell resolution](./references/scMET_vignette.Rmd)\n- [scMET analysis using synthetic data](./references/scMET_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scmet",
+    "description": "This tool uses Bayesian modeling to quantify mean methylation and biological overdispersion in single-cell DNA methylation data. Use when user asks to identify highly variable features, perform differential methylation testing, perform differential variability testing, or model sparse single-cell DNA methylation data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scMET.html"
+  }
+}

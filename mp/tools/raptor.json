@@ -1,0 +1,50 @@
+{
+  "id": "raptor",
+  "category": "CLI",
+  "name": "raptor",
+  "description": "Raptor is a bioinformatics tool that performs large-scale genomic sequence searches against indexed datasets using k-mer content. Use when user asks to prepare sequence data, layout hierarchical structures, build Interleaved Bloom Filter indexes, or search queries against genomic bins.",
+  "overview": "Raptor is a specialized bioinformatics tool designed to handle the \"needle in a haystack\" problem for genomic sequences. It allows users to determine which \"bins\" (samples, references, or genomes) contain a specific query sequence based on k-mer content. It is particularly effective for large-scale datasets where traditional alignment is too slow. The tool operates through a multi-step pipeline: optionally preprocessing data, defining a layout for hierarchical indexing, building the index, and f",
+  "homepage": "https://github.com/seqan/raptor",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/raptor/overview",
+  "github": "https://github.com/seqan/raptor",
+  "conda_downloads": "18.3K",
+  "conda_downloads_num": 18300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "raptor_See",
+      "raptor_build",
+      "raptor_The",
+      "raptor_specified",
+      "raptor_subcommand"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/raptor:3.0.1--haf24da9_4",
+    "homepage": "https://github.com/seqan/raptor",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/raptor/overview",
+    "github": "https://github.com/seqan/raptor",
+    "conda_downloads": "18.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "raptor_build.cwl",
+    "raptor_subcommand.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# raptor\n\n## Overview\nRaptor is a specialized bioinformatics tool designed to handle the \"needle in a haystack\" problem for genomic sequences. It allows users to determine which \"bins\" (samples, references, or genomes) contain a specific query sequence based on k-mer content. It is particularly effective for large-scale datasets where traditional alignment is too slow. The tool operates through a multi-step pipeline: optionally preprocessing data, defining a layout for hierarchical indexing, building the index, and finally searching against it.\n\n## Core Workflows\n\n### HIBF Workflow (Recommended)\nThe Hierarchical Interleaved Bloom Filter is the preferred index type for most datasets, especially those with unevenly sized bins.\n1. **Prepare**: `raptor prepare --input <files.txt> --output <dir>` (Optional: filters k-mers by abundance).\n2. **Layout**: `raptor layout --input <minimiser.list> --output layout.txt` (Determines the hierarchical structure).\n3. **Build**: `raptor build --input layout.txt --output index.hibf`.\n4. **Search**: `raptor search --index index.hibf --query <query.fasta> --output search.out`.\n\n### IBF Workflow\nUse the standard Interleaved Bloom Filter for small numbers of bins (≤ 128) or evenly sized datasets.\n1. **Build**: `raptor build --input <files.txt> --output index.ibf`.\n2. **Search**: `raptor search --index index.ibf --query <query.fasta> --output search.out`.\n\n## Command Reference & Best Practices\n\n### 1. Data Preparation (`raptor prepare`)\n*   **Input Format**: A text file where each line contains paths to sequence data. Multiple paths on one line (separated by whitespace) are treated as a single bin.\n*   **K-mer Cutoffs**: Use `--use-filesize-dependent-cutoff` to automatically apply Mantis-based filtering (e.g., 10x for 1GiB files) to remove sequencing errors.\n*   **Persistence**: If a run crashes, rerunning the same command skips already processed files.\n\n### 2. Index Layout (`raptor layout`)\n*   **Tmax**: The maximum number of technical bins. A good default is approximately the square root of the number of samples, rounded to the next multiple of 64.\n*   **Optimization**: Use `--determine-best-tmax` to let Raptor calculate the most efficient layout for your specific data distribution.\n\n### 3. Index Building (`raptor build`)\n*   **K-mer vs. Minimisers**: \n    *   Use `(w,k)` minimisers (default recommendation: `w-k=4`) for significantly smaller index sizes and faster runtimes.\n    *   Use `(k,k)` canonical k-mers for exact thresholding when searching with a specific number of errors.\n*   **False Positive Rate**: The default `--fpr 0.05` is balanced. Lowering this reduces false positives but increases the index size on disk.\n\n### 4. Searching (`raptor search`)\n*   **Thresholding**:\n    *   `--error <N>`: Search allowing a specific number of errors (mutually exclusive with `--threshold`).\n    *   `--threshold <0.0-1.0>`: Search requiring a specific ratio of k-mers to be present (e.g., `0.7` for 70%).\n*   **Performance**: Use `--cache-thresholds` to save computed thresholds to disk, speeding up subsequent searches against the same index.\n*   **Query Length**: If your queries have high variance in length, provide `--query_length` to ensure accurate threshold calculations.\n\n## Expert Tips\n*   **Memory Management**: If `raptor prepare` fails due to RAM limits, reduce the `--threads` count.\n*   **HIBF vs IBF**: While IBF is simpler, HIBF is almost always superior in real-world scenarios where bin sizes vary significantly.\n*   **K-mer Lemma**: When allowing errors (`e`), ensure `k` is small enough that `|query| - k + 1 - (k * e)` is still positive. For 100bp reads and 2 errors, `k=20` is a safe maximum.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| raptor build | Constructs a Raptor index. |\n| raptor_subcommand | Please specify which sub-program you want to use: one of [build, layout, prepare, search, upgrade]. |\n\n## Reference documentation\n- [Quickstart Guide](./references/docs_seqan_de_raptor_main_usage_quickstart.html.md)\n- [Raptor Prepare](./references/docs_seqan_de_raptor_main_usage_prepare.html.md)\n- [Raptor Layout](./references/docs_seqan_de_raptor_main_usage_layout.html.md)\n- [Raptor Build](./references/docs_seqan_de_raptor_main_usage_build.html.md)\n- [Raptor Search](./references/docs_seqan_de_raptor_main_usage_search.html.md)",
+  "skill_front_matter": {
+    "name": "raptor",
+    "description": "Raptor is a bioinformatics tool that performs large-scale genomic sequence searches against indexed datasets using k-mer content. Use when user asks to prepare sequence data, layout hierarchical structures, build Interleaved Bloom Filter indexes, or search queries against genomic bins.",
+    "homepage": "https://github.com/seqan/raptor"
+  }
+}

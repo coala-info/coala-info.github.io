@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ncgtw",
+  "category": "bioconductor",
+  "name": "bioconductor-ncgtw",
+  "description": "The ncGTW package provides a non-rigid alignment algorithm for LC-MS data that uses individualized warping functions and sample acquisition order to correct retention time drift. Use when user asks to align LC-MS data, detect misaligned features in xcms results, or perform refined peak filling using graphical time warping.",
+  "overview": "The `ncGTW` package provides an alignment algorithm for LC-MS data that addresses the limitations of global warping functions. Unlike standard methods that assume all m/z bins in a sample share the same warping function, `ncGTW` uses individualized warping for different compounds and incorporates the sample acquisition order (run order) to model RT drift more accurately. It is specifically designed to work alongside `xcms` to identify misaligned features and provide refined warping functions tha",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ncGTW.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ChiungTingWu/ncGTW",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ncGTW"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ncGTW.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ChiungTingWu/ncGTW",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ncgtw\n\n## Overview\n\nThe `ncGTW` package provides an alignment algorithm for LC-MS data that addresses the limitations of global warping functions. Unlike standard methods that assume all m/z bins in a sample share the same warping function, `ncGTW` uses individualized warping for different compounds and incorporates the sample acquisition order (run order) to model RT drift more accurately. It is specifically designed to work alongside `xcms` to identify misaligned features and provide refined warping functions that significantly improve the quality of downstream analysis like peak-filling.\n\n## Workflow and Key Functions\n\n### 1. Data Preparation and RT Structure\nTo use `ncGTW` effectively, samples must be ordered by their actual acquisition time.\n\n```r\nlibrary(xcms)\nlibrary(ncGTW)\n\n# Ensure file paths are sorted by run order\n# Example: sorting based on an index in the filename\nfile_paths <- list.files(path, pattern = \"mzxml\", full.names = TRUE)\n# ... logic to sort file_paths by acquisition order ...\n```\n\n### 2. XCMS Preprocessing\n`ncGTW` requires two `xcms` grouping results with different bandwidth (`bw`) parameters to detect misalignments.\n\n```r\n# Standard xcms workflow\nds <- xcmsSet(file_paths, method=\"centWave\", ppm=ppm, peakwidth=c(min, max))\nagds <- retcor(group(ds, bw=RT_drift_max), missing=5)\n\n# Create two grouping versions for detection\n# bwLarge: expected maximal RT drift\n# bwSmall: near RT sampling resolution (e.g., 0.3)\nxcmsLargeWin <- group(agds, bw=bwLarge)\nxcmsSmallWin <- group(agds, bw=bwSmall, minfrac=0)\n```\n\n### 3. Misaligned Feature Detection\nIdentify features that were incorrectly grouped or split by `xcms`.\n\n```r\n# Detect misaligned features\nexcluGroups <- misalignDetect(xcmsLargeWin, xcmsSmallWin, ppm)\n\n# Load raw profiles for the detected features\nncGTWinputs <- loadProfile(file_paths, excluGroups)\n\n# Optional: Visualize misalignments\nplotGroup(ncGTWinputs[[1]], xcmsLargeWin@rt$corrected, ind=1)\n```\n\n### 4. Realignment with ncGTW\nPerform the graphical time warping alignment on the detected features.\n\n```r\nncGTWparam <- new(\"ncGTWparam\")\nncGTWoutputs <- vector('list', length(ncGTWinputs))\n\n# Align features (supports parallel computing via bpParam)\nfor (n in seq_along(ncGTWinputs)) {\n    ncGTWoutputs[[n]] <- ncGTWalign(ncGTWinputs[[n]], xcmsLargeWin, \n                                    parSamp=5, ncGTWparam=ncGTWparam)\n}\n```\n\n### 5. Integrating Results back to XCMS\nGenerate new warping functions and update the `xcmsSet` object.\n\n```r\nncGTWres <- xcmsLargeWin\nfor (n in seq_along(ncGTWinputs)) {\n    adjustRes <- adjustRT(ncGTWres, ncGTWinputs[[n]], ncGTWoutputs[[n]], ppm)\n    peaks(ncGTWres) <- ncGTWpeaks(adjustRes) # Update peak locations\n    # Store corrected RTs if needed for plotting\n}\n```\n\n### 6. Improved Peak Filling\nRefined warping functions lead to more accurate peak filling. Note that `ncGTW` provides a specific version of `fillPeaksChromPar` to handle compound-specific warping.\n\n```r\n# Replace xcms internal function with ncGTW version\nassignInNamespace(\"fillPeaksChromPar\", ncGTW:::fillPeaksChromPar, ns=\"xcms\")\n\n# Perform peak filling with improved RT alignment\nncGTWresFilled <- fillPeaks(ncGTWres)\n```\n\n## Tips for Success\n- **Sample Order**: The algorithm relies heavily on the \"neighbor-wise\" constraint. If the sample order does not match the acquisition order, the alignment quality will degrade.\n- **Parallelization**: For datasets with >100 samples, use the `parSamp` and `bpParam` arguments in `ncGTWalign` to split samples into sub-groups for efficiency.\n- **Validation**: Use `plotGroup()` before and after realignment to visually confirm that the extracted ion chromatograms (EICs) are better aligned.\n- **CV Comparison**: Use `compCV()` to compare the coefficient of variation between standard `xcms` results and `ncGTW` results; a lower CV typically indicates better alignment and peak filling.\n\n## Reference documentation\n- [ncGTW User Manual](./references/ncGTW.md)\n- [ncGTW R Markdown Source](./references/ncGTW.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-ncgtw",
+    "description": "The ncGTW package provides a non-rigid alignment algorithm for LC-MS data that uses individualized warping functions and sample acquisition order to correct retention time drift. Use when user asks to align LC-MS data, detect misaligned features in xcms results, or perform refined peak filling using graphical time warping.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ncGTW.html"
+  }
+}

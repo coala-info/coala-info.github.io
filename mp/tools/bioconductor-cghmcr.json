@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cghmcr",
+  "category": "bioconductor",
+  "name": "bioconductor-cghmcr",
+  "description": "This tool identifies recurrent genomic regions of gain or loss across multiple samples using segmented copy number data. Use when user asks to identify minimum common regions, calculate segment gain or loss scores, or analyze recurrent copy number alterations across a cohort.",
+  "overview": "The `cghMCR` package identifies genomic regions showing recurrent gains or losses across multiple samples. It is designed to work with segmented data (e.g., from the `DNAcopy` package) rather than probe-level data, making it efficient for high-density arrays. It provides two primary workflows:\n1.  **SGOL (Segment Gain Or Loss):** A modified GISTIC-like approach that calculates scores for genes or regions based on the frequency and magnitude of alterations.\n2.  **MCR (Minimum Common Regions):** A",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cghMCR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cghmcr/overview",
+  "github": "N/A",
+  "conda_downloads": "39.4K",
+  "conda_downloads_num": 39400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cghMCR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cghMCR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cghmcr/overview",
+    "github": "N/A",
+    "conda_downloads": "39.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cghmcr\n\nname: bioconductor-cghmcr\ndescription: Identify genomic regions of interest (ROI) showing common gains or losses across multiple samples using copy number data (arrayCGH/SNP). Use when analyzing segmented DNA copy number data to find Minimum Common Regions (MCR) or calculating Segment Gain Or Loss (SGOL) scores across a cohort.\n\n# bioconductor-cghmcr\n\n## Overview\n\nThe `cghMCR` package identifies genomic regions showing recurrent gains or losses across multiple samples. It is designed to work with segmented data (e.g., from the `DNAcopy` package) rather than probe-level data, making it efficient for high-density arrays. It provides two primary workflows:\n1.  **SGOL (Segment Gain Or Loss):** A modified GISTIC-like approach that calculates scores for genes or regions based on the frequency and magnitude of alterations.\n2.  **MCR (Minimum Common Regions):** A heuristic approach that identifies the smallest contiguous genomic spans showing a specific recurrence rate across a cohort.\n\n## Typical Workflow\n\n### 1. Data Preparation\n`cghMCR` requires segmented data. If starting from raw log-ratios, use the `DNAcopy` package to generate a `DNAcopy` object.\n\n```r\nlibrary(DNAcopy)\n# Assuming 'cna' is a CNA object from DNAcopy\nsegData <- segment(smooth.CNA(cna))\n```\n\n### 2. Identifying Segment Gain Or Loss (SGOL)\nThis method requires converting the segment list into a matrix format where rows represent genomic features (genes or fragments) and columns represent samples. This is typically done using the `CNTools` package.\n\n```r\nlibrary(CNTools)\nlibrary(cghMCR)\n\n# Convert segment data to a gene-centric matrix\n# geneInfo is a data frame with chrom, start, end, and gene symbols\nconvertedData <- getRS(CNSeg(sampleData), by = \"gene\", geneMap = geneInfo, what = \"median\")\n\n# Calculate SGOL scores\n# threshold: values below -0.2 are losses, above 0.2 are gains\nSGOLScores <- SGOL(convertedData, threshold = c(-0.2, 0.2), method = sum)\n\n# Visualize and extract regions of interest\nplot(SGOLScores)\ngains <- SGOLScores[which(as.numeric(unlist(gol(SGOLScores[, \"gains\"]))) > 20), \"gains\"]\n```\n\n### 3. Identifying Minimum Common Regions (MCR)\nThe MCR approach uses heuristics to join altered segments and identify overlapping regions across samples.\n\n```r\n# Initialize the cghMCR object\n# gapAllowed: max distance (bp) to join adjacent segments\n# alteredLow/High: percentile thresholds for defining an alteration\ncghmcr_obj <- cghMCR(segData, gapAllowed = 500, alteredLow = 0.9, alteredHigh = 0.9, recurrence = 50)\n\n# Identify MCRs\nmcrs <- MCR(cghmcr_obj)\n\n# Optional: Merge probe IDs into the MCR results\nmcrs_with_probes <- mergeMCRProbes(mcrs, as.data.frame(segData[[\"data\"]]))\n```\n\n## Key Functions\n\n- `cghMCR()`: Constructor for the cghMCR class. Takes a `DNAcopy` object or a data frame of segments.\n- `MCR()`: Extracts the minimum common regions from a `cghMCR` object.\n- `SGOL()`: Calculates Segment Gain Or Loss scores.\n- `gol()`: Accessor for gain/loss scores within an SGOL object.\n- `mergeMCRProbes()`: Maps specific probe identifiers back to the identified MCR regions.\n\n## Tips for Success\n\n- **Input Format:** Ensure your segment data contains the standard columns: `ID`, `chrom`, `loc.start`, `loc.end`, `num.mark`, and `seg.mean`.\n- **Thresholding:** The `alteredLow` and `alteredHigh` parameters in `cghMCR` are **percentiles** (0 to 1), not absolute log-ratio values. For example, `0.9` means the top 10% of segments are considered gains.\n- **SGOL Matrix:** When using `SGOL`, the `convertedData` must be a `ReducedSegment` object (from `CNTools`). Ensure the `geneMap` matches the genome build of your data.\n- **Recurrence:** The `recurrence` parameter in `cghMCR` is an integer representing the minimum number of samples that must share the alteration.\n\n## Reference documentation\n\n- [findMCR](./references/findMCR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cghmcr",
+    "description": "This tool identifies recurrent genomic regions of gain or loss across multiple samples using segmented copy number data. Use when user asks to identify minimum common regions, calculate segment gain or loss scores, or analyze recurrent copy number alterations across a cohort.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cghMCR.html"
+  }
+}

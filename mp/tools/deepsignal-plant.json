@@ -1,0 +1,45 @@
+{
+  "id": "deepsignal-plant",
+  "category": "CLI",
+  "name": "deepsignal-plant",
+  "description": "Deepsignal-plant is a deep-learning framework designed to identify DNA methylation patterns in plant genomes using Oxford Nanopore sequencing data. Use when user asks to call methylation modifications, calculate methylation frequencies, or identify 5mC motifs in plant genomic reads.",
+  "overview": "The deepsignal-plant tool is a deep-learning framework designed to identify DNA methylation patterns in plant genomes using Oxford Nanopore Technologies (ONT) reads. It utilizes a Bidirectional Long Short-Term Memory (BiLSTM) network to process signal-level features. This skill guides the user through the multi-step pipeline of basecalling, signal alignment (re-squiggling), modification calling, and frequency calculation.",
+  "homepage": "https://github.com/PengNi/deepsignal-plant",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/deepsignal-plant/overview",
+  "github": "https://github.com/PengNi/deepsignal-plant",
+  "conda_downloads": "13.2K",
+  "conda_downloads_num": 13200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "deepsignal-plant_deepsignal_plant"
+    ],
+    "description": "deepsignal_plant detects base modifications from Nanopore reads of plants, which contains five modules:",
+    "docker_image": "quay.io/biocontainers/deepsignal-plant:0.1.6--pyhdfd78af_0",
+    "homepage": "https://github.com/PengNi/deepsignal-plant",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/deepsignal-plant/overview",
+    "github": "https://github.com/PengNi/deepsignal-plant",
+    "conda_downloads": "13.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "deepsignal-plant_deepsignal_plant.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# deepsignal-plant\n\n## Overview\nThe deepsignal-plant tool is a deep-learning framework designed to identify DNA methylation patterns in plant genomes using Oxford Nanopore Technologies (ONT) reads. It utilizes a Bidirectional Long Short-Term Memory (BiLSTM) network to process signal-level features. This skill guides the user through the multi-step pipeline of basecalling, signal alignment (re-squiggling), modification calling, and frequency calculation.\n\n## Workflow and CLI Patterns\n\n### 1. Pre-processing Requirements\nBefore using deepsignal-plant, raw data must be processed through specific external tools:\n*   **Basecalling**: Use Guppy (v3.6.1+) to generate fastq files and sequencing summaries.\n*   **Format Conversion**: If using multi-read FAST5 files, convert them to single-read format using `multi_to_single_fast5` from the `ont_fast5_api` package.\n*   **Re-squiggling**: Use `tombo resquiggle` to align raw signals to a reference genome. This is a mandatory prerequisite for the `call_mods` step.\n\n### 2. Calling Methylation Modifications\nUse the `call_mods` command to predict methylation states. This step is computationally intensive and benefits significantly from GPU acceleration.\n\n```bash\nCUDA_VISIBLE_DEVICES=0 deepsignal_plant call_mods \\\n    --input_path /path/to/resquiggled_fast5s/ \\\n    --model_path /path/to/pretrained_model.ckpt \\\n    --result_file output.call_mods.tsv \\\n    --corrected_group RawGenomeCorrected_000 \\\n    --motifs C \\\n    --nproc 30 \\\n    --nproc_gpu 6\n```\n\n**Key Arguments:**\n*   `--motifs`: Set to `C` to call 5mC in all contexts (CG, CHG, CHH) simultaneously.\n*   `--corrected_group`: Must match the group name used during the `tombo resquiggle` step.\n*   `--nproc_gpu`: Number of processes used per GPU; adjust based on VRAM availability.\n\n### 3. Calculating Methylation Frequency\nAfter calling modifications, aggregate the results to determine the methylation frequency at specific genomic sites.\n\n```bash\ndeepsignal_plant call_freq \\\n    --input_path output.call_mods.tsv \\\n    --result_file output.frequency.tsv\n```\n\n### 4. Post-processing: Motif Splitting\nPlant DNA methylation is often analyzed separately by context. Use the provided helper script to split the master frequency file.\n\n```bash\npython /path/to/deepsignal_plant/scripts/split_freq_file_by_5mC_motif.py \\\n    --freqfile output.frequency.tsv\n```\n\n## Expert Tips and Troubleshooting\n\n### Handling VBZ Compression Issues\nIf `tombo` or `deepsignal-plant` fails to read Fast5 files, it is often due to missing VBZ compression plugins. \n1.  Download the `ont-vbz-hdf-plugin`.\n2.  Set the environment variable: `export HDF5_PLUGIN_PATH=/path/to/plugin/usr/local/hdf5/lib/plugin`.\n\n### Resource Optimization\n*   **Memory Management**: For large datasets, use the `--batch_size` parameter (default is often 1024) to prevent GPU out-of-memory (OOM) errors.\n*   **Parallelization**: Balance `--nproc` (CPU processes for data loading) and `--nproc_gpu` (GPU processes for inference). A common ratio is 5:1.\n\n### Model Selection\nEnsure the model matches the pore type and library prep. For R9.4.1 reads in plants, use the `CNN.arabnrice2` model which was trained on *A. thaliana* and *O. sativa* data.\n\n## Reference documentation\n- [DeepSignal-plant GitHub Repository](./references/github_com_PengNi_deepsignal-plant.md)\n- [Bioconda deepsignal-plant Overview](./references/anaconda_org_channels_bioconda_packages_deepsignal-plant_overview.md)",
+  "skill_front_matter": {
+    "name": "deepsignal-plant",
+    "description": "Deepsignal-plant is a deep-learning framework designed to identify DNA methylation patterns in plant genomes using Oxford Nanopore sequencing data. Use when user asks to call methylation modifications, calculate methylation frequencies, or identify 5mC motifs in plant genomic reads.",
+    "homepage": "https://github.com/PengNi/deepsignal-plant"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ebseq",
+  "category": "bioconductor",
+  "name": "bioconductor-ebseq",
+  "description": "This tool performs differential expression analysis for RNA-seq data at both gene and isoform levels using empirical Bayesian models. Use when user asks to identify differentially expressed genes or isoforms, calculate posterior fold changes, or analyze complex multi-condition experimental designs.",
+  "overview": "EBSeq is an R package designed for identifying differentially expressed (DE) genes and isoforms in RNA-seq experiments. It uses an empirical Bayesian hierarchical model that accounts for the increased uncertainty inherent in isoform expression estimation. For isoform-level analysis, it groups isoforms based on the number of constituent isoforms of the parent gene ($I_g$ groups) to model differential variability.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EBSeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ebseq/overview",
+  "github": "N/A",
+  "conda_downloads": "118.7K",
+  "conda_downloads_num": 118700,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EBSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EBSeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ebseq/overview",
+    "github": "N/A",
+    "conda_downloads": "118.7K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ebseq\n\nname: bioconductor-ebseq\ndescription: Differential expression analysis for RNA-seq data at both gene and isoform levels using empirical Bayesian models. Use this skill to identify differentially expressed (DE) genes or isoforms, calculate posterior fold changes, and handle complex multi-condition experimental designs.\n\n# bioconductor-ebseq\n\n## Overview\nEBSeq is an R package designed for identifying differentially expressed (DE) genes and isoforms in RNA-seq experiments. It uses an empirical Bayesian hierarchical model that accounts for the increased uncertainty inherent in isoform expression estimation. For isoform-level analysis, it groups isoforms based on the number of constituent isoforms of the parent gene ($I_g$ groups) to model differential variability.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data must be a matrix of **raw counts** (not normalized).\n```R\nlibrary(EBSeq)\n# Data: G x S matrix (Genes/Isoforms as rows, Samples as columns)\n# Conditions: Factor vector defining sample groups\nConditions <- as.factor(c(\"C1\",\"C1\",\"C2\",\"C2\"))\n```\n\n### 2. Normalization\nCalculate library size factors using median normalization (similar to DESeq).\n```R\nSizes <- MedianNorm(Data)\n```\n\n### 3. Gene-Level DE Analysis (Two Conditions)\n```R\nEBOut <- EBTest(Data = GeneMat, \n                Conditions = Conditions, \n                sizeFactors = Sizes, \n                maxround = 5) # Increase maxround for convergence (e.g., 20)\n\n# Extract results at 5% FDR\nEBDERes <- GetDEResults(EBOut, FDR = 0.05)\n# EBDERes$DEfound contains the list of DE genes\n# EBDERes$PPMat contains Posterior Probabilities (PPEE and PPDE)\n```\n\n### 4. Isoform-Level DE Analysis (Two Conditions)\nRequires an \"Ng\" vector to group isoforms by parent gene complexity.\n```R\n# IsoformNames and IsosGeneNames must be provided\nNgList <- GetNg(IsoformNames, IsosGeneNames)\nIsoNgTrun <- NgList$IsoformNgTrun\n\nIsoEBOut <- EBTest(Data = IsoMat, \n                   NgVector = IsoNgTrun,\n                   Conditions = Conditions, \n                   sizeFactors = Sizes, \n                   maxround = 5)\nIsoEBDERes <- GetDEResults(IsoEBOut, FDR = 0.05)\n```\n\n### 5. Multi-Condition Analysis\nEBSeq can test multiple expression patterns (e.g., C1=C2<C3).\n```R\n# Define possible patterns\nPosParti <- GetPatterns(Conditions)\n\n# Run multi-test\nMultiOut <- EBMultiTest(Data, \n                        NgVector = NULL, # Use NgVector for isoforms\n                        Conditions = Conditions,\n                        AllParti = PosParti, \n                        sizeFactors = Sizes, \n                        maxround = 5)\n\n# Get Posterior Probabilities for each pattern\nMultiPP <- GetMultiPP(MultiOut)\n# MultiPP$MAP provides the Most Likely Pattern for each gene\n```\n\n## Diagnostics and Post-Processing\n\n### Fold Change Calculation\nCalculate posterior fold changes which are more robust for low-count genes.\n```R\n# For two conditions\nGeneFC <- PostFC(EBOut)\n\n# For multiple conditions\nMultiFC <- GetMultiFC(MultiOut)\n```\n\n### Checking Convergence and Fit\nAlways verify that the model parameters have stabilized and the Beta prior fits the data.\n```R\n# Check parameter changes across iterations\nEBOut$Alpha\nEBOut$Beta\n\n# Visual diagnostics\npar(mfrow=c(1,2))\nQQP(EBOut)      # Q-Q plot for Beta prior assumption\nDenNHist(EBOut) # Density plot of empirical vs simulated q's\n```\n\n### Handling Data Without Replicates\nIf no replicates exist, EBSeq estimates variance by pooling genes with similar mean expressions.\n```R\n# Workflow remains the same; EBTest automatically detects lack of replicates\nEBOut.norep <- EBTest(Data = Data.norep, \n                      Conditions = as.factor(c(\"C1\",\"C2\")),\n                      sizeFactors = Sizes.norep, \n                      maxround = 5)\n```\n\n## Tips for Success\n- **Low Expression Filter**: By default, `GetDEResults` is robust, but you can manually filter genes with very low counts (e.g., 75th quantile < 10) to improve power.\n- **Convergence**: If parameters are still shifting significantly at the last iteration, increase `maxround`.\n- **Input Format**: Ensure the input is a `matrix` of raw counts. Use `data.matrix()` after `read.csv()` if necessary.\n- **FDR Control**: To get a list of DE targets at a specific FDR $\\alpha$, filter for `PPDE >= (1 - α)`.\n\n## Reference documentation\n- [EBSeq: An R package for differential expression analysis using RNA-seq data](./references/EBSeq_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ebseq",
+    "description": "This tool performs differential expression analysis for RNA-seq data at both gene and isoform levels using empirical Bayesian models. Use when user asks to identify differentially expressed genes or isoforms, calculate posterior fold changes, or analyze complex multi-condition experimental designs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EBSeq.html"
+  }
+}

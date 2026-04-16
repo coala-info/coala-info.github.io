@@ -1,0 +1,45 @@
+{
+  "id": "sipros",
+  "category": "CLI",
+  "name": "sipros",
+  "description": "Sipros is a bioinformatics toolkit for identifying and quantifying proteins in stable-isotope mass spectrometry-based metaproteomics. Use when user asks to convert RAW files to FT2 format, perform unlabeled protein searches, or quantify isotopic enrichment through stable isotope probing.",
+  "overview": "Sipros is a specialized bioinformatics toolkit designed for stable-isotope mass spectrometry-based metaproteomics. It excels at identifying and quantifying isotopically labeled proteins (SIP-metaproteomics) and performing standard unlabeled searches. The toolkit manages the entire pipeline from vendor-specific RAW file conversion to protein-level False Discovery Rate (FDR) refinement. While Sipros 4 provides legacy support for specific workflows, Sipros 5 is the recommended version for improved ",
+  "homepage": "https://github.com/thepanlab/Sipros4",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/sipros/overview",
+  "github": "https://github.com/thepanlab/Sipros4",
+  "conda_downloads": "1.1K",
+  "conda_downloads_num": 1100,
+  "last_updated": "2025-12-18",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sipros"
+    ],
+    "description": "Sipros tool for processing MS2 or FT2 files.",
+    "docker_image": "quay.io/biocontainers/sipros:5.0.1--hdfd78af_1",
+    "homepage": "https://github.com/thepanlab/Sipros4",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/sipros/overview",
+    "github": "https://github.com/thepanlab/Sipros4",
+    "conda_downloads": "1.1K",
+    "last_updated": "2025-12-18",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "sipros.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# sipros\n\n## Overview\n\nSipros is a specialized bioinformatics toolkit designed for stable-isotope mass spectrometry-based metaproteomics. It excels at identifying and quantifying isotopically labeled proteins (SIP-metaproteomics) and performing standard unlabeled searches. The toolkit manages the entire pipeline from vendor-specific RAW file conversion to protein-level False Discovery Rate (FDR) refinement. While Sipros 4 provides legacy support for specific workflows, Sipros 5 is the recommended version for improved sensitivity, automatic SIP-labeling FDR control, and Data-Independent Acquisition (DIA) support.\n\n## Installation and Environment Setup\n\nSipros is primarily distributed via Bioconda. Because the toolkit relies on a mix of C++, Python 2.7, Mono (.NET), and R, it is best managed through specific Conda environments.\n\n```bash\n# Install Sipros 5 (Recommended)\nconda install bioconda::sipros\n\n# Legacy Sipros 4 Environment\nconda create -n sipros4 bioconda::sipros=4.02\nconda activate sipros4\n\n# Helper Environments\nconda create -n py2 scikit-learn python=2.7\nconda create -n mono -c conda-forge mono\nconda create -n r -c conda-forge -c bioconda r-base r-stringr r-tidyr bioconductor-biostrings\n```\n\n## Core CLI Workflows\n\n### 1. RAW File Conversion\nConvert vendor RAW files to the FT2 format required by Sipros. This requires the Mono environment.\n\n```bash\nconda activate mono\nmono Raxport.exe -i [input_dir] -o [output_dir] -j [threads]\n```\n\n### 2. Unlabeled Search Workflow (Ensemble)\nUsed for standard metaproteomics searches against a FASTA database.\n\n1.  **Search**: Run `SiprosEnsembleOMP` using a configuration file.\n    ```bash\n    export OMP_NUM_THREADS=10\n    SiprosEnsembleOMP -f demo.FT2 -c SiprosEnsembleConfig.cfg -o output_dir\n    ```\n2.  **Post-Processing**: Tabulate, filter, and assemble results.\n    ```bash\n    # Tabulate (Python 2)\n    python sipros_psm_tabulating.py -i output_dir -c config.cfg -o output_dir\n    # Filter\n    python sipros_ensemble_filtering.py -i demo.tab -c config.cfg -o output_dir\n    # Assemble\n    python sipros_peptides_assembling.py -c config.cfg -w output_dir\n    ```\n3.  **FDR Refinement**: Use R to control protein-group FDR.\n    ```bash\n    Rscript refineProteinFDR.R -pro demo.pro.txt -psm demo.psm.txt -fdr 0.005 -o demo\n    ```\n\n### 3. Labeled Search Workflow (SIP)\nUsed for Stable Isotope Probing to quantify isotopic enrichment.\n\n1.  **Generate Configs**: Create specific configuration files for labeled searches.\n    ```bash\n    configGenerator -i SiprosV4Config.cfg -o configs -e C\n    ```\n2.  **Search**: Run `SiprosV4OMP` against a reduced FASTA (often generated from an initial unlabeled search).\n    ```bash\n    SiprosV4OMP -f demo.FT2 -c C13_10000Pct.cfg -o output_dir\n    ```\n3.  **Quantification**: Cluster SIP abundance and quantify per FT2 file.\n    ```bash\n    python ClusterSip.py -c SiprosV4Config.cfg -w output_dir\n    Rscript getLabelPCTinEachFT.R -pro refined.pro.txt -psm demo.psm.txt -thr 5 -o output_prefix\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Version Selection**: Always prefer Sipros 5 for new projects. It offers approximately 3x more labeled identifications than Sipros 4 and handles FDR control automatically.\n*   **Performance**: Use the `OMP_NUM_THREADS` environment variable to control parallelization for the C++ binaries (`SiprosEnsembleOMP`, `SiprosV4OMP`).\n*   **Memory Management**: Metaproteomics databases can be massive. For SIP searches, use `makeDBforLabelSearch.R` to create a reduced FASTA containing only proteins identified in the unlabeled search to save time and memory.\n*   **Configuration**: Use `copyConfigTemplate` to get a baseline configuration file rather than writing one from scratch.\n*   **File Naming**: Ensure FT2 files and configuration files are correctly matched; the scripts often rely on consistent naming conventions within the working directory (`-w` flag).\n\n## Reference documentation\n- [Sipros Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_sipros_overview.md)\n- [Sipros4 GitHub Repository](./references/github_com_thepanlab_Sipros4.md)\n- [Sipros4 Wiki](./references/github_com_thepanlab_Sipros4_wiki.md)",
+  "skill_front_matter": {
+    "name": "sipros",
+    "description": "Sipros is a bioinformatics toolkit for identifying and quantifying proteins in stable-isotope mass spectrometry-based metaproteomics. Use when user asks to convert RAW files to FT2 format, perform unlabeled protein searches, or quantify isotopic enrichment through stable isotope probing.",
+    "homepage": "https://github.com/thepanlab/Sipros4"
+  }
+}

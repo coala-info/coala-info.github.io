@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-epihet",
+  "category": "bioconductor",
+  "name": "bioconductor-epihet",
+  "description": "This tool analyzes epigenetic heterogeneity in cancer cells by calculating diversity metrics and identifying differential loci from DNA methylation data. Use when user asks to calculate heterogeneity metrics like PDR or Shannon entropy, identify differential epigenetic heterogeneity loci, or construct co-epigenetic heterogeneity networks.",
+  "overview": "The `epihet` package is designed to analyze epigenetic heterogeneity by processing phased DNA methylation patterns (epialleles) from bisulfite sequencing data. It calculates three primary metrics:\n1. **Proportion of Discordant Reads (PDR):** The ratio of discordant reads to total reads at a locus.\n2. **Epipolymorphism:** The probability that two randomly sampled epialleles differ.\n3. **Shannon Entropy:** A measure of epiallele diversity/uncertainty at a locus.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/epihet.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epihet/overview",
+  "github": "https://github.com/TheJacksonLaboratory/epihet",
+  "conda_downloads": "20.6K",
+  "conda_downloads_num": 20600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "epihet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/epihet.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epihet/overview",
+    "github": "https://github.com/TheJacksonLaboratory/epihet",
+    "conda_downloads": "20.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-epihet\n\nname: bioconductor-epihet\ndescription: Analysis of epigenetic heterogeneity in cancer cells using DNA methylation data. Use this skill to calculate heterogeneity metrics (PDR, Epipolymorphism, Shannon Entropy), identify differential epigenetic heterogeneity (DEH) loci, and construct co-epigenetic heterogeneity networks from methclone output files.\n\n# bioconductor-epihet\n\n## Overview\nThe `epihet` package is designed to analyze epigenetic heterogeneity by processing phased DNA methylation patterns (epialleles) from bisulfite sequencing data. It calculates three primary metrics:\n1. **Proportion of Discordant Reads (PDR):** The ratio of discordant reads to total reads at a locus.\n2. **Epipolymorphism:** The probability that two randomly sampled epialleles differ.\n3. **Shannon Entropy:** A measure of epiallele diversity/uncertainty at a locus.\n\nThe package provides a complete pipeline from raw data ingestion to statistical analysis, visualization, and network construction.\n\n## Core Workflow\n\n### 1. Data Ingestion and Matrix Building\nThe package starts with compressed text files from `methclone`.\n\n```r\nlibrary(epihet)\n\n# Define file paths and sample IDs\nfiles <- c(\"sample1.methClone_out.gz\", \"sample2.methClone_out.gz\")\nids <- c(\"Sample1\", \"Sample2\")\n\n# Step 1: Create a list of GenomicRanges objects\nGR.List <- makeGR(files = files, ids = ids, cores = 1)\n\n# Step 2: Generate a comparison matrix of shared loci\n# p = 1 means loci must be present in 100% of samples\ncomp.Matrix <- compMatrix(epi.gr = GR.List, readNumber = 60, p = 1)\n```\n\n### 2. Exploratory Data Analysis\nVisualize the distribution and clustering of heterogeneity metrics.\n\n```r\n# Define sample annotations (required for most plots)\nsubtype <- data.frame(Type = c(\"Cancer\", \"Normal\"), row.names = ids)\n\n# Boxplots of heterogeneity values\nepiBox(compare.matrix = comp.Matrix, value = 'epipoly', type = subtype)\n\n# Heatmap of top variable loci\nepiMap(compare.matrix = comp.Matrix, value = 'epipoly', annotate = subtype, loci.percent = 0.05)\n\n# Dimensionality Reduction\nepiPCA(compare.matrix = comp.Matrix, value = 'epipoly', type = subtype)\nepiTSNE(compare.matrix = comp.Matrix, value = 'epipoly', type = subtype)\n```\n\n### 3. Differential Epigenetic Heterogeneity (DEH)\nIdentify loci where heterogeneity significantly differs between groups.\n\n```r\n# Identify DEH loci\ndiff.het.matrix <- diffHet(compare.matrix = comp.Matrix, \n                           value = 'epipoly', \n                           group1 = 'Cancer', \n                           group2 = 'Normal', \n                           subtype = subtype,\n                           het.dif.cutoff = 0.20)\n\n# Visualize results with an MA plot\nepiMA(pval.matrix = diff.het.matrix, padjust.cutoff = 0.05)\n```\n\n### 4. Network Construction (WGCNA-based)\nConstruct co-epigenetic heterogeneity networks to identify modules of co-varying loci or genes.\n\n```r\n# Construct network based on genes annotated by DEH loci\n# Requires a promoter/annotation object\nepi.network <- epiNetwork(node.type = \"gene\", \n                          DEH = diff.het.matrix, \n                          sharedmatrix = comp.Matrix, \n                          value = \"epipoly\", \n                          group = \"Cancer\", \n                          subtype = subtype, \n                          annotation.obj = promoter_granges)\n\n# Visualize module topology\nmodule.topology <- moduleVisual(TOM, \n                                value.matrix = epi.network$epimatrix, \n                                moduleColors = epi.network$module$color, \n                                mymodule = \"turquoise\")\n```\n\n## Key Functions Reference\n- `makeGR()`: Converts methclone files to GenomicRanges.\n- `compMatrix()`: Creates the master matrix for downstream analysis.\n- `summarize()`: Quick correlation check between two samples.\n- `diffHet()`: Performs t-tests or permutation tests (via EntropyExplorer) for differential analysis.\n- `epiPathway()`: Performs pathway enrichment on network modules.\n- `moduleSim()`: Compares module similarity between different cancer subtypes using Jaccard scores.\n\n## Reference documentation\n- [epihet](./references/epihet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-epihet",
+    "description": "This tool analyzes epigenetic heterogeneity in cancer cells by calculating diversity metrics and identifying differential loci from DNA methylation data. Use when user asks to calculate heterogeneity metrics like PDR or Shannon entropy, identify differential epigenetic heterogeneity loci, or construct co-epigenetic heterogeneity networks.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/epihet.html"
+  }
+}

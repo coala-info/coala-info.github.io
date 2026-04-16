@@ -1,0 +1,43 @@
+{
+  "id": "perl-lockfile-simple",
+  "category": "perl",
+  "name": "perl-lockfile-simple",
+  "description": "This tool manages advisory file locking in Perl by creating physical lockfiles containing process IDs and hostnames. Use when user asks to implement file locking, manage stale locks, or handle concurrent file access in NFS environments.",
+  "overview": "This skill provides guidance on implementing the `LockFile::Simple` Perl module. This tool manages advisory file locking by creating physical lockfiles containing the process ID (PID) and optionally the hostname. It is an alternative to system-level locking (like `flock`) and is highly customizable regarding retry logic, stale lock detection, and lockfile naming conventions.",
+  "homepage": "http://metacpan.org/pod/LockFile::Simple",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-lockfile-simple/overview",
+  "github": "N/A",
+  "conda_downloads": "3.4K",
+  "conda_downloads_num": 3400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perl-lockfile-simple"
+    ],
+    "description": "FAIL to generate CWL: perl-lockfile-simple not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/perl-lockfile-simple:0.208--0",
+    "homepage": "http://metacpan.org/pod/LockFile::Simple",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-lockfile-simple/overview",
+    "github": "N/A",
+    "conda_downloads": "3.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# perl-lockfile-simple\n\n## Overview\nThis skill provides guidance on implementing the `LockFile::Simple` Perl module. This tool manages advisory file locking by creating physical lockfiles containing the process ID (PID) and optionally the hostname. It is an alternative to system-level locking (like `flock`) and is highly customizable regarding retry logic, stale lock detection, and lockfile naming conventions.\n\n## Implementation Patterns\n\n### Basic Procedural Interface\nFor simple scripts, import the functional interface. This uses default settings (2s delay, 30 retries, `.lock` extension).\n\n```perl\nuse LockFile::Simple qw(lock trylock unlock);\n\n# Blocking lock: waits until successful or max retries reached\nlock(\"/path/to/data.txt\") or die \"Failed to acquire lock\";\n\n# Critical Section\n# ... perform file operations ...\n\nunlock(\"/path/to/data.txt\");\n\n# Non-blocking attempt\nif (trylock(\"/path/to/config.json\")) {\n    # Success\n    unlock(\"/path/to/config.json\");\n}\n```\n\n### Object-Oriented Configuration\nUse the OO interface when you need to handle NFS environments, custom retry limits, or specific lockfile locations.\n\n```perl\nuse LockFile::Simple;\n\nmy $mgr = LockFile::Simple->make(\n    -autoclean => 1,       # Release locks automatically on exit\n    -max       => 10,      # Retry 10 times\n    -delay     => 5,       # Wait 5s between retries\n    -nfs       => 1,       # Include hostname in lock metadata for NFS\n    -stale     => 1,       # Break locks if the owning PID is dead\n    -hold      => 3600     # Force break locks older than 1 hour\n);\n\n# Using a lock handle (recommended for scoped cleanup)\nif (my $lock = $mgr->lock(\"/shared/storage/file.db\")) {\n    # Do work...\n    $lock->release; \n}\n```\n\n### Custom Lockfile Naming\nBy default, a lock for `file.txt` is `file.txt.lock`. Use `-format` to change this behavior:\n\n- `%f`: Full path of the file being locked.\n- `%D`: Directory of the file.\n- `%F`: Basename of the file.\n- `%p`: PID of the current process.\n\nExample for a centralized lock directory:\n```perl\nmy $mgr = LockFile::Simple->make(-format => '/var/run/applocks/%F.lck');\n```\n\n## Best Practices\n- **Use Autoclean**: Always set `-autoclean => 1` in long-running processes to ensure locks are removed if the script terminates unexpectedly.\n- **NFS Safety**: If the filesystem is mounted via NFS, you **must** set `-nfs => 1`. This ensures the lockfile contains the hostname, preventing PID collisions between different nodes.\n- **Stale Lock Management**: Enable `-stale => 1` to allow the module to check if the process ID recorded in an existing lockfile is still active. This prevents \"deadlock\" situations after a system crash.\n- **Handle Returns**: Always check the return value of `lock()`. It returns a lock handle (true) on success and `undef` on failure.\n\n## Reference documentation\n- [LockFile::Simple Documentation](./references/metacpan_org_pod_LockFile__Simple.md)",
+  "skill_front_matter": {
+    "name": "perl-lockfile-simple",
+    "description": "This tool manages advisory file locking in Perl by creating physical lockfiles containing process IDs and hostnames. Use when user asks to implement file locking, manage stale locks, or handle concurrent file access in NFS environments.",
+    "homepage": "http://metacpan.org/pod/LockFile::Simple"
+  }
+}

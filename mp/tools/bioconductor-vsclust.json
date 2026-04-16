@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-vsclust",
+  "category": "bioconductor",
+  "name": "bioconductor-vsclust",
+  "description": "\"This tool performs variance-sensitive fuzzy c-means clustering on quantitative omics data to identify patterns while accounting for measurement uncertainty. Use when user asks to perform variance-sensitive clustering, estimate the optimal number of clusters, or identify common patterns in replicated omics data.\"",
+  "overview": "`vsclust` is an R package designed to identify common patterns in high-dimensional data while accounting for measurement uncertainty. Unlike standard clustering algorithms, VSClust uses replicated measurements to estimate feature-specific variance, allowing it to down-weight or filter out highly variable features that do not reliably fit a cluster profile.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/vsclust.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vsclust"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/vsclust.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-vsclust\n\nname: bioconductor-vsclust\ndescription: Variance-sensitive clustering (VSClust) for quantitative omics data. Use this skill to perform fuzzy c-means clustering that accounts for feature variance (uncertainty) from replicated measurements. Ideal for analyzing patterns in RNA-seq, proteomics, or metabolomics data stored in standard R matrices or Bioconductor objects like SummarizedExperiment, QFeatures, and MultiAssayExperiment.\n\n# bioconductor-vsclust\n\n## Overview\n`vsclust` is an R package designed to identify common patterns in high-dimensional data while accounting for measurement uncertainty. Unlike standard clustering algorithms, VSClust uses replicated measurements to estimate feature-specific variance, allowing it to down-weight or filter out highly variable features that do not reliably fit a cluster profile.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires quantitative data where replicates are organized consecutively (e.g., A1, A2, B1, B2...).\n\n```r\nlibrary(vsclust)\n\n# For standard data frames/matrices\n# statOut contains $dat (means + SD column) and $statFileOut (LIMMA results)\nstatOut <- PrepareForVSClust(data_matrix, \n                             NumReps = 3, \n                             NumCond = 4, \n                             isPaired = FALSE, \n                             isStat = TRUE)\n\n# For Bioconductor objects (SummarizedExperiment/MultiAssayExperiment)\nstatOut <- PrepareSEForVSClust(se_object, \n                               assayname = \"logcounts\", \n                               coldatname = \"Condition\", \n                               isPaired = FALSE, \n                               isStat = TRUE)\n```\n\n### 2. Estimating Cluster Number\nVSClust uses validity indices (Maximum Centroid Distance and Xie Beni index) to suggest the optimal number of clusters.\n\n```r\n# Run estimation across a range (e.g., up to 10 clusters)\nClustInd <- estimClustNum(statOut$dat, maxClust = 10, cores = 1)\n\n# Retrieve suggested numbers\nk_vsclust <- optimalClustNum(ClustInd)\nk_standard <- optimalClustNum(ClustInd, method = \"FCM\")\n\n# Visualize indices\nestimClust.plot(ClustInd)\n```\n\n### 3. Running the Clustering\nExecute the final clustering using the variance-sensitive algorithm.\n\n```r\nClustOut <- runClustWrapper(statOut$dat, \n                            PreSetNumClust = k_vsclust, \n                            VSClust = TRUE, \n                            scaling = \"standardize\")\n\n# Access results\nbest_cluster_assignment <- ClustOut$Bestcl$cluster\nmembership_scores <- ClustOut$Bestcl$membership\ncentroids <- ClustOut$Bestcl$centers\n```\n\n### 4. Functional Enrichment\nIntegrate with STRINGdb and clusterProfiler for biological interpretation.\n\n```r\n# Retrieve KEGG/GO enrichment via STRING API\nClustEnriched <- runFuncEnrich(ClustOut$Bestcl, infosource = \"KEGG\")\n\n# Plot results using clusterProfiler\nlibrary(clusterProfiler)\ndotplot(ClustEnriched$redFuncs, showCategory = 10)\n```\n\n## Key Parameters & Tips\n- **Variance Column**: If you have pre-calculated standard deviations, append them as the last column of your data matrix and set `isStat = FALSE` in preparation functions.\n- **Scaling**: Use `scaling = \"standardize\"` in `runClustWrapper` to focus on profile shapes rather than absolute magnitude.\n- **Membership Threshold**: A common practice is to consider a feature a \"solid\" member of a cluster if its membership score is > 0.5.\n- **Missing Values**: Ensure data is log-transformed and handle infinite values (e.g., `logminiACC[!is.finite(logminiACC)] <- NA`) before processing.\n\n## Reference documentation\n- [Integrate With Bioconductor Objects](./references/Integrate_With_Bioconductor_Objects.md)\n- [Run VSClust Workflow](./references/Run_VSClust_Workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-vsclust",
+    "description": "This tool performs variance-sensitive fuzzy c-means clustering on quantitative omics data to identify patterns while accounting for measurement uncertainty. Use when user asks to perform variance-sensitive clustering, estimate the optimal number of clusters, or identify common patterns in replicated omics data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/vsclust.html"
+  }
+}

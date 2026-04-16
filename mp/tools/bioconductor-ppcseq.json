@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ppcseq",
+  "category": "bioconductor",
+  "name": "bioconductor-ppcseq",
+  "description": "This tool identifies outliers in RNA-seq data using a Bayesian framework to determine if transcript counts are consistent with a negative binomial model. Use when user asks to identify artefactual significance in differential expression results, perform posterior predictive checks on transcript abundance, or visualize credible intervals for RNA-seq counts.",
+  "overview": "The `ppcseq` package provides a Bayesian framework for identifying outliers in RNA-seq data. It uses posterior predictive checks to determine if observed transcript counts are consistent with a negative binomial model. This is particularly useful for quality control after differential expression analysis, as it identifies \"artefactual\" significance driven by single extreme data points rather than consistent biological signals.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ppcseq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/stemangiola/ppcseq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ppcseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ppcseq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/stemangiola/ppcseq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ppcseq\n\n## Overview\n\nThe `ppcseq` package provides a Bayesian framework for identifying outliers in RNA-seq data. It uses posterior predictive checks to determine if observed transcript counts are consistent with a negative binomial model. This is particularly useful for quality control after differential expression analysis, as it identifies \"artefactual\" significance driven by single extreme data points rather than consistent biological signals.\n\n## Installation\n\nFor Linux systems, it is recommended to enable multi-threading for Stan before installation:\n\n```r\nfileConn <- file(\"~/.R/Makevars\")\nwriteLines(c(\"CXX14FLAGS += -O3\",\"CXX14FLAGS += -DSTAN_THREADS\", \"CXX14FLAGS += -pthread\"), fileConn)\nclose(fileConn)\n\nif(!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"ppcseq\")\n```\n\n## Workflow: Identifying Outliers\n\nThe package expects a \"tidy\" data frame containing transcript abundance and differential expression statistics (P-values/FDR).\n\n### 1. Prepare Data\nThe input should contain columns for samples, transcripts (symbols/IDs), abundance (counts), and significance metrics.\n\n```r\nlibrary(dplyr)\nlibrary(ppcseq)\n\n# Example using internal 'counts' data\ndata(\"counts\")\n\n# Define which transcripts to check (usually those marked as significant)\ncounts_to_check <- counts %>%\n  mutate(is_significant = FDR < 0.01)\n```\n\n### 2. Run Outlier Identification\nThe `identify_outliers` function is the primary tool. It performs Bayesian inference to flag data points that fall outside the predicted credible intervals.\n\n```r\ncounts.ppc <- counts_to_check %>%\n  identify_outliers(\n    formula = ~ Label,                # The design formula used in DE analysis\n    .sample = sample,                 # Column name for samples\n    .transcript = symbol,             # Column name for transcripts\n    .abundance = value,               # Column name for read counts\n    .significance = PValue,           # Column name for P-values\n    .do_check = is_significant,       # Logical column: which rows to test\n    percent_false_positive_genes = 5, # Global false positive rate threshold\n    cores = 4                         # Parallel processing\n  )\n```\n\n### 3. Interpret Results\nThe output is a tibble containing:\n- `sample_wise_data`: Nested information about individual observations.\n- `ppc_samples_failed`: Number of samples flagged as outliers for that transcript.\n- `tot_deleterious_outliers`: Number of outliers that specifically inflated the significance.\n\n## Visualization\n\nYou can visualize the credible intervals and the observed data points to manually inspect flagged outliers.\n\n```r\n# Generate plots for the analyzed transcripts\ncounts.ppc_plots <- counts.ppc %>% \n  plot_credible_intervals()\n\n# View the plot for the first transcript\ncounts.ppc_plots %>%\n  pull(plot) %>% \n  .[[1]]\n```\n\n## Key Parameters for `identify_outliers`\n\n- `approximate_posterior_inference`: Set to `TRUE` to use Variational Bayes (faster) or `FALSE` for full Markov Chain Monte Carlo (more accurate).\n- `percent_false_positive_genes`: Controls the stringency of outlier detection.\n- `draws_after_tail`: Used to speed up execution by limiting samples in the distribution tail (useful for testing).\n\n## Reference documentation\n\n- [Overview of the ppcseq package](./references/introduction.Rmd)\n- [Probabilistic Outlier Identification for RNA Sequencing Generalized Linear Models](./references/introduction.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ppcseq",
+    "description": "This tool identifies outliers in RNA-seq data using a Bayesian framework to determine if transcript counts are consistent with a negative binomial model. Use when user asks to identify artefactual significance in differential expression results, perform posterior predictive checks on transcript abundance, or visualize credible intervals for RNA-seq counts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ppcseq.html"
+  }
+}

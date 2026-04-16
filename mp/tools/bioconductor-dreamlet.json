@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dreamlet",
+  "category": "bioconductor",
+  "name": "bioconductor-dreamlet",
+  "description": "This tool performs differential expression analysis on single-cell RNA-seq data using linear mixed models on pseudobulk counts. Use when user asks to aggregate single-cell data to pseudobulk, perform variance partitioning, conduct differential expression analysis with random effects, or borrow information across cell types using mashr.",
+  "overview": "The `dreamlet` package provides a comprehensive workflow for analyzing large-scale single-cell datasets with complex study designs (e.g., repeated measures, multiple batches). It leverages the \"dream\" (Differential Expression for Repeated Measures) framework to apply linear mixed models to pseudobulk data. By summing counts within cell types and samples, `dreamlet` achieves high performance and statistical rigor, allowing for the inclusion of random effects to account for correlation structures ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/dreamlet.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dreamlet/overview",
+  "github": "https://github.com/DiseaseNeurogenomics/dreamlet",
+  "conda_downloads": "311",
+  "conda_downloads_num": 311,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "dreamlet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dreamlet.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dreamlet/overview",
+    "github": "https://github.com/DiseaseNeurogenomics/dreamlet",
+    "conda_downloads": "311",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dreamlet\n\nname: bioconductor-dreamlet\ndescription: Perform differential expression analysis on single-cell/nucleus RNA-seq data using linear (mixed) models on pseudobulk counts. Use this skill for: (1) Aggregating single-cell data to pseudobulk, (2) Running voom-style normalization for complex study designs, (3) Performing variance partitioning to identify sources of expression variation, (4) Conducting differential expression analysis with random effects, (5) Gene set analysis using zenith, and (6) Bayesian borrowing of information across cell types with mashr.\n\n## Overview\n\nThe `dreamlet` package provides a comprehensive workflow for analyzing large-scale single-cell datasets with complex study designs (e.g., repeated measures, multiple batches). It leverages the \"dream\" (Differential Expression for Repeated Measures) framework to apply linear mixed models to pseudobulk data. By summing counts within cell types and samples, `dreamlet` achieves high performance and statistical rigor, allowing for the inclusion of random effects to account for correlation structures in the data.\n\n## Core Workflow\n\n### 1. Data Preparation and Pseudobulk Aggregation\nStart with a `SingleCellExperiment` (SCE) object. Ensure your `colData` contains variables for both the cell cluster (e.g., \"cell_type\") and the sample/individual ID.\n\n```R\nlibrary(dreamlet)\n\n# Create unique sample identifier if needed\nsce$id <- paste0(sce$StimStatus, sce$ind)\n\n# Aggregate to pseudobulk\npb <- aggregateToPseudoBulk(sce,\n  assay = \"counts\",    # raw counts\n  cluster_id = \"cell\", # cell type variable\n  sample_id = \"id\",    # sample/donor variable\n  verbose = FALSE\n)\n```\n\n### 2. Normalization and Voom Transformation\nUse `processAssays` to normalize counts and apply voom weights. This function handles the formula and filters genes/samples automatically.\n\n```R\n# Define formula (use (1|ID) for random effects)\nform <- ~ StimStatus + (1|Batch)\n\n# Process assays\nres.proc <- processAssays(pb, form, min.count = 5)\n\n# Visualize mean-variance trend\nplotVoom(res.proc)\n```\n\n### 3. Variance Partitioning\nQuantify how much variation is explained by each variable in your model.\n\n```R\nvp.lst <- fitVarPart(res.proc, form)\nplotVarPart(vp.lst)\n```\n\n### 4. Differential Expression\nRun the `dreamlet` function to fit the models across all cell types.\n\n```R\nres.dl <- dreamlet(res.proc, form)\n\n# Extract results for a specific coefficient\ntopTable(res.dl, coef = \"StimStatusstim\")\n\n# Volcano plot for a specific coefficient\nplotVolcano(res.dl, coef = \"StimStatusstim\")\n```\n\n## Advanced Features\n\n### Modeling Cell-Level Covariates\nIf you have continuous cell-level variables (e.g., mitochondrial rate), `dreamlet` can aggregate these using the mean value per cell type during the pseudobulk step. These are stored in `metadata(pb)$aggr_means` and used automatically in the regression.\n\n### Bayesian Integration with mashr\nTo improve power by borrowing information across cell types and genes:\n\n```R\n# Run mashr on dreamlet results\nres_mash = run_mash(res.dl, coef='StimStatusstim')\n\n# Extract posterior means\nlibrary(mashr)\nget_pm(res_mash$model)\n\n# Visualize with forest plots\nplotForest(res_mash, \"ISG20\")\n```\n\n### Gene Set Analysis with zenith\nPerform competitive gene set testing (similar to `camera`) using the full spectrum of test statistics.\n\n```R\nlibrary(zenith)\ngo.gs <- get_GeneOntology(\"BP\", to = \"SYMBOL\")\nres_zenith <- zenith_gsa(res.dl, coef = \"StimStatusstim\", go.gs)\nplotZenithResults(res_zenith, 5, 1)\n```\n\n### Handling Large Datasets (H5AD)\nFor datasets too large for memory, use `zellkonverter` to read H5AD files as `DelayedArray` objects. `dreamlet` functions are optimized to work with these on-disk backends.\n\n```R\nlibrary(zellkonverter)\nsce <- readH5AD(\"data.h5ad\", use_hdf5 = TRUE)\n```\n\n## Troubleshooting and Tips\n\n- **Model Failures**: Use `details(res.dl)` to see how many genes failed in each assay. Use `seeErrors(res.dl)` to extract specific error messages.\n- **Colinearity**: If a variable is dropped from the formula for a specific cell type, it is usually because that variable has no variation within the samples retained for that cell type.\n- **Scaling**: If you see \"predictor variables are on very different scales,\" wrap continuous variables in `scale()` within your formula.\n- **Contrasts**: For complex comparisons, use the `contrasts` argument in `dreamlet()` (e.g., `contrasts = c(Diff = \"GroupA - GroupB\")`).\n\n## Reference documentation\n\n- [Modeling continuous cell-level covariates](./references/cell_covs.md)\n- [Dreamlet analysis of single cell RNA-seq](./references/dreamlet.md)\n- [Error handling](./references/errors.md)\n- [Handling large H5AD datasets](./references/h5ad_on_disk.md)\n- [mashr analysis after dreamlet](./references/mashr.md)\n- [Testing non-linear effects](./references/non_lin_eff.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dreamlet",
+    "description": "This tool performs differential expression analysis on single-cell RNA-seq data using linear mixed models on pseudobulk counts. Use when user asks to aggregate single-cell data to pseudobulk, perform variance partitioning, conduct differential expression analysis with random effects, or borrow information across cell types using mashr.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dreamlet.html"
+  }
+}

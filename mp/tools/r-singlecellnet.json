@@ -1,0 +1,41 @@
+{
+  "id": "r-singlecellnet",
+  "category": "R",
+  "name": "r-singlecellnet",
+  "description": "This tool classifies single-cell RNA-Seq data across different platforms and species using the singleCellNet R package. Use when user asks to train classifiers on reference scRNA-Seq datasets, assess classifier performance, predict cell identities, or perform cross-species cell type mapping.",
+  "overview": "singleCellNet (SCN) is an R package designed for the classification of single-cell RNA-Seq data. It uses a Top-Pair approach to identify gene pairs that are uniquely predictive of cell types, making it robust across different sequencing platforms and even across species (e.g., using mouse data to classify human cells).",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-singlecellnet\n\nname: r-singlecellnet\ndescription: Classify single-cell RNA-Seq data across species and platforms using the singleCellNet R package. Use this skill when you need to train classifiers on reference scRNA-Seq datasets, assess classifier performance, or predict cell identities in query datasets (including cross-species mapping).\n\n## Overview\nsingleCellNet (SCN) is an R package designed for the classification of single-cell RNA-Seq data. It uses a Top-Pair approach to identify gene pairs that are uniquely predictive of cell types, making it robust across different sequencing platforms and even across species (e.g., using mouse data to classify human cells).\n\n## Installation\n```R\nif (!requireNamespace(\"devtools\", quietly = TRUE)) install.packages(\"devtools\")\ndevtools::install_github(\"pcahan1/singleCellNet\")\nlibrary(singleCellNet)\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nEnsure your expression data is a matrix (genes as rows, cells as columns) and your sample table (metadata) has a column for cell types.\n```R\n# Split data into training and testing sets\nstList = splitCommon(sampTab = stTM, ncells = 100, dLevel = \"cell_type_column\")\nstTrain = stList[[1]]\nexpTrain = expRaw[, rownames(stTrain)]\n```\n\n### 2. Training the Classifier\nThe `scn_train` function builds the Random Forest classifier based on top gene pairs.\n```R\nclass_info <- scn_train(\n  stTrain = stTrain, \n  expTrain = expTrain, \n  nTopGenes = 10, \n  nRand = 70, \n  nTrees = 1000, \n  nTopGenePairs = 25, \n  dLevel = \"cell_type_column\", \n  colName_samp = \"cell_id_column\"\n)\n```\n\n### 3. Prediction and Assessment\nApply the trained model to held-out test data or new query data.\n```R\n# Predict on test data\nclassRes = scn_predict(cnProc = class_info[['cnProc']], expDat = expTest, nrand = 50)\n\n# Assess performance\nassessment = assess_comm(\n  ct_scores = classRes, \n  stTrain = stTrain, \n  stQuery = stTest, \n  dLevelSID = \"cell_id_column\", \n  classTrain = \"cell_type_column\", \n  classQuery = \"cell_type_column\", \n  nRand = 50\n)\nplot_PRs(assessment)\n```\n\n### 4. Cross-Species Classification\nTo classify across species, use an ortholog table to rename genes before training/predicting.\n```R\n# Convert query (e.g., Human) to match training (e.g., Mouse)\noTab = utils_loadObject(\"human_mouse_genes.rda\")\naa = csRenameOrth(expQuery, expTrain, oTab)\nexpQueryOrth = aa[['expQuery']]\n```\n\n## Visualization\n* **Heatmap**: `sc_hmClass(classMat = classRes, grps = labels, isBig = TRUE)`\n* **Violin Plot**: `sc_violinClass(sampTab = stQuery, classRes = classRes, sid = \"cell_id\", dLevel = \"label\")`\n* **Attribution Plot**: `plot_attr(classRes = classRes, sampTab = stQuery, nrand = 50, dLevel = \"label\", sid = \"cell_id\")`\n\n## Integration with Other Objects\n* **Seurat**: Use `extractSeurat(seurat_obj, exp_slot_name = \"counts\")` to get the expression matrix and metadata.\n* **SingleCellExperiment (SCE)**: Use `extractSCE(sce_obj, exp_slot_name = \"counts\")`.\n* **Loom**: Use `loadLoomExpCluster(\"file.loom\")`.\n\n## Reference documentation\n- [README.md](./references/README.md)\n- [articles.md](./references/articles.md)\n- [home_page.md](./references/home_page.md)",
+  "skill_front_matter": {
+    "name": "r-singlecellnet",
+    "description": "This tool classifies single-cell RNA-Seq data across different platforms and species using the singleCellNet R package. Use when user asks to train classifiers on reference scRNA-Seq datasets, assess classifier performance, predict cell identities, or perform cross-species cell type mapping.",
+    "homepage": "https://cran.r-project.org/web/packages/singlecellnet/index.html"
+  }
+}

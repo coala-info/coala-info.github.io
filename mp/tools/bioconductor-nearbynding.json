@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nearbynding",
+  "category": "bioconductor",
+  "name": "bioconductor-nearbynding",
+  "description": "This tool analyzes the spatial relationship between protein binding sites and RNA secondary structure by correlating CLIP-seq data with structural annotations. Use when user asks to map protein-binding intervals to a concatenated transcriptome, predict RNA structural contexts using CapR, or calculate cross-correlation between binding sites and RNA structures.",
+  "overview": "The `nearBynding` package facilitates the study of RNA-binding protein (RBP) preferences by correlating protein binding sites (from CLIP-seq) with RNA secondary structure. It automates the process of concatenating transcriptomic regions (like 3'UTRs), folding RNA via CapR, mapping data via liftOver, and calculating cross-correlation using StereoGene.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/nearBynding.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nearBynding"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nearBynding.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nearbynding\n\nname: bioconductor-nearbynding\ndescription: Analysis of RNA structure proximal to protein binding sites using CLIP-seq data. Use when Claude needs to map protein-binding intervals (BAM/BED) and RNA structural contexts (CapR/BED) onto a concatenated transcriptome to calculate cross-correlation, visualize structural landscapes, and determine distances between binding contexts.\n\n# bioconductor-nearbynding\n\n## Overview\nThe `nearBynding` package facilitates the study of RNA-binding protein (RBP) preferences by correlating protein binding sites (from CLIP-seq) with RNA secondary structure. It automates the process of concatenating transcriptomic regions (like 3'UTRs), folding RNA via CapR, mapping data via liftOver, and calculating cross-correlation using StereoGene.\n\n## Core Workflow\n\n### 1. Transcriptome Concatenation\nBefore analysis, create a chain file to map specific transcript regions (e.g., 3'UTR, CDS) end-to-end, excluding intergenic regions.\n\n```r\nlibrary(nearBynding)\n\n# Create chain file for specific transcript regions\nGenomeMappingToChainFile(\n  genome_gtf = \"path/to/genome.gtf\",\n  out_chain_name = \"target.chain\",\n  RNA_fragment = \"three_prime_utr\",\n  transcript_list = my_transcripts,\n  alignment = \"hg38\"\n)\n\n# Get chromosome sizes for the concatenated transcriptome\ngetChainChrSize(chain = \"target.chain\", out_chr = \"target.size\")\n```\n\n### 2. RNA Folding and Structure Annotation\nExtract sequences and use CapR to predict structural contexts (stem, hairpin, multibranch, exterior, internal, bulge).\n\n```r\n# Extract sequences for folding\nExtractTranscriptomeSequence(\n  transcript_list = my_transcripts,\n  ref_genome = \"genome.fa\",\n  genome_gtf = \"genome.gtf\",\n  RNA_fragment = \"three_prime_utr\",\n  exome_prefix = \"my_analysis\"\n)\n\n# Run CapR folding (requires CapR in PATH)\nrunCapR(in_file = \"my_analysis.fa\")\n\n# Process CapR output into bedGraph files and liftOver to transcriptome\nprocessCapRout(\n  CapR_outfile = \"my_analysis.out\",\n  chain = \"target.chain\",\n  output_prefix = \"my_analysis\",\n  chrom_size = \"target.size\",\n  genome_gtf = \"genome.gtf\",\n  RNA_fragment = \"three_prime_utr\"\n)\n```\n\n### 3. Mapping Protein Binding\nMap CLIP-seq reads (BAM) or peaks (BED) to the same concatenated transcriptome.\n\n```r\n# Convert BAM to bedGraph\nsorted_bam <- Rsamtools::sortBam(\"input.bam\", \"sorted_output\")\nCleanBAMtoBG(in_bam = sorted_bam)\n\n# LiftOver protein binding to exomic coordinates\nliftOverToExomicBG(\n  input = \"sorted_output.bedGraph\",\n  chain = \"target.chain\",\n  chrom_size = \"target.size\",\n  output_bg = \"protein_liftOver.bedGraph\"\n)\n```\n\n### 4. Cross-Correlation and Visualization\nUse StereoGene to calculate the spatial relationship between binding and structure.\n\n```r\n# Run StereoGene on all CapR contexts\nrunStereogeneOnCapR(\n  protein_file = \"protein_liftOver.bedGraph\",\n  chrom_size = \"target.size\",\n  name_config = \"my_analysis.cfg\",\n  input_prefix = \"my_analysis\"\n)\n\n# Visualize results (Heatmap or Line plot)\nvisualizeCapRStereogene(\n  CapR_prefix = \"my_analysis\",\n  protein_file = \"protein_liftOver\",\n  heatmap = TRUE,\n  out_file = \"structure_heatmap\",\n  x_lim = c(-500, 500)\n)\n```\n\n### 5. Calculating Context Distance\nQuantify the similarity between different binding contexts using Wasserstein distance.\n\n```r\n# Compare similarity between two structural contexts (e.g., stem vs hairpin)\ndist <- bindingContextDistance(\n  RNA_context = \"my_analysis_stem_liftOver\",\n  protein_file = \"protein_liftOver\",\n  RNA_context_2 = \"my_analysis_hairpin_liftOver\"\n)\n```\n\n## Implementation Tips\n- **External Dependencies**: Ensure `bedtools`, `CapR`, and `StereoGene` are installed and available in the system PATH.\n- **Input Order**: When using `runStereogene` manually, the track file order must be: 1) RNA structure, 2) Protein binding. Reversing this will invert the results.\n- **Performance**: `runCapR` and `visualizeCapRStereogene` can be computationally intensive for large transcriptomes; consider subsetting to expressed transcripts.\n- **Custom Structures**: You can provide your own structural annotations in BED format and use `liftOverToExomicBG` to integrate them into the pipeline.\n\n## Reference documentation\n- [nearBynding](./references/nearBynding.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nearbynding",
+    "description": "This tool analyzes the spatial relationship between protein binding sites and RNA secondary structure by correlating CLIP-seq data with structural annotations. Use when user asks to map protein-binding intervals to a concatenated transcriptome, predict RNA structural contexts using CapR, or calculate cross-correlation between binding sites and RNA structures.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nearBynding.html"
+  }
+}

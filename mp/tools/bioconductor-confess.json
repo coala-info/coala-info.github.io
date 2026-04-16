@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-confess",
+  "category": "bioconductor",
+  "name": "bioconductor-confess",
+  "description": "bioconductor-confess performs cell detection and fluorescence signal estimation from Fluidigm C1 images to analyze spatio-temporal dynamics. Use when user asks to detect cells in images, estimate fluorescence intensities, normalize signal data, or order cells by pseudotime and cell cycle phase.",
+  "overview": "CONFESS (Cell OrderiNg by FluorEScence Signal) is an R package designed for cell detection and signal estimation from images, specifically optimized for the Fluidigm C1 system. It enables the study of spatio-temporal dynamics, such as the cell cycle, by converting fluorescence intensities into pseudotime estimates and discrete cell cycle phases.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CONFESS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CONFESS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CONFESS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-confess\n\nname: bioconductor-confess\ndescription: Cell detection and signal estimation from Fluidigm C1 images. Use for estimating cell cycle phases and pseudotime from fluorescence signals, including image processing, outlier detection, signal normalization, and cell ordering.\n\n# bioconductor-confess\n\n## Overview\nCONFESS (Cell OrderiNg by FluorEScence Signal) is an R package designed for cell detection and signal estimation from images, specifically optimized for the Fluidigm C1 system. It enables the study of spatio-temporal dynamics, such as the cell cycle, by converting fluorescence intensities into pseudotime estimates and discrete cell cycle phases.\n\n## Image Analysis and Fluorescence Estimation\n\n### 1. Loading Data\nUse `readFiles` to point to directories containing Bright Field (BF) and Channel (CH) images (or text-converted versions).\n```r\nlibrary(CONFESS)\nfiles <- readFiles(iDirectory = NULL, \n                  BFdirectory = \"path/to/BF\", \n                  CHdirectory = \"path/to/CH\", \n                  separator = \"_\", \n                  image.type = c(\"BF\", \"Green\", \"Red\"), \n                  bits = 2^16)\n```\n\n### 2. Spot Estimation\nEstimate cell locations using `spotEstimator`. Use a range of `foregroundCut` values to optimize detection.\n```r\nestimates <- spotEstimator(files = files, \n                          foregroundCut = seq(0.6, 0.76, 0.02), \n                          BFarea = 7, \n                          correctionAlgorithm = FALSE, \n                          savePlot = \"screen\")\n```\n\n### 3. Quality Control and Outlier Re-estimation\nIdentify outliers manually or via clustering, then re-run the estimator for those specific samples.\n```r\n# Interactive outlier selection\nclu <- defineLocClusters(LocData = estimates, out.method = \"interactive.manual\")\n\n# Re-estimate outliers with correctionAlgorithm = TRUE\nestimates.2 <- spotEstimator(files = files, \n                             subset = clu$Outlier.indices, \n                             foregroundCut = seq(0.6, 0.76, 0.02), \n                             correctionAlgorithm = TRUE, \n                             QCdata = clu, \n                             median.correction = TRUE)\n```\n\n### 4. Final Filtering\nGenerate the final location matrix by applying filters (Size, FDR, Signal-to-Noise, etc.).\n```r\nResults <- LocationMatrix(data = estimates.2, \n                          filter.by = matrix(c(\"FDR\", \"Out.Index\", 0.005, \"confidence\"), ncol = 2))\n```\n\n## Signal Adjustment and Pseudotime Ordering\n\n### 1. Data Preparation and Normalization\nConvert image results into a fluorescence object and adjust for batch effects.\n```r\nstep1 <- createFluo(Results)\n\n# For multi-batch data\nstep2 <- Fluo_adjustment(data = step1, transformation = \"log\", maxMix = 3, savePlot = \"screen\")\n\n# For single-batch data\nstep1.1 <- FluoSelection_byRun(data = step1, batch = 1)\nstep2 <- getFluo_byRun(data = step1.1, BGmethod = \"normexp\")\n```\n\n### 2. Clustering and Path Estimation\nInspect clusters and define the progression path (e.g., circular for cell cycle).\n```r\nstep2.1 <- getFluo(data = step2)\nstep3 <- Fluo_inspection(data = step2.1, altFUN = \"kmeans\", savePlot = \"screen\")\n\n# Define path (e.g., starting at cluster 3, moving clockwise)\nstep3.1 <- pathEstimator(step3, path.start = 3, path.type = c(\"circular\", \"clockwise\"))\n```\n\n### 3. Final Ordering\nModel the fluorescence and order cells along the pseudotime.\n```r\nstep4 <- Fluo_modeling(data = step3.1, VSmethod = \"DDHFmv\", CPmethod = \"ECP\")\nstep5 <- Fluo_ordering(data = step4, savePlot = \"screen\")\n# Results are in step5$Summary_results\n```\n\n## Cross-Validation\nAssess the stability of pseudotime estimates by randomly removing samples or entire batches.\n```r\nsteps2_4 <- Fluo_CV_prep(data = step1, init.path = rep(\"bottom/left\", 2), path.type = c(\"circular\", \"clockwise\"))\nsteps2_4cv <- Fluo_CV_modeling(data = steps2_4, B = 10, batch = 1:4)\n```\n\n## Reference documentation\n- [CONFESS Vignette](./references/vignette.md)\n- [CONFESS TeX Vignette](./references/vignette_tex.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-confess",
+    "description": "bioconductor-confess performs cell detection and fluorescence signal estimation from Fluidigm C1 images to analyze spatio-temporal dynamics. Use when user asks to detect cells in images, estimate fluorescence intensities, normalize signal data, or order cells by pseudotime and cell cycle phase.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CONFESS.html"
+  }
+}

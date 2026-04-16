@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-polyester",
+  "category": "bioconductor",
+  "name": "bioconductor-polyester",
+  "description": "Bioconductor-polyester simulates RNA-seq experiments by generating synthetic reads with controlled differential transcript expression. Use when user asks to generate synthetic RNA-seq reads, simulate differential expression experiments, or create ground truth datasets for benchmarking bioinformatics pipelines.",
+  "overview": "The `polyester` package is designed to simulate RNA-seq experiments by mimicking the biological and technical steps of sequencing: fragmentation, reverse-complementing, and error introduction. It allows for precise control over differential expression (DE) at the transcript level, enabling the creation of \"ground truth\" datasets where the exact fold changes are known.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/polyester.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "polyester"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/polyester.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-polyester\n\nname: bioconductor-polyester\ndescription: Simulate RNA-seq experiments with differential transcript expression. Use this skill when you need to generate synthetic RNA-seq reads (FASTA files) for benchmarking differential expression methods, testing bioinformatics pipelines, or simulating specific experimental designs (case/control, timecourse, or empirical-based).\n\n# bioconductor-polyester\n\n## Overview\nThe `polyester` package is designed to simulate RNA-seq experiments by mimicking the biological and technical steps of sequencing: fragmentation, reverse-complementing, and error introduction. It allows for precise control over differential expression (DE) at the transcript level, enabling the creation of \"ground truth\" datasets where the exact fold changes are known.\n\n## Core Workflows\n\n### 1. Basic Case/Control Simulation\nUse `simulate_experiment` for standard group comparisons. You must provide a FASTA file of transcript sequences and a fold change matrix.\n\n```r\nlibrary(polyester)\nlibrary(Biostrings)\n\n# Load transcript sequences\nfasta_file = system.file('extdata', 'chr22.fa', package='polyester')\nfasta = readDNAStringSet(fasta_file)\nsmall_fasta = fasta[1:20]\nwriteXStringSet(small_fasta, 'transcripts.fa')\n\n# Define fold changes: 2 groups, 20 transcripts\n# Rows = transcripts, Columns = groups\n# Example: Transcripts 1-2 are 4x higher in Group A; 3-4 are 4x higher in Group B\nfold_changes = matrix(c(4,4, rep(1,18),  # Group A\n                        1,1, 4,4, rep(1,16)), # Group B\n                      nrow=20)\n\n# Simulate 10 replicates per group\nsimulate_experiment('transcripts.fa', \n                    num_reps=c(10, 10), \n                    fold_changes=fold_changes, \n                    outdir='sim_results')\n```\n\n### 2. Custom Count Matrix (Timecourse/Complex Designs)\nUse `simulate_experiment_countmat` to bypass the fold-change logic and specify exact read counts per transcript per sample.\n\n```r\n# 12 samples (e.g., timepoints), 20 transcripts\ncountmat = matrix(300, nrow=20, ncol=12)\n\n# Manually inject signal into specific cells\ncountmat[1, 2] = 900 # Spike at timepoint 2 for transcript 1\n\nsimulate_experiment_countmat('transcripts.fa', \n                             readmat=countmat, \n                             outdir='timecourse_sim')\n```\n\n### 3. Empirical Simulation\nUse `simulate_experiment_empirical` to base simulations on real data (e.g., from a `ballgown` object). This ensures the synthetic data has realistic abundance distributions.\n\n```r\n# Requires ballgown object 'bg' and corresponding GTF/Sequence\nsimulate_experiment_empirical(bg, \n                              grouplabels=pData(bg)$group, \n                              gtf=gtf_data,\n                              seqpath='/path/to/chromosomes', \n                              outdir='empirical_sim')\n```\n\n## Key Parameters and Tuning\n\n| Parameter | Description | Default |\n| :--- | :--- | :--- |\n| `reads_per_transcript` | Baseline mean reads. Can be a single value or a vector. | 300 |\n| `size` | Controls variance (Negative Binomial). `mean + (mean^2)/size`. Smaller = more noise. | `mean/3` |\n| `readlen` | Length of generated reads. | 100 |\n| `paired` | Generate paired-end reads (TRUE) or single-end (FALSE). | TRUE |\n| `error_model` | Sequencing error profile (`'uniform'`, `'illumina4'`, `'illumina5'`). | `'uniform'` |\n| `bias` | Positional bias (`'none'`, `'rnaf'`, `'cdnaf'`). | `'none'` |\n| `strand_specific` | Whether reads are strand-specific. | FALSE |\n\n## Output Files\nThe simulation generates the following in the `outdir`:\n- `sample_XX_1.fasta` and `sample_XX_2.fasta`: The simulated reads.\n- `sim_tx_info.txt`: Metadata containing transcript IDs, fold changes, and DE status (the \"ground truth\").\n- `sim_rep_info.txt`: Metadata containing sample IDs and group assignments.\n\n## Tips for Success\n- **Transcript Length**: By default, `polyester` assigns 300 reads regardless of length. To simulate realistic FPKM where longer transcripts have more reads, calculate `reads_per_transcript` as: `round(coverage * width(fasta) / readlen)`.\n- **Memory Management**: For large genomes, subset your FASTA to only the transcripts of interest to save time and disk space.\n- **Reproducibility**: Always set a seed using `set.seed()` before running simulations to ensure the random sampling of fragments and errors is reproducible.\n\n## Reference documentation\n- [polyester](./references/polyester.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-polyester",
+    "description": "Bioconductor-polyester simulates RNA-seq experiments by generating synthetic reads with controlled differential transcript expression. Use when user asks to generate synthetic RNA-seq reads, simulate differential expression experiments, or create ground truth datasets for benchmarking bioinformatics pipelines.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/polyester.html"
+  }
+}

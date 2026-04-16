@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metagenomeseq",
+  "category": "bioconductor",
+  "name": "bioconductor-metagenomeseq",
+  "description": "bioconductor-metagenomeseq performs statistical analysis and normalization for sparse high-throughput sequencing data such as metagenomic marker-gene surveys. Use when user asks to normalize count data using cumulative sum scaling, perform differential abundance testing with zero-inflated mixture models, or conduct longitudinal time-series analysis.",
+  "overview": "`metagenomeSeq` is an R package designed to address the unique biases in marker-gene survey data, specifically sparsity (excess zeros) due to undersampling and varying depths of coverage. It introduces Cumulative Sum Scaling (CSS) normalization and mixture models to account for these factors in differential abundance testing.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/nosson/metagenomeSeq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metagenomeSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/nosson/metagenomeSeq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metagenomeseq\n\nname: bioconductor-metagenomeseq\ndescription: Statistical analysis for sparse high-throughput sequencing data (metagenomics). Use for normalizing marker-gene survey data (CSS), performing differential abundance testing using Zero-Inflated Log-Normal (fitFeatureModel) or Zero-Inflated Gaussian (fitZig) mixture models, and longitudinal time-series analysis (fitTimeSeries).\n\n# bioconductor-metagenomeseq\n\n## Overview\n`metagenomeSeq` is an R package designed to address the unique biases in marker-gene survey data, specifically sparsity (excess zeros) due to undersampling and varying depths of coverage. It introduces Cumulative Sum Scaling (CSS) normalization and mixture models to account for these factors in differential abundance testing.\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be formatted into a `MRexperiment` object.\n```R\nlibrary(metagenomeSeq)\n\n# From a count matrix, phenoData, and featureData\nobj <- newMRexperiment(counts, phenoData = pd, featureData = fd)\n\n# From BIOM format\nlibrary(biomformat)\nbiom_obj <- read_biom(\"path/to/file.biom\")\nobj <- biom2MRexperiment(biom_obj)\n```\n\n### 2. Normalization (CSS)\nCumulative Sum Scaling (CSS) is the preferred normalization method.\n```R\n# Calculate the proper percentile for normalization\np <- cumNormStatFast(obj)\n\n# Calculate scaling factors\nobj <- cumNorm(obj, p = p)\n\n# Alternative: Wrench normalization (preferred for specific phenotypic groups)\nobj <- wrenchNorm(obj, condition = pData(obj)$diet)\n```\n\n### 3. Statistical Testing\n\n#### Differential Abundance (Recommended: fitFeatureModel)\nUse for comparing two groups using a Zero-Inflated Log-Normal model.\n```R\npd <- pData(obj)\nmod <- model.matrix(~1 + Group, data = pd)\nres <- fitFeatureModel(obj, mod)\n\n# Extract results\nMRcoefs(res)\n```\n\n#### Complex Designs (fitZig)\nUse for multiple groups or confounding covariates using a Zero-Inflated Gaussian model.\n```R\nsettings <- zigControl(maxit = 10, verbose = TRUE)\nmod <- model.matrix(~Group + Covariate, data = pd)\nres <- fitZig(obj = obj, mod = mod, control = settings)\n\n# Extract results (use eff = 0.5 to filter by effective samples)\nMRtable(res, coef = 2, eff = 0.5)\n```\n\n#### Longitudinal Analysis (fitTimeSeries)\nUse for detecting time intervals of differential abundance in time-series data.\n```R\nres <- fitTimeSeries(obj, feature = \"TaxonName\", class = \"Group\", \n                     time = \"TimePoint\", id = \"SubjectID\", B = 1000)\nres$timeIntervals\n```\n\n### 4. Visualization\n```R\n# Heatmaps\nplotMRheatmap(obj, n = 200, col = colorRampPalette(brewer.pal(9, \"RdBu\"))(50))\n\n# Ordination (PCA/MDS)\nplotOrd(obj, tran = TRUE, bg = pData(obj)$Group, pch = 21)\n\n# Feature-specific plots\nplotOTU(obj, otu = 1, classIndex = list(G1 = which(pd$Group == \"A\"), G2 = which(pd$Group == \"B\")))\n```\n\n## Tips for Success\n- **Filtering**: Always filter out extremely rare features before testing (e.g., `filterData(obj, present = 10)`).\n- **Effective Samples**: In `fitZig`, check the number of effective samples. Fold-change estimates are unreliable if the effective sample count is too low.\n- **Log Transformation**: `MRcounts(obj, norm = TRUE, log = TRUE)` is useful for downstream visualization and manual analysis.\n\n## Reference documentation\n- [fitTimeSeries: Longitudinal differential abundance analysis](./references/fitTimeSeries.md)\n- [metagenomeSeq: Statistical analysis for sparse high-throughput sequencing](./references/metagenomeSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metagenomeseq",
+    "description": "bioconductor-metagenomeseq performs statistical analysis and normalization for sparse high-throughput sequencing data such as metagenomic marker-gene surveys. Use when user asks to normalize count data using cumulative sum scaling, perform differential abundance testing with zero-inflated mixture models, or conduct longitudinal time-series analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metagenomeSeq.html"
+  }
+}

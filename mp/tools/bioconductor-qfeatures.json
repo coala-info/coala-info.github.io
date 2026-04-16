@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-qfeatures",
+  "category": "bioconductor",
+  "name": "bioconductor-qfeatures",
+  "description": "This tool provides a standardized infrastructure for managing and processing hierarchical quantitative mass spectrometry data in R. Use when user asks to import quantitative data, manage relationships between PSMs and proteins, perform data normalization, handle missing values, or aggregate features.",
+  "overview": "The `QFeatures` package provides a standardized Bioconductor infrastructure for handling quantitative mass spectrometry data. It extends `MultiAssayExperiment` and `SummarizedExperiment` to maintain the hierarchical links between different levels of biological features (e.g., spectra/PSMs -> peptides -> proteins). This allows for seamless navigation and data propagation across different levels of an experiment while tracking how features were aggregated.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/QFeatures.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/rformassspectrometry/QFeatures",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "QFeatures"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/QFeatures.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/rformassspectrometry/QFeatures",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-qfeatures\n\nname: bioconductor-qfeatures\ndescription: Infrastructure for managing and processing quantitative features from mass spectrometry experiments (proteomics/metabolomics). Use when you need to: (1) Import quantitative data from spreadsheets/MaxQuant into R, (2) Manage hierarchical relationships between PSMs, peptides, and proteins, (3) Perform data cleaning, log-transformation, normalization, and missing value imputation, (4) Aggregate features (e.g., PSMs to peptides), or (5) Visualize quantitative feature hierarchies.\n\n# bioconductor-qfeatures\n\n## Overview\n\nThe `QFeatures` package provides a standardized Bioconductor infrastructure for handling quantitative mass spectrometry data. It extends `MultiAssayExperiment` and `SummarizedExperiment` to maintain the hierarchical links between different levels of biological features (e.g., spectra/PSMs -> peptides -> proteins). This allows for seamless navigation and data propagation across different levels of an experiment while tracking how features were aggregated.\n\n## Core Workflow\n\n### 1. Data Import\nUse `readQFeatures` to convert a data frame or spreadsheet into a `QFeatures` object.\n\n```r\nlibrary(QFeatures)\n# x is a data.frame, quantCols are indices of intensity columns\ncptac <- readQFeatures(x, quantCols = 56:61, name = \"peptides\", fnames = \"Sequence\")\n```\n\n### 2. Experimental Design\nUpdate sample annotations via `colData`.\n\n```r\ncptac$group <- rep(c(\"A\", \"B\"), each = 3)\ncolData(cptac)\n```\n\n### 3. Data Cleaning and Filtering\nFilter features based on `rowData` variables (e.g., removing contaminants).\n\n```r\n# Filter using formula interface\ncptac <- cptac |>\n    filterFeatures(~ Reverse == \"\") |>\n    filterFeatures(~ Potential.contaminant == \"\")\n\n# Select specific rowData columns to keep object lean\ncptac <- selectRowData(cptac, c(\"Sequence\", \"Proteins\"))\n```\n\n### 4. Managing Missing Values\nHandle zeros and NAs before analysis.\n\n```r\n# Convert 0 to NA (common in MaxQuant output)\ncptac <- zeroIsNA(cptac, i = \"peptides\")\n\n# Assess missingness\nnNA(cptac, i = \"peptides\")\n\n# Filter rows based on percentage of missing values (pNA = 0 removes all NAs)\ncptac <- filterNA(cptac, i = \"peptides\", pNA = 0)\n\n# Imputation (MAR/MCAR vs MNAR)\ncptac <- impute(cptac, i = \"peptides\", method = \"knn\")\n```\n\n### 5. Transformation and Normalization\nApply operations to specific assays and store results as new assays.\n\n```r\n# Log transformation\ncptac <- logTransform(cptac, i = \"peptides\", name = \"peptides_log\")\n\n# Normalization (e.g., median centering)\ncptac <- normalize(cptac, i = \"peptides_log\", name = \"peptides_norm\", method = \"center.median\")\n```\n\n### 6. Feature Aggregation\nAggregate lower-level features (peptides) into higher-level features (proteins).\n\n```r\n# fcol is the grouping variable in rowData\ncptac <- aggregateFeatures(cptac, \n                           i = \"peptides_norm\", \n                           fcol = \"Proteins\", \n                           name = \"proteins\", \n                           fun = MsCoreUtils::robustSummary)\n```\n\n## Visualization and Exploration\n\n### Hierarchy Visualization\nView the relationship between assays.\n```r\nplot(cptac)\n```\n\n### Data Extraction\nConvert to long format for `ggplot2`.\n```r\n# Extract specific variables and assays\nlf <- longForm(cptac[, , \"proteins\"], rowvars = \"Proteins\")\n```\n\n### Interactive Exploration\nUse the Shiny-based display tool.\n```r\ndisplay(cptac)\n```\n\n## Tips for Success\n- **Assay Indexing**: You can refer to assays by name (`\"peptides\"`) or index (`1`).\n- **Subsetting**: Subsetting a `QFeatures` object by a protein ID automatically subsets all parent features (peptides and PSMs) linked to that protein.\n- **RowData Persistence**: When aggregating, `QFeatures` tracks the number of features aggregated into the new row in a `.n` column.\n\n## Reference documentation\n- [Processing quantitative proteomics data with QFeatures](./references/Processing.md)\n- [Quantitative features for mass spectrometry data](./references/QFeatures.md)\n- [Data visualization from a QFeatures object](./references/Visualization.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-qfeatures",
+    "description": "This tool provides a standardized infrastructure for managing and processing hierarchical quantitative mass spectrometry data in R. Use when user asks to import quantitative data, manage relationships between PSMs and proteins, perform data normalization, handle missing values, or aggregate features.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/QFeatures.html"
+  }
+}

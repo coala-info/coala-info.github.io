@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dropletutils",
+  "category": "bioconductor",
+  "name": "bioconductor-dropletutils",
+  "description": "This tool provides utilities for processing and analyzing droplet-based single-cell RNA-seq data. Use when user asks to load 10X Genomics data, distinguish cells from empty droplets, demultiplex hashed libraries, or remove barcode swapping effects.",
+  "overview": "The `DropletUtils` package provides specialized tools for the analysis of droplet-based single-cell RNA-seq data. It is primarily used for the initial processing steps after quantification, such as importing 10X Genomics data into `SingleCellExperiment` objects, performing quality control on droplets, and mitigating technical artifacts like barcode swapping or ambient RNA contamination.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DropletUtils.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dropletutils/overview",
+  "github": "N/A",
+  "conda_downloads": "66.4K",
+  "conda_downloads_num": 66400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DropletUtils"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DropletUtils.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dropletutils/overview",
+    "github": "N/A",
+    "conda_downloads": "66.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dropletutils\n\nname: bioconductor-dropletutils\ndescription: Utilities for handling droplet-based single-cell RNA-seq data (e.g., 10X Genomics). Use this skill to read CellRanger outputs, distinguish cells from empty droplets using emptyDrops, perform downsampling, demultiplex hashed libraries (HTOs), and remove barcode swapping or chimeric effects.\n\n# bioconductor-dropletutils\n\n## Overview\n\nThe `DropletUtils` package provides specialized tools for the analysis of droplet-based single-cell RNA-seq data. It is primarily used for the initial processing steps after quantification, such as importing 10X Genomics data into `SingleCellExperiment` objects, performing quality control on droplets, and mitigating technical artifacts like barcode swapping or ambient RNA contamination.\n\n## Core Workflows\n\n### 1. Loading 10X Genomics Data\n\nThe package provides two primary ways to load data depending on the source format.\n\n**From UMI Count Matrices:**\nUse `read10xCounts()` to load the standard output directory from CellRanger (containing `matrix.mtx`, `barcodes.tsv`, and `genes.tsv`).\n```r\nlibrary(DropletUtils)\n# Single sample\nsce <- read10xCounts(\"path/to/outs/filtered_gene_bc_matrices/hg19\")\n\n# Multiple samples (merges into one SCE object)\nsce_mult <- read10xCounts(c(\"sample1\" = \"path1\", \"sample2\" = \"path2\"))\n```\n\n**From Molecule Information Files:**\nUse `read10xMolInfo()` to extract raw molecule-level data from `molecule_info.h5`.\n```r\nmol_info <- read10xMolInfo(\"molecule_info.h5\")\n# Access data with mol_info$data\n```\n\n### 2. Distinguishing Cells from Empty Droplets\n\nA critical step is identifying which barcodes represent real cells versus empty droplets containing only ambient RNA.\n\n**Barcode Rank Plots:**\nVisualize the \"knee\" and \"inflection\" points to assess the distribution of UMI counts.\n```r\nbr_out <- barcodeRanks(counts(sce))\nplot(br_out$rank, br_out$total, log=\"xy\", xlab=\"Rank\", ylab=\"Total\")\nabline(h=metadata(br_out)$knee, col=\"dodgerblue\")\nabline(h=metadata(br_out)$inflection, col=\"forestgreen\")\n```\n\n**Testing for Empty Droplets:**\nUse `emptyDrops()` to statistically test if a droplet's profile differs from the ambient pool.\n```r\nset.seed(100)\n# Use the 'raw' (unfiltered) matrix for this step\ne_out <- emptyDrops(counts(sce_raw))\n\n# Filter for cells at 1% FDR\nis_cell <- e_out$FDR <= 0.01\nsce_filtered <- sce_raw[, which(is_cell)]\n```\n\n### 3. Demultiplexing Hashed Libraries (HTOs)\n\nFor experiments using Hash Tag Oligos (HTOs) to multiplex samples:\n```r\n# y is a matrix of HTO counts\n# ambient is the ambient profile (often from emptyDrops metadata)\ndemux <- hashedDrops(y, ambient = ambient_profile)\n\n# Identify confident singlets\nconfident_singlets <- demux[demux$Confident, ]\n```\n\n### 4. Removing Technical Artifacts\n\n**Barcode Swapping:**\nIf multiple samples were sequenced on an Illumina 4000/HiSeq X, use `swappedDrops()` to remove molecules appearing in multiple samples with the same barcode/UMI/gene combination.\n```r\ns_out <- swappedDrops(c(\"sample1.h5\", \"sample2.h5\"), min.frac=0.9)\n# Returns cleaned sparse matrices\n```\n\n**Chimeric Reads:**\nRemove chimeric molecules (same UMI/barcode but different genes) within a single sample.\n```r\ncleaned_counts <- chimericDrops(\"molecule_info.h5\")\n```\n\n## Tips and Best Practices\n\n- **Sparse Matrices:** `DropletUtils` uses `dgCMatrix` (sparse) formats. Ensure downstream tools are compatible or convert using `as.matrix()` only if the dataset is small.\n- **Seed Setting:** Functions like `emptyDrops()` use permutation testing; always `set.seed()` for reproducibility.\n- **Downsampling:** Use `downsampleReads()` on molecule info files to simulate lower coverage while preserving the UMI/read relationship, or `downsampleMatrix()` for simple count-based reduction.\n- **Ambient Profile:** When running `emptyDrops()`, the \"ambient\" profile is estimated from barcodes with low total counts (default `lower=100`). Adjust this parameter if your dataset has extremely low or high sequencing depth.\n\n## Reference documentation\n\n- [DropletUtils](./references/DropletUtils.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dropletutils",
+    "description": "This tool provides utilities for processing and analyzing droplet-based single-cell RNA-seq data. Use when user asks to load 10X Genomics data, distinguish cells from empty droplets, demultiplex hashed libraries, or remove barcode swapping effects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DropletUtils.html"
+  }
+}

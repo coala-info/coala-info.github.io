@@ -1,0 +1,52 @@
+{
+  "id": "fastk",
+  "category": "CLI",
+  "name": "fastk",
+  "description": "FastK is a high-performance k-mer counter that generates histograms, sorted k-mer tables, and sequence profiles for high-fidelity sequencing datasets. Use when user asks to count k-mers, generate k-mer frequency histograms, create sequence profiles, or perform set operations on k-mer tables.",
+  "overview": "FastK is a high-performance, disk-based k-mer counter optimized for high-fidelity sequencing datasets. Unlike general-purpose counters, it is designed to be extremely fast for low-error data (under 1% error) and can process massive genomes (like the 32GB Axolotl) on machines with modest RAM by leveraging efficient disk-sorting. It produces three primary outputs: histograms of k-mer frequencies, lexicographically sorted k-mer/count tables, and sequence profiles that map k-mer counts back to speci",
+  "homepage": "https://github.com/thegenemyers/FASTK",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/fastk/overview",
+  "github": "https://github.com/thegenemyers/FASTK",
+  "conda_downloads": "6.7K",
+  "conda_downloads_num": 6700,
+  "last_updated": "2026-02-07",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fastk_FastK",
+      "fastk_Histex",
+      "fastk_Tabex",
+      "fastk_Profex",
+      "fastk_Logex"
+    ],
+    "description": "FastK is a tool for k-mer counting and analysis.",
+    "docker_image": "quay.io/biocontainers/fastk:1.2--h71df26d_1",
+    "homepage": "https://github.com/thegenemyers/FASTK",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/fastk/overview",
+    "github": "https://github.com/thegenemyers/FASTK",
+    "conda_downloads": "6.7K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "fastk_FastK.cwl",
+    "fastk_Logex.cwl",
+    "fastk_Profex.cwl",
+    "fastk_Tabex.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# fastk\n\n## Overview\n\nFastK is a high-performance, disk-based k-mer counter optimized for high-fidelity sequencing datasets. Unlike general-purpose counters, it is designed to be extremely fast for low-error data (under 1% error) and can process massive genomes (like the 32GB Axolotl) on machines with modest RAM by leveraging efficient disk-sorting. It produces three primary outputs: histograms of k-mer frequencies, lexicographically sorted k-mer/count tables, and sequence profiles that map k-mer counts back to specific positions in the input reads.\n\n## Core CLI Usage\n\n### Basic K-mer Counting\nTo count k-mers and produce a histogram:\n```bash\nFastK -k40 -v -M16 sample.fastq\n```\n*   `-k`: Sets k-mer length (default is 40).\n*   `-v`: Enables verbose output to track progress.\n*   `-M`: Limits memory usage in GB (e.g., 16GB). FastK will use disk space if the dataset exceeds this.\n\n### Generating Tables and Profiles\nTo generate a k-mer table (k-mer/count pairs) and sequence profiles:\n```bash\nFastK -t1 -p sample.fastq\n```\n*   `-t`: Includes k-mers in a `.ktab` file if they occur at least N times (e.g., `-t1` for all k-mers).\n*   `-p`: Produces a `.prof` file containing the count of every k-mer at its position in each read.\n\n### Handling Input Formats\nFastK natively supports multiple formats including `.fasta`, `.fastq`, `.sam`, `.bam`, and `.cram`. It also handles gzipped files automatically.\n```bash\nFastK -k31 reads.bam\n```\n\n## Managing FastK Files\n\nFastK creates hidden \"part\" files to manage large datasets (e.g., `.sample.ktab.1`, `.sample.ktab.2`). Standard filesystem commands like `rm` or `cp` will miss these hidden components. Always use the provided suite tools:\n\n*   **Delete**: `Fastrm sample` (removes `.hist`, `.ktab`, `.prof` and all hidden parts).\n*   **Move/Copy**: Use `Fastmv` or `Fastcp` to ensure all hidden data parts are transferred correctly.\n*   **Concatenate**: `Fastcat -h -t -p target source1 source2` (merges multiple FastK outputs into a single target).\n\n## Data Extraction and Analysis\n\nFastK outputs are binary. Use the \"ex\" (extraction) tools to view or convert data:\n\n*   **Histex**: Display histogram data.\n    ```bash\n    Histex sample.hist\n    ```\n*   **Tabex**: Query or list k-mer tables.\n    ```bash\n    Tabex sample.ktab          # List all entries\n    Tabex sample.ktab TTT...A  # Find count for a specific k-mer\n    ```\n*   **Profex**: View profiles for specific reads.\n    ```bash\n    Profex sample.prof 1 10    # Show profiles for reads 1 through 10\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Canonical K-mers**: FastK considers a k-mer and its Watson-Crick complement as the same entity. It stores the lexicographically smaller version (the \"canonical\" k-mer).\n*   **HPC Workflows**: For very large datasets, use `Fastmerge` to combine results from independent runs on sub-parts of the data.\n*   **Logical Operations**: Use `Logex` to perform set operations on k-mer tables (e.g., finding k-mers present in Sample A but not Sample B).\n    ```bash\n    Logex \"A-B\" -otable_diff A.ktab B.ktab\n    ```\n*   **Homopolymer Compression**: Use the `-c` flag if working with technologies prone to homopolymer length errors; this compresses runs of the same base into a single base before counting.\n*   **Memory vs. Disk**: If you have high-speed NVMe storage, you can set `-M` lower to save RAM; FastK's disk-based sorting is highly optimized for fast I/O.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| FastK | FastK is a tool for k-mer counting and analysis. |\n| Logex | Logex |\n| Profex | Profex |\n| Tabex | Tabex is a tool for extracting k-mers from k-mer tables. |\n\n## Reference documentation\n- [FastK: A K-mer counter (for HQ assembly data sets)](./references/github_com_thegenemyers_FASTK.md)\n- [FastK.c Source Implementation](./references/github_com_thegenemyers_FASTK_blob_master_FastK.c.md)\n- [FastK README](./references/github_com_thegenemyers_FASTK_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "fastk",
+    "description": "FastK is a high-performance k-mer counter that generates histograms, sorted k-mer tables, and sequence profiles for high-fidelity sequencing datasets. Use when user asks to count k-mers, generate k-mer frequency histograms, create sequence profiles, or perform set operations on k-mer tables.",
+    "homepage": "https://github.com/thegenemyers/FASTK"
+  }
+}

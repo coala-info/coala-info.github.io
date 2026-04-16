@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rgntx",
+  "category": "bioconductor",
+  "name": "bioconductor-rgntx",
+  "description": "RgnTX provides a permutation test framework to statistically estimate the association between sets of transcriptome regions while accounting for alternative splicing and isoform ambiguity. Use when user asks to perform transcriptomic permutation tests, shuffle features within specific transcript contexts, or evaluate associations between RNA features with isoform ambiguity.",
+  "overview": "The `RgnTX` package provides a permutation test framework specifically designed for the transcriptome. Unlike genome-centric tools, `RgnTX` accounts for the complex architecture of the transcriptome, including alternative splicing and isoform ambiguity. It allows for statistically estimating the association between two sets of transcriptome regions by shuffling features within specific transcriptomic contexts (e.g., mature mRNA, CDS, UTRs).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RgnTX.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RgnTX"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RgnTX.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rgntx\n\n## Overview\nThe `RgnTX` package provides a permutation test framework specifically designed for the transcriptome. Unlike genome-centric tools, `RgnTX` accounts for the complex architecture of the transcriptome, including alternative splicing and isoform ambiguity. It allows for statistically estimating the association between two sets of transcriptome regions by shuffling features within specific transcriptomic contexts (e.g., mature mRNA, CDS, UTRs).\n\n## Core Workflows\n\n### 1. Data Preparation\n`RgnTX` uses `GRanges` or `GRangesList` objects. \n- **GRangesList**: Each element is a feature; the name of the element must be the **Transcript ID**.\n- **GRanges**: Must include a `transcriptsHits` metadata column for transcript IDs and a `group` column if a feature consists of multiple ranges.\n\n```r\nlibrary(RgnTX)\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ntxdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\n\n# Convert between formats\ngr <- GRangesList2GRanges(grl_object)\ngrl <- GRanges2GRangesList(gr_object)\n```\n\n### 2. Randomization Strategies\nRandomization is the \"shuffling\" step of the permutation test.\n- `randomizeTx()`: Picks random regions of a specified length from a given transcriptome space.\n- `randomizeFeaturesTx()`: Shuffles existing features within their known associated transcripts.\n- `randomizeFeaturesTxIA()`: Shuffles features with **Isoform Ambiguity** (IA) within the set of all possible isoforms they could map to.\n\n```r\n# Randomize 100 regions of 100nt in mature mRNA\nrand_regions <- randomizeTx(txdb, trans_ids = \"all\", random_num = 100, random_length = 100, type = \"mature\")\n```\n\n### 3. Permutation Testing\nThe primary functions for testing associations.\n\n#### Standard Association (Known Isoforms)\nUse `permTestTx` when the transcript belonging of each feature is known.\n```r\nresults <- permTestTx(RS1 = set_A, RS2 = set_B, txdb = txdb, \n                      type = \"mature\", ntimes = 50, \n                      ev_function_1 = overlapCountsTx)\n```\n\n#### Association with Isoform Ambiguity (IA)\nUse `permTestTxIA` when it is unclear which specific isoform a feature belongs to.\n```r\nresults_ia <- permTestTxIA(RS1 = m6a_sites, RS2 = target_regions, \n                           txdb = txdb, ntimes = 50)\n```\n\n#### Custom Region Testing (e.g., Stop Codons)\nUse `permTestTx_customPick` or `permTestTxIA_customPick` to test if features associate with specific functional regions defined by a custom function.\n```r\n# Example: Testing association with stop codons\nresults_custom <- permTestTxIA_customPick(RS1 = m6a_data, txdb = txdb,\n                                          customPick_function = getStopCodon,\n                                          ntimes = 50)\n```\n\n### 4. Evaluation Functions\nThese define the statistic being measured:\n- `overlapCountsTx`: Counts number of overlaps.\n- `overlapCountsTxIA`: Calculates weighted overlaps for ambiguous isoforms.\n- `overlapWidthTx`: Sum of overlapping nucleotides.\n- `distanceTx`: Mean distance to the closest region.\n\n### 5. Visualizing and Interpreting Results\n- `plotPermResults(results)`: Generates a histogram of random evaluations vs. the observed value.\n- **P-value**: Percentage of random trials more extreme than observed.\n- **Z-score**: Number of standard deviations the observed value is from the random mean.\n\n### 6. Shifted Z-Scores\nTo determine if an association is position-specific, use `shiftedZScoreTx`. A peak at the center (0) indicates the association is highly dependent on the exact location.\n```r\nshifted_res <- shiftedZScoreTx(results, txdb = txdb, window = 2000, step = 200)\nplotShiftedZScoreTx(shifted_res)\n```\n\n## Tips for Success\n- **Transcript IDs**: Ensure you use the internal IDs from the `TxDb` object (e.g., \"170\"), not gene symbols or external Ensembl IDs, unless the `TxDb` is configured for them.\n- **Type Argument**: Use `type = \"mature\"` for mRNAs, `\"CDS\"` for coding sequences, or `\"fiveUTR\"`/`\"threeUTR\"` for untranslated regions to constrain the null model.\n- **Performance**: Permutation tests are computationally expensive. Start with `ntimes = 50` for testing and increase to `500` or `1000` for publication-quality results.\n\n## Reference documentation\n- [RgnTX: colocalization analysis of transcriptome elements in the presence of isoform heterogeneity and ambiguity](./references/RgnTX.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rgntx",
+    "description": "RgnTX provides a permutation test framework to statistically estimate the association between sets of transcriptome regions while accounting for alternative splicing and isoform ambiguity. Use when user asks to perform transcriptomic permutation tests, shuffle features within specific transcript contexts, or evaluate associations between RNA features with isoform ambiguity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RgnTX.html"
+  }
+}

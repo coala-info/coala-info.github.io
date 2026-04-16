@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-puma",
+  "category": "bioconductor",
+  "name": "bioconductor-puma",
+  "description": "This tool performs probabilistic analysis of Affymetrix GeneChip data by propagating measurement uncertainty through the analysis pipeline. Use when user asks to perform summarization, differential expression detection using PPLR, principal component analysis, or clustering while accounting for probe-level measurement error.",
+  "overview": "The **puma** (Propagating Uncertainty in Microarray Analysis) package provides a suite of probabilistic methods for Affymetrix GeneChip data. Unlike standard methods (RMA, MAS5.0) that provide only point estimates, puma calculates the uncertainty (standard error) associated with gene expression levels and propagates this information to downstream analyses like Differential Expression (DE), PCA, and clustering.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/puma.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "puma"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/puma.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-puma\n\nname: bioconductor-puma\ndescription: Analysis of Affymetrix GeneChip data (3' arrays, exon, and HTA 2.0) using uncertainty propagation. Use when Claude needs to perform summarization, differential expression detection (PPLR), clustering, or PCA while accounting for probe-level measurement error and standard errors in expression estimates.\n\n# bioconductor-puma\n\n## Overview\n\nThe **puma** (Propagating Uncertainty in Microarray Analysis) package provides a suite of probabilistic methods for Affymetrix GeneChip data. Unlike standard methods (RMA, MAS5.0) that provide only point estimates, puma calculates the uncertainty (standard error) associated with gene expression levels and propagates this information to downstream analyses like Differential Expression (DE), PCA, and clustering.\n\n## Core Workflow\n\n### 1. Data Import\nData should be imported using the `oligo` package to create an `ExpressionFeatureSet`.\n\n```r\nlibrary(oligo)\nlibrary(puma)\n\n# List and read CEL files\ncelFiles <- list.celfiles()\nraw_data <- read.celfiles(celFiles)\n\n# Add phenotype data (essential for automatic design/contrast matrices)\npData(raw_data) <- data.frame(\n  condition = c(\"A\", \"A\", \"B\", \"B\"),\n  row.names = sampleNames(raw_data)\n)\n```\n\n### 2. Summarization (Calculating Expression and Uncertainty)\nUse `mmgmos` for standard 3' arrays. This produces an `ExpressionSet` containing both expression values (`exprs`) and standard errors (`se.exprs`).\n\n```r\n# Standard 3' arrays\neset <- mmgmos(raw_data)\n\n# Exon arrays (requires pumadata package)\n# eset_exon <- gmoExon(raw_data, exontype=\"Human\")\n\n# HTA 2.0 arrays\n# eset_hta <- gmhta(raw_data)\n\n# Accessing uncertainty\nexpression_values <- exprs(eset)\nstandard_errors <- assayDataElement(eset, \"se.exprs\")\n```\n\n### 3. Quality Control and Normalization\n`pumaPCA` uses uncertainty to provide more robust principal component analysis.\n\n```r\n# PCA with uncertainty propagation\np_pca <- pumaPCA(eset)\nplot(p_pca)\n\n# Normalization (if not done during mmgmos)\neset_norm <- pumaNormalize(eset)\n```\n\n### 4. Differential Expression (PPLR Method)\nThe Probability of Positive Log Ratio (PPLR) method identifies DE genes by combining replicates and calculating the probability of a change.\n\n```r\n# 1. Combine replicates (calculates condition-level uncertainty)\n# Use pumaCombImproved for faster execution on large datasets\neset_comb <- pumaComb(eset_norm)\n\n# 2. Calculate Differential Expression\n# puma automatically creates contrasts if pData is present\nde_results <- pumaDE(eset_comb)\n\n# 3. Get top genes for a specific contrast (e.g., contrast 1)\ntop_genes <- topGenes(de_results, contrast=1)\n```\n\n### 5. Visualization\nUse `plotErrorBars` to visualize expression levels alongside their calculated uncertainty. This is the primary way to validate if a DE call is robust or driven by high-noise probes.\n\n```r\n# Compare a specific probe set across conditions with error bars\nplotErrorBars(eset_norm, probesetID = \"12345_at\")\n```\n\n### 6. Clustering\n`pumaClust` and `pumaClustii` perform clustering while accounting for measurement error. `pumaClustii` is more robust as it uses a Student’s t mixture model and handles replicates.\n\n```r\n# Basic clustering\nclusters <- pumaClust(eset, clusters=7)\n\n# Robust clustering with replicates\n# r is a vector of replicate labels\ncl <- pumaClustii(exprs(eset), assayDataElement(eset, \"se.exprs\"), mincls=5, maxcls=10, reps=r)\n```\n\n## Parallel Processing\nMany puma functions (especially `pumaComb`, `gmoExon`, and `gmhta`) are computationally intensive but parallelizable via the `snow` package.\n\n```r\nlibrary(snow)\ncl <- makeCluster(4, type = \"SOCK\") # Use 4 cores\neset_comb <- pumaComb(eset_norm, cl=cl)\nstopCluster(cl)\n```\n\n## Tips for Success\n- **Phenotype Data**: Always populate the `pData` slot of your object before running `pumaComb`. Puma uses this to automatically generate design and contrast matrices.\n- **Memory**: `mmgmos` and `pumaComb` can be memory-intensive. For large datasets, use `pumaCombImproved`.\n- **Exporting**: Use `write.reslts(eset, file=\"output\")` to save expression levels, standard errors, and confidence intervals into CSV files.\n\n## Reference documentation\n- [puma User Guide](./references/puma.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-puma",
+    "description": "This tool performs probabilistic analysis of Affymetrix GeneChip data by propagating measurement uncertainty through the analysis pipeline. Use when user asks to perform summarization, differential expression detection using PPLR, principal component analysis, or clustering while accounting for probe-level measurement error.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/puma.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cocoa",
+  "category": "bioconductor",
+  "name": "bioconductor-cocoa",
+  "description": "COCOA annotates epigenetic variation by identifying which reference region sets are most associated with sample-to-sample variation. Use when user asks to quantify associations between epigenetic data and phenotypes, interpret principal components using genomic region sets, or perform coordinate covariation analysis.",
+  "overview": "COCOA (Coordinate Covariation Analysis) is a Bioconductor package designed to annotate epigenetic variation among samples using reference region sets (e.g., transcription factor binding sites, histone modifications). It transforms high-dimensional epigenetic data into biologically interpretable results by identifying which functional categories of genomic regions are most associated with sample-to-sample variation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/COCOA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/databio/COCOA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "COCOA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/COCOA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/databio/COCOA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cocoa\n\n## Overview\n\nCOCOA (Coordinate Covariation Analysis) is a Bioconductor package designed to annotate epigenetic variation among samples using reference region sets (e.g., transcription factor binding sites, histone modifications). It transforms high-dimensional epigenetic data into biologically interpretable results by identifying which functional categories of genomic regions are most associated with sample-to-sample variation.\n\n## Core Workflow\n\nThe COCOA workflow generally follows three main steps:\n1. **Quantify Association**: Calculate Feature Contribution Scores (FCS) for each genomic feature (e.g., CpG site or ATAC peak) relative to a target variable.\n2. **Score Region Sets**: Aggregate these FCS values across predefined region sets to identify which sets are most associated with the variation.\n3. **Statistical Validation**: (Optional) Use permutation tests and gamma distribution fitting to estimate p-values.\n\n### 1. Data Preparation\nCOCOA requires a matrix of epigenetic signals and a corresponding `GRanges` object for coordinates.\n\n```r\nlibrary(COCOA)\n# genomicSignal: rows = features, cols = samples\n# signalCoord: GRanges object matching rows of genomicSignal\n# GRList: GRangesList of reference region sets (e.g., from LOLA or BED files)\n```\n\n### 2. Supervised Analysis\nUse this when you have a specific phenotype (e.g., disease status, ER status) to link to epigenetic changes.\n\n```r\n# 1. Define target variable (must be a data.frame)\ntargetVarDF <- brcaMetadata[, \"ER_status\", drop=FALSE]\n\n# 2. Run COCOA (quantifies correlation and scores region sets in one step)\nrsScores <- runCOCOA(genomicSignal=brcaMethylData,\n                     signalCoord=brcaMCoord,\n                     GRList=myGRList,\n                     signalCol=\"ER_status\",\n                     targetVar=targetVarDF,\n                     variationMetric=\"cor\")\n```\n\n### 3. Unsupervised Analysis\nUse this to find the biological meaning of major axes of variation (e.g., Principal Components).\n\n```r\n# 1. Perform PCA\npca <- prcomp(t(brcaMethylData))\npcScores <- pca$x[, 1:4] # Target the first 4 PCs\n\n# 2. Run COCOA using PC scores as target variables\nrsScores <- runCOCOA(genomicSignal=brcaMethylData,\n                     signalCoord=brcaMCoord,\n                     GRList=myGRList,\n                     signalCol=paste0(\"PC\", 1:4),\n                     targetVar=pcScores,\n                     variationMetric=\"cor\")\n```\n\n### 4. Significance Testing (Permutations)\nTo account for region set size and noise, use `runCOCOAPerm`.\n\n```r\npermResults <- runCOCOAPerm(genomicSignal=brcaMethylData,\n                            signalCoord=brcaMCoord,\n                            GRList=myGRList,\n                            rsScores=realRSScores,\n                            targetVar=targetVarDF,\n                            nPerm=100,\n                            variationMetric=\"cor\")\n```\n\n## Visualization and Interpretation\n\nCOCOA provides several functions to validate and visualize top-ranked region sets:\n\n- **`plotAnnoScoreDist`**: Visualizes the distribution of region set scores, highlighting specific groups (e.g., \"ER-related\").\n- **`rsScoreHeatmap`**: Compares region set rankings across multiple target variables (e.g., multiple PCs).\n- **`getMetaRegionProfile`**: Creates a \"meta-region\" plot to see if the variation is specific to the region set or shared with the surrounding genome (look for a peak in the center).\n- **`signalAlongAxis`**: Generates a heatmap of the raw epigenetic signal for features within a region set, ordered by the target variable.\n- **`regionQuantileByTargetVar`**: Shows which individual regions within a set contribute most to the overall score.\n\n## Tips for Success\n- **Region Set Databases**: Use large databases (hundreds or thousands of sets) for better context. LOLA Core is a common source.\n- **Coordinate Matching**: Ensure your `signalCoord` and `GRList` use the same genome build (e.g., hg19 vs hg38). Use `liftOver` if necessary.\n- **Missing Data**: For DNA methylation, use `use=\"pairwise.complete.obs\"` in correlation steps if NAs are present.\n- **Gamma Approximation**: When running permutations, fitting a gamma distribution (`getGammaPVal`) allows for p-value estimation with fewer permutations (e.g., 300-500).\n\n## Reference documentation\n- [Introduction to Coordinate Covariation Analysis](./references/IntroToCOCOA.Rmd)\n- [Introduction to Coordinate Covariation Analysis](./references/IntroToCOCOA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cocoa",
+    "description": "COCOA annotates epigenetic variation by identifying which reference region sets are most associated with sample-to-sample variation. Use when user asks to quantify associations between epigenetic data and phenotypes, interpret principal components using genomic region sets, or perform coordinate covariation analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/COCOA.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msnid",
+  "category": "bioconductor",
+  "name": "bioconductor-msnid",
+  "description": "This package manages MS/MS peptide-to-spectrum matches and optimizes filtering criteria to estimate False Discovery Rates in proteomics datasets. Use when user asks to read mzIdentML files, assess peptide cleavage patterns, calculate mass measurement errors, or optimize PSM and protein filters for specific FDR levels.",
+  "overview": "The `MSnID` package provides a framework for managing and filtering Mass Spectrometry (MS/MS) peptide-to-spectrum matches (PSMs). It is designed to handle the uncertainty of identifications by leveraging decoy databases to estimate False Discovery Rates (FDR) at the PSM, peptide, and protein levels. Its core strength lies in its ability to optimize multi-parameter filters (e.g., combining MS/MS scores and mass accuracy) to maximize the number of identifications while maintaining a user-defined F",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MSnID.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MSnID"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSnID.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msnid\n\nname: bioconductor-msnid\ndescription: Utilities for handling MS/MS identifications, estimating False Discovery Rate (FDR), and optimizing filtering criteria for proteomics data. Use this skill when you need to read mzIdentML files, assess peptide cleavage patterns, calculate mass measurement errors, or optimize PSM/peptide/protein filters to achieve specific FDR thresholds in R.\n\n# bioconductor-msnid\n\n## Overview\nThe `MSnID` package provides a framework for managing and filtering Mass Spectrometry (MS/MS) peptide-to-spectrum matches (PSMs). It is designed to handle the uncertainty of identifications by leveraging decoy databases to estimate False Discovery Rates (FDR) at the PSM, peptide, and protein levels. Its core strength lies in its ability to optimize multi-parameter filters (e.g., combining MS/MS scores and mass accuracy) to maximize the number of identifications while maintaining a user-defined FDR.\n\n## Core Workflow\n\n### 1. Initialization and Data Loading\nThe `MSnID` object stores PSM data and caches results in a specified working directory.\n\n```r\nlibrary(MSnID)\nmsnid <- MSnID(\".\")\n\n# Preferred: Read mzIdentML files\nmsnid <- read_mzIDs(msnid, \"path/to/file.mzid.gz\")\n\n# Alternative: Load from data.frame\n# Required columns: accession, chargeState, isDecoy, peptide, spectrumID, \n# calculatedMassToCharge, experimentalMassToCharge, spectrumFile\npsms(msnid) <- my_psm_dataframe\n```\n\n### 2. Peptide Sequence Analysis\nAssess the quality of digestion by checking for irregular or missed cleavages.\n\n```r\n# Assess tryptic termini (0, 1, or 2 irregular)\nmsnid <- assess_termini(msnid, validCleavagePattern=\"[KR]\\\\.[^P]\")\n\n# Assess missed cleavages\nmsnid <- assess_missed_cleavages(msnid, missedCleavagePattern=\"[KR](?=[^P$])\")\n\n# Custom peptide properties (e.g., length)\nmsnid$PepLength <- nchar(msnid$peptide) - 4\n```\n\n### 3. Mass Error Handling\nCalculate and correct parent ion mass measurement errors.\n\n```r\n# Calculate error in ppm\nppm <- mass_measurement_error(msnid)\n\n# Correct for non-monoisotopic peak selection (1 Da shifts)\nmsnid <- correct_peak_selection(msnid)\n\n# Post-experimental recalibration of systematic error\nmsnid <- recalibrate(msnid)\n```\n\n### 4. Filtering and Optimization\nFiltering is performed using `MSnIDFilter` objects. You can manually set thresholds or optimize them.\n\n```r\n# Create filter object\nfiltObj <- MSnIDFilter(msnid)\nfiltObj$absParentMassErrorPPM <- list(comparison=\"<\", threshold=10.0)\nfiltObj$msmsScore <- list(comparison=\">\", threshold=10.0)\n\n# Evaluate current FDR\nevaluate_filter(msnid, filtObj, level=\"peptide\")\n\n# Optimize filter to maximize identifications at 1% FDR\nfiltObj.opt <- optimize_filter(filtObj, msnid, fdr.max=0.01, \n                               method=\"Grid\", level=\"peptide\", n.iter=500)\n\n# Apply the filter\nmsnid <- apply_filter(msnid, filtObj.opt)\n```\n\n### 5. Handling Modifications (PTMs)\nMap modification sites to protein sequences using FASTA files.\n\n```r\n# Add symbols to modified peptides\nmsnid <- add_mod_symbol(msnid, mod_mass=\"79.9663\", symbol=\"*\")\n\n# Map sites to protein sequence\nlibrary(Biostrings)\nfst <- readAAStringSet(\"path/to/fasta.fasta\")\nmsnid <- map_mod_sites(msnid, fst, \n                       accession_col=\"accession\", \n                       peptide_mod_col=\"peptide_mod\", \n                       mod_char=\"*\", \n                       site_delimiter=\"lower\")\n```\n\n### 6. Data Export and Integration\nConvert `MSnID` data for use in other Bioconductor packages like `MSnbase`.\n\n```r\n# Export as data.frame\ndf <- psms(msnid)\n\n# Convert to MSnSet for quantitative analysis (spectral counting)\nmsnset <- as(msnid, \"MSnSet\")\n\n# Aggregate to protein level\nlibrary(MSnbase)\nmsnset.prot <- combineFeatures(msnset, fData(msnset)$accession, \n                               redundancy.handler=\"unique\", fun=\"sum\")\n```\n\n## Tips and Best Practices\n- **Decoy Hits**: Ensure your input data contains a `isDecoy` logical column. FDR is calculated as `#decoy / #forward`.\n- **Accession Remapping**: Use `remap_accessions` and `fetch_conversion_table` to switch between UniProt IDs and Gene Symbols for more readable Site IDs.\n- **String Filters**: `apply_filter` can accept simple strings for quick trimming, e.g., `apply_filter(msnid, \"isDecoy == FALSE\")`.\n- **Optimization Methods**: Start with `\"Grid\"` search for a broad sweep, then refine with `\"Nelder-Mead\"` or `\"SANN\"` (Simulated Annealing).\n\n## Reference documentation\n- [Handling Modifications with MSnID](./references/handling_mods.md)\n- [MSnID Package for Handling MS/MS Identifications](./references/msnid_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msnid",
+    "description": "This package manages MS/MS peptide-to-spectrum matches and optimizes filtering criteria to estimate False Discovery Rates in proteomics datasets. Use when user asks to read mzIdentML files, assess peptide cleavage patterns, calculate mass measurement errors, or optimize PSM and protein filters for specific FDR levels.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSnID.html"
+  }
+}

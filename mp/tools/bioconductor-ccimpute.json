@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ccimpute",
+  "category": "bioconductor",
+  "name": "bioconductor-ccimpute",
+  "description": "\"bioconductor-ccimpute imputes dropout events in scRNA-seq data using a consensus clustering framework to identify cell similarity. Use when user asks to impute missing values in scRNA-seq data, address dropout noise, or recover gene expression patterns using consensus clustering.\"",
+  "overview": "`ccImpute` is a Bioconductor package designed to address the \"dropout\" problem in scRNA-seq data. It uses a consensus clustering framework to determine cell similarity and identifies probable dropout events by looking at expression patterns across similar cells. Unlike some imputation methods that may introduce significant noise, `ccImpute` aims to be conservative, only imputing values where there is strong evidence of a dropout.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ccImpute.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ccimpute/overview",
+  "github": "https://github.com/khazum/ccImpute",
+  "conda_downloads": "4.5K",
+  "conda_downloads_num": 4500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ccImpute"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ccImpute.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ccimpute/overview",
+    "github": "https://github.com/khazum/ccImpute",
+    "conda_downloads": "4.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ccimpute\n\n## Overview\n\n`ccImpute` is a Bioconductor package designed to address the \"dropout\" problem in scRNA-seq data. It uses a consensus clustering framework to determine cell similarity and identifies probable dropout events by looking at expression patterns across similar cells. Unlike some imputation methods that may introduce significant noise, `ccImpute` aims to be conservative, only imputing values where there is strong evidence of a dropout.\n\n## Core Workflow\n\nThe package operates primarily on `SingleCellExperiment` objects and expects data to be log-normalized.\n\n### 1. Data Preparation\n`ccImpute` does not perform normalization itself. You must provide log-transformed normalized counts.\n\n```r\nlibrary(ccImpute)\nlibrary(SingleCellExperiment)\nlibrary(scater)\n\n# Assuming 'sce' is your SingleCellExperiment object\n# Ensure logcounts assay exists\nsce <- logNormCounts(sce) \n```\n\n### 2. Basic Imputation\nThe simplest way to run the tool is calling `ccImpute` directly on the object. By default, it will estimate the number of clusters ($k$) using the Tracy-Widom bound.\n\n```r\nlibrary(BiocParallel)\n\n# Recommended: Use parallel processing\nbp_param <- MulticoreParam(workers = 2)\n\n# Run imputation\nsce <- ccImpute(sce, BPPARAM = bp_param)\n\n# The results are stored in a new assay named \"imputed\"\nimputed_matrix <- assay(sce, \"imputed\")\n```\n\n### 3. Optimized Imputation (Recommended)\nIf the number of cell types ($k$) is known, providing it significantly improves performance and accuracy.\n\n```r\n# If you know there are 5 cell types\nsce <- ccImpute(sce, k = 5, BPPARAM = bp_param)\n```\n\n## Key Parameters\n\n- `k`: Number of clusters. If unknown, it is estimated, but manual specification is preferred.\n- `dist`: A custom distance or correlation matrix. Defaults to weighted Spearman correlation.\n- `svdMaxRatio`: Controls dimensionality reduction (default: 0.08).\n- `consMin`: Minimum consensus threshold (default: 0.75).\n- `BPPARAM`: A `BiocParallelParam` object for parallelization.\n\n## Advanced Control (Step-by-Step)\n\nFor finer control, you can run the internal steps manually:\n\n```r\n# 1. Compute gene weights and correlation matrix\nlogX <- logcounts(sce)\nw <- rowVars_fast(logX, nCores = 2)\ncorMat <- getCorM(\"spearman\", logX, w, nCores = 2)\n\n# 2. SVD for dimensionality reduction\nv <- doSVD(corMat, svdMaxRatio = 0.08, nCeil = 2000, nCores = 2)\n\n# 3. Generate Consensus Matrix\nconsMtx <- runKM(logX, v, maxSets = 8, k = 5, BPPARAM = bp_param)\n\n# 4. Identify and Impute\ndropIds <- findDropouts(logX, consMtx)\niLogX <- computeDropouts(consMtx, logX, dropIds, fastSolver = TRUE, nCores = 2)\n\n# 5. Save back to object\nassay(sce, \"imputed\") <- iLogX\n```\n\n## Performance Tips\n\n- **Feature Selection**: It is often beneficial to perform feature selection (e.g., identifying highly variable genes) before imputation, as `ccImpute` is unlikely to benefit from genes with extremely low expression across the entire dataset.\n- **BLAS Libraries**: Using optimized BLAS libraries (like OpenBLAS or MKL) can significantly speed up the matrix operations.\n- **Memory**: For very large datasets, ensure you have sufficient RAM, as the consensus matrix and SVD steps can be memory-intensive.\n\n## Reference documentation\n\n- [ccImpute Package Manual](./references/ccImpute.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ccimpute",
+    "description": "bioconductor-ccimpute imputes dropout events in scRNA-seq data using a consensus clustering framework to identify cell similarity. Use when user asks to impute missing values in scRNA-seq data, address dropout noise, or recover gene expression patterns using consensus clustering.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ccImpute.html"
+  }
+}

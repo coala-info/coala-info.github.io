@@ -1,0 +1,41 @@
+{
+  "id": "r-gchromvar",
+  "category": "R",
+  "name": "r-gchromvar",
+  "description": "The gchromvar package performs enrichment analyses of genome-wide chromatin accessibility data using GWAS summary statistics to identify cell-type-specific trait associations. Use when user asks to compute cell-type specific GWAS enrichments using weighted deviations, import GWAS posterior probabilities into RangedSummarizedExperiment objects, or analyze quantitative chromatin accessibility data in the context of genetic fine-mapping.",
+  "overview": "The `gchromvar` package is an extension of the `chromVAR` framework designed to handle continuous (weighted) annotations rather than just binary ones. It is primarily used to discriminate between closely related cell types and score them for GWAS enrichment by weighting chromatin features by variant posterior probabilities. It compares these weights against an empirical background matched for GC content and feature intensity.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-gchromvar\n\nname: r-gchromvar\ndescription: Expert guidance for using the gchromvar R package to perform enrichment analyses of genome-wide chromatin accessibility data with GWAS summary statistics. Use this skill when you need to: (1) Compute cell-type specific GWAS enrichments using weighted deviations, (2) Import GWAS summary statistics (posterior probabilities) into RangedSummarizedExperiment objects, (3) Analyze quantitative chromatin accessibility data (ATAC-seq) in the context of genetic fine-mapping, or (4) Perform lineage-specific enrichment tests for complex traits.\n\n# r-gchromvar\n\n## Overview\n\nThe `gchromvar` package is an extension of the `chromVAR` framework designed to handle continuous (weighted) annotations rather than just binary ones. It is primarily used to discriminate between closely related cell types and score them for GWAS enrichment by weighting chromatin features by variant posterior probabilities. It compares these weights against an empirical background matched for GC content and feature intensity.\n\n## Installation\n\nTo install the package from GitHub (as it is primarily hosted there):\n\n```R\nif (!require(\"devtools\")) install.packages(\"devtools\")\ndevtools::install_github(\"caleblareau/gchromVAR\")\n```\n\n## Core Workflow\n\n### 1. Prepare Chromatin Data\nThe input should be a `RangedSummarizedExperiment` containing a counts matrix and peak definitions. It is essential to add GC bias information for the background model.\n\n```R\nlibrary(gchromVAR)\nlibrary(SummarizedExperiment)\n\n# Assuming 'counts' is a matrix and 'peaks' is a GRanges object\nSE <- SummarizedExperiment(assays = list(counts = counts),\n                           rowData = peaks,\n                           colData = DataFrame(names = colnames(counts)))\n\n# Add GC bias (requires a BSgenome object, e.g., BSgenome.Hsapiens.UCSC.hg19)\nSE <- addGCBias(SE, genome = BSgenome.Hsapiens.UCSC.hg19)\n```\n\n### 2. Import GWAS Summary Statistics\nUse `importBedScore` to overlap GWAS posterior probabilities (PP) with your accessibility peaks. This creates a second `RangedSummarizedExperiment` where columns represent different traits.\n\n```R\n# files: vector of paths to BED files containing variant coordinates and scores\n# colidx: the column index in the BED file containing the score (e.g., 5 for PP)\ngwas_data <- importBedScore(rowRanges(SE), files, colidx = 5)\n```\n\n### 3. Compute Weighted Deviations\nThis is the core function of `gchromVAR`. It calculates how much the accessibility of peaks associated with a trait deviates from expected values.\n\n```R\nweighted_devs <- computeWeightedDeviations(SE, gwas_data)\n\n# Extract Z-scores for enrichment\nz_scores <- assays(weighted_devs)[[\"z\"]]\n```\n\n### 4. Lineage-Specific Enrichment Testing\nTo validate results, you can compare Z-scores of lineage-specific cell types against non-lineage types using a Mann-Whitney Rank-sum test or similar non-parametric approach.\n\n```R\n# Example: Calculate p-values from Z-scores\np_values <- pnorm(z_scores, lower.tail = FALSE)\n\n# Apply Bonferroni correction for significance\nsignificant_hits <- z_scores[p_values < (0.05 / length(p_values))]\n```\n\n## Tips and Best Practices\n\n- **Parallelization**: `gchromVAR` supports parallel processing via `BiocParallel`. Register a backend (e.g., `register(MulticoreParam(cores))`) before running `computeWeightedDeviations`.\n- **Peak Width**: For best results, use consensus, equal-width peaks (e.g., 500bp) across all samples.\n- **Input Scores**: While designed for fine-mapped posterior probabilities, any continuous variant-level score can be used with `importBedScore`.\n- **Background Model**: Ensure the `BSgenome` version matches the assembly used for peak calling (e.g., hg19 vs hg38).\n\n## Reference documentation\n\n- [gchromVAR User's Guide](./references/gchromVAR_vignette.html.md)\n- [gchromVAR Project Home](./references/home_page.md)\n- [gchromVAR Mathematical Framework](./references/maths.pdf.md)",
+  "skill_front_matter": {
+    "name": "r-gchromvar",
+    "description": "The gchromvar package performs enrichment analyses of genome-wide chromatin accessibility data using GWAS summary statistics to identify cell-type-specific trait associations. Use when user asks to compute cell-type specific GWAS enrichments using weighted deviations, import GWAS posterior probabilities into RangedSummarizedExperiment objects, or analyze quantitative chromatin accessibility data in the context of genetic fine-mapping.",
+    "homepage": "https://cran.r-project.org/web/packages/gchromvar/index.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "deeplift",
+  "category": "library",
+  "name": "deeplift",
+  "description": "DeepLIFT is a framework for decomposing deep neural network predictions to explain the contribution of input features relative to a reference. Use when user asks to explain model predictions, compute feature importance scores, identify regulatory motifs in genomics, or handle gradient saturation in deep learning models.",
+  "overview": "DeepLIFT (Deep Learning Important FeaTures) is a specialized framework for decomposing the output predictions of deep neural networks. Unlike simple gradient-based methods, DeepLIFT explains the difference in output from a \"reference\" output in terms of differences in inputs from \"reference\" inputs. This approach allows the tool to capture non-linear effects and avoid issues like gradient saturation. It is widely used in bioinformatics to identify regulatory motifs and in general machine learnin",
+  "homepage": "https://github.com/kundajelab/deeplift",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/deeplift/overview",
+  "github": "https://github.com/kundajelab/deeplift",
+  "conda_downloads": "18.1K",
+  "conda_downloads_num": 18100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "deeplift"
+    ],
+    "description": "FAIL to generate CWL: deeplift not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/deeplift:0.6.13.0--pyh3252c3a_0",
+    "homepage": "https://github.com/kundajelab/deeplift",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/deeplift/overview",
+    "github": "https://github.com/kundajelab/deeplift",
+    "conda_downloads": "18.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# deeplift\n\n## Overview\n\nDeepLIFT (Deep Learning Important FeaTures) is a specialized framework for decomposing the output predictions of deep neural networks. Unlike simple gradient-based methods, DeepLIFT explains the difference in output from a \"reference\" output in terms of differences in inputs from \"reference\" inputs. This approach allows the tool to capture non-linear effects and avoid issues like gradient saturation. It is widely used in bioinformatics to identify regulatory motifs and in general machine learning to provide transparent, feature-level explanations for model behavior.\n\n## Installation\n\nInstall the package via PyPI or Bioconda:\n\n```bash\n# Via pip\npip install deeplift\n\n# Via conda\nconda install -c bioconda deeplift\n```\n\n## Core Workflow\n\nTo use DeepLIFT, you must convert your trained model into a DeepLIFT-compatible format and then compile a function to compute scores.\n\n### 1. Model Conversion\nDeepLIFT provides autoconversion for Keras models. You must specify a `NonlinearMxtsMode` which dictates how non-linearities are handled during backpropagation.\n\n```python\nimport deeplift\nfrom deeplift.conversion import kerasapi_conversion as kc\n\n# Common modes:\n# .DeepLIFT_GenomicsDefault: RevealCancel on Dense, Rescale on Conv\n# .RevealCancel: Best for MNIST/Vision\n# .Rescale: Standard rescaling\ndeeplift_model = kc.convert_model_from_saved_files(\n    'model.h5',\n    nonlinear_mxts_mode=deeplift.layers.NonlinearMxtsMode.DeepLIFT_GenomicsDefault\n)\n```\n\n### 2. Compiling the Contribution Function\nDefine which layer you want scores for (usually the input layer, index 0) and which output task to explain.\n\n```python\n# find_scores_layer_idx=0 targets the input layer\n# target_layer_idx=-2 is recommended for sigmoid/softmax (explains the logits)\n# target_layer_idx=-1 is for regression/linear outputs\ndeeplift_contribs_func = deeplift_model.get_target_contribs_func(\n    find_scores_layer_idx=0, \n    target_layer_idx=-2\n)\n```\n\n### 3. Computing Scores\nYou must provide the input data and a \"reference\" input (e.g., a zero-background or shuffled sequence).\n\n```python\n# task_idx: the index of the class/output you are explaining\nscores = deeplift_contribs_func(\n    task_idx=0,\n    input_data_list=[X_test],\n    batch_size=10,\n    progress_update=None\n)\n```\n\n## Expert Tips and Best Practices\n\n### Choice of Reference\nThe reference input is the most critical parameter. \n- **Genomics**: Use dinucleotide-shuffled versions of the original sequence to preserve local composition while breaking motifs.\n- **Vision**: Often a black image or a blurred version of the input.\n- **Note**: If the reference is poor, the importance scores may be misleading.\n\n### Target Layer Selection\nFor classification models (Sigmoid or Softmax), always compute explanations with respect to the **logits** (the layer before the final activation). This is achieved by setting `target_layer_idx=-2`. Explaining the final probabilities directly can lead to \"artifactual\" importance due to the squashing nature of the activation function.\n\n### Softmax Normalization\nWhen dealing with Softmax outputs, it is recommended to mean-normalize the weights of the final layer so they sum to zero. This ensures that features contributing equally to all classes are assigned a score of zero, as they do not help discriminate between classes.\n\n### Computer Vision Specifics\nFor complex images, computing scores for the raw pixels can sometimes be noisy. You may get more interpretable results by computing contribution scores for a higher convolutional layer using the `find_scores_layer_idx` argument.\n\n### Negative Scores\nA positive score means the feature drives the output *away* from the reference toward the target prediction. A negative score means the feature suppresses the output relative to the reference.\n\n## Reference documentation\n- [DeepLIFT GitHub Repository](./references/github_com_kundajelab_deeplift.md)\n- [Bioconda DeepLIFT Overview](./references/anaconda_org_channels_bioconda_packages_deeplift_overview.md)",
+  "skill_front_matter": {
+    "name": "deeplift",
+    "description": "DeepLIFT is a framework for decomposing deep neural network predictions to explain the contribution of input features relative to a reference. Use when user asks to explain model predictions, compute feature importance scores, identify regulatory motifs in genomics, or handle gradient saturation in deep learning models.",
+    "homepage": "https://github.com/kundajelab/deeplift"
+  }
+}

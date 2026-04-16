@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bambu",
+  "category": "bioconductor",
+  "name": "bioconductor-bambu",
+  "description": "Bambu performs transcript discovery and quantification from long-read RNA-Seq data. Use when user asks to identify novel isoforms, estimate transcript or gene abundance, or analyze long-read sequencing data from Nanopore or PacBio.",
+  "overview": "The `bambu` package is designed for the analysis of long-read RNA-Seq data. It performs two primary tasks:\n1. **Transcript Discovery**: Identifying novel transcripts by comparing aligned reads against a reference annotation.\n2. **Quantification**: Estimating the expression levels of both known and newly discovered transcripts using an Expectation-Maximization (EM) algorithm.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/bambu.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bambu/overview",
+  "github": "https://github.com/GoekeLab/bambu",
+  "conda_downloads": "35.9K",
+  "conda_downloads_num": 35900,
+  "last_updated": "2026-01-24",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bambu"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bambu.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bambu/overview",
+    "github": "https://github.com/GoekeLab/bambu",
+    "conda_downloads": "35.9K",
+    "last_updated": "2026-01-24",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bambu\n\nname: bioconductor-bambu\ndescription: Transcript discovery and quantification from long-read RNA-Seq data (Nanopore/PacBio). Use when Claude needs to identify novel isoforms, estimate transcript/gene abundance, or perform differential expression analysis using aligned long-read data.\n\n# bioconductor-bambu\n\n## Overview\n\nThe `bambu` package is designed for the analysis of long-read RNA-Seq data. It performs two primary tasks:\n1. **Transcript Discovery**: Identifying novel transcripts by comparing aligned reads against a reference annotation.\n2. **Quantification**: Estimating the expression levels of both known and newly discovered transcripts using an Expectation-Maximization (EM) algorithm.\n\nThe package outputs a `SummarizedExperiment` object, making it compatible with standard Bioconductor downstream tools like `DESeq2` and `DEXSeq`.\n\n## Core Workflow\n\n### 1. Installation and Loading\nInstall via BiocManager and load the library:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"bambu\")\nlibrary(bambu)\n```\n\n### 2. Preparing Input Data\nBambu requires three main inputs:\n- **Aligned Reads**: A path to a BAM file or a `Rsamtools::BamFileList`.\n- **Reference Annotations**: A GTF file, `TxDb` object, or a `bambuAnnotation` object.\n- **Genome Sequence**: A FASTA file or a `BSgenome` object.\n\n```r\n# Prepare annotations from GTF\nannotations <- prepareAnnotations(\"path/to/annotation.gtf\")\n\n# Define genome sequence\ngenome <- \"path/to/genome.fa\" # or a BSgenome object\n```\n\n### 3. Running Bambu\nThe `bambu` function is the primary interface. It can perform discovery and quantification simultaneously.\n\n```r\n# Standard run (Discovery + Quantification)\nse <- bambu(reads = \"sample.bam\", annotations = annotations, genome = genome)\n\n# Multi-sample run with parallel processing\nbamFiles <- Rsamtools::BamFileList(c(\"s1.bam\", \"s2.bam\"), yieldSize = 1000000)\nse <- bambu(reads = bamFiles, annotations = annotations, genome = genome, ncore = 4)\n```\n\n### 4. Accessing Results\nThe output is a `SummarizedExperiment` object.\n- `assays(se)$counts`: Transcript-level counts.\n- `assays(se)$CPM`: Counts per million.\n- `rowRanges(se)`: Genomic coordinates (GRangesList) of all transcripts.\n- `rowData(se)`: Metadata including gene IDs and discovery status.\n\n## Key Functionalities\n\n### Modulating Discovery Sensitivity\nControl the balance between sensitivity and precision using the Novel Discovery Rate (NDR).\n- **Lower NDR (e.g., 0.05)**: Higher precision, fewer novel transcripts (conservative).\n- **Higher NDR (e.g., 0.2)**: Higher sensitivity, more novel transcripts.\n\n```r\nse <- bambu(reads = bamFiles, annotations = annotations, genome = genome, NDR = 0.1)\n```\n\n### Gene-Level Expression\nConvert transcript-level estimates to gene-level estimates for standard differential expression.\n\n```r\nseGene <- transcriptToGeneExpression(se)\n```\n\n### Visualization\nUse `plotBambu` to inspect results.\n\n```r\n# Heatmap of sample correlations\nplotBambu(se, type = \"heatmap\")\n\n# PCA plot\nplotBambu(se, type = \"pca\")\n\n# Visualize specific gene models and expression\nplotBambu(se, type = \"annotation\", gene_id = \"ENSG00000099968\")\n```\n\n### Exporting Data\nSave extended annotations and expression matrices.\n\n```r\n# Write counts and annotations to a directory\nwriteBambuOutput(se, path = \"./results\", prefix = \"project_\")\n\n# Export extended GTF only\nwriteToGTF(rowRanges(se), file = \"extended_annotations.gtf\")\n```\n\n## Advanced Usage\n\n### Efficiency with rcFiles\nFor large datasets or iterative runs, save intermediate \"read class\" (rc) files to skip the time-consuming read-to-transcript assignment step.\n\n```r\n# Save rcFiles during run\nse <- bambu(reads = bamFiles, annotations = annotations, genome = genome, rcOutDir = \"./rc_cache\")\n\n# Use rcFiles in subsequent runs\nse_new <- bambu(reads = \"./rc_cache/sample.rds\", annotations = annotations, genome = genome)\n```\n\n### De-novo Discovery\nIf no reference annotation is available, run in de-novo mode.\n\n```r\n# Run without annotations (uses pre-trained model)\nse_denovo <- bambu(reads = bamFiles, annotations = NULL, genome = genome, NDR = 0.1)\n```\n\n### Downstream Differential Expression\nBambu results are compatible with `DESeq2`.\n\n```r\nlibrary(DESeq2)\n# Round counts for DESeq2\ndds <- DESeqDataSetFromMatrix(countData = round(assays(seGene)$counts),\n                              colData = colData(seGene),\n                              design = ~ condition)\ndds <- DESeq(dds)\n```\n\n## Reference documentation\n- [Analysing Long Read RNA-Seq data with bambu](./references/bambu.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bambu",
+    "description": "Bambu performs transcript discovery and quantification from long-read RNA-Seq data. Use when user asks to identify novel isoforms, estimate transcript or gene abundance, or analyze long-read sequencing data from Nanopore or PacBio.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bambu.html"
+  }
+}

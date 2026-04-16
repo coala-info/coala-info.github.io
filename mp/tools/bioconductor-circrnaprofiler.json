@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-circrnaprofiler",
+  "category": "bioconductor",
+  "name": "bioconductor-circrnaprofiler",
+  "description": "This package provides a computational framework for the downstream analysis, differential expression, and functional characterization of circular RNAs. Use when user asks to initialize a circRNA project, merge results from multiple detection tools, perform differential expression analysis, or extract sequences for motif and structural annotation.",
+  "overview": "The `circRNAprofiler` package provides a modular computational framework for the downstream analysis of circular RNAs. It is designed to integrate results from various annotation-based circRNA detection tools (e.g., MapSplice2, NCLscan, CircMarker) and perform automated workflows for filtering, differential expression, and functional characterization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/circRNAprofiler.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-circrnaprofiler/overview",
+  "github": "https://github.com/Aufiero/circRNAprofiler",
+  "conda_downloads": "20.3K",
+  "conda_downloads_num": 20300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "circRNAprofiler"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/circRNAprofiler.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-circrnaprofiler/overview",
+    "github": "https://github.com/Aufiero/circRNAprofiler",
+    "conda_downloads": "20.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-circrnaprofiler\n\n## Overview\nThe `circRNAprofiler` package provides a modular computational framework for the downstream analysis of circular RNAs. It is designed to integrate results from various annotation-based circRNA detection tools (e.g., MapSplice2, NCLscan, CircMarker) and perform automated workflows for filtering, differential expression, and functional characterization.\n\n## Project Initialization\nThe package relies on a specific directory structure. Use the initialization module to set up the environment.\n\n```r\nlibrary(circRNAprofiler)\n\n# Initialize project folder with subfolders for specific tools\ninitCircRNAprofiler(\n    projectFolderName = \"circ_analysis\",\n    detectionTools = c(\"mapsplice\", \"nclscan\", \"circmarker\")\n)\n# Set the new folder as working directory\nsetwd(\"circ_analysis\")\n```\n\n**Mandatory Project Files:**\n- `experiment.txt`: Defines sample labels, file names, and biological conditions.\n- `.gtf` file: Genome annotation (e.g., GENCODE or Ensembl).\n- `circRNAs_X.txt`: Prediction results from tools placed in their respective subfolders.\n\n## Core Workflow\n\n### 1. Data Import and Merging\nFormat the annotation and import the back-spliced junction (BSJ) data.\n\n```r\n# Format GTF\ngtf <- formatGTF(\"annotation.gtf\")\n\n# Import BSJs from all tool subfolders\nbsj <- getBackSplicedJunctions(gtf)\n\n# Merge BSJs identified by multiple tools and fix coordinates with GTF\nmerged_bsj <- mergeBSJunctions(bsj, gtf, fixBSJsWithGTF = TRUE)\n```\n\n### 2. Filtering and Differential Expression\nFilter low-confidence circRNAs and identify significant changes between conditions.\n\n```r\n# Filter: keep circRNAs with >= 5 reads in all samples of at least one condition\nfiltered_bsj <- filterCirc(merged_bsj, allSamples = FALSE, min = 5)\n\n# Differential expression using DESeq2\nres_deseq <- getDeseqRes(filtered_bsj, condition = \"Control-Treatment\")\n\n# Differential expression using EdgeR\nres_edger <- getEdgerRes(filtered_bsj, condition = \"Control-Treatment\")\n\n# Visualization\nvolcanoPlot(res_deseq, log2FC = 1, padj = 0.05)\n```\n\n### 3. Structural Annotation\nAnnotate the internal structure (exons) and flanking introns of the circRNAs.\n\n```r\n# Annotate BSJs\nannotated <- annotateBSJs(filtered_bsj, gtf)\n\n# Generate random BSJs for background comparison\nrandom_bsj <- getRandomBSJunctions(gtf, n = nrow(annotated), f = 0.1)\nannotated_bg <- annotateBSJs(random_bsj, gtf, isRandom = TRUE)\n```\n\n## Sequence Retrieval and Functional Screening\n\n### Sequence Extraction\nRetrieve sequences from a `BSgenome` object for downstream analysis.\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\ngenome <- getBSgenome(\"BSgenome.Hsapiens.UCSC.hg19\")\n\n# Internal circRNA sequences\ncirc_seqs <- getCircSeqs(annotated, gtf, genome)\n\n# Sequences flanking the BSJ (e.g., 200nt intron + 9nt exon)\nflanking_seqs <- getSeqsFromGRs(annotated, genome, lIntron = 200, lExon = 9, type = \"ie\")\n```\n\n### Functional Analysis\n- **RBP Motifs:** Scan for RNA Binding Protein motifs using the ATtRACT or MEME databases.\n- **miRNA Binding:** Search for miRNA seed matches within circRNA sequences.\n- **Genomic Features:** Annotate GWAS SNPs or repetitive elements (e.g., Alu elements) in flanking introns.\n\n```r\n# RBP Motif analysis\nmotifs <- getMotifs(flanking_seqs, width = 6, database = 'ATtRACT', rbp = TRUE)\n\n# miRNA binding site analysis\nmir_sites <- getMiRsites(circ_seqs, miRspeciesCode = \"hsa\", totalMatches = 7)\n\n# Repeat annotation (e.g., looking for complementary repeats that promote circularization)\nrepeats <- annotateRepeats(flanking_seqs, annotationHubID = \"AH5122\", complementary = TRUE)\n```\n\n## Tips and Best Practices\n- **Coordinate Consistency:** Always use the same GTF file for `circRNAprofiler` that was used during the initial read mapping and circRNA detection.\n- **Antisense circRNAs:** `mergeBSJunctions()` automatically identifies and removes antisense circRNAs (where the circRNA strand differs from the host gene strand) to ensure high-quality downstream analysis.\n- **Normalization:** When comparing motif counts between foreground and background sets using `plotMotifs()`, normalize by the total length of the sequences analyzed.\n- **Computational Time:** miRNA binding site prediction (`getMiRsites`) is computationally intensive. Filter for miRNAs expressed in your specific tissue of interest using `miRs.txt` to reduce run time.\n\n## Reference documentation\n- [circRNAprofiler: An R-based computational framework for the downstream analysis of circular RNAs](./references/circRNAprofiler.Rmd)\n- [circRNAprofiler: An R-based computational framework for the downstream analysis of circular RNAs](./references/circRNAprofiler.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-circrnaprofiler",
+    "description": "This package provides a computational framework for the downstream analysis, differential expression, and functional characterization of circular RNAs. Use when user asks to initialize a circRNA project, merge results from multiple detection tools, perform differential expression analysis, or extract sequences for motif and structural annotation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/circRNAprofiler.html"
+  }
+}

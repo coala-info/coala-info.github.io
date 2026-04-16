@@ -1,0 +1,61 @@
+{
+  "id": "hybpiper",
+  "category": "CLI",
+  "name": "hybpiper",
+  "description": "HybPiper extracts target sequences and flanking intronic regions from enriched DNA sequencing libraries using a combination of read mapping and de novo assembly. Use when user asks to assemble target genes from phylogenomic data, recover exons and introns, detect paralogs, or generate gene recovery statistics.",
+  "overview": "HybPiper is a bioinformatics suite designed to extract target sequences from enriched DNA sequencing libraries. It wraps several tools (SPAdes, BLAST/DIAMOND, BWA, Exonerate) to map reads to target genes, perform de novo assembly for each gene, and extract in-frame coding sequences. It is particularly effective for phylogenomics, allowing for the recovery of both exons and flanking intronic regions (Intronerate) and providing workflows to detect and retrieve paralogous sequences.",
+  "homepage": "https://github.com/mossmatters/HybPiper",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hybpiper/overview",
+  "github": "https://github.com/mossmatters/HybPiper",
+  "conda_downloads": "13.4K",
+  "conda_downloads_num": 13400,
+  "last_updated": "2026-01-12",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hybpiper_assemble",
+      "hybpiper_stats",
+      "hybpiper_retrieve_sequences",
+      "hybpiper_paralog_retriever",
+      "hybpiper_recovery_heatmap",
+      "hybpiper_check_dependencies",
+      "hybpiper_check_targetfile",
+      "hybpiper_fix_targetfile",
+      "hybpiper_filter_by_length"
+    ],
+    "description": "HybPiper is a pipeline for assembling target-capture data.",
+    "docker_image": "quay.io/biocontainers/hybpiper:2.3.4--pyhdfd78af_0",
+    "homepage": "https://github.com/mossmatters/HybPiper",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hybpiper/overview",
+    "github": "https://github.com/mossmatters/HybPiper",
+    "conda_downloads": "13.4K",
+    "last_updated": "2026-01-12",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "hybpiper_assemble.cwl",
+    "hybpiper_check_dependencies.cwl",
+    "hybpiper_check_targetfile.cwl",
+    "hybpiper_filter_by_length.cwl",
+    "hybpiper_fix_targetfile.cwl",
+    "hybpiper_paralog_retriever.cwl",
+    "hybpiper_recovery_heatmap.cwl",
+    "hybpiper_retrieve_sequences.cwl",
+    "hybpiper_stats.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hybpiper\n\n## Overview\nHybPiper is a bioinformatics suite designed to extract target sequences from enriched DNA sequencing libraries. It wraps several tools (SPAdes, BLAST/DIAMOND, BWA, Exonerate) to map reads to target genes, perform de novo assembly for each gene, and extract in-frame coding sequences. It is particularly effective for phylogenomics, allowing for the recovery of both exons and flanking intronic regions (Intronerate) and providing workflows to detect and retrieve paralogous sequences.\n\n## Core Workflow\n\n### 1. Prepare Input Files\n*   **Reads**: Cleaned FASTQ files (single-end or paired-end).\n*   **Target File**: A FASTA file containing reference sequences for the genes of interest.\n    *   **Protein Targets**: Required if using BLASTx or DIAMOND (default).\n    *   **Nucleotide Targets**: Required if using BWA (`--bwa` flag).\n    *   **Format**: Headers must be `>Source-GeneName` (e.g., `>Amborella-atpH`).\n\n### 2. Main Assembly Pipeline\nRun `hybpiper assemble` for each sample individually.\n\n```bash\n# Basic assembly using protein targets (BLASTx)\nhybpiper assemble -r sample1_R1.fastq sample1_R2.fastq -t targets.fasta --prefix sample1\n\n# Assembly using nucleotide targets and BWA\nhybpiper assemble -r sample1_R1.fastq sample1_R2.fastq --targetfile_dna targets.fasta --bwa --prefix sample1\n\n# Include intron recovery (Intronerate)\nhybpiper assemble -r sample1_R1.fastq sample1_R2.fastq -t targets.fasta --prefix sample1 --run_intronerate\n```\n\n### 3. Post-Processing and Summary\nAfter running `assemble` on all samples, use these commands to aggregate results:\n\n```bash\n# Generate recovery statistics (lengths and percentages)\nhybpiper stats -t targets.fasta gene sample_names.txt\n\n# Create a visualization of gene recovery\nhybpiper recovery_heatmap stats.txt\n\n# Retrieve sequences for all samples into a single file per gene\nhybpiper retrieve_sequences dna -t targets.fasta --sample_names sample_names.txt\n```\n\n## Expert Tips and Best Practices\n\n### Mapping Strategy\n*   **DIAMOND**: Use `--diamond` for significantly faster read mapping than BLASTx, especially with large datasets.\n*   **Sensitivity**: If recovery is low, increase DIAMOND sensitivity: `--diamond_sensitivity ultra-sensitive`.\n*   **BWA**: Use `--bwa` only if your target file is very closely related to your samples (e.g., same species or genus).\n\n### Handling Paralogs\nHybPiper flags genes with multiple potential assemblies.\n*   Check the `paralog_warnings.txt` file in the sample directory.\n*   Use `hybpiper paralog_retriever` to extract all versions of a gene for phylogenetic testing.\n\n### Chimeric Sequence Detection\nIf you suspect \"stitched\" contigs (where HybPiper joins multiple SPAdes contigs) are creating chimeras from different paralogs:\n*   Run with `--chimeric_stitched_contig_check`.\n*   Adjust the mismatch threshold with `--chimeric_stitched_contig_edit_distance` (default is 5).\n\n### Performance and HPC\n*   **Parallelization**: HybPiper processes genes within a sample in parallel. Use `--cpu` to specify available cores.\n*   **Memory**: For memory-intensive assemblies, use `--distribute_low_mem` to reduce the number of concurrent SPAdes runs.\n*   **Cleanup**: HybPiper 2.x automatically cleans up large intermediate SPAdes folders unless `--keep_intermediate_files` is specified.\n\n## Common CLI Patterns\n\n| Task | Command |\n| :--- | :--- |\n| **Check Dependencies** | `hybpiper check_dependencies` |\n| **Validate Target File** | `hybpiper check_targetfile -t targets.fasta` |\n| **Filter by Length** | `hybpiper filter_by_length --percentage_len 50` |\n| **Recover Introns** | `hybpiper retrieve_sequences intro -t targets.fasta` |\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| hybpiper assemble | HybPiper is a pipeline for assembling target-capture data. |\n| hybpiper check_targetfile | Check target files for issues such as stop codons and low complexity regions. |\n| hybpiper filter_by_length | Filters sequences based on length criteria. |\n| hybpiper fix_targetfile | Fixes DNA and amino-acid target files by testing for open reading frames, removing stop codons, and filtering sequences. |\n| hybpiper paralog_retriever | Extracts paralogous genes from HybPiper output. |\n| hybpiper recovery_heatmap | Generates a heatmap of recovery based on sequence lengths. |\n| hybpiper retrieve_sequences | Type of sequence to extract. |\n| hybpiper stats | Sequence type (gene or supercontig) to recover lengths for. |\n| hybpiper_check_dependencies | Checks for external dependencies required by HybPiper. |\n\n## Reference documentation\n- [HybPiper Wiki Home](./references/github_com_mossmatters_HybPiper_wiki.md)\n- [Full Pipeline Parameters](./references/github_com_mossmatters_HybPiper_wiki_Full-pipeline-parameters.md)\n- [Dealing with Paralogs](./references/github_com_mossmatters_HybPiper_wiki_Paralogs.md)\n- [Detecting Chimeric Loci](./references/github_com_mossmatters_HybPiper_wiki_Detecting-putative-chimeric-loci-sequences.md)",
+  "skill_front_matter": {
+    "name": "hybpiper",
+    "description": "HybPiper extracts target sequences and flanking intronic regions from enriched DNA sequencing libraries using a combination of read mapping and de novo assembly. Use when user asks to assemble target genes from phylogenomic data, recover exons and introns, detect paralogs, or generate gene recovery statistics.",
+    "homepage": "https://github.com/mossmatters/HybPiper"
+  }
+}

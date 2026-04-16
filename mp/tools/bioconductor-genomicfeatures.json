@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genomicfeatures",
+  "category": "bioconductor",
+  "name": "bioconductor-genomicfeatures",
+  "description": "This tool manages and retrieves transcript-centric genomic annotations using TxDb objects. Use when user asks to load or create transcript databases, retrieve genomic coordinates for features like exons or promoters, group features by gene or transcript, map between genomic identifiers, or extract transcript sequences.",
+  "overview": "The `GenomicFeatures` package provides a specialized SQLite-backed container called `TxDb` for storing and querying transcript metadata. It allows users to retrieve genomic coordinates for various features (UTRs, CDS, exons, transcripts) and maintains the biological relationships between them. It is a core component of the Bioconductor ecosystem for transcriptomics and genomic interval analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genomicfeatures/overview",
+  "github": "https://github.com/Bioconductor/GenomicFeatures",
+  "conda_downloads": "341.2K",
+  "conda_downloads_num": 341200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GenomicFeatures"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genomicfeatures/overview",
+    "github": "https://github.com/Bioconductor/GenomicFeatures",
+    "conda_downloads": "341.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genomicfeatures\n\nname: bioconductor-genomicfeatures\ndescription: Comprehensive management and retrieval of transcript-centric genomic annotations using TxDb objects. Use when Claude needs to: (1) Load or create transcript databases (TxDb), (2) Retrieve genomic coordinates for exons, transcripts, CDS, or promoters as GRanges, (3) Group features by gene or transcript (GRangesList), (4) Map between different genomic identifiers (select/columns/keys), or (5) Extract transcript/CDS sequences from a BSgenome.\n\n## Overview\nThe `GenomicFeatures` package provides a specialized SQLite-backed container called `TxDb` for storing and querying transcript metadata. It allows users to retrieve genomic coordinates for various features (UTRs, CDS, exons, transcripts) and maintains the biological relationships between them. It is a core component of the Bioconductor ecosystem for transcriptomics and genomic interval analysis.\n\n## Core Workflows\n\n### 1. Obtaining a TxDb Object\nThere are three primary ways to access transcript metadata:\n*   **From a Bioconductor Annotation Package:**\n    ```R\n    library(TxDb.Hsapiens.UCSC.hg19.knownGene)\n    txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\n    ```\n*   **From a local SQLite file:**\n    ```R\n    txdb <- loadDb(\"path/to/my_database.sqlite\")\n    ```\n*   **Creating a new TxDb:** Use the `txdbmaker` package (the successor to internal `GenomicFeatures` making functions) to build objects from UCSC, Ensembl, or GFF/GTF files.\n\n### 2. Filtering by Chromosome\nTo improve performance or focus on specific regions, use `seqlevels` to restrict the active chromosomes in the `TxDb` object:\n```R\n# View active levels\nseqlevels(txdb)\n\n# Restrict to chromosome 15\nseqlevels(txdb) <- \"chr15\"\n\n# Reset to original state\nseqlevels(txdb) <- seqlevels0(txdb)\n```\n\n### 3. Data Retrieval with select()\n`TxDb` objects support the standard `AnnotationDbi` interface for tabular data:\n```R\n# Check available columns and keytypes\ncolumns(txdb)\nkeytypes(txdb)\n\n# Map Gene IDs to Transcript Names\nkeys <- c(\"100033417\", \"100033420\")\nselect(txdb, keys = keys, columns = c(\"TXNAME\", \"TXSTRAND\"), keytype = \"GENEID\")\n```\n\n### 4. Retrieving Genomic Ranges (GRanges)\nUse specific accessors to get coordinates. These functions return `GRanges` objects:\n*   `transcripts(txdb, filter=NULL)`\n*   `exons(txdb)`\n*   `cds(txdb)`\n*   `promoters(txdb, upstream=2000, downstream=400)`\n*   `terminators(txdb, upstream=2000, downstream=400)`\n\n### 5. Working with Grouped Features (GRangesList)\nTo maintain biological context (e.g., which exons belong to which transcript), use the `By` family of functions:\n```R\n# Group transcripts by gene\ntx_by_gene <- transcriptsBy(txdb, by = \"gene\")\n\n# Group exons by transcript\nexons_by_tx <- exonsBy(txdb, by = \"tx\")\n\n# Predefined convenience groupings\nintrons <- intronsByTranscript(txdb)\nfive_utrs <- fiveUTRsByTranscript(txdb)\nthree_utrs <- threeUTRsByTranscript(txdb)\n```\n\n### 6. Sequence Extraction\nPair a `TxDb` with a `BSgenome` object to extract actual DNA sequences:\n```R\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\ngenome <- BSgenome.Hsapiens.UCSC.hg19\n\n# Extract all transcript sequences\ntx_seqs <- extractTranscriptSeqs(genome, txdb, use.names=TRUE)\n\n# Extract only CDS sequences (for meaningful translation)\ncds_ranges <- cdsBy(txdb, by=\"tx\", use.names=TRUE)\ncds_seqs <- extractTranscriptSeqs(genome, cds_ranges)\n\n# Translate to protein\nproteins <- translate(cds_seqs)\n```\n\n## Tips and Best Practices\n*   **Metadata:** Call the `txdb` object directly (e.g., typing `txdb` in the console) to see the data source, genome assembly (e.g., hg19), and organism.\n*   **Coordinate Systems:** Always ensure the `BSgenome` version matches the `TxDb` version (e.g., both hg19 or both hg38) to avoid incorrect sequence extraction.\n*   **Synthetic IDs:** If a data source lacks unique IDs for features, `GenomicFeatures` creates synthetic IDs. You can still map these back to original IDs using `select()`.\n*   **Downstream Analysis:** The `GRanges` and `GRangesList` objects returned are designed for use with `findOverlaps` and `summarizeOverlaps` in the `GenomicRanges` and `GenomicAlignments` packages.\n\n## Reference documentation\n- [Obtaining and Utilizing TxDb Objects](./references/GenomicFeatures.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genomicfeatures",
+    "description": "This tool manages and retrieves transcript-centric genomic annotations using TxDb objects. Use when user asks to load or create transcript databases, retrieve genomic coordinates for features like exons or promoters, group features by gene or transcript, map between genomic identifiers, or extract transcript sequences.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html"
+  }
+}

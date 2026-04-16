@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mapredictdsc",
+  "category": "bioconductor",
+  "name": "bioconductor-mapredictdsc",
+  "description": "This package implements a classification pipeline for Affymetrix microarray data that automates preprocessing, feature selection, and model evaluation. Use when user asks to perform binary classification on CEL files, compare combinations of normalization and machine learning methods, or calculate IMPROVER diagnostic performance metrics.",
+  "overview": "The `maPredictDSC` package implements a robust classification pipeline designed for Affymetrix expression data. It is particularly effective for binary classification tasks where raw `.CEL` files are available. The package automates the exploration of multiple combinations of preprocessing techniques, feature ranking methods, and classifiers. It uses cross-validation on training data to determine the optimal number of features and provides tools for \"wisdom of crowds\" model aggregation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/maPredictDSC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maPredictDSC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maPredictDSC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mapredictdsc\n\nname: bioconductor-mapredictdsc\ndescription: Classification pipeline for Affymetrix microarray data based on the IMPROVER Diagnostic Signature Challenge. Use this skill to perform automated preprocessing, feature selection, and classification using combinations of methods (RMA, GCRMA, MAS5; t-test, Wilcoxon; LDA, SVM, kNN) and to evaluate model performance using metrics like BCM, CCEM, and AUPR.\n\n# bioconductor-mapredictdsc\n\n## Overview\n\nThe `maPredictDSC` package implements a robust classification pipeline designed for Affymetrix expression data. It is particularly effective for binary classification tasks where raw `.CEL` files are available. The package automates the exploration of multiple combinations of preprocessing techniques, feature ranking methods, and classifiers. It uses cross-validation on training data to determine the optimal number of features and provides tools for \"wisdom of crowds\" model aggregation.\n\n## Core Workflow\n\n### 1. Data Preparation\nYou must provide a data frame (typically named `ano`) that maps CEL files to their groups. One group must be labeled `\"Test\"` for samples requiring prediction.\n\n```r\n# Example annotation structure\n# files: GSM123.CEL.gz, group: AC\n# files: GSM456.CEL.gz, group: SCC\n# files: lung_1.CEL, group: Test\n```\n\n### 2. Building Models with `predictDSC`\nThe `predictDSC` function is the primary interface. It iterates through specified combinations of methods.\n\n```r\nlibrary(maPredictDSC)\n\nmodlist <- predictDSC(\n  ano = anoLC, \n  celfile.path = \"path/to/cel/files\",\n  annotation = \"hgu133plus2.db\", \n  preprocs = c(\"rma\", \"gcrma\"),      # Options: rma, gcrma, mas5\n  filters = c(\"mttest\", \"ttest\"),    # Options: mttest, ttest, wilcoxon\n  classifiers = c(\"LDA\", \"kNN\"),     # Options: LDA, SVM, kNN\n  CVP = 2,                           # Number of cross-validation partitions\n  NF = 4,                            # Max number of features to consider\n  FCT = 1.0                          # Fold change threshold\n)\n```\n\n### 3. Evaluating Performance\nIf the ground truth for test samples is known (as a matrix/data frame `gs`), use `perfDSC` to calculate IMPROVER metrics:\n- **AUC**: Area Under the Curve\n- **AUPR**: Area Under the Precision-Recall Curve\n- **BCM**: Belief Confusion Metric\n- **CCEM**: Correct Class Enrichment Metric\n\n```r\n# Evaluate a single model from the list\nperf <- perfDSC(pred = modlist[[\"rma_ttest_LDA\"]]$predictions, gs = gsLC)\n\n# Rank all models by training AUC\ntrainingAUC <- sort(unlist(lapply(modlist, \"[[\", \"best_AUC\")), decreasing = TRUE)\n```\n\n### 4. Model Aggregation\nTo improve robustness, aggregate the predictions of the top-performing models.\n\n```r\n# Aggregate top 3 models\nbest3_names <- names(trainingAUC)[1:3]\nagg_preds <- aggregateDSC(modlist[best3_names])\n\n# Evaluate aggregated performance\nperf_agg <- perfDSC(agg_preds, gsLC)\n```\n\n## Tips and Constraints\n- **Feature Naming**: The package adds an \"F\" prefix to Affymetrix probe IDs (e.g., `F225214_at`) because certain classifiers (like LDA) do not support variable names starting with numbers.\n- **Binary Classification**: This package is specifically designed for 2-class problems.\n- **Memory/Time**: Running all 27 combinations (3 preprocs x 3 filters x 3 classifiers) can be computationally intensive. Start with a subset (e.g., `rma`, `mttest`, `LDA`) to verify the pipeline.\n- **Fold Change Threshold (FCT)**: If `FCT > 1.0`, genes with low fold change are excluded. If too few genes meet the criteria, the threshold is automatically ignored to ensure `NF` features are selected.\n\n## Reference documentation\n- [maPredictDSC](./references/maPredictDSC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mapredictdsc",
+    "description": "This package implements a classification pipeline for Affymetrix microarray data that automates preprocessing, feature selection, and model evaluation. Use when user asks to perform binary classification on CEL files, compare combinations of normalization and machine learning methods, or calculate IMPROVER diagnostic performance metrics.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maPredictDSC.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rnadecay",
+  "category": "bioconductor",
+  "name": "bioconductor-rnadecay",
+  "description": "This tool analyzes RNA degradation kinetics from time-course data using maximum likelihood modeling. Use when user asks to normalize RNA-seq decay data, model constant or decaying decay rates, and compare RNA stability across different treatments or genotypes.",
+  "overview": "The `RNAdecay` package provides a framework for analyzing RNA degradation kinetics from time-course data (e.g., following transcriptional inhibition with Actinomycin D or cordycepin). It supports both constant exponential decay and \"decaying decay\" models, which account for changes in decay rates over time. The package is particularly useful for comparing decay kinetics across different genotypes or treatments (up to 4 groups).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAdecay.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RNAdecay"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAdecay.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rnadecay\n\nname: bioconductor-rnadecay\ndescription: Specialized for RNA decay analysis using the RNAdecay R package. Use this skill to normalize RNA-seq time-course data, perform maximum likelihood modeling of decay rates (constant vs. decaying decay), and visualize results with decay and half-life plots.\n\n## Overview\n\nThe `RNAdecay` package provides a framework for analyzing RNA degradation kinetics from time-course data (e.g., following transcriptional inhibition with Actinomycin D or cordycepin). It supports both constant exponential decay and \"decaying decay\" models, which account for changes in decay rates over time. The package is particularly useful for comparing decay kinetics across different genotypes or treatments (up to 4 groups).\n\n## Core Workflow\n\n### 1. Data Preparation and Normalization\n\nData must be formatted as a data frame with columns: `geneID`, `treatment`, `t.decay`, `rep`, and `value`.\n\n*   **T0 Normalization**: Divide all RPM values by the mean T0 (time zero) value for that gene/treatment.\n*   **Decay Factor Correction**: Correct for the \"stable RNA\" bias (where stable RNAs appear to increase in abundance as the total RNA pool shrinks).\n    *   Identify a set of stable reference genes.\n    *   Calculate normalization factors based on the mean T0-normalized values of these stable genes.\n    *   Apply these factors to the entire dataset.\n\n```r\nlibrary(RNAdecay)\n# Example of formatting data for modeling\ndecay_data <- RNAdecay::decay_data\ndecay_data <- decay_data[order(decay_data$t.decay, decay_data$rep, \n                               as.numeric(decay_data$treatment), decay_data$geneID), ]\n```\n\n### 2. Modeling Decay Rates\n\nThe package uses Maximum Likelihood Estimation (MLE) to fit models. It tests various \"equivalence constraint groups\" to determine if treatments share the same decay parameters ($\\alpha$ for initial rate, $\\beta$ for rate of decay change).\n\n*   **Define Groups**: Use `groupings()` to generate the constraint matrices.\n*   **Set Bounds**: Use `a_low()`, `a_high()`, and `b_low()` to set search boundaries for $\\alpha$ and $\\beta$ based on your time points.\n*   **Optimization**: Run `mod_optimization()` for specific genes or across the genome.\n\n```r\n# Define bounds\na_bounds <- c(a_low(max(decay_data$t.decay)), a_high(min(unique(decay_data$t.decay)[unique(decay_data$t.decay)>0])))\nb_bounds <- c(b_low(max(decay_data$t.decay)), 0.075)\n\n# Run optimization for a gene\nresults <- mod_optimization(geneID = \"AT2G18150\", \n                            data = decay_data, \n                            group = groups, \n                            mod = mods, \n                            alpha_bounds = a_bounds, \n                            beta_bounds = b_bounds, \n                            models = paste0(\"mod\", 1:240))\n```\n\n### 3. Model Selection and Interpretation\n\n*   **AICc**: Select the \"best\" model for each gene based on the lowest AICc value.\n*   **Model Comparison**: Models with $\\Delta AICc < 2$ are considered statistically similar.\n*   **Parameters**: \n    *   $\\alpha$: Initial decay rate.\n    *   $\\beta$: Decay of the decay rate (if $\\beta = 0$, the model is constant exponential decay).\n\n### 4. Visualization\n\nThe package provides specialized plotting functions to overlay raw data, mean/SE, and the fitted MLE models.\n\n*   **`decay_plot()`**: Standard abundance vs. time plots.\n*   **`hl_plot()`**: Half-life distribution plots.\n\n```r\n# Plotting a specific gene\ndecay_plot(geneID = \"AT1G02860\", \n           DATA = decay_data, \n           mod.results = results, \n           treatments = c(\"WT\", \"vcs.sov\"),\n           what = c(\"meanSE\", \"models\", \"alphas&betas\"))\n```\n\n## Key Functions\n\n*   `cols()`: Helper to index columns based on naming patterns (e.g., \"WT_00\").\n*   `groupings()`: Generates the combinatorial constraint groups for treatments.\n*   `mod_optimization()`: The core MLE fitting engine.\n*   `a_low()`, `a_high()`, `b_low()`: Heuristics for parameter boundary setting.\n*   `decay_plot()`: High-level ggplot2 wrapper for decay curves.\n\n## Reference documentation\n\n- [RNAdecay Workflow](./references/RNAdecay_workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rnadecay",
+    "description": "This tool analyzes RNA degradation kinetics from time-course data using maximum likelihood modeling. Use when user asks to normalize RNA-seq decay data, model constant or decaying decay rates, and compare RNA stability across different treatments or genotypes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAdecay.html"
+  }
+}

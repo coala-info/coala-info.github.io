@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-yamss",
+  "category": "bioconductor",
+  "name": "bioconductor-yamss",
+  "description": "The yamss package provides tools for preprocessing untargeted metabolomics data using bivariate kernel density estimation to identify and quantify peaks across multiple samples simultaneously. Use when user asks to preprocess mass spectrometry data, perform retention time alignment, call peaks using the bakedpi algorithm, or conduct differential abundance analysis.",
+  "overview": "The `yamss` (Yet Another Mass Spectrometry Software) package is designed for the preprocessing of untargeted metabolomics data. Its core algorithm, **bakedpi**, uses bivariate kernel density estimation to identify and quantify peaks. Unlike methods that detect peaks in individual samples and then align them, `yamss` processes all samples together to improve the quality of differential analysis. The workflow typically moves from raw data (`CMSraw`) to processed density estimates (`CMSproc`) to qu",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/yamss.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/hansenlab/yamss",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "yamss"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/yamss.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/hansenlab/yamss",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-yamss\n\n## Overview\n\nThe `yamss` (Yet Another Mass Spectrometry Software) package is designed for the preprocessing of untargeted metabolomics data. Its core algorithm, **bakedpi**, uses bivariate kernel density estimation to identify and quantify peaks. Unlike methods that detect peaks in individual samples and then align them, `yamss` processes all samples together to improve the quality of differential analysis. The workflow typically moves from raw data (`CMSraw`) to processed density estimates (`CMSproc`) to quantified peaks (`CMSslice`), which can then be analyzed for differential abundance using `limma`.\n\n## Workflow and Main Functions\n\n### 1. Loading Raw Data\nData is read from standard mass spectral files (e.g., .mzML) using `readMSdata`. You should provide a `DataFrame` for `colData` to track sample metadata.\n\n```r\nlibrary(yamss)\n# Define file paths and sample classes\nfiles <- list.files(path, pattern = \".mzML\", full.names = TRUE)\ncolData <- DataFrame(sampClasses = c(\"A\", \"A\", \"B\", \"B\"), ionmode = \"pos\")\n\n# Read data (mzsubset can be used to limit the M/Z range for speed)\ncmsRaw <- readMSdata(files = files, colData = colData, verbose = TRUE)\n```\n\n### 2. Preprocessing with bakedpi\nThe `bakedpi` function performs background correction, retention time alignment, and density estimation.\n\n```r\ncmsProc <- bakedpi(cmsRaw, \n                   dbandwidth = c(0.005, 10), # M/Z and scan bandwidths\n                   dgridstep = c(0.005, 1),   # M/Z and scan grid spacing\n                   dortalign = TRUE,          # Perform retention time alignment\n                   outfileDens = \"dens.RData\") # Optional: save density to disk\n```\n*   **Tip:** `dbandwidth` components must be $\\ge$ `dgridstep` components.\n*   **Tip:** Saving the density estimate via `outfileDens` allows you to skip the time-intensive density estimation step if you need to re-run the analysis.\n\n### 3. Peak Calling and Quantification\nThe `slicepi` function applies a threshold to the density estimate to define peak bounds and calculate intensities.\n\n```r\n# Use a data-driven threshold (cutoff = NULL) or a specific value\ncmsSlice <- slicepi(cmsProc, cutoff = NULL, verbose = TRUE)\n\n# Access peak information\nbounds <- peakBounds(cmsSlice)\nintensities <- assays(cmsSlice)$intensity\n```\n\n### 4. Differential Analysis\n`yamss` provides a wrapper for `limma` to identify metabolites that differ between conditions.\n\n```r\n# Returns a topTable-style data frame\ndr <- diffrep(cmsSlice, classes = colData$sampClasses)\n```\n\n## Data Exploration and Refinement\n\n*   **Visualizing Peaks:** Use `plotDensityRegion` to inspect the density estimate for specific M/Z and scan ranges.\n    ```r\n    plotDensityRegion(cmsProc, mzrange = c(500, 501), scanrange = c(700, 800))\n    ```\n*   **Adjusting Thresholds:** If the number of detected peaks is too high or low, you can check density quantiles and re-run `slicepi` with a manual cutoff.\n    ```r\n    dqs <- densityQuantiles(cmsProc)\n    cmsSlice_refined <- slicepi(cmsProc, cutoff = dqs[\"98.5%\"])\n    ```\n*   **Accessing Density:** The raw density matrix can be retrieved using `densityEstimate(cmsProc)`.\n\n## Reference documentation\n\n- [The yamss User's Guide](./references/yamss.md)\n- [yamss Vignette Source](./references/yamss.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-yamss",
+    "description": "The yamss package provides tools for preprocessing untargeted metabolomics data using bivariate kernel density estimation to identify and quantify peaks across multiple samples simultaneously. Use when user asks to preprocess mass spectrometry data, perform retention time alignment, call peaks using the bakedpi algorithm, or conduct differential abundance analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/yamss.html"
+  }
+}

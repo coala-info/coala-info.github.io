@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mutationalpatterns",
+  "category": "bioconductor",
+  "name": "bioconductor-mutationalpatterns",
+  "description": "This tool performs comprehensive analysis and visualization of mutational patterns and signatures in genomic data. Use when user asks to load VCF files for mutational analysis, extract de novo signatures using NMF, refit profiles to known COSMIC signatures, or analyze transcriptional and replicative strand bias.",
+  "overview": "The `MutationalPatterns` package is a Bioconductor tool designed to characterize mutational processes by analyzing the footprints they leave in genomic DNA. It supports Single Nucleotide Variants (SNVs), Indels, Double Base Substitutions (DBSs), and Multi-Base Substitutions (MBSs). The package facilitates the entire workflow from raw VCF loading to signature extraction, refitting, and advanced genomic association analyses.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MutationalPatterns"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mutationalpatterns\n\nname: bioconductor-mutationalpatterns\ndescription: Comprehensive analysis of mutational patterns in genomic data using the MutationalPatterns R package. Use this skill when you need to: (1) Load and process VCF files for mutational analysis, (2) Extract de novo mutational signatures using NMF, (3) Refit mutational profiles to known COSMIC or SIGNAL signatures, (4) Analyze transcriptional or replicative strand bias, (5) Evaluate genomic distribution and enrichment in specific regions, or (6) Calculate and visualize lesion segregation.\n\n# bioconductor-mutationalpatterns\n\n## Overview\n\nThe `MutationalPatterns` package is a Bioconductor tool designed to characterize mutational processes by analyzing the footprints they leave in genomic DNA. It supports Single Nucleotide Variants (SNVs), Indels, Double Base Substitutions (DBSs), and Multi-Base Substitutions (MBSs). The package facilitates the entire workflow from raw VCF loading to signature extraction, refitting, and advanced genomic association analyses.\n\n## Core Workflow\n\n### 1. Data Loading and Preparation\nLoad VCF files into a `GRangesList` and specify the reference genome (e.g., `BSgenome.Hsapiens.UCSC.hg19`).\n\n```r\nlibrary(MutationalPatterns)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\nref_genome <- \"BSgenome.Hsapiens.UCSC.hg19\"\nvcf_files <- list.files(path, pattern = \".vcf\", full.names = TRUE)\nsample_names <- c(\"sample1\", \"sample2\")\n\n# Load SNVs (default)\ngrl <- read_vcfs_as_granges(vcf_files, sample_names, ref_genome)\n\n# Load all types (SNV, Indel, DBS, MBS)\ngrl_all <- read_vcfs_as_granges(vcf_files, sample_names, ref_genome, type = \"all\")\nsnv_grl <- get_mut_type(grl_all, type = \"snv\")\nindel_grl <- get_mut_type(grl_all, type = \"indel\")\n```\n\n### 2. Mutation Characteristics and Spectrum\nAnalyze the base substitution types and trinucleotide contexts.\n\n```r\n# Count occurrences\ntype_occurrences <- mut_type_occurrences(grl, ref_genome)\n\n# Plot 6-type spectrum\nplot_spectrum(type_occurrences, CT = TRUE, by = tissue_metadata)\n\n# Create 96-trinucleotide matrix\nmut_mat <- mut_matrix(vcf_list = grl, ref_genome = ref_genome)\nplot_96_profile(mut_mat[, 1:2])\n```\n\n### 3. Mutational Signatures\n\n#### De Novo Extraction (NMF)\nExtract signatures without prior knowledge. Use `nmf` to estimate rank first if the number of signatures is unknown.\n\n```r\n# Add pseudocount to avoid zeros\nmut_mat <- mut_mat + 0.0001\nnmf_res <- extract_signatures(mut_mat, rank = 2, nrun = 10)\n\n# Visualize\nplot_contribution(nmf_res$contribution, nmf_res$signature, mode = \"relative\")\n```\n\n#### Signature Refitting\nQuantify the contribution of known signatures (e.g., COSMIC) to your samples.\n\n```r\nsignatures <- get_known_signatures() # Defaults to COSMIC SNV\nfit_res <- fit_to_signatures(mut_mat, signatures)\n\n# Strict refitting to reduce overfitting\nstrict_refit <- fit_to_signatures_strict(mut_mat, signatures, max_delta = 0.004)\nplot_contribution(strict_refit$fit_res$contribution)\n```\n\n### 4. Strand Bias Analysis\nEvaluate if mutations are biased toward the transcribed/untranscribed or leading/lagging strands.\n\n```r\n# Transcriptional Strand Bias\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ngenes_hg19 <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)\nmut_mat_s <- mut_matrix_stranded(grl, ref_genome, genes_hg19)\nstrand_counts <- strand_occurrences(mut_mat_s, by = tissue)\nstrand_bias <- strand_bias_test(strand_counts)\nplot_strand_bias(strand_bias)\n```\n\n### 5. Genomic Distribution\nTest for enrichment or depletion of mutations in specific genomic regions (e.g., promoters, enhancers).\n\n```r\n# regions is a GRangesList of genomic features\n# surveyed_list is a list of GRanges representing callable loci\ndistr <- genomic_distribution(grl, surveyed_list, regions)\ndistr_test <- enrichment_depletion_test(distr)\nplot_enrichment_depletion(distr_test)\n```\n\n### 6. Lesion Segregation\nIdentify strand-coordinated mutagenesis (Watson vs. Crick asymmetry) across cell divisions.\n\n```r\n# Visualize strand distribution per chromosome\nplot_lesion_segregation(grl)\n\n# Statistical test\ncalc_lesion <- calculate_lesion_segregation(grl, sample_names)\n```\n\n## Tips for Success\n- **Reference Genomes**: Ensure the `BSgenome` object exactly matches the assembly used for VCF calling.\n- **Indel Contexts**: Use `get_indel_context(indel_grl, ref_genome)` before `count_indel_contexts()` to follow COSMIC standards.\n- **Overfitting**: Always prefer `fit_to_signatures_strict` or tissue-specific signatures (via `get_known_signatures(source = \"SIGNAL\", sig_type = \"tissue\", ...)` ) over naive refitting to avoid signature misattribution.\n- **Visualization**: Most plots return `ggplot` objects and can be further customized using `+ theme()` or `+ scale_fill_manual()`.\n\n## Reference documentation\n- [Introduction to MutationalPatterns](./references/Introduction_to_MutationalPatterns.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mutationalpatterns",
+    "description": "This tool performs comprehensive analysis and visualization of mutational patterns and signatures in genomic data. Use when user asks to load VCF files for mutational analysis, extract de novo signatures using NMF, refit profiles to known COSMIC signatures, or analyze transcriptional and replicative strand bias.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html"
+  }
+}

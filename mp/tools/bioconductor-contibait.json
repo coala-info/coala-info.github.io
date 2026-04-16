@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-contibait",
+  "category": "bioconductor",
+  "name": "bioconductor-contibait",
+  "description": "This tool improves draft genome assemblies by clustering, reorienting, and ordering contigs using Strand-seq data. Use when user asks to cluster contigs into chromosomes, reorient fragments, or order fragments within linkage groups.",
+  "overview": "The `contiBAIT` package leverages Strand-seq data—which identifies template strand inheritance in single cells—to improve draft genome assemblies. It is particularly useful for assemblies consisting of unplaced contigs or scaffolds. The package provides a workflow to:\n1.  **Cluster** contigs into linkage groups (chromosomes).\n2.  **Reorient** fragments to a consistent direction.\n3.  **Order** fragments within chromosomes based on Sister Chromatid Exchange (SCE) events.\n4.  **Visualize** results ",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/contiBAIT.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "contiBAIT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/contiBAIT.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-contibait\n\nname: bioconductor-contibait\ndescription: Improving genome assemblies using Strand-seq data. Use this skill to cluster contigs into chromosomes, order contigs within chromosomes, and determine fragment orientation using the contiBAIT R package.\n\n# bioconductor-contibait\n\n## Overview\n\nThe `contiBAIT` package leverages Strand-seq data—which identifies template strand inheritance in single cells—to improve draft genome assemblies. It is particularly useful for assemblies consisting of unplaced contigs or scaffolds. The package provides a workflow to:\n1.  **Cluster** contigs into linkage groups (chromosomes).\n2.  **Reorient** fragments to a consistent direction.\n3.  **Order** fragments within chromosomes based on Sister Chromatid Exchange (SCE) events.\n4.  **Visualize** results through ideograms and heatmaps.\n\n## Typical Workflow\n\n### 1. Data Input and Preprocessing\n\nStart by identifying BAM files and creating a chromosome table to define the fragments.\n\n```R\nlibrary(contiBAIT)\n\n# 1. List BAM files\nbamFileList <- list.files(path=\"path/to/bams\", pattern=\".bam$\", full.names=TRUE)\n\n# 2. Create a chromosome table (ChrTable)\n# Use splitBy to subdivide large scaffolds into bins (e.g., 1Mb) to find chimeric fragments\nexampleChrTable <- makeChrTable(bamFileList[1], splitBy=1000000)\n\n# 3. Generate Strand Frequency Matrix\n# BAITtables=TRUE returns Watson/Crick read counts for ideograms\nstrandFrequencyList <- strandSeqFreqTable(bamFileList, \n                                          filter=exampleChrTable, \n                                          pairedEnd=TRUE)\n\n# 4. Quality Control: Plot distributions to check for expected 1:2:1 (WW:WC:CC) ratio\nplotWCdistribution(strandFrequencyList[[1]])\n```\n\n### 2. Clustering and Reorientation\n\nConvert frequencies to discrete strand states and group contigs that share inheritance patterns.\n\n```R\n# 1. Preprocess to Strand State Matrix (1=WW, 2=WC, 3=CC)\nstrandStateMatrix <- preprocessStrandTable(strandFrequencyList[[1]], lowQualThreshold=0.8)\n\n# 2. Cluster contigs into Linkage Groups\nclusteredContigs <- clusterContigs(strandStateMatrix[[1]])\n\n# 3. Reorient fragments and merge discordant groups\n# This identifies which fragments are inverted relative to the largest sub-group\nreorientedData <- reorientAndMergeLGs(clusteredContigs, strandStateMatrix[[1]])\nlinkageGroupList <- reorientedData[[3]]\n\n# 4. Visualize clustering quality\nplotLGDistances(linkageGroupList, strandStateMatrix[[1]])\n```\n\n### 3. Ordering and Validation\n\nOrder fragments within each linkage group using a greedy algorithm or TSP.\n\n```R\n# 1. Order fragments for a specific Linkage Group (e.g., LG 1)\ncontigOrder <- orderAllLinkageGroups(linkageGroupList, \n                                     strandStateMatrix[[1]], \n                                     strandFrequencyList[[1]], \n                                     strandFrequencyList[[2]], \n                                     whichLG=1)\n\n# 2. Check order against existing assembly (if available)\nplotContigOrder(contigOrder[[1]])\n\n# 3. Visual validation via Ideograms\n# Requires Watson/Crick read matrices from strandSeqFreqTable\nideogramPlot(StrandReadMatrix(strandFrequencyList[[3]][,1, drop=FALSE]), \n             StrandReadMatrix(strandFrequencyList[[4]][,1, drop=FALSE]), \n             exampleChrTable,\n             orderFrame=contigOrder[[1]])\n```\n\n### 4. Exporting Results\n\nWrite the final assembly structure to a BED file for use with downstream tools like `bedtools`.\n\n```R\nwriteBed(exampleChrTable, reorientedData[[2]], contigOrder[[1]], fileName=\"improved_assembly.bed\")\n```\n\n## Key Functions and Tips\n\n- **`makeChrTable`**: Essential for defining the \"contigs\" the package will manipulate. If your assembly is already at the chromosome level but you suspect misorientations, use `splitBy` to create smaller bins.\n- **`strandSeqFreqTable`**: The most time-consuming step. Ensure `pairedEnd` is set correctly for your library type.\n- **`clusterBy`**: In `clusterContigs`, the default is to cluster by both homozygous and heterozygous states. Use `clusterBy='homo'` if you only want to use WW/CC calls.\n- **Chimeric Fragments**: If a contig shows recurrent strand state changes in the middle, it may be chimeric. Use `mapGapFromOverlap` to identify and split these fragments at gap regions.\n\n## Reference documentation\n\n- [contiBAIT](./references/contiBAIT.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-contibait",
+    "description": "This tool improves draft genome assemblies by clustering, reorienting, and ordering contigs using Strand-seq data. Use when user asks to cluster contigs into chromosomes, reorient fragments, or order fragments within linkage groups.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/contiBAIT.html"
+  }
+}

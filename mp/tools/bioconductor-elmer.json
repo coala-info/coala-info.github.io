@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-elmer",
+  "category": "bioconductor",
+  "name": "bioconductor-elmer",
+  "description": "ELMER reconstructs gene regulatory networks by integrating DNA methylation and gene expression data to identify distal regulatory elements and their target genes. Use when user asks to identify enhancers from methylation arrays, link distal probes to target genes via expression correlation, perform motif enrichment analysis, or identify master regulator transcription factors.",
+  "overview": "ELMER (Enhancer Linking by Methylation/Expression Relationships) is a Bioconductor package designed to infer regulatory element landscapes and transcription factor networks. It uses DNA methylation at cis-regulatory modules (CRMs) as a central hub, associating them with upstream master regulator TFs and downstream target genes through correlation analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ELMER.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-elmer/overview",
+  "github": "N/A",
+  "conda_downloads": "31.3K",
+  "conda_downloads_num": 31300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ELMER"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ELMER.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-elmer/overview",
+    "github": "N/A",
+    "conda_downloads": "31.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-elmer\n\nname: bioconductor-elmer\ndescription: Reconstruct gene regulatory networks (GRNs) by combining DNA methylation and gene expression data. Use when Claude needs to: (1) Identify distal regulatory elements (enhancers) from HM450K or EPIC arrays, (2) Link distal probes to target genes via expression correlation, (3) Perform motif enrichment analysis on methylated probes, (4) Identify master regulator transcription factors (MR TFs), or (5) Execute the full ELMER pipeline on TCGA or custom multi-omics datasets.\n\n# bioconductor-elmer\n\n## Overview\nELMER (Enhancer Linking by Methylation/Expression Relationships) is a Bioconductor package designed to infer regulatory element landscapes and transcription factor networks. It uses DNA methylation at cis-regulatory modules (CRMs) as a central hub, associating them with upstream master regulator TFs and downstream target genes through correlation analysis.\n\nThe package supports both **Unsupervised** mode (detecting changes in a subset of samples, ideal for heterogeneous tumor subtypes) and **Supervised** mode (comparing pre-defined groups).\n\n## Core Workflow\n\n### 1. Data Preparation\nELMER uses the `MultiAssayExperiment` (MAE) format. You must provide a DNA methylation matrix (beta values), a gene expression matrix, and sample metadata.\n\n```r\nlibrary(ELMER)\nlibrary(MultiAssayExperiment)\n\n# Create MAE object\nmae <- createMAE(\n  exp = GeneExp_matrix,\n  met = Meth_matrix,\n  met.platform = \"450K\", # or \"EPIC\"\n  genome = \"hg38\",       # or \"hg19\"\n  TCGA = TRUE            # Set TRUE for automatic TCGA metadata mapping\n)\n```\n\n### 2. Identify Distal Probes\nFilter for probes located far from Transcription Start Sites (TSS), typically >2kb.\n\n```r\ndistal.probes <- get.feature.probe(\n  genome = \"hg38\",\n  met.platform = \"450K\",\n  rm.chr = paste0(\"chr\", c(\"X\", \"Y\"))\n)\n```\n\n### 3. Differential Methylation Analysis\nIdentify probes with significant differences between groups using `get.diff.meth`.\n\n```r\nsig.diff <- get.diff.meth(\n  data = mae,\n  group.col = \"definition\",\n  group1 = \"Primary solid Tumor\",\n  group2 = \"Solid Tissue Normal\",\n  diff.dir = \"hypo\", # \"hypo\" or \"hyper\"\n  sig.dif = 0.3,\n  pvalue = 0.01,\n  mode = \"unsupervised\" # or \"supervised\"\n)\n```\n\n### 4. Identify Putative Probe-Gene Pairs\nLink distal probes to the nearest genes (default 10 upstream/downstream) based on inverse correlation between methylation and expression.\n\n```r\nnearGenes <- GetNearGenes(data = mae, probes = sig.diff$probe, numFlankingGenes = 20)\n\npairs <- get.pair(\n  data = mae,\n  nearGenes = nearGenes,\n  mode = \"unsupervised\",\n  permu.size = 10000, # Use high permutation for publication\n  Pe = 0.001          # Empirical p-value cutoff\n)\n```\n\n### 5. Motif Enrichment and Regulatory TFs\nIdentify enriched motifs in the significant probes and find TFs whose expression correlates with the average methylation of those motifs.\n\n```r\n# Motif enrichment\nenriched.motif <- get.enriched.motif(data = mae, probes = pairs$Probe)\n\n# Identify Master Regulator TFs\nTFs <- get.TFs(\n  data = mae,\n  enriched.motif = enriched.motif,\n  group.col = \"definition\",\n  group1 = \"Primary solid Tumor\",\n  group2 = \"Solid Tissue Normal\",\n  mode = \"unsupervised\"\n)\n```\n\n## The TCGA Pipeline\nFor TCGA data, `TCGA.pipe` automates the entire workflow, including data downloading via TCGAbiolinks.\n\n```r\nTCGA.pipe(\n  disease = \"LUSC\",\n  wd = \"./results\",\n  mode = \"unsupervised\",\n  analysis = c(\"distal.probes\", \"diffMeth\", \"pair\", \"motif\", \"TF.search\"),\n  diff.dir = \"hypo\"\n)\n```\n\n## Visualization Functions\nELMER provides several plotting functions to interpret results:\n- `scatter.plot`: Correlation between probe methylation and gene expression.\n- `schematic.plot`: Genomic context of probe-gene pairs.\n- `motif.enrichment.plot`: Odds ratio and significance of enriched motifs.\n- `TF.rank.plot`: Ranking of TFs for a specific motif.\n\n## Reference documentation\n- [Creating MAE with distal probes](./references/analysis_data_input.md)\n- [Identifying differentially methylated probes](./references/analysis_diff_meth.md)\n- [Identifying putative probe-gene pairs](./references/analysis_get_pair.md)\n- [Motif enrichment analysis](./references/analysis_motif_enrichment.md)\n- [Identifying regulatory TFs](./references/analysis_regulatory_tf.md)\n- [TCGA Pipeline wrapper](./references/pipe.md)\n- [Input data requirements](./references/input.md)\n- [Graphical User Interface](./references/analysis_gui.md)\n- [Scatter plots](./references/plots_scatter.md)\n- [Schematic plots](./references/plots_schematic.md)\n- [Motif enrichment plots](./references/plots_motif_enrichment.md)\n- [Regulatory TF plots](./references/plots_TF.md)\n- [Heatmap plots](./references/plots_heatmap.md)\n- [Package Introduction](./references/index.md)\n- [Use Case Example](./references/usecase.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-elmer",
+    "description": "ELMER reconstructs gene regulatory networks by integrating DNA methylation and gene expression data to identify distal regulatory elements and their target genes. Use when user asks to identify enhancers from methylation arrays, link distal probes to target genes via expression correlation, perform motif enrichment analysis, or identify master regulator transcription factors.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ELMER.html"
+  }
+}

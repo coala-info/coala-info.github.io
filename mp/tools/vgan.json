@@ -1,0 +1,53 @@
+{
+  "id": "vgan",
+  "category": "CLI",
+  "name": "vgan",
+  "description": "vgan is a suite of pangenomic tools designed for mitochondrial haplogroup classification and species identification using variation graphs. Use when user asks to classify human mtDNA, analyze ancient environmental DNA for bilaterian abundance, or identify species sources in ancient samples.",
+  "overview": "vgan is a specialized suite of pangenomic tools built upon the variation graph (vg) framework. It is designed to handle genomic data more accurately than linear reference-based methods by accounting for known genetic variation. You should use this skill when you need to:\n1. **Classify human mtDNA**: Use the `haplocart` subcommand for maximum likelihood haplogroup prediction.\n2. **Analyze ancient environmental DNA**: Use `euka` for bilaterian abundance estimation.\n3. **Identify species sources**:",
+  "homepage": "https://github.com/grenaud/vgan",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/vgan/overview",
+  "github": "https://github.com/grenaud/vgan",
+  "conda_downloads": "13.0K",
+  "conda_downloads_num": 13000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vgan_euka",
+      "vgan_duprm",
+      "vgan_gam2prof",
+      "vgan_haplocart",
+      "vgan_soibean"
+    ],
+    "description": "euka performs abundance estimation of eukaryotic taxa from an environmental DNA sample.",
+    "docker_image": "quay.io/biocontainers/vgan:3.1.0--h9ee0642_0",
+    "homepage": "https://github.com/grenaud/vgan",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/vgan/overview",
+    "github": "https://github.com/grenaud/vgan",
+    "conda_downloads": "13.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "vgan_duprm.cwl",
+    "vgan_euka.cwl",
+    "vgan_gam2prof.cwl",
+    "vgan_haplocart.cwl",
+    "vgan_soibean.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# vgan\n\n## Overview\n\nvgan is a specialized suite of pangenomic tools built upon the variation graph (vg) framework. It is designed to handle genomic data more accurately than linear reference-based methods by accounting for known genetic variation. You should use this skill when you need to:\n1. **Classify human mtDNA**: Use the `haplocart` subcommand for maximum likelihood haplogroup prediction.\n2. **Analyze ancient environmental DNA**: Use `euka` for bilaterian abundance estimation.\n3. **Identify species sources**: Use `soibean` for detecting contributing species in filtered ancient samples.\n\n## Installation and Environment Setup\n\nvgan is supported on Linux and requires the `vg` (variation graph) tool as a dependency.\n\n### Directory Structure\nvgan expects a specific directory structure for its resource files. Ensure these exist in your environment:\n- `$HOME/share/vgan/hcfiles/` (HaploCart graph files)\n- `$HOME/share/vgan/euka_dir/` (euka database files)\n- `$HOME/share/vgan/soibean_dir/` (soibean resources)\n\n### Permissions Tip\nIf multiple users share the same graph files, ensure the distance index files are writable:\n```bash\nchmod +w $HOME/share/vgan/hcfiles/graph.dist\nchmod +w $HOME/share/vgan/euka_dir/euka_db.dist\n```\n\n## HaploCart: mtDNA Classification\n\n`haplocart` predicts mitochondrial haplogroups from modern human samples.\n\n### Common CLI Patterns\n- **From FASTA (Consensus):**\n  ```bash\n  vgan haplocart -f sample.fa.gz\n  ```\n- **From FASTQ (Single-end or Paired-end):**\n  ```bash\n  vgan haplocart -fq1 reads_R1.fq.gz -fq2 reads_R2.fq.gz\n  ```\n- **From GAM (Graph Alignment Map):**\n  Note: Reads must have been previously aligned to the vgan-specific graph.\n  ```bash\n  vgan haplocart -g aligned_reads.gam\n  ```\n\n### Handling Non-Native Formats\n- **BAM/CRAM:** vgan does not read HTS-lib formats directly. Pipe unmapped reads from samtools:\n  ```bash\n  samtools bam2fq input.bam | vgan haplocart -fq1 /dev/stdin\n  ```\n- **VCF:** Convert VCF to FASTA first using the provided helper script:\n  ```bash\n  python3 share/vgan/hc_scripts/vcf2fasta.py input.vcf.gz rCRS J01415.2 | gzip > input.fa.gz\n  vgan haplocart -f input.fa.gz\n  ```\n\n## euka: Bilaterian Abundance Estimation\n\nUse `euka` for detecting bilaterian taxa in ancient environmental DNA.\n\n### Basic Usage\n```bash\nvgan euka -fq1 reads.fq.gz\n```\n\n### Expert Tips\n- **Database Path:** If your database is not in the default `share/vgan/euka_dir`, specify it manually using the appropriate flag (check `vgan euka --help`).\n- **Output:** euka provides abundance estimates; ensure your input reads have been properly adapter-trimmed and filtered for quality before processing.\n\n## soibean: Species Identification\n\n`soibean` is used for identifying one or more contributing species in filtered ancient environmental samples.\n\n### Basic Usage\n```bash\nvgan soibean -fq1 filtered_reads.fq.gz\n```\n\n## General Best Practices\n\n1. **Data Sparsity:** For low-coverage or sparse data in HaploCart, always check the clade-level posterior probabilities in the output files rather than relying solely on the top prediction.\n2. **Mapping Stochasticity:** vgan relies on `vg giraffe` for mapping. Because `giraffe` lacks a fixed random seed, results may vary slightly between runs on the same sample in edge cases.\n3. **Resource Downloads:** If subcommands fail due to missing files, use the internal make targets (if building from source) to fetch data:\n   - `make hcfilesmade`\n   - `make eukafilesmade`\n   - `make soibeanfilesmade`\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| vgan euka | euka performs abundance estimation of eukaryotic taxa from an environmental DNA sample. |\n| vgan gam2prof | Convert gam file to profile file. |\n| vgan haplocart | Haplocart predicts the mitochondrial haplogroup for reads originating from an uncontaminated modern human sample. |\n| vgan soibean | First, to create a taxon of interest for the --dbprefix option please use:       /usr/local/bin/../share/vgan/soibean_dir/make_graph_files.sh [taxon name] The taxon name must be from our database. To get an overview of the available taxa use:       /usr/local/bin/../share/vgan/soibean_dir/make_graph_files.sh taxa |\n| vgan_duprm | Remove duplicates from GAM file. |\n\n## Reference documentation\n- [HaploCart Manual](./references/github_com_grenaud_vgan_wiki_HaploCart.md)\n- [Installation Guide](./references/github_com_grenaud_vgan_wiki_Installation.md)\n- [euka Overview](./references/github_com_grenaud_vgan_wiki_euka.md)\n- [soibean Overview](./references/github_com_grenaud_vgan_wiki_soibean.md)",
+  "skill_front_matter": {
+    "name": "vgan",
+    "description": "vgan is a suite of pangenomic tools designed for mitochondrial haplogroup classification and species identification using variation graphs. Use when user asks to classify human mtDNA, analyze ancient environmental DNA for bilaterian abundance, or identify species sources in ancient samples.",
+    "homepage": "https://github.com/grenaud/vgan"
+  }
+}

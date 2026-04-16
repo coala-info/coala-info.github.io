@@ -1,0 +1,41 @@
+{
+  "id": "r-coloc",
+  "category": "R",
+  "name": "r-coloc",
+  "description": "This tool performs genetic colocalisation analysis to determine if two traits share a common causal variant in a genomic region. Use when user asks to prepare GWAS summary statistics for colocalisation, run Approximate Bayes Factor tests, perform multi-signal colocalisation using SuSiE, or conduct sensitivity analyses on prior probability assumptions.",
+  "overview": "The `coloc` package is used to assess whether two genetic traits (e.g., a disease GWAS and an eQTL) share a common causal variant in a specific genomic region. It moves beyond simple \"overlap\" by using Bayesian framework to evaluate the support for five hypotheses ($H_0$ to $H_4$), where $H_4$ represents a shared causal variant.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-coloc\n\nname: r-coloc\ndescription: Perform genetic colocalisation analysis using the coloc R package to determine if two traits share a common causal variant in a genomic region. Use this skill when you need to: (1) Prepare GWAS summary statistics for colocalisation, (2) Run Approximate Bayes Factor (ABF) tests with `coloc.abf`, (3) Perform multi-signal colocalisation using SuSiE with `coloc.susie`, or (4) Conduct sensitivity analyses to validate prior probability assumptions.\n\n# r-coloc\n\n## Overview\nThe `coloc` package is used to assess whether two genetic traits (e.g., a disease GWAS and an eQTL) share a common causal variant in a specific genomic region. It moves beyond simple \"overlap\" by using Bayesian framework to evaluate the support for five hypotheses ($H_0$ to $H_4$), where $H_4$ represents a shared causal variant.\n\n## Installation\n```R\ninstall.packages(\"coloc\")\n# For SuSiE support:\ninstall.packages(\"susieR\")\n```\n\n## Data Preparation\n`coloc` requires data in a specific **list** format for each trait. Use `check_dataset(d)` to validate.\n\n### Minimum Dataset Requirements\n- **Quantitative Trait**: `beta`, `varbeta` (SE squared), `snp`, `position`, `type=\"quant\"`, and `sdY` (or `N` and `MAF` to estimate `sdY`).\n- **Case-Control Trait**: `beta`, `varbeta`, `snp`, `position`, `type=\"cc\"`, and `s` (proportion of samples that are cases).\n\n### Key Considerations\n- **Region Selection**: Do not use whole chromosomes. Select a dense region (e.g., +/- 500kb around a lead SNP).\n- **SNP Matching**: Only SNPs present in both datasets are analyzed.\n- **Allele Alignment**: Ensure `beta` values refer to the same \"effect\" allele in both studies. Use `check_alignment(dataset)` to verify LD and Z-score consistency.\n\n## Workflows\n\n### 1. Single Causal Variant Assumption (ABF)\nUse `coloc.abf` when you assume at most one causal variant per trait in the region.\n```R\nlibrary(coloc)\nresult <- coloc.abf(dataset1 = D1, dataset2 = D2, p1 = 1e-4, p2 = 1e-4, p12 = 1e-6)\nprint(result)\n\n# Extract 95% credible set for H4\no <- order(result$results$SNP.PP.H4, decreasing=TRUE)\ncs <- cumsum(result$results$SNP.PP.H4[o])\nw <- which(cs > 0.95)[1]\nresult$results[o,][1:w, ]$snp\n```\n\n### 2. Multiple Causal Variants (SuSiE)\nThe preferred method for regions with multiple signals. Requires an LD matrix (`LD` entry in the dataset list).\n```R\n# 1. Run SuSiE on each dataset individually\nS1 <- runsusie(D1)\nS2 <- runsusie(D2)\n\n# 2. Colocalise all pairs of signals\nsusie_res <- coloc.susie(S1, S2)\nprint(susie_res$summary)\n```\n\n### 3. Sensitivity Analysis\nCheck if your $H_4$ conclusion is robust to the choice of the prior $p_{12}$.\n```R\n# 'rule' defines the threshold for colocalisation support\nsensitivity(result, rule = \"H4 > 0.5\")\n```\n\n## Tips\n- **Priors**: The default $p_{12} = 10^{-6}$ is often conservative. Use `sensitivity()` to see how results change if you increase/decrease this.\n- **Visualization**: Use `plot_dataset(D1)` to check for signal quality and `check_alignment(D1)` to ensure the LD matrix matches the effect directions.\n- **Missing Beta/Varbeta**: If only p-values are available, `coloc` can estimate ABFs if provided with `MAF`, `N`, and `s` (for CC).\n\n## Reference documentation\n- [Coloc: a package for colocalisation analyses](./references/a01_intro.Rmd)\n- [Coloc: data structures](./references/a02_data.Rmd)\n- [Coloc: under a single causal variant assumption](./references/a03_enumeration.Rmd)\n- [Coloc: sensitivity to prior values](./references/a04_sensitivity.Rmd)\n- [DEPRECATED Coloc: relaxing the single causal variant assumption](./references/a05_conditioning.Rmd)\n- [Coloc: using SuSiE to relax the single causal variant assumption](./references/a06_SuSiE.Rmd)",
+  "skill_front_matter": {
+    "name": "r-coloc",
+    "description": "This tool performs genetic colocalisation analysis to determine if two traits share a common causal variant in a genomic region. Use when user asks to prepare GWAS summary statistics for colocalisation, run Approximate Bayes Factor tests, perform multi-signal colocalisation using SuSiE, or conduct sensitivity analyses on prior probability assumptions.",
+    "homepage": "https://cloud.r-project.org/web/packages/coloc/index.html"
+  }
+}

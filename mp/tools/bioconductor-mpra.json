@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mpra",
+  "category": "bioconductor",
+  "name": "bioconductor-mpra",
+  "description": "The bioconductor-mpra package provides tools for the statistical analysis of Massively Parallel Reporter Assay data using the mpralm linear modeling framework. Use when user asks to perform differential activity analysis, compare allelic variants, or model mean-variance relationships in MPRA datasets.",
+  "overview": "The `mpra` package implements the `mpralm` framework for the statistical analysis of Massively Parallel Reporter Assay data. It leverages precision weights (similar to the `voom` framework in RNA-seq) to account for the relationship between count variability and element copy number. The package supports differential activity analysis for independent groups (e.g., different cell types) and correlated groups (e.g., allelic comparisons within the same sample).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mpra.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/hansenlab/mpra",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mpra"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mpra.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/hansenlab/mpra",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mpra\n\n## Overview\n\nThe `mpra` package implements the `mpralm` framework for the statistical analysis of Massively Parallel Reporter Assay data. It leverages precision weights (similar to the `voom` framework in RNA-seq) to account for the relationship between count variability and element copy number. The package supports differential activity analysis for independent groups (e.g., different cell types) and correlated groups (e.g., allelic comparisons within the same sample).\n\n## Core Workflow\n\n### 1. Creating an MPRASet Object\nData must be encapsulated in an `MPRASet` object. You need DNA and RNA count matrices ($K$ rows $\\times$ $S$ samples).\n\n```r\nlibrary(mpra)\n\n# DNA and RNA: matrices of integer counts\n# eid: character vector identifying the Putative Regulatory Element (PRE)\n# eseq: (optional) character vector of PRE sequences\nmpraset <- MPRASet(DNA = dna_matrix, \n                   RNA = rna_matrix, \n                   eid = element_ids, \n                   eseq = NULL, \n                   barcode = NULL)\n```\n\n### 2. Differential Activity Analysis (mpralm)\nThe `mpralm` function is the primary tool for fitting linear models to MPRA data.\n\n**Key Parameters:**\n- `aggregate`: `\"mean\"` (average estimator) or `\"sum\"` (aggregate estimator) to combine barcode-level data.\n- `model_type`: `\"indep_groups\"` for unpaired samples or `\"corr_groups\"` for paired/allelic data.\n- `normalize`: `TRUE` performs total count normalization (10M reads).\n- `plot`: `TRUE` displays the mean-variance relationship.\n\n#### Scenario A: Tissue/Condition Comparison (Independent)\nUsed when comparing PRE activity across different cell lines or conditions.\n\n```r\ndesign <- data.frame(Intercept = 1, \n                     Condition = grepl(\"Treatment\", colnames(mpraset)))\nfit <- mpralm(object = mpraset, \n              design = design, \n              aggregate = \"mean\", \n              model_type = \"indep_groups\", \n              plot = TRUE)\n\nlibrary(limma)\nresults <- topTable(fit, coef = 2, number = Inf)\n```\n\n#### Scenario B: Allelic Comparison (Correlated)\nUsed when comparing two alleles of a SNP within the same transfection sample. Requires a `block` vector to identify paired samples.\n\n```r\n# Example: 5 samples, each with Allele A and Allele B columns\ndesign <- data.frame(Intercept = 1, \n                     is_AlleleB = grepl(\"allele_B\", colnames(mpraset)))\nblock_vector <- rep(1:5, 2) \n\nfit_allele <- mpralm(object = mpraset, \n                     design = design, \n                     block = block_vector, \n                     model_type = \"corr_groups\", \n                     aggregate = \"none\") # Often counts are pre-aggregated for alleles\n```\n\n### 3. Endomorphic Returns\nTo keep results within the `MPRASet` object (storing statistics in `rowData`), use `endomorphic = TRUE`.\n\n```r\nmpraset_results <- mpralm(object = mpraset, \n                          design = design, \n                          endomorphic = TRUE, \n                          coef = 2)\n# Access results\nrowData(mpraset_results)\n```\n\n## Tips and Best Practices\n- **Normalization**: Always set `normalize = TRUE` unless your data is already pre-normalized.\n- **Aggregation**: Use `aggregate = \"mean\"` if you want to account for barcode-level variability; use `\"sum\"` if you prefer to treat the total pool of barcodes as a single measurement.\n- **Limma Integration**: The object returned by `mpralm` (unless endomorphic) is an `MArrayLM` object, compatible with all standard `limma` functions like `topTable` and `decideTests`.\n- **Log Ratios**: `mpra` calculates activity as $log_2(RNA / DNA)$.\n\n## Reference documentation\n- [The mpra User's Guide](./references/mpra.Rmd)\n- [The mpra User's Guide (Markdown)](./references/mpra.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mpra",
+    "description": "The bioconductor-mpra package provides tools for the statistical analysis of Massively Parallel Reporter Assay data using the mpralm linear modeling framework. Use when user asks to perform differential activity analysis, compare allelic variants, or model mean-variance relationships in MPRA datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mpra.html"
+  }
+}

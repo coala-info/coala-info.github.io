@@ -1,0 +1,43 @@
+{
+  "id": "scvi",
+  "category": "library",
+  "name": "scvi",
+  "description": "scvi applies probabilistic deep generative models to single-cell omics data for normalization and analysis. Use when user asks to integrate disparate datasets, reduce dimensionality for visualization, or perform differential expression analysis.",
+  "overview": "The `scvi` (single-cell Variational Inference) skill enables the application of probabilistic models to high-dimensional single-cell data. It is designed to handle the inherent noise, sparsity, and batch effects found in omics datasets by leveraging deep generative models built on PyTorch and AnnData. Use this skill to implement standardized workflows for integrating disparate datasets, reducing dimensionality for visualization, and performing differential expression analysis within a Bayesian f",
+  "homepage": "https://github.com/YosefLab/scVI",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/scvi/overview",
+  "github": "https://github.com/YosefLab/scVI",
+  "conda_downloads": "64.9K",
+  "conda_downloads_num": 64900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scvi"
+    ],
+    "description": "FAIL to generate CWL: scvi not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/scvi:0.6.8--py_0",
+    "homepage": "https://github.com/YosefLab/scVI",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/scvi/overview",
+    "github": "https://github.com/YosefLab/scVI",
+    "conda_downloads": "64.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# scvi\n\n## Overview\nThe `scvi` (single-cell Variational Inference) skill enables the application of probabilistic models to high-dimensional single-cell data. It is designed to handle the inherent noise, sparsity, and batch effects found in omics datasets by leveraging deep generative models built on PyTorch and AnnData. Use this skill to implement standardized workflows for integrating disparate datasets, reducing dimensionality for visualization, and performing differential expression analysis within a Bayesian framework.\n\n## Core Workflow and Best Practices\n\n### 1. Data Preparation\nAll `scvi-tools` models interact with `AnnData` objects. Before training, you must register the data to specify which fields (layers, batch, covariates) the model should use.\n\n```python\nimport scvi\nimport scanpy as sc\n\n# Load data\nadata = sc.read_h5ad(\"dataset.h5ad\")\n\n# Setup the AnnData object for the specific model\n# Identify the batch column to perform integration\nscvi.model.SCVI.setup_anndata(\n    adata, \n    layer=\"counts\", \n    batch_key=\"batch\",\n    continuous_covariate_keys=[\"percent_mito\"]\n)\n```\n\n### 2. Model Training\nStandard `SCVI` is the workhorse for scRNA-seq integration and normalization.\n\n*   **GPU Acceleration**: Always use a GPU if available (`accelerator=\"gpu\"`).\n*   **Early Stopping**: Enabled by default to prevent overfitting.\n\n```python\n# Initialize the model\nmodel = scvi.model.SCVI(adata, n_layers=2, n_latent=30, gene_likelihood=\"nb\")\n\n# Train the model\nmodel.train(max_epochs=400, accelerator=\"gpu\")\n```\n\n### 3. Latent Representation and Integration\nAfter training, extract the latent space to use for clustering and visualization (UMAP/t-SNE). This representation is \"batch-corrected\" by design.\n\n```python\n# Get the latent representation\nadata.obsm[\"X_scVI\"] = model.get_latent_representation()\n\n# Use Scanpy for downstream clustering on the scVI latent space\nsc.pp.neighbors(adata, use_rep=\"X_scVI\")\nsc.tl.leiden(adata)\nsc.tl.umap(adata)\n```\n\n### 4. Differential Expression\n`scvi-tools` provides a \"Change-point\" analysis for differential expression, which is more robust than frequentist tests for sparse single-cell data.\n\n```python\n# Compare two specific clusters\nde_df = model.differential_expression(\n    groupby=\"leiden\", \n    group1=\"0\", \n    group2=\"1\"\n)\n```\n\n## Expert Tips\n*   **Gene Selection**: For best results, filter the `AnnData` to Highly Variable Genes (HVGs) before setting up the model. This significantly speeds up training and reduces noise.\n*   **Library Size**: `scvi` models the library size as a latent variable; do not provide log-normalized data to the `counts` layer. Use raw integer counts.\n*   **Model Selection**:\n    *   Use `SCVI` for standard scRNA-seq.\n    *   Use `SCANVI` for semi-supervised annotation (when you have some cell type labels).\n    *   Use `TOTALVI` for CITE-seq (paired RNA and protein).\n    *   Use `DestVI` or `Stereoscope` for spatial deconvolution.\n\n## Reference documentation\n- [scvi-tools GitHub Repository](./references/github_com_scverse_scvi-tools.md)\n- [Bioconda scvi Overview](./references/anaconda_org_channels_bioconda_packages_scvi_overview.md)",
+  "skill_front_matter": {
+    "name": "scvi",
+    "description": "scvi applies probabilistic deep generative models to single-cell omics data for normalization and analysis. Use when user asks to integrate disparate datasets, reduce dimensionality for visualization, or perform differential expression analysis.",
+    "homepage": "https://github.com/YosefLab/scVI"
+  }
+}

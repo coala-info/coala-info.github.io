@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-wavcluster",
+  "category": "bioconductor",
+  "name": "bioconductor-wavcluster",
+  "description": "This tool identifies high-confidence protein binding sites from PAR-CLIP and NGS data by analyzing induced nucleotide substitutions. Use when user asks to identify RNA-protein interaction sites from BAM files, fit mixture models to substitution frequencies, or perform cluster annotation and metagene profiling.",
+  "overview": "The `wavClusteR` package provides an integrated pipeline for identifying high-confidence protein binding sites from PAR-CLIP data. It leverages experimentally induced nucleotide substitutions (typically T-to-C transitions) to distinguish true binding signals from sequencing errors or SNPs using a non-parametric mixture model and the Mini-Rank Norm (MRN) algorithm for cluster resolution.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/wavClusteR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "wavClusteR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/wavClusteR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-wavcluster\n\nname: bioconductor-wavcluster\ndescription: Analysis of PAR-CLIP and NGS data with induced nucleotide substitutions (e.g., BisSeq). Use when Claude needs to identify RNA-protein interaction sites (clusters) from BAM files, fit mixture models to substitution frequencies, and perform post-processing like cluster annotation or metagene profiling.\n\n# bioconductor-wavcluster\n\n## Overview\n\nThe `wavClusteR` package provides an integrated pipeline for identifying high-confidence protein binding sites from PAR-CLIP data. It leverages experimentally induced nucleotide substitutions (typically T-to-C transitions) to distinguish true binding signals from sequencing errors or SNPs using a non-parametric mixture model and the Mini-Rank Norm (MRN) algorithm for cluster resolution.\n\n## Core Workflow\n\n### 1. Data Input and Substitution Extraction\nLoad sorted and indexed BAM files and identify all genomic positions with substitutions.\n\n```r\nlibrary(wavClusteR)\n\n# Load BAM file\nbamData <- readSortedBam(\"path/to/sorted_indexed.bam\")\n\n# Extract substitutions with a coverage threshold (default minCov = 10)\ncountTable <- getAllSub(bamData, minCov = 10)\n\n# Diagnostic plot of substitution profile\nplotSubstitutions(countTable, highlight = \"TC\")\n```\n\n### 2. Mixture Model Estimation\nEstimate a model to discriminate experimental transitions from noise.\n\n```r\n# Fit the model for a specific substitution type\nmodel <- fitMixtureModel(countTable, substitution = \"TC\")\n\n# Determine the Relative Substitution Frequency (RSF) interval\n# Use bayes = TRUE for a posterior probability cutoff of 0.5\nsupport <- getExpInterval(model, bayes = TRUE)\n```\n\n### 3. Identifying High-Confidence Transitions\nFilter the observed substitutions using the RSF support interval.\n\n```r\nhighConfSub <- getHighConfSub(countTable, \n                              support = support, \n                              substitution = \"TC\")\n```\n\n### 4. Cluster Identification and Merging\nResolve binding site boundaries and merge overlapping regions into \"wavClusters\".\n\n```r\n# 1. Identify initial clusters using MRN algorithm\n# threshold = 1 is recommended for hard thresholding\nclusters <- getClusters(highConfSub = highConfSub,\n                        coverage = coverage(bamData),\n                        sortedBam = bamData,\n                        threshold = 1)\n\n# 2. Filter and merge clusters with statistics\n# Requires a BSgenome object for the relevant organism\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\nwavclusters <- filterClusters(clusters = clusters,\n                              highConfSub = highConfSub,\n                              coverage = coverage(bamData),\n                              model = model,\n                              genome = Hsapiens,\n                              refBase = \"T\",\n                              minWidth = 12)\n```\n\n## Post-Processing and Visualization\n\n### Annotation and Metagene Analysis\nAnnotate clusters with genomic features and visualize their distribution.\n\n```r\n# Annotate clusters (requires a TxDb object)\nannotateClusters(clusters = wavclusters, txDB = txDB)\n\n# Compute metagene profile\ngetMetaGene(clusters = wavclusters, txDB = txDB)\n\n# Plot cluster size distribution\nplotSizeDistribution(wavclusters, showCov = TRUE)\n```\n\n### Data Export\nExport results to standard formats for visualization in genome browsers.\n\n```r\n# Export clusters to BED\nexportClusters(wavclusters, filename = \"results.bed\")\n\n# Export high-confidence substitutions to BED\nexportHighConfSub(highConfSub, filename = \"transitions.bed\")\n\n# Export coverage to BigWig\nexportCoverage(coverage(bamData), filename = \"coverage.bigWig\")\n```\n\n## Key Considerations\n- **Alignment**: Ensure reads were aligned with relaxed parameters to allow for transitions.\n- **Coverage Threshold**: Do not set `minCov` below 10 in `getAllSub`, as the mixture model relies on stable relative frequencies.\n- **Ranking**: Use the `RelLogOdds` metadata column in the final `wavclusters` object to rank binding sites by statistical confidence.\n- **Parallelization**: Functions like `getAllSub` and `getClusters` support multi-core computing via the `cores` argument.\n\n## Reference documentation\n- [wavClusteR: a workflow for PAR-CLIP data analysis](./references/wavCluster_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-wavcluster",
+    "description": "This tool identifies high-confidence protein binding sites from PAR-CLIP and NGS data by analyzing induced nucleotide substitutions. Use when user asks to identify RNA-protein interaction sites from BAM files, fit mixture models to substitution frequencies, or perform cluster annotation and metagene profiling.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/wavClusteR.html"
+  }
+}

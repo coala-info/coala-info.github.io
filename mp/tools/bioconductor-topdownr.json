@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-topdownr",
+  "category": "bioconductor",
+  "name": "bioconductor-topdownr",
+  "description": "This tool investigates and optimizes protein fragmentation parameters in top-down proteomics data. Use when user asks to import deconvoluted spectra, filter fragments by injection time or coefficient of variation, aggregate technical replicates, or determine optimal fragmentation conditions to maximize sequence coverage.",
+  "overview": "The `topdownr` package is designed for the systematic analysis of top-down proteomics fragmentation data. It allows researchers to explore how different fragmentation parameters (like ETD reaction time, CID/HCD collision energy, and AGC target) affect sequence coverage. The package provides a structured workflow to import data from Thermo Orbitrap instruments, filter out low-quality scans and fragments, and identify the best combination of conditions for protein identification and characterizati",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/topdownr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "topdownr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/topdownr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-topdownr\n\nname: bioconductor-topdownr\ndescription: Expert guidance for the topdownr R package to investigate and optimize protein fragmentation in top-down proteomics. Use this skill when analyzing top-down mass spectrometry data, specifically for importing deconvoluted spectra, filtering fragments based on injection time or CV, aggregating technical replicates, and determining optimal fragmentation conditions to maximize sequence coverage.\n\n# bioconductor-topdownr\n\n## Overview\nThe `topdownr` package is designed for the systematic analysis of top-down proteomics fragmentation data. It allows researchers to explore how different fragmentation parameters (like ETD reaction time, CID/HCD collision energy, and AGC target) affect sequence coverage. The package provides a structured workflow to import data from Thermo Orbitrap instruments, filter out low-quality scans and fragments, and identify the best combination of conditions for protein identification and characterization.\n\n## Core Workflow\n\n### 1. Data Import\nTo begin an analysis, you need four types of files: `.fasta` (protein sequence), `.experiments.csv` (method info), `.txt` (scan headers from ScanHeadsman), and `.mzML` (deconvoluted spectra).\n\n```r\nlibrary(topdownr)\n\n# Define mass adducts if necessary\nH <- 1.0078250321\n\ntd_set <- readTopDownFiles(\n    path = \"path/to/data\",\n    type = c(\"a\", \"b\", \"c\", \"x\", \"y\", \"z\"),\n    adducts = data.frame(mass=c(-H, H), to=c(\"c\", \"z\"), name=c(\"cmH\", \"zpH\")),\n    modifications = \"Met-loss\", # e.g., initiator methionine removal\n    tolerance = 5e-6,           # 5 ppm\n    conditions = \"ScanDescription\" \n)\n```\n\n### 2. Data Filtering\nFiltering is essential to remove noise and irreproducible fragments before aggregation.\n\n*   **Injection Time:** Remove scans where the AGC calculation or spray was unstable.\n    ```r\n    td_set <- filterInjectionTime(td_set, maxDeviation = log2(3), keepTopN = 2)\n    ```\n*   **Coefficient of Variation (CV):** Remove fragments with high intensity variance across replicates (recommended threshold: 30%).\n    ```r\n    td_set <- filterCv(td_set, threshold = 30)\n    ```\n*   **Intensity:** Remove low-intensity fragments relative to the highest observation for that fragment.\n    ```r\n    td_set <- filterIntensity(td_set, threshold = 0.1)\n    ```\n\n### 3. Aggregation and Analysis\nAfter filtering, technical replicates are aggregated into a single condition set.\n\n```r\n# Aggregate replicates\ntd_set <- aggregate(td_set)\n\n# View statistics\nsummary(td_set)\n\n# Plot a specific condition\nplot(td_set[, \"Condition_Name\"])\n```\n\n### 4. Maximizing Coverage\nTo find the best conditions for sequence coverage, convert the `TopDownSet` to an `NCBSet` (N-terminal/C-terminal/Bidirectional).\n\n```r\n# Convert to NCBSet\nncb_set <- as(td_set, \"NCBSet\")\n\n# Find the top N conditions that maximize bond coverage\nbest_conds <- bestConditions(ncb_set, n = 3)\n\n# Visualize fragmentation map\nfragmentationMap(ncb_set, nCombinations = 5)\n```\n\n## Creating Fragmentation Methods\n`topdownr` can also generate the XML files required to create experimental methods for Thermo Tribrid instruments.\n\n```r\n# 1. Define MS1 and Target Mz\nms1 <- expandMs1Conditions(FirstMass=400, LastMass=1200)\ntargetMz <- cbind(mz=c(560.6, 700.5), z=rep(1, 2))\n\n# 2. Expand fragmentation parameters\nhcd <- expandTms2Conditions(MassList=targetMz, ActivationType=\"HCD\", HCDCollisionEnergy=seq(7, 35, 7))\n\n# 3. Create experiment objects\nexps <- createExperimentsFragmentOptimisation(ms1=ms1, hcd, nMs2perMs1=10)\n\n# 4. Write XMLs for XMLMethodChanger\nwriteMethodXmls(exps=exps)\n```\n\n## Tips for Success\n*   **Object Structure:** A `TopDownSet` contains `rowViews` (fragment data), `colData` (condition data), and `assayData` (intensity matrix). Use standard R subsetting `[row, col]` to filter by fragment type or specific files.\n*   **Feature Importance:** Use the `ranger` package on the `colData` to determine which fragmentation parameters (e.g., `EtdActivation`) have the most impact on the number of fragments produced.\n*   **Deconvolution:** Ensure your `.mzML` files are already charge-state deconvoluted (e.g., using Xtract in Proteome Discoverer) before importing into `topdownr`.\n\n## Reference documentation\n- [Fragmentation Analysis with topdownr](./references/analysis.md)\n- [Data Generation for topdownr](./references/data-generation.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-topdownr",
+    "description": "This tool investigates and optimizes protein fragmentation parameters in top-down proteomics data. Use when user asks to import deconvoluted spectra, filter fragments by injection time or coefficient of variation, aggregate technical replicates, or determine optimal fragmentation conditions to maximize sequence coverage.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/topdownr.html"
+  }
+}

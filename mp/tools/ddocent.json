@@ -1,0 +1,49 @@
+{
+  "id": "ddocent",
+  "category": "CLI",
+  "name": "ddocent",
+  "description": "dDocent is a population genomics pipeline that transforms raw sequencing reads into high-quality SNP and INDEL calls for non-model organisms. Use when user asks to perform de novo or reference-based assembly, optimize clustering parameters, or call and filter variants from RADseq data.",
+  "overview": "dDocent is a specialized bash-based pipeline designed for population genomics, particularly optimized for non-model organisms. It serves as a wrapper for several high-performance bioinformatics tools (such as BWA, FreeBayes, and VCFtools) to transform raw sequencing reads into high-quality SNP and INDEL calls. Use this skill to guide the multi-step process of demultiplexing, trimming, optimizing assembly parameters, and filtering variants. It is especially useful when dealing with complex polymo",
+  "homepage": "https://ddocent.com",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ddocent/overview",
+  "github": "https://github.com/jpuritz/dDocent",
+  "conda_downloads": "116.9K",
+  "conda_downloads_num": 116900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ddocent_dDocent",
+      "ddocent_ReferenceOpt.sh",
+      "ddocent_RefMapOpt.sh"
+    ],
+    "description": "dDocent 2.9.8",
+    "docker_image": "quay.io/biocontainers/ddocent:2.9.8--hdfd78af_0",
+    "homepage": "https://ddocent.com",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ddocent/overview",
+    "github": "https://github.com/jpuritz/dDocent",
+    "conda_downloads": "116.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ddocent_RefMapOpt.sh.cwl",
+    "ddocent_ReferenceOpt.sh.cwl",
+    "ddocent_dDocent.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ddocent\n\n## Overview\n\ndDocent is a specialized bash-based pipeline designed for population genomics, particularly optimized for non-model organisms. It serves as a wrapper for several high-performance bioinformatics tools (such as BWA, FreeBayes, and VCFtools) to transform raw sequencing reads into high-quality SNP and INDEL calls. Use this skill to guide the multi-step process of demultiplexing, trimming, optimizing assembly parameters, and filtering variants. It is especially useful when dealing with complex polymorphisms and INDELs that traditional pipelines might miss.\n\n## Installation and Environment\n\nThe recommended way to use dDocent is via Bioconda to ensure all dependencies (FreeBayes, BWA, STACKS, etc.) are correctly versioned.\n\n```bash\n# Create and activate environment\nconda create -n ddocent_env ddocent\nsource activate ddocent_env\n\n# Run the pipeline\ndDocent\n```\n\n## Data Preparation\n\ndDocent requires specific naming conventions for paired-end data:\n- Forward reads: `SampleName.F.fq.gz`\n- Reverse reads: `SampleName.R.fq.gz`\n\n### Demultiplexing and Renaming\nIf starting from raw multiplexed data, use `process_radtags` from the Stacks package. Use the `Rename_for_dDocent.sh` script to convert barcode-named files to the required format:\n```bash\nbash Rename_for_dDocent.sh Barcode_File\n```\n\n## Core Workflow Best Practices\n\n### 1. Reference Optimization (Crucial Step)\nDo not run the full pipeline on your entire dataset immediately. Instead, create a `RefOpt` directory with a subset of individuals (e.g., 1-5 per locality) to capture total variability.\n\n- **Run `ReferenceOpt.sh`**: This script tests different clustering parameters.\n- **Similarity Threshold**: Look for the \"point of inflection\" in the `kopt.data` plot. This is the threshold where you maximize the capture of unique loci without over-splitting alleles into separate contigs.\n- **Mapping Optimization**: Run `RefMapOpt.sh` using the chosen similarity threshold to pick optimal `K1` (within-individual coverage) and `K2` (number of individuals) cutoffs.\n\n### 2. Assembly\n- **De Novo**: dDocent uses `CD-HIT` and `rainbow` for assembly.\n- **Reference-based**: If a reference genome exists, place `reference.fasta` in the working directory. dDocent will detect it and skip the assembly steps.\n\n### 3. SNP Calling with FreeBayes\ndDocent uses FreeBayes, which is haplotype-based. This allows it to call SNPs, INDELs, and complex events simultaneously.\n- Ensure `pearRM` is in your PATH for merging paired-end reads before assembly.\n- The pipeline is \"population-aware,\" meaning it uses the combined information from all individuals to improve call accuracy at low-coverage sites.\n\n## SNP Filtering Patterns\n\nAfter the pipeline produces a raw VCF file (usually `TotalRawSNPs.vcf`), rigorous filtering is required:\n\n1.  **Missing Data**: Filter by individuals and then by loci.\n2.  **Minor Allele Frequency (MAF)**: Typically set between 0.01 and 0.05 depending on sample size.\n3.  **Quality/Depth**: Use VCFtools to filter for site quality (e.g., `--minQ 30`) and minimum depth per genotype (e.g., `--minDP 5`).\n4.  **HWE**: Filter for Hardy-Weinberg Equilibrium within populations to remove paralogs or multi-copy loci.\n5.  **Complex Variants**: Use `vcflib` to decompose complex variants into primary SNPs and INDELs if required for downstream software.\n\n## Expert Tips\n- **Memory Management**: dDocent is resource-intensive. Always specify the maximum number of processors and available memory when prompted by the interactive CLI.\n- **Troubleshooting**: If the pipeline fails, check `dDocent_main.LOG` and the `dDocent.runs` file for the specific command that errored.\n- **Random Shearing**: If using PE RADseq with random shearing, ensure you are using dDocent version 2.1 or higher, which includes specific assembly options for these libraries.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| ReferenceOpt.sh | Scales similarity parameters for reference-based assembly. |\n| ddocent | dDocent 2.9.8 |\n| ddocent_RefMapOpt.sh | RefMapOpt |\n\n## Reference documentation\n- [Full User Guide](./references/ddocent_com_UserGuide.md)\n- [Assembly Tutorial](./references/ddocent_com_assembly.md)\n- [Quick Start Guide](./references/ddocent_com_quick.md)\n- [SNP Filtering Tutorial](./references/ddocent_com_filtering.md)\n- [Bioconda Install](./references/ddocent_com_bioconda.md)",
+  "skill_front_matter": {
+    "name": "ddocent",
+    "description": "dDocent is a population genomics pipeline that transforms raw sequencing reads into high-quality SNP and INDEL calls for non-model organisms. Use when user asks to perform de novo or reference-based assembly, optimize clustering parameters, or call and filter variants from RADseq data.",
+    "homepage": "https://ddocent.com"
+  }
+}

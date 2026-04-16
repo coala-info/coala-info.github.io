@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pulsedsilac",
+  "category": "bioconductor",
+  "name": "bioconductor-pulsedsilac",
+  "description": "This package analyzes protein turnover and degradation rates from pulsed SILAC mass spectrometry data using specialized S4 classes. Use when user asks to manage SilacProteinExperiment objects, calculate isotope fractions, fit kinetic models to estimate protein half-lives, or filter time-series proteomics data.",
+  "overview": "The `pulsedSilac` package provides a framework for analyzing protein turnover using mass spectrometry data from pulsed SILAC experiments. In these experiments, cells are switched from light to heavy amino acid media, and samples are collected over a time series. This skill helps manage the specialized S4 classes (`SilacProteinExperiment`, `SilacPeptideExperiment`, and `SilacProteomicsExperiment`) used to store this data and the workflows for fitting kinetic models to estimate degradation rates a",
+  "homepage": "https://bioconductor.org/packages/3.10/bioc/html/pulsedSilac.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pulsedSilac"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.10/bioc/html/pulsedSilac.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pulsedsilac\n\n## Overview\n\nThe `pulsedSilac` package provides a framework for analyzing protein turnover using mass spectrometry data from pulsed SILAC experiments. In these experiments, cells are switched from light to heavy amino acid media, and samples are collected over a time series. This skill helps manage the specialized S4 classes (`SilacProteinExperiment`, `SilacPeptideExperiment`, and `SilacProteomicsExperiment`) used to store this data and the workflows for fitting kinetic models to estimate degradation rates and half-lives.\n\n## Data Organization\n\nThe package uses three main classes derived from `SummarizedExperiment`. A key feature is the `metaoptions` slot, which stores column names for conditions, timepoints, and IDs to simplify function calls.\n\n### Creating Objects\n\n```r\nlibrary(pulsedSilac)\n\n# Protein level\nprotExp <- SilacProteinExperiment(\n  assays = list(expression = protein_matrix),\n  rowData = protein_metadata,\n  colData = sample_metadata,\n  conditionCol = \"condition\",\n  timeCol = \"time\"\n)\n\n# Peptide level\npeptExp <- SilacPeptideExperiment(\n  assays = list(expression = peptide_matrix),\n  rowData = peptide_metadata,\n  colData = sample_metadata,\n  conditionCol = \"condition\",\n  timeCol = \"time\",\n  proteinCol = \"protein_id\" # Links peptides to proteins\n)\n\n# Combined Proteomics Experiment\n# Use buildLinkerDf to define the many-to-many relationship\nlinker <- buildLinkerDf(protIDs, pepIDs, protToPepList)\nmultiExp <- SilacProteomicsExperiment(protExp, peptExp, linkerDf = linker)\n```\n\n### Accessors and Subsetting\n*   `metaoptions(obj)`: Access or set the metadata options.\n*   `assaysProt(multiExp)` / `assaysPept(multiExp)`: Access specific levels in a combined object.\n*   `subsetProt()` / `subsetPep()`: Subset the combined object while maintaining links if `metaoptions(multiExp)$linkedSubset` is `TRUE`.\n\n## Typical Workflow\n\n### 1. Filtering\nFilter features based on measurement frequency across the time series.\n```r\n# Keep proteins measured in at least 5 out of 7 timepoints\nfilteredExp <- filterByMissingTimepoints(wormsPE, assayName = \"ratio\", maxMissing = 2)\n```\n\n### 2. Ratio and Fraction Calculation\nConvert raw intensities into the fractions used for modeling.\n```r\n# Calculate Heavy/(Heavy + Light)\nwormsPE <- calculateIsotopeRatio(wormsPE, newIsotopeAssay = \"int_heavy\", oldIsotopeAssay = \"int_light\")\nwormsPE <- calculateIsotopeFraction(wormsPE, ratioAssay = \"ratio\")\n```\n\n### 3. Modeling Turnover\nFit kinetic models (usually exponential decay) to the fraction data.\n```r\n# Fit: fraction ~ 1 - exp(-k * t)\nmodelList <- modelTurnover(\n  x = wormsPE,\n  assayName = \"fraction\",\n  formula = \"fraction ~ 1 - exp(-k * t)\",\n  start = list(k = 0.02),\n  mode = \"protein\",\n  robust = TRUE, # Uses nlrob for outlier resistance\n  returnModel = TRUE\n)\n\n# Calculate half-life from the rate constant k\nmodelList$half_life <- log(0.5) / (-modelList$param_values$k)\n```\n\n### 4. Visualization\n*   `plotDistributionAssay(obj, assayName = \"fraction\")`: Check global incorporation trends.\n*   `plotIndividualModel(obj, modelList, num = 1)`: Visualize the fit for a specific protein.\n*   `plotDistributionModel(modelList, value = \"half_life\")`: Compare half-life distributions between conditions.\n*   `scatterCompareModels(modelList, conditions = c(\"A\", \"B\"), value = \"param_values\")`: Compare rate constants per protein.\n\n## Advanced Analysis\n\n### Cell Growth Correction\nIf cells are dividing, the apparent turnover includes biomass dilution.\n1.  Identify stable proteins using `mostStable()`.\n2.  Estimate doubling time (`tc`) using `modelTurnover` on those stable proteins.\n3.  Incorporate the growth constant into the final turnover formula: `fraction ~ 1 - exp(-( (log(2)/tc) + k) * t)`.\n\n### Model Comparison\nCompare different kinetic models (e.g., with or without an offset `b`) using AIC.\n```r\nmodelList1 <- calculateAIC(modelList1, smallSampleSize = TRUE)\nmodelList2 <- calculateAIC(modelList2, smallSampleSize = TRUE)\nprobList <- compareAIC(modelList1, modelList2)\n```\n\n## Reference documentation\n- [Pulsed-SILAC data analysis](./references/pulsedsilac.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pulsedsilac",
+    "description": "This package analyzes protein turnover and degradation rates from pulsed SILAC mass spectrometry data using specialized S4 classes. Use when user asks to manage SilacProteinExperiment objects, calculate isotope fractions, fit kinetic models to estimate protein half-lives, or filter time-series proteomics data.",
+    "homepage": "https://bioconductor.org/packages/3.10/bioc/html/pulsedSilac.html"
+  }
+}

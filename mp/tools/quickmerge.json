@@ -1,0 +1,45 @@
+{
+  "id": "quickmerge",
+  "category": "CLI",
+  "name": "quickmerge",
+  "description": "Quickmerge is a meta-assembler that improves genome assembly contiguity by merging two different assemblies into a single, more contiguous result. Use when user asks to merge genome assemblies, increase assembly N50, or bridge gaps in long-read sequencing data using a reference assembly.",
+  "overview": "Quickmerge is a meta-assembler designed to increase the contiguity of genome assemblies generated from long-molecule sequencing data. It works by using one assembly (the reference) to bridge gaps and join contigs in another assembly (the query). This process leverages the complementary strengths of different assembly algorithms or data types (like combining Illumina-hybrid and PacBio-only assemblies) to produce a final result with significantly higher N50 values without sacrificing accuracy.",
+  "homepage": "https://github.com/mahulchak/quickmerge",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/quickmerge/overview",
+  "github": "https://github.com/mahulchak/quickmerge",
+  "conda_downloads": "8.0K",
+  "conda_downloads_num": 8000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "quickmerge"
+    ],
+    "description": "Merge overlapping sequences from a hybrid assembly.",
+    "docker_image": "quay.io/biocontainers/quickmerge:0.3--pl5321h503566f_6",
+    "homepage": "https://github.com/mahulchak/quickmerge",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/quickmerge/overview",
+    "github": "https://github.com/mahulchak/quickmerge",
+    "conda_downloads": "8.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "quickmerge.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# quickmerge\n\n## Overview\nQuickmerge is a meta-assembler designed to increase the contiguity of genome assemblies generated from long-molecule sequencing data. It works by using one assembly (the reference) to bridge gaps and join contigs in another assembly (the query). This process leverages the complementary strengths of different assembly algorithms or data types (like combining Illumina-hybrid and PacBio-only assemblies) to produce a final result with significantly higher N50 values without sacrificing accuracy.\n\n## Installation\nThe most reliable way to install quickmerge and its dependencies (like MUMmer) is via Bioconda:\n```bash\nconda install -c bioconda quickmerge\n```\n\n## Core Workflows\n\n### 1. Using the Python Wrapper (Recommended)\nThe `merge_wrapper.py` script automates the alignment (nucmer), filtering (delta-filter), and merging steps.\n\n```bash\nmerge_wrapper.py <hybrid_assembly.fasta> <self_assembly.fasta>\n```\n\n**Key Wrapper Options:**\n- `-l <int>`: Anchor length cutoff (Required). A good starting point is the N50 of the self-assembly.\n- `-v`: Required if using MUMmer v4.\n- `-t <int>`: Number of threads (requires MUMmer v4+).\n- `-pre <string>`: Prefix for output files.\n\n### 2. Manual Execution (Fine-grained Control)\nIf the wrapper does not meet specific needs, run the three-step pipeline manually:\n\n1. **Align assemblies:**\n   ```bash\n   nucmer -l 100 -prefix out self_assembly.fasta hybrid_assembly.fasta\n   ```\n2. **Filter alignments:**\n   Filter for syntenic regions and remove repeats. A 10kb length filter (`-l 10000`) is recommended for repeat-rich genomes.\n   ```bash\n   delta-filter -r -q -l 10000 out.delta > out.rq.delta\n   ```\n3. **Merge:**\n   ```bash\n   quickmerge -d out.rq.delta -q hybrid_assembly.fasta -r self_assembly.fasta -hco 5.0 -c 1.5 -l 2000000 -ml 5000 -p merged_output\n   ```\n\n## Parameter Tuning & Best Practices\n\n### Selecting Query (-q) vs. Reference (-r)\n- **The Rule:** The merged assembly's size and completeness (BUSCO/CEGMA) will closely resemble the **Query** assembly. The **Reference** assembly is used primarily to provide bridging sequences.\n- **Strategy:** If Assembly A has better completeness but Assembly B has better contiguity, use Assembly A as the Query and Assembly B as the Reference.\n\n### Critical Parameters\n- **Length Cutoff (`-l`)**: This is the most important parameter. Set this to the **N50** of your reference assembly. Setting it too low increases mis-joins; setting it too high limits merging potential.\n- **Overlap Cutoffs (`-hco` and `-c`)**: Default values are 5.0 and 1.5. Increase these (e.g., 10.0 and 3.0) for higher stringency if you suspect mis-joins.\n- **Minimum Alignment Length (`-ml`)**: Default is 5000. Increase this for repeat-heavy genomes to ensure merges are based on unique sequences.\n\n### Two-Round Merging Strategy\nIf a single run doesn't yield the desired N50 and genome size:\n1. Run Merge 1: Assembly A (Query) + Assembly B (Ref) -> Result 1.\n2. Run Merge 2: Assembly B (Query) + Assembly A (Ref) -> Result 2.\n3. Identify the most contiguous result (e.g., Result 2).\n4. Run a final merge using the most \"correct\" original assembly (e.g., Assembly A) as Query and the most contiguous result (Result 2) as Reference.\n   *Note: If running manually, rename contigs in the intermediate assembly (e.g., `sed -i 's/^>/>N_/g' result2.fasta`) to avoid header conflicts.*\n\n## Expert Tips\n- **Header Cleanup:** Ensure FASTA headers do not contain white spaces. While newer versions of the script handle this, it is safer to clean headers beforehand.\n- **Contig Breaking:** Before merging, identify major inversions or translocations in your component assemblies and break the contigs at those boundaries to prevent the merger from propagating errors.\n- **Polishing:** Always perform assembly polishing (e.g., Pilon, Racon, or Medaka) **after** merging, as the merging process can introduce small indels at splice sites.\n- **Validation:** Use `mummerplot` to create a dot plot of the merged assembly against the input assemblies to visualize the improvements and check for chimeric joins.\n\n## Reference documentation\n- [Quickmerge GitHub Repository](./references/github_com_mahulchak_quickmerge.md)\n- [Quickmerge Wiki - Usage Guide](./references/github_com_mahulchak_quickmerge_wiki.md)\n- [Bioconda Package Overview](./references/anaconda_org_channels_bioconda_packages_quickmerge_overview.md)",
+  "skill_front_matter": {
+    "name": "quickmerge",
+    "description": "Quickmerge is a meta-assembler that improves genome assembly contiguity by merging two different assemblies into a single, more contiguous result. Use when user asks to merge genome assemblies, increase assembly N50, or bridge gaps in long-read sequencing data using a reference assembly.",
+    "homepage": "https://github.com/mahulchak/quickmerge"
+  }
+}

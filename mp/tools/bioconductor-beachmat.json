@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-beachmat",
+  "category": "bioconductor",
+  "name": "bioconductor-beachmat",
+  "description": "The beachmat package provides a C++ interface for R matrix objects to enable high-performance data access across diverse matrix types using the tatami library. Use when user asks to interface R matrices with C++ code, handle sparse or delayed arrays in Rcpp, or implement memory-efficient matrix processing in Bioconductor packages.",
+  "overview": "The `beachmat` package acts as a bridge between R matrix objects and the **tatami** C++ library. It allows developers to write high-performance C++ code that can transparently handle diverse R matrix types—including standard base matrices, `Matrix` package sparse/dense formats, and `DelayedArray` objects—without copying data or manually managing R-level block processing.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/beachmat.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beachmat/overview",
+  "github": "https://github.com/tatami-inc/beachmat",
+  "conda_downloads": "536.8K",
+  "conda_downloads_num": 536800,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "beachmat"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/beachmat.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beachmat/overview",
+    "github": "https://github.com/tatami-inc/beachmat",
+    "conda_downloads": "536.8K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-beachmat\n\n## Overview\n\nThe `beachmat` package acts as a bridge between R matrix objects and the **tatami** C++ library. It allows developers to write high-performance C++ code that can transparently handle diverse R matrix types—including standard base matrices, `Matrix` package sparse/dense formats, and `DelayedArray` objects—without copying data or manually managing R-level block processing.\n\n## Core Workflow\n\n### 1. Initializing C++ Representations\nTo work with a matrix in C++, you first create a pointer to the matrix object in R. This is a lightweight operation that does not copy the underlying data.\n\n```r\nlibrary(beachmat)\nlibrary(Matrix)\n\n# Create a sample sparse matrix\nx <- rsparsematrix(1000, 100, 0.1)\n\n# Initialize the C++ representation\n# This returns an external pointer to a tatami-compatible object\ninit <- initializeCpp(x)\n```\n\n### 2. C++ Implementation (Rcpp)\nIn your C++ source files, include `Rtatami.h`. This header provides the `Rtatami::BoundNumericPointer` class to parse the object returned by `initializeCpp()`.\n\n```cpp\n#include \"Rtatami.h\"\n\n// [[Rcpp::export]]\nRcpp::NumericVector get_row_sums(Rcpp::RObject initmat) {\n    // Parse the initialized R object\n    Rtatami::BoundNumericPointer parsed(initmat);\n    const auto& ptr = parsed->ptr;\n\n    int NR = ptr->nrow();\n    int NC = ptr->ncol();\n    \n    Rcpp::NumericVector output(NR);\n    std::vector<double> buffer(NC);\n    auto wrk = ptr->dense_row();\n\n    for (int i = 0; i < NR; ++i) {\n        auto extracted = wrk->fetch(i, buffer.data());\n        double sum = 0;\n        for (int j = 0; j < NC; ++j) {\n            sum += extracted[j];\n        }\n        output[i] = sum;\n    }\n\n    return output;\n}\n```\n\n### 3. Parallelization\n`beachmat` supports thread-safe parallelization even when falling back to the R interpreter for unsupported matrix types.\n\n- **Setup**: Call `setup_parallel_executor(beachmat::getExecutor())` in your package's `.onLoad` or before parallel tasks.\n- **Execution**: Use `tatami::parallelize` within your C++ code to handle multi-threading across rows or columns.\n\n## Package Integration Requirements\n\nTo use `beachmat` in a Bioconductor package:\n\n1.  **DESCRIPTION**:\n    - `SystemRequirements: C++17`\n    - `Imports: Rcpp`\n    - `LinkingTo: Rcpp, assorthead, beachmat`\n2.  **NAMESPACE**:\n    - `importFrom(Rcpp, sourceCpp)`\n3.  **Best Practice**: Always call `initializeCpp()` inside your R wrapper function and pass the resulting pointer to your C++ code. Do not expose the external pointers directly to users as they are not serializable.\n\n## Reference documentation\n\n- [Linking instructions (Rmd)](./references/linking.Rmd)\n- [Linking instructions (Markdown)](./references/linking.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-beachmat",
+    "description": "The beachmat package provides a C++ interface for R matrix objects to enable high-performance data access across diverse matrix types using the tatami library. Use when user asks to interface R matrices with C++ code, handle sparse or delayed arrays in Rcpp, or implement memory-efficient matrix processing in Bioconductor packages.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/beachmat.html"
+  }
+}

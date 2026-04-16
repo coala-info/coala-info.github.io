@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ruvcorr",
+  "category": "bioconductor",
+  "name": "bioconductor-ruvcorr",
+  "description": "The RUVcorr package removes systematic noise and batch effects from gene expression data to recover true gene-gene correlation structures for co-expression analysis. Use when user asks to remove unwanted variation from expression data, identify empirical negative control genes, or prioritize genes based on co-expression patterns.",
+  "overview": "The `RUVcorr` package implements the Global Removal of Unwanted Variation (RUV) framework specifically optimized for gene co-expression analysis. Unlike standard RUV methods that focus on differential expression, `RUVcorr` (specifically the `RUVNaiveRidge` algorithm) aims to recover the true underlying gene-gene correlation structure by removing systematic noise (batch effects, unobserved covariates) at the expense of absolute expression values.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVcorr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RUVcorr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVcorr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ruvcorr\n\n## Overview\nThe `RUVcorr` package implements the Global Removal of Unwanted Variation (RUV) framework specifically optimized for gene co-expression analysis. Unlike standard RUV methods that focus on differential expression, `RUVcorr` (specifically the `RUVNaiveRidge` algorithm) aims to recover the true underlying gene-gene correlation structure by removing systematic noise (batch effects, unobserved covariates) at the expense of absolute expression values.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data must be a matrix where columns are genes and rows are samples.\n```r\nlibrary(RUVcorr)\n# Ensure genes are columns\nexpr_matrix <- t(raw_expression_data) \n```\n\n### 2. Selecting Negative Control Genes\nNegative controls (genes unrelated to the biological factor of interest) are critical. If a priori controls are unavailable, use empirical selection:\n```r\n# Exclude genes of interest (e.g., your positive controls or candidates)\nnc_index <- empNegativeControls(expr_matrix, exclude = interest_indices, nc = 3000)\n\n# Visualize selection\ngenePlot(expr_matrix, index = nc_index, title = \"Empirical NC Selection\")\n```\n\n### 3. Applying RUVNaiveRidge\nThe method requires two parameters: `k` (dimensionality of unwanted variation) and `nu` (ridge penalty). It is best practice to test a grid of parameters.\n```r\n# Single run\ncleaned_data <- RUVNaiveRidge(Y = expr_matrix, center = TRUE, nc_index = nc_index, nu = 500, k = 2)\n```\n\n### 4. Parameter Evaluation\nUse plotting functions to determine the optimal `k` and `nu`.\n*   **`histogramPlot`**: Compare correlation densities of known positive/negative controls against raw data.\n*   **`RLEPlot`**: Check Relative Log Expression to ensure data isn't over-corrected (variance shouldn't be too low).\n*   **`PCAPlot`**: Verify if batch effects or known noise clusters are removed.\n*   **`eigenvaluePlot`**: Assist in choosing the dimension `k`.\n\n### 5. Gene Prioritisation\nIdentify candidate genes co-expressed with a known set of genes:\n```r\n# 1. Calculate significance threshold\nProp <- calculateThreshold(cleaned_data, exclude = c(nc_index, cand_index), \n                           index.ref = ref_index, set.size = length(cand_index))\nthreshold <- predict(Prop$loess.estimate, 0.3)\n\n# 2. Prioritise\nresults <- prioritise(cleaned_data, ref_index, cand_index, threshold = threshold)\n```\n\n## Simulation of Expression Data\n`RUVcorr` can generate realistic datasets to test co-expression algorithms:\n```r\n# Independent signal and noise\nYind <- simulateGEdata(n=3000, m=1000, k=10, corr.strength=5, nc=2000, ne=1000)\n\n# Dependent signal and noise (more realistic)\n# g = dimension of shared subspace between signal X and noise W\nYdep <- simulateGEdata(n=3000, m=1000, k=10, g=2, corr.strength=5, nc=2000, ne=1000)\n```\n\n## Tips for Success\n*   **Sample Size**: Co-expression analysis typically requires >100 samples for robust results.\n*   **Parallelization**: Use `snowfall` or `BiocParallel` when testing large grids of `k` and `nu` parameters to save time.\n*   **RNA-seq**: While designed for microarrays, it works for RNA-seq if data is properly transformed (e.g., log-transformed VST or CPM counts).\n*   **Negative Controls**: The choice of `nc_index` is the most influential factor. If results look poor, re-evaluate the empirical selection or increase the number of controls.\n\n## Reference documentation\n- [Simulating and cleaning gene expression data using RUVcorr](./references/Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ruvcorr",
+    "description": "The RUVcorr package removes systematic noise and batch effects from gene expression data to recover true gene-gene correlation structures for co-expression analysis. Use when user asks to remove unwanted variation from expression data, identify empirical negative control genes, or prioritize genes based on co-expression patterns.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVcorr.html"
+  }
+}

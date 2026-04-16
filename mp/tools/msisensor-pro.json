@@ -1,0 +1,57 @@
+{
+  "id": "msisensor-pro",
+  "category": "CLI",
+  "name": "msisensor-pro",
+  "description": "MSIsensor-pro quantifies microsatellite instability by analyzing polymerase slippages in sequencing data using a multinomial distribution model. Use when user asks to scan a reference genome for microsatellites, perform paired tumor-normal MSI analysis, conduct tumor-only MSI detection, or build a baseline from normal samples.",
+  "overview": "MSIsensor-pro is a high-performance tool designed to quantify Microsatellite Instability (MSI) by analyzing polymerase slippages through a multinomial distribution model. It is an evolution of the original msisensor, optimized for speed and accuracy. Its primary advantage is the ability to perform MSI detection without a matched normal sample by using a discriminative sites selection method and a pre-built baseline.",
+  "homepage": "https://github.com/xjtu-omics/msisensor-pro",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/msisensor-pro/overview",
+  "github": "https://github.com/xjtu-omics/msisensor-pro",
+  "conda_downloads": "129.7K",
+  "conda_downloads_num": 129699,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "msisensor-pro_scan",
+      "msisensor-pro_msi",
+      "msisensor-pro_evaluate",
+      "msisensor-pro_baseline",
+      "msisensor-pro_build",
+      "msisensor-pro_pro",
+      "msisensor-pro_If"
+    ],
+    "description": "This module scan the reference genome to get microsatellites information. You need to input (-d) a reference file (*.fa or *.fasta), and you will get a microsatellites file (-o) for following analysis. If you use GRCh38.d1.vd1 , you can download the file on out github directly.",
+    "docker_image": "quay.io/biocontainers/msisensor-pro:1.3.0--hd979922_1",
+    "homepage": "https://github.com/xjtu-omics/msisensor-pro",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/msisensor-pro/overview",
+    "github": "https://github.com/xjtu-omics/msisensor-pro",
+    "conda_downloads": "129.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "msisensor-pro_If.cwl",
+    "msisensor-pro_baseline.cwl",
+    "msisensor-pro_build.cwl",
+    "msisensor-pro_evaluate.cwl",
+    "msisensor-pro_msi.cwl",
+    "msisensor-pro_pro.cwl",
+    "msisensor-pro_scan.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# msisensor-pro\n\n## Overview\n\nMSIsensor-pro is a high-performance tool designed to quantify Microsatellite Instability (MSI) by analyzing polymerase slippages through a multinomial distribution model. It is an evolution of the original msisensor, optimized for speed and accuracy. Its primary advantage is the ability to perform MSI detection without a matched normal sample by using a discriminative sites selection method and a pre-built baseline.\n\n## Core Workflows\n\n### 1. Reference Genome Scanning\nBefore analyzing samples, scan the reference genome to identify microsatellite sites. This is a one-time setup for each reference version (e.g., hg19, hg38).\n\n```bash\nmsisensor-pro scan -d reference.fasta -o microsatellites.list\n```\n*   **Tip**: Use default parameters for general use. Adjust `-l` (minimal homopolymer size) or `-s` (maximal microsatellite unit length) only for specific panel requirements.\n\n### 2. Paired Tumor-Normal Analysis\nUse this standard workflow when both tumor and matched normal BAM/CRAM files are available.\n\n```bash\nmsisensor-pro msi -d microsatellites.list -n normal.bam -t tumor.bam -o output_prefix\n```\n*   **Coverage**: Default coverage threshold is 15. For WXS, increase to `-c 20`.\n*   **CRAM Files**: If using CRAM, the reference genome must be provided via `-g`.\n*   **Parallelization**: Use `-b [int]` to specify threads for faster processing.\n\n### 3. Tumor-Only Analysis (Pro)\nUse this workflow for samples lacking a matched normal. This requires a baseline (see below).\n\n```bash\nmsisensor-pro pro -d microsatellites.list -t tumor.bam -o output_prefix\n```\n*   **Threshold**: The `-i` parameter sets the instability threshold (default 0.1).\n\n### 4. Building a Baseline\nTo perform tumor-only analysis effectively, build a baseline using a collection of normal samples (ideally >10).\n\n1.  Run the `pro` command on each normal sample individually.\n2.  Create a configuration text file listing case names and paths to the `_all` output files:\n    ```text\n    case1 /path/to/case1_all\n    case2 /path/to/case2_all\n    ```\n3.  Generate the baseline:\n    ```bash\n    msisensor-pro baseline -d microsatellites.list -i config.txt -o baseline_output_path\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Output Paths**: Never end the output path (`-o`) with a slash, as the tool appends suffixes to the prefix provided.\n*   **Memory Management**: While fast, scanning large genomes or processing high-depth WGS data can be memory-intensive. Ensure adequate RAM when using high thread counts (`-b`).\n*   **Site Selection**: For targeted panels, ensure the `microsatellites.list` is filtered to the panel's regions to reduce computational overhead and false positives from off-target reads.\n*   **Homopolymer Focus**: If only interested in homopolymers (repeat unit = 1), use the `-x 1` flag in `msi` or `pro` commands to simplify output.\n*   **Quality Control**: In the `baseline` command, use `-s` to filter out microsatellite sites with low support across your normal sample cohort (default is 10 samples).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| msisensor-pro | Microsatellite Instability (MSI) detection using high-throughput sequencing data. (Support tumor-normal paired samples and tumor-only samples) |\n| msisensor-pro | Microsatellite Instability (MSI) detection using high-throughput sequencing data. (Support tumor-normal paired samples and tumor-only samples) |\n| msisensor-pro | Microsatellite Instability (MSI) detection using high-throughput sequencing data. (Support tumor-normal paired samples and tumor-only samples) |\n| msisensor-pro baseline | This module build baseline for MSI detection with pro module using only tumor sequencing data. To achieve it, you need sequencing data from normal samples(-i). |\n| msisensor-pro msi | This module evaluate MSI using the difference between normal and tumor length distribution of microsatellites. You need to input (-d) microsatellites file and two bam files (-t, -n). |\n| msisensor-pro pro | This module evaluate MSI using single (tumor) sample. You need to input (-d) microsatellites file and a bam files (-t) . |\n| msisensor-pro scan | This module scan the reference genome to get microsatellites information. You need to input (-d) a reference file (*.fa or *.fasta), and you will get a microsatellites file (-o) for following analysis. If you use GRCh38.d1.vd1 , you can download the file on out github directly. |\n\n## Reference documentation\n\n- [Main commands of MSIsensor-pro](./references/github_com_xjtu-omics_msisensor-pro_blob_master_docs_4_command.md)\n- [MSIsensor-pro README](./references/github_com_xjtu-omics_msisensor-pro_blob_master_README.md)\n- [Installation and Dependencies](./references/github_com_xjtu-omics_msisensor-pro_blob_master_docs_3_Installation.md)",
+  "skill_front_matter": {
+    "name": "msisensor-pro",
+    "description": "MSIsensor-pro quantifies microsatellite instability by analyzing polymerase slippages in sequencing data using a multinomial distribution model. Use when user asks to scan a reference genome for microsatellites, perform paired tumor-normal MSI analysis, conduct tumor-only MSI detection, or build a baseline from normal samples.",
+    "homepage": "https://github.com/xjtu-omics/msisensor-pro"
+  }
+}

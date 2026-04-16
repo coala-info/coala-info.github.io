@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-screpertoire",
+  "category": "bioconductor",
+  "name": "bioconductor-screpertoire",
+  "description": "scRepertoire processes and analyzes single-cell immune receptor sequencing data by bridging raw contig outputs with downstream transcriptomic frameworks. Use when user asks to load immune receptor contigs, assign clonotypes, calculate diversity metrics, or integrate TCR/BCR data with Seurat or SingleCellExperiment objects.",
+  "overview": "`scRepertoire` is an R package designed to process and analyze single-cell immune receptor sequencing data. It bridges the gap between raw contig outputs (like those from 10x Genomics Cell Ranger) and downstream analytical frameworks like `Seurat` or `SingleCellExperiment`. It supports clonotype assignment, diversity metrics, clonal overlap, and visualization of clonal expansion within the context of transcriptomic clusters.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scRepertoire.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/BorchLab/scRepertoire",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scRepertoire"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scRepertoire.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/BorchLab/scRepertoire",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-screpertoire\n\n## Overview\n`scRepertoire` is an R package designed to process and analyze single-cell immune receptor sequencing data. It bridges the gap between raw contig outputs (like those from 10x Genomics Cell Ranger) and downstream analytical frameworks like `Seurat` or `SingleCellExperiment`. It supports clonotype assignment, diversity metrics, clonal overlap, and visualization of clonal expansion within the context of transcriptomic clusters.\n\n## Core Workflow\n\n### 1. Loading Data\nThe package primarily uses `filtered_contig_annotations.csv` from 10x Genomics, but supports other formats (TRUST4, BD, MiXCR, etc.) via `loadContigs()`.\n\n```r\nlibrary(scRepertoire)\n\n# Load 10x data manually\nS1 <- read.csv(\"Sample1/outs/filtered_contig_annotations.csv\")\nS2 <- read.csv(\"Sample2/outs/filtered_contig_annotations.csv\")\ncontig_list <- list(S1, S2)\n\n# Or use loadContigs for various formats\ncontig_list <- loadContigs(input = \"path/to/contigs/\", format = \"10X\")\n```\n\n### 2. Combining Contigs into Clones\nUse `combineTCR()` for T cells or `combineBCR()` for B cells. These functions consolidate contigs to the cell barcode level.\n\n```r\n# TCR Processing\ncombined.TCR <- combineTCR(contig_list, \n                           samples = c(\"S1\", \"S2\"),\n                           removeNA = FALSE, \n                           removeMulti = FALSE)\n\n# BCR Processing (includes similarity clustering for SHM)\ncombined.BCR <- combineBCR(BCR_contig_list, \n                           samples = \"Patient1\", \n                           threshold = 0.85)\n```\n\n### 3. Basic Clonal Analysis\n`scRepertoire` provides several functions to visualize the repertoire before integration with mRNA data.\n\n*   **Quantification**: `clonalQuant(combined.TCR, cloneCall=\"strict\", scale=TRUE)`\n*   **Abundance**: `clonalAbundance(combined.TCR, cloneCall=\"gene\")`\n*   **Length**: `clonalLength(combined.TCR, cloneCall=\"aa\", chain=\"both\")`\n*   **Compare**: `clonalCompare(combined.TCR, top.clones=10, samples=c(\"S1\", \"S2\"), cloneCall=\"aa\")`\n\n### 4. Integration with Single-Cell Objects\nThe `combineExpression()` function attaches clonal metadata to a Seurat or SingleCellExperiment object.\n\n```r\n# Attach to Seurat object\nseurat_obj <- combineExpression(combined.TCR, \n                                 seurat_obj, \n                                 cloneCall=\"gene\", \n                                 group.by = \"sample\", \n                                 proportion = TRUE)\n\n# Visualize on UMAP\nSeurat::DimPlot(seurat_obj, group.by = \"cloneSize\")\n```\n\n### 5. Advanced Visualizations\nOnce integrated, use specialized functions to explore clonal dynamics:\n*   **Clonal Overlay**: `clonalOverlay(seurat_obj, reduction=\"umap\", cutpoint=1)`\n*   **Clonal Network**: `clonalNetwork(seurat_obj, reduction=\"umap\", group.by=\"ident\")`\n*   **Clonal Occupancy**: `clonalOccupy(seurat_obj, x.axis=\"seurat_clusters\")`\n*   **Alluvial Plots**: `alluvialClones(seurat_obj, cloneCall=\"aa\", y.axes=c(\"Patient\", \"ident\"))`\n\n## Key Parameters & Definitions\n*   **cloneCall**: \n    * `gene`: VDJC genes.\n    * `nt`: CDR3 nucleotide sequence.\n    * `aa`: CDR3 amino acid sequence.\n    * `strict`: VDJC genes + CDR3 nucleotide sequence.\n*   **cloneSize**: Default bins are Rare (0-0.0001), Small (0.0001-0.001), Medium (0.001-0.01), Large (0.01-0.1), and Hyperexpanded (0.1-1).\n*   **chain**: Specify `TRA`, `TRB`, `IGH`, `IGL`, or `both`.\n\n## Tips for Success\n1.  **Barcode Matching**: Ensure barcodes in your contig files match the barcodes in your Seurat/SCE object. If your Seurat object has prefixes (e.g., `S1_AAAC...`), use the `samples` argument in `combineTCR/BCR` to match.\n2.  **VDJ Gene Bias**: VDJ genes are highly variable. Use `quietTCRgenes()` or `quietBCRgenes()` to remove them from variable features before clustering to prevent clonal expansion from driving the clustering.\n3.  **Downsampling**: For diversity metrics (`clonalDiversity`), the package uses bootstrapping to account for differences in library size.\n\n## Reference documentation\n- [Starting work with scRepertoire.](./references/vignette.md)\n- [Using scRepertoire (Rmd Source)](./references/vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-screpertoire",
+    "description": "scRepertoire processes and analyzes single-cell immune receptor sequencing data by bridging raw contig outputs with downstream transcriptomic frameworks. Use when user asks to load immune receptor contigs, assign clonotypes, calculate diversity metrics, or integrate TCR/BCR data with Seurat or SingleCellExperiment objects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scRepertoire.html"
+  }
+}

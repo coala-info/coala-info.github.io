@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sponge",
+  "category": "bioconductor",
+  "name": "bioconductor-sponge",
+  "description": "SPONGE is a bioinformatics framework for inferring genome-wide competing endogenous RNA interaction networks by calculating sensitivity correlation between gene pairs. Use when user asks to infer ceRNA networks, filter gene-miRNA interactions, compute multiple miRNA sensitivity correlation, or calculate sample-specific spongEffects enrichment scores.",
+  "overview": "SPONGE is a bioinformatics framework designed to solve the computationally intensive task of inferring genome-wide ceRNA interaction networks. It addresses the combinatorial effect of multiple miRNAs on gene pairs by calculating a \"sensitivity correlation\" (mscor), which represents the difference between gene-gene correlation and partial correlation given shared miRNA regulators. The package also includes `spongEffects`, which allows for the calculation of sample-specific enrichment scores for c",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SPONGE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SPONGE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPONGE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sponge\n\n## Overview\n\nSPONGE is a bioinformatics framework designed to solve the computationally intensive task of inferring genome-wide ceRNA interaction networks. It addresses the combinatorial effect of multiple miRNAs on gene pairs by calculating a \"sensitivity correlation\" (mscor), which represents the difference between gene-gene correlation and partial correlation given shared miRNA regulators. The package also includes `spongEffects`, which allows for the calculation of sample-specific enrichment scores for ceRNA modules, enabling downstream machine learning tasks like tumor subtype classification even in datasets lacking miRNA expression.\n\n## Core Workflow\n\n### 1. Data Preparation\nSPONGE requires paired gene and miRNA expression matrices where columns are features and rows are samples.\n```r\nlibrary(SPONGE)\n# gene_expr and mir_expr should have matching row (sample) names\n```\n\n### 2. Filtering Gene-miRNA Interactions\nIdentify putative miRNA regulators for each gene using regularized regression (elastic net).\n```r\n# mir_predicted_targets is an optional matrix of prior knowledge (e.g., TargetScan)\ngenes_miRNA_candidates <- sponge_gene_miRNA_interaction_filter(\n    gene_expr = gene_expr,\n    mir_expr = mir_expr,\n    mir_predicted_targets = targetscan_symbol)\n```\n\n### 3. Computing ceRNA Interactions\nCalculate the multiple miRNA sensitivity correlation (mscor) for gene pairs sharing regulators.\n```r\nceRNA_interactions <- sponge(\n    gene_expr = gene_expr,\n    mir_expr = mir_expr,\n    mir_interactions = genes_miRNA_candidates)\n```\n\n### 4. Null Model and Significance\nBuild a null model to account for gene-gene correlation and sample size, then compute empirical p-values.\n```r\n# Build null model (use 1e6 for production)\nmscor_null_model <- sponge_build_null_model(\n    number_of_datasets = 100, \n    number_of_samples = nrow(gene_expr))\n\n# Compute p-values\nceRNA_interactions_sign <- sponge_compute_p_values(\n    sponge_result = ceRNA_interactions,\n    null_model = mscor_null_model)\n```\n\n### 5. Network Analysis\nExtract significant interactions and analyze node centralities.\n```r\n# Filter by FDR\nceRNA_net <- ceRNA_interactions_sign[ceRNA_interactions_sign$p.adj < 0.01, ]\n\n# Compute centralities (degree, eigenvector, betweenness)\ncentralities <- sponge_node_centralities(ceRNA_net)\n\n# Visualize\nsponge_plot_network(ceRNA_net, genes_miRNA_candidates)\n```\n\n## spongEffects Workflow\n\nUse `spongEffects` to transform a ceRNA network into sample-specific scores.\n\n1.  **Define Modules**: Identify central nodes (seeds) and their first neighbors in the ceRNA network.\n2.  **Enrichment**: Calculate scores (OE, ssGSEA, or GSVA) per sample.\n```r\n# Define modules based on central nodes\nmodules <- define_modules(\n    network = filtered_net, \n    central.modules = central_genes, \n    remove.central = FALSE)\n\n# Calculate enrichment scores (spongEffects)\nscores <- enrichment_modules(\n    Expr.matrix = gene_expr, \n    modules = modules, \n    method = \"OE\")\n```\n3.  **Classification**: Use scores as features for `calibrate_model` (Random Forest) to predict phenotypes or subtypes.\n\n## Performance Tips\n\n*   **Parallelization**: SPONGE uses the `foreach` backend. Register a parallel provider like `doParallel` to speed up computation.\n    ```r\n    library(doParallel)\n    cl <- makeCluster(parallel::detectCores())\n    registerDoParallel(cl)\n    # Run SPONGE functions...\n    stopCluster(cl)\n    ```\n*   **Memory**: For very large datasets, use the `bigmemory` package. SPONGE functions accept `bigmemory` description objects to share data across workers without duplication.\n\n## Reference documentation\n\n- [Sparse Partial correlation ON Gene Expression with SPONGE](./references/SPONGE.md)\n- [spongEffects: Patient-specific ceRNA module scores](./references/spongEffects.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sponge",
+    "description": "SPONGE is a bioinformatics framework for inferring genome-wide competing endogenous RNA interaction networks by calculating sensitivity correlation between gene pairs. Use when user asks to infer ceRNA networks, filter gene-miRNA interactions, compute multiple miRNA sensitivity correlation, or calculate sample-specific spongEffects enrichment scores.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPONGE.html"
+  }
+}

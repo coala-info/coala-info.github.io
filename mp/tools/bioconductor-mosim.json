@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mosim",
+  "category": "bioconductor",
+  "name": "bioconductor-mosim",
+  "description": "This tool simulates multi-omics datasets for bulk and single-cell experiments while incorporating biological regulatory mechanisms. Use when user asks to generate synthetic multi-omic data, simulate regulatory interactions between genes and regulators, or create experimental designs for time-series and multi-group studies.",
+  "overview": "MOSim (Multi-Omics Simulator) is an R package designed to simulate multi-omic experiments that mimic biological regulatory mechanisms. It uses RNA-seq as the central data type, with other omics (ATAC-seq, ChIP-seq, etc.) acting as regulators. It supports both bulk and single-cell (scRNA-seq, scATAC-seq) simulation, allowing for complex experimental designs including multiple groups, replicates, and time-course profiles.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MOSim.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ConesaLab/MOSim",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MOSim"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MOSim.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ConesaLab/MOSim",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mosim\n\nname: bioconductor-mosim\ndescription: Simulates multi-omics data (bulk and single-cell) with regulatory mechanisms. Use this skill to generate synthetic datasets for RNA-seq, DNase-seq, ChIP-seq, Methyl-seq, and miRNA-seq, including regulatory interactions (TFs, methylation, etc.) and experimental designs (time-series, multiple groups).\n\n# bioconductor-mosim\n\n## Overview\nMOSim (Multi-Omics Simulator) is an R package designed to simulate multi-omic experiments that mimic biological regulatory mechanisms. It uses RNA-seq as the central data type, with other omics (ATAC-seq, ChIP-seq, etc.) acting as regulators. It supports both bulk and single-cell (scRNA-seq, scATAC-seq) simulation, allowing for complex experimental designs including multiple groups, replicates, and time-course profiles.\n\n## Bulk Simulation Workflow\n\n### 1. Prepare Input Data\nMOSim provides default mouse data (`sampleData`), but you can provide custom seed counts and association lists.\n```r\nlibrary(MOSim)\ndata(\"sampleData\")\n\n# For custom data, use omicData helper\n# data: data frame with 1 column \"Counts\" and feature IDs as row names\n# associationList: 2 columns \"ID\" (regulator) and \"Gene\" (target)\ncustom_rnaseq <- omicData(\"RNA-seq\", data = my_counts)\ncustom_dnase <- omicData(\"DNase-seq\", data = my_dnase_counts, associationList = my_assocs)\n```\n\n### 2. Configure Omic Options\nUse `omicSim` to define specific parameters like sequencing depth or feature counts.\n```r\n# Define specific options for omics\nomics_options <- c(\n  omicSim(\"RNA-seq\", totalFeatures = 2000, depth = 50),\n  omicSim(\"DNase-seq\", regulatorEffect = list('activator' = 0.7, 'repressor' = 0.2, 'NE' = 0.1))\n)\n```\n\n### 3. Run Simulation\nThe `mosim` function executes the simulation based on the experimental design.\n```r\nsim_result <- mosim(\n  omics = c(\"RNA-seq\", \"DNase-seq\"),\n  times = c(0, 2, 4, 12, 24), # Time points for time-series\n  numberGroups = 2,\n  numberReps = 3,\n  diffGenes = 0.15,           # 15% DEGs\n  omicsOptions = omics_options,\n  TFtoGene = TRUE             # Include Transcription Factor regulation\n)\n```\n\n## Single-Cell Simulation Workflow\n\n### 1. Setup Single-Cell Data\nUse `sc_omicData` to initialize the omics types.\n```r\n# data = NULL uses default internal data\nsc_omics <- sc_omicData(list(\"scRNA-seq\", \"scATAC-seq\"), data = NULL)\n\n# Define cell types by column indices\ncell_types <- list('Treg' = c(1:10), 'cDC' = c(11:20))\n```\n\n### 2. Run Single-Cell Simulation\nUse `sc_mosim` for single-cell specific parameters like clusters and fold-change thresholds.\n```r\nsc_sim <- sc_mosim(\n  sc_omics,\n  cell_types,\n  numberReps = 2,\n  numberGroups = 2,\n  diffGenes = list(c(0.2, 0.2)), # % DEGs per omic\n  clusters = 3,                  # Co-expression patterns\n  TF = TRUE\n)\n```\n\n## Accessing Results\n\n### Extracting Counts and Settings\nMOSim provides helper functions to retrieve data from the S4 simulation object.\n```r\n# Get count matrices (Bulk)\ncounts <- omicResults(sim_result)\nrnaseq_counts <- omicResults(sim_result, \"RNA-seq\")\n\n# Get simulation settings/metadata\nsettings <- omicSettings(sim_result)\n# Get only linked regulator-gene interactions\nlinks <- omicSettings(sim_result, \"DNase-seq\", only.linked = TRUE)\n\n# Get Single-Cell results (returns Seurat objects)\nsc_results <- sc_omicResults(sc_sim)\n```\n\n### Visualization and Design\n```r\n# Generate experimental design matrix for downstream tools (e.g., DESeq2/limma)\ndesign <- experimentalDesign(sim_result)\n\n# Plot expression profiles for a gene and its regulator\nplotProfile(sim_result, \n            omics = c(\"RNA-seq\", \"DNase-seq\"), \n            featureIDS = list(\"RNA-seq\" = \"GeneID\", \"DNase-seq\" = \"PeakID\"))\n```\n\n## Tips for Success\n- **RNA-seq is Mandatory**: MOSim always simulates RNA-seq as the base layer, even if not explicitly requested.\n- **Identifier Matching**: When providing custom data, ensure the gene identifiers in your `associationList` match the row names of your RNA-seq seed data.\n- **Transcription Factors**: TFs are treated as a subset of RNA-seq. To simulate them, provide a `TFtoGene` association table or set `TFtoGene = TRUE` to use defaults.\n- **Methylation**: Unlike other omics, Methyl-seq does not require a seed count matrix; it is generated based on CpG site locations provided in the association list (`chr_start_end`).\n\n## Reference documentation\n- [Simulating bulk Multi-Omics Data with MOSim](./references/MOSim.md)\n- [Simulating Single-Cell Multi-Omics Data with MOSim](./references/scMOSim.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mosim",
+    "description": "This tool simulates multi-omics datasets for bulk and single-cell experiments while incorporating biological regulatory mechanisms. Use when user asks to generate synthetic multi-omic data, simulate regulatory interactions between genes and regulators, or create experimental designs for time-series and multi-group studies.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MOSim.html"
+  }
+}

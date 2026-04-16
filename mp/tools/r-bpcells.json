@@ -1,0 +1,41 @@
+{
+  "id": "r-bpcells",
+  "category": "R",
+  "name": "r-bpcells",
+  "description": "BPCells performs high-performance, memory-efficient single-cell analysis of large RNA-seq and ATAC-seq datasets using bitpacking compression and streaming. Use when user asks to import 10x data, perform disk-backed normalization, call ATAC-seq peaks, or conduct PCA and clustering on millions of cells.",
+  "overview": "BPCells is an R package designed for high-performance single-cell analysis. It utilizes bitpacking compression and C++ powered streaming/lazy evaluation to process massive datasets (up to 44M cells) on standard hardware with minimal RAM usage.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-bpcells\n\nname: r-bpcells\ndescription: High-performance single-cell analysis of large RNA-seq and ATAC-seq datasets using the bpcells R package. Use this skill when needing to perform memory-efficient, disk-backed operations including bitpacking compression, normalization, PCA, clustering, and ATAC-seq peak calling/footprinting on datasets ranging from thousands to millions of cells.\n\n# r-bpcells\n\n## Overview\nBPCells is an R package designed for high-performance single-cell analysis. It utilizes bitpacking compression and C++ powered streaming/lazy evaluation to process massive datasets (up to 44M cells) on standard hardware with minimal RAM usage.\n\n## Installation\nTo install the R package:\n```R\nremotes::install_github(\"bnprks/BPCells/r\")\n```\n*Note: Requires HDF5 library installed on the system (e.g., `libhdf5-dev` on Linux or `brew install hdf5` on macOS).*\n\n## Core Principles\n- **Streaming:** Only minimal data is stored in memory during computation.\n- **Lazy Evaluation:** Operations are queued and only executed when writing to disk or converting to an R object (e.g., `as(mat, \"dgCMatrix\")`).\n- **Bitpacking:** Specialized compression that allows faster-than-gzip read/write speeds while maintaining small file sizes.\n\n## Common Workflows\n\n### Data Import and Storage\nConvert 10x formats to BPCells bitpacked format for maximum performance.\n```R\n# RNA\nmat <- open_matrix_10x_hdf5(\"data.h5\") %>% write_matrix_dir(\"rna_counts\")\n# ATAC\nfrags <- open_fragments_10x(\"fragments.tsv.gz\") %>% write_fragments_dir(\"atac_frags\")\n```\n\n### RNA-seq Pipeline\n```R\nmat <- open_matrix_dir(\"rna_counts\")\n# 1. Normalization (Lazy)\nmat_norm <- mat %>% \n  multiply_cols(1/Matrix::colSums(mat)) %>% \n  log1p(10000 * .)\n# 2. Stats and Variable Gene Selection\nstats <- matrix_stats(mat_norm, row_stats=\"variance\")\nv_genes <- order(stats$row_stats[\"variance\",], decreasing=TRUE)[1:2000]\n# 3. PCA (Write to memory/disk first for speed during iterations)\npca_input <- mat_norm[v_genes,] %>% write_matrix_memory()\nsvd <- BPCells::svds(pca_input, k=50)\npca_embeddings <- svd$v %*% diag(svd$d)\n```\n\n### ATAC-seq Pipeline\n```R\nfrags <- open_fragments_dir(\"atac_frags\")\n# 1. QC Metrics\nqc <- qc_scATAC(frags, genes_gr, blacklist_gr)\n# 2. Peak Calling (Tile-based)\npeaks <- call_peaks_tile(frags, chrom_sizes, cell_groups=clusters)\n# 3. Peak Matrix and LSI\npm <- peak_matrix(frags, peaks)\nmat_lsi <- pm %>% \n  multiply_cols(1/Matrix::colSums(pm)) %>% \n  multiply_rows(1/Matrix::rowMeans(pm)) %>% \n  log1p(10000 * .)\n```\n\n### Visualization\n- **Embeddings:** `plot_embedding(cell_clusters, umap_coords)`\n- **Tracks:** Use `trackplot_combine()` to stack `trackplot_coverage()`, `trackplot_gene()`, and `trackplot_scalebar()`.\n- **Footprinting:** `plot_tf_footprint(frags, motif_positions, cell_groups)`\n\n## Efficiency Tips\n- **Avoid Densification:** Keep sparsity-breaking operations (like adding a mean vector) as the very last step in a lazy chain.\n- **Storage Order:** Use `transpose_storage_order()` if an operation requires row-major vs column-major (e.g., marker gene detection usually prefers gene-indexed).\n- **PCA Caching:** Always use `write_matrix_dir()` or `write_matrix_memory()` before PCA to avoid re-calculating lazy operations hundreds of times.\n\n## Reference documentation\n- [Performance Benchmarks](./references/benchmarks.html.md)\n- [BPCells Home](./references/home_page.md)\n- [How BPCells Works](./references/how-it-works.html.md)\n- [Package Index](./references/index.html.md)\n- [PBMC 3k Tutorial](./references/pbmc3k.html.md)\n- [Programming Efficiency](./references/programming-efficiency.html.md)",
+  "skill_front_matter": {
+    "name": "r-bpcells",
+    "description": "BPCells performs high-performance, memory-efficient single-cell analysis of large RNA-seq and ATAC-seq datasets using bitpacking compression and streaming. Use when user asks to import 10x data, perform disk-backed normalization, call ATAC-seq peaks, or conduct PCA and clustering on millions of cells.",
+    "homepage": "https://cran.r-project.org/web/packages/bpcells/index.html"
+  }
+}

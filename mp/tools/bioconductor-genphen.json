@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genphen",
+  "category": "bioconductor",
+  "name": "bioconductor-genphen",
+  "description": "This tool quantifies genotype-phenotype associations using a combination of machine learning and Bayesian hierarchical modeling. Use when user asks to analyze associations between genetic markers and phenotypes, control for phylogenetic bias, or perform data reduction for large-scale GWAS.",
+  "overview": "The `genphen` package provides a robust framework for Genome-Wide Association Studies (GWAS) that moves beyond frequentist P-values. It uses statistical learning to capture non-linear associations and Bayesian inference to provide accurate effect sizes (beta) and classification accuracy (CA). It is particularly effective for small to medium datasets where outliers and population structure (phylogenetic bias) might confound results.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/genphen.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genphen/overview",
+  "github": "N/A",
+  "conda_downloads": "25.0K",
+  "conda_downloads_num": 25000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "genphen"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/genphen.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genphen/overview",
+    "github": "N/A",
+    "conda_downloads": "25.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genphen\n\nname: bioconductor-genphen\ndescription: Statistical tool for quantifying genotype-phenotype associations using a hybrid approach of machine learning (Random Forest, SVM) and Bayesian hierarchical modeling. Use this skill when analyzing associations between genetic markers (SNPs, SAAPs) and phenotypes (quantitative or dichotomous), controlling for phylogenetic bias, or performing data reduction for large-scale GWAS.\n\n# bioconductor-genphen\n\n## Overview\nThe `genphen` package provides a robust framework for Genome-Wide Association Studies (GWAS) that moves beyond frequentist P-values. It uses statistical learning to capture non-linear associations and Bayesian inference to provide accurate effect sizes (beta) and classification accuracy (CA). It is particularly effective for small to medium datasets where outliers and population structure (phylogenetic bias) might confound results.\n\n## Core Workflow\n\n### 1. Data Preparation\nGenotype data can be a character vector, matrix (N individuals x S SNPs), or Biostrings alignment objects. Phenotypes should be numerical vectors or matrices.\n\n```r\nlibrary(genphen)\n\n# Example: Load provided sample data\ndata(genotype.saap)\ndata(phenotype.saap)\n\n# Recommendation: Log-transform skewed quantitative phenotypes before analysis\nphenotype.log <- log10(phenotype.saap)\n```\n\n### 2. Running the Association Analysis\nThe primary function is `runGenphen`. It calculates Classification Accuracy (CA), Cohen’s Kappa (κ), and Bayesian Effect Size (β).\n\n```r\n# Run association for a quantitative phenotype ('Q')\nresults <- runGenphen(\n  genotype = genotype.saap[, 82:89],\n  phenotype = phenotype.saap,\n  phenotype.type = \"Q\",             # \"Q\" for quantitative, \"D\" for dichotomous\n  model.type = \"hierarchical\",      # \"hierarchical\" (multi-test correction) or \"univariate\"\n  mcmc.chains = 2,\n  mcmc.steps = 1500,\n  stat.learn.method = \"rf\",         # \"rf\" (Random Forest) or \"svm\" (Support Vector Machine)\n  cv.steps = 200,                   # Cross-validation iterations\n  cores = 2\n)\n\n# Access scores\nscores <- results$scores\n```\n\n### 3. Controlling for Phylogenetic Bias\nTo detect if associations are driven by population structure rather than functional links, use `runPhyloBiasCheck`.\n\n```r\nbias_results <- runPhyloBiasCheck(\n  genotype = genotype.saap,\n  input.kinship.matrix = NULL # Computes kinship automatically if NULL\n)\n\n# Extract bias scores (B)\n# B = 1 indicates complete phylogenetic bias; B = 0 indicates no bias.\nmutation_bias <- bias_results$bias\n```\n\n### 4. Data Reduction for Large Datasets\nFor high-dimensional SNP data, use `runDiagnostics` to filter non-informative markers via Random Forest importance scores before running the full Bayesian model.\n\n```r\ndiag <- runDiagnostics(\n  genotype = large_genotype_matrix,\n  phenotype = pheno_vector,\n  phenotype.type = \"Q\",\n  rf.trees = 50000\n)\n\n# Filter SNPs with high importance\nimportant_snps <- diag[diag$importance > threshold, ]\n```\n\n## Interpreting Results\n*   **Classification Accuracy (CA):** Values near 1.0 indicate the phenotype strongly predicts the genotype.\n*   **Cohen’s Kappa (κ):** Adjusts CA for uneven allele representation. κ > 0.6 is considered \"substantial agreement.\"\n*   **Effect Size (β):** The slope from the Bayesian model. An association is typically considered significant if the **95% HDI** (Highest Density Interval) does not overlap with 0.\n*   **Phylogenetic Bias (B):** If a SNP has high CA but also high B, the association may be a false positive due to lineage effects.\n\n## Tips\n*   **Phenotype Types:** If analyzing multiple phenotypes of different types, pass a vector to `phenotype.type`, e.g., `c(\"Q\", \"D\")`.\n*   **Convergence:** Always check MCMC diagnostics using `rstan::check_hmc_diagnostics(results$complete.posterior)` to ensure the Bayesian model converged.\n*   **Multi-allelic sites:** `genphen` automatically expands multi-allelic genotypes into bi-allelic permutations for analysis.\n\n## Reference documentation\n- [genphen Manual](./references/genphenManual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genphen",
+    "description": "This tool quantifies genotype-phenotype associations using a combination of machine learning and Bayesian hierarchical modeling. Use when user asks to analyze associations between genetic markers and phenotypes, control for phylogenetic bias, or perform data reduction for large-scale GWAS.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/genphen.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dmrcaller",
+  "category": "bioconductor",
+  "name": "bioconductor-dmrcaller",
+  "description": "DMRcaller identifies differentially methylated regions (DMRs) from bisulfite sequencing or Oxford Nanopore data. Use when user asks to call DMRs between conditions, analyze methylation profiles across different sequence contexts, or extract methylation counts from BAM files.",
+  "overview": "DMRcaller is a Bioconductor package designed to identify Differentially Methylated Regions (DMRs) between two samples or conditions. It is particularly robust for plant methylomes where non-CG methylation (CHG and CHH) is prevalent, but it works across all species. It supports traditional bisulfite sequencing (Bismark CX reports) and long-read Oxford Nanopore (ONT) data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DMRcaller.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dmrcaller/overview",
+  "github": "N/A",
+  "conda_downloads": "34.6K",
+  "conda_downloads_num": 34600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DMRcaller"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DMRcaller.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dmrcaller/overview",
+    "github": "N/A",
+    "conda_downloads": "34.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dmrcaller\n\nname: bioconductor-dmrcaller\ndescription: Analysis of Differentially Methylated Regions (DMRs) from Whole Genome Bisulfite Sequencing (WGBS), Reduced Representation Bisulfite Sequencing (RRBS), and Oxford Nanopore (ONT) data. Use when identifying genomic regions with significant methylation differences between conditions, analyzing methylation profiles, or detecting co-methylation and variably methylated domains.\n\n# bioconductor-dmrcaller\n\n## Overview\nDMRcaller is a Bioconductor package designed to identify Differentially Methylated Regions (DMRs) between two samples or conditions. It is particularly robust for plant methylomes where non-CG methylation (CHG and CHH) is prevalent, but it works across all species. It supports traditional bisulfite sequencing (Bismark CX reports) and long-read Oxford Nanopore (ONT) data.\n\n## Core Workflow\n\n### 1. Data Import\nThe package primarily uses `GRanges` objects where metadata columns include `readsM` (methylated) and `readsN` (total).\n\n**From Bismark:**\n```r\nlibrary(DMRcaller)\n# Read a single CX report\nmethylationData <- readBismark(\"path/to/report.CX_report\")\n\n# Read and pool multiple replicates\nmethylationDataPool <- readBismarkPool(c(\"rep1.CX_report\", \"rep2.CX_report\"))\n```\n\n**From Oxford Nanopore (ONT):**\nRequires a `BSgenome` object and a BAM file with MM/ML tags.\n```r\n# 1. Select candidate cytosines\ngr_cpg <- selectCytosine(genome = BSgenome.Hsapiens.UCSC.hg38, context = \"CG\", chr = \"chr1\")\n\n# 2. Extract methylation counts\nontData <- readONTbam(bamfile = \"sample.bam\", ref_gr = gr_cpg, genome = BSgenome.Hsapiens.UCSC.hg38, modif = \"C+m?\")\n```\n\n### 2. Exploratory Analysis\nBefore calling DMRs, evaluate the data quality and properties.\n*   **Coverage:** `plotMethylationDataCoverage(data1, data2, context = \"CG\")`\n*   **Spatial Correlation:** `plotMethylationDataSpatialCorrelation(data1, context = \"CG\", distances = c(1, 10, 100, 1000))`\n*   **Global Profiles:** `plotMethylationProfileFromData(data1, data2, windowSize = 10000, context = \"CG\")`\n\n### 3. Calling DMRs\nThe `computeDMRs` function is the primary interface. It supports three methods:\n*   `noise_filter`: Uses a kernel (e.g., \"triangular\") to smooth reads.\n*   `neighbourhood`: Analyzes individual cytosines without smoothing.\n*   `bins`: Pools reads into equal-sized genomic bins.\n\n```r\ndmrs <- computeDMRs(methylationDataList[[\"WT\"]],\n                    methylationDataList[[\"Mutant\"]],\n                    context = \"CG\",\n                    method = \"noise_filter\",\n                    test = \"score\", # or \"fisher\"\n                    pValueThreshold = 0.01,\n                    minProportionDifference = 0.4,\n                    minCytosinesCount = 4)\n```\n\n**For Biological Replicates:**\nUse `computeDMRsReplicates` which employs beta regression.\n```r\ncondition <- c(\"control\", \"control\", \"treatment\", \"treatment\")\ndmrs_reps <- computeDMRsReplicates(methylationData = pooledData,\n                                   condition = condition,\n                                   context = \"CG\",\n                                   method = \"bins\",\n                                   test = \"betareg\")\n```\n\n### 4. Specialized ONT Analyses\n*   **PMDs (Partially Methylated Domains):** Large regions with intermediate methylation.\n    `computePMDs(ontData, context = \"CG\", minMethylation = 0.4, maxMethylation = 0.6)`\n*   **VMDs (Variably Methylated Domains):** Regions with high read-level variability.\n    `computeVMDs(ontData, context = \"CG\", sdCutoffMethod = \"EDE.high\")`\n*   **Co-methylation:** Pairwise association between sites.\n    `computeCoMethylatedPositions(ontData, regions = some_regions, test = \"fisher\")`\n\n### 5. Visualization and Refinement\n*   **Merge DMRs:** Join adjacent DMRs if they still meet significance criteria.\n    `mergeDMRsIteratively(dmrs, methylationData1, methylationData2, context = \"CG\", minGap = 200)`\n*   **Local Profiles:** Plot specific genomic regions with gene annotation.\n    `plotLocalMethylationProfile(data1, data2, region_gr, dmrs_list, GEs = annotation_gr)`\n\n## Tips for Usage\n*   **Contexts:** Always specify the context (`\"CG\"`, `\"CHG\"`, or `\"CHH\"`) as methylation dynamics differ significantly between them.\n*   **Parallelization:** Most compute-intensive functions support `parallel = TRUE` and `cores = N`. This is highly recommended for whole-genome analyses.\n*   **Predefined Regions:** If you only care about methylation at specific features (e.g., promoters), use `filterDMRs()` instead of `computeDMRs()` to save time and increase statistical power.\n*   **Memory:** For very large datasets, use `poolTwoMethylationDatasets()` instead of creating a large `GRangesList`.\n\n## Reference documentation\n- [Overview of the DMRcaller package](./references/DMRcaller.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dmrcaller",
+    "description": "DMRcaller identifies differentially methylated regions (DMRs) from bisulfite sequencing or Oxford Nanopore data. Use when user asks to call DMRs between conditions, analyze methylation profiles across different sequence contexts, or extract methylation counts from BAM files.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DMRcaller.html"
+  }
+}

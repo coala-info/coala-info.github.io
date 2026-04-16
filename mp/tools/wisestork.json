@@ -1,0 +1,43 @@
+{
+  "id": "wisestork",
+  "category": "library",
+  "name": "wisestork",
+  "description": "Wisestork detects Copy Number Variations (CNVs) by normalizing genomic data against a reference dictionary. Use when user asks to detect CNVs, generate read counts, correct GC bias, create a reference dictionary, or calculate Z-scores.",
+  "overview": "Wisestork is a Python-based re-implementation of the Wisecondor algorithm designed for detecting CNVs. It improves upon its predecessor by supporting smaller bin sizes, providing faster reference set generation, and using standard BED formats compatible with downstream tools like Bedtools. Use this skill to guide users through the multi-step process of normalizing genomic data against a reference dictionary to identify significant deviations in read depth.",
+  "homepage": "https://github.com/sndrtj/wisestork",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/wisestork/overview",
+  "github": "https://github.com/sndrtj/wisestork",
+  "conda_downloads": "2.3K",
+  "conda_downloads_num": 2300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "wisestork"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/wisestork:0.1.2--pyh24bf2e0_0",
+    "homepage": "https://github.com/sndrtj/wisestork",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/wisestork/overview",
+    "github": "https://github.com/sndrtj/wisestork",
+    "conda_downloads": "2.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# wisestork\n\n## Overview\nWisestork is a Python-based re-implementation of the Wisecondor algorithm designed for detecting CNVs. It improves upon its predecessor by supporting smaller bin sizes, providing faster reference set generation, and using standard BED formats compatible with downstream tools like Bedtools. Use this skill to guide users through the multi-step process of normalizing genomic data against a reference dictionary to identify significant deviations in read depth.\n\n## Core Workflow\n\nA standard Wisestork analysis follows a linear progression of four primary commands.\n\n### 1. Generate Read Counts\nExtract read counts from indexed BAM files into a BED format.\n```bash\nwisestork count -I input.bam -R reference.fa -O output.bed -B 50000\n```\n*   **Tip**: The default bin size (`-B`) is 50kb. For WGS, adjust this based on your coverage depth.\n\n### 2. GC Bias Correction\nCorrect the raw counts for GC content bias using the reference FASTA.\n```bash\nwisestork gc-correct -I output.bed -R reference.fa -O output.gc.bed -B 50000\n```\n*   **Requirement**: After this step, you must compress and index the output for subsequent steps:\n    `bgzip output.gc.bed && tabix -p bed output.gc.bed.gz`\n\n### 3. Create Reference Dictionary (One-time Setup)\nBefore calculating Z-scores, you must build a reference dictionary from a set of \"normal\" samples.\n```bash\nwisestork newref -I sample1.gc.bed.gz -I sample2.gc.bed.gz -O reference_dict.bed -R reference.fa -B 50000\n```\n*   **Best Practice**: The output must be sorted, compressed, and indexed:\n    `bedtools sort -i reference_dict.bed > sorted_ref.bed`\n    `bgzip sorted_ref.bed && tabix -p bed sorted_ref.bed.gz`\n\n### 4. Calculate Z-Scores\nThe final step identifies CNVs by comparing the query sample against the reference dictionary.\n```bash\nwisestork zscore -I output.gc.bed.gz -D sorted_ref.bed.gz -R reference.fa -O final_zscores.bed -B 50000\n```\n\n## Expert Usage and Best Practices\n\n### Working with Exome Data (WES)\nFor Exome sequencing, fixed bin sizes are inappropriate. Instead of using the `-B` flag, provide a target/bait BED file using the `-L` flag.\n*   **Command**: `wisestork count -I input.bam -R reference.fa -O output.bed -L targets.bed`\n*   **Note**: Ensure the contig names in your BED file exactly match those in your BAM header.\n\n### Reference Selection Logic\nWisestork uses a log-linear method (median-based) to find similar bins across samples. This is significantly faster than the original Wisecondor's exponential approach, making it feasible to use very small bin sizes (e.g., 1kb - 5kb) if coverage allows.\n\n### Input Requirements\n*   **BAMs**: Must be sorted and indexed (`samtools index`).\n*   **FASTA**: Must be indexed (`samtools faidx`).\n*   **Dependencies**: Ensure `bgzip`, `tabix`, and `bedtools` are available in your PATH for intermediate file processing.\n\n## Reference documentation\n- [Wisestork GitHub Repository](./references/github_com_sndrtj_wisestork.md)\n- [Bioconda Package Overview](./references/anaconda_org_channels_bioconda_packages_wisestork_overview.md)",
+  "skill_front_matter": {
+    "name": "wisestork",
+    "description": "Wisestork detects Copy Number Variations (CNVs) by normalizing genomic data against a reference dictionary. Use when user asks to detect CNVs, generate read counts, correct GC bias, create a reference dictionary, or calculate Z-scores.",
+    "homepage": "https://github.com/sndrtj/wisestork"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-despace",
+  "category": "bioconductor",
+  "name": "bioconductor-despace",
+  "description": "DESpace identifies spatially variable genes and differential spatial variable patterns in spatial transcriptomics data using pre-annotated spatial clusters. Use when user asks to identify spatially variable genes, find differential spatial patterns across conditions, or perform individual cluster testing in SpatialExperiment or SingleCellExperiment objects.",
+  "overview": "DESpace is a framework that leverages pre-annotated spatial clusters to identify spatially variable genes (SVGs) and differential spatial variable pattern (DSP) genes. It uses a negative binomial model (via `edgeR`) with spatial clusters as covariates. This approach is significantly faster than many other SVG methods and allows for joint modeling of multiple samples and testing of individual clusters to pinpoint specific regions of spatial variability.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DESpace.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-despace/overview",
+  "github": "https://github.com/peicai/DESpace",
+  "conda_downloads": "3.1K",
+  "conda_downloads_num": 3100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DESpace"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DESpace.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-despace/overview",
+    "github": "https://github.com/peicai/DESpace",
+    "conda_downloads": "3.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-despace\n\nname: bioconductor-despace\ndescription: Identifying spatially variable genes (SVGs) and differential spatial variable pattern (DSP) genes in spatial transcriptomics data. Use this skill when analyzing SpatialExperiment or SingleCellExperiment objects to find genes whose expression is associated with spatial clusters or whose spatial patterns change across experimental conditions (e.g., treatment groups, time points).\n\n# bioconductor-despace\n\n## Overview\n\nDESpace is a framework that leverages pre-annotated spatial clusters to identify spatially variable genes (SVGs) and differential spatial variable pattern (DSP) genes. It uses a negative binomial model (via `edgeR`) with spatial clusters as covariates. This approach is significantly faster than many other SVG methods and allows for joint modeling of multiple samples and testing of individual clusters to pinpoint specific regions of spatial variability.\n\n## Core Workflows\n\n### 1. Identifying Spatially Variable Genes (SVG)\n\nTo find genes that vary across spatial clusters in a single sample or across biological replicates:\n\n```r\nlibrary(DESpace)\n\n# For a single sample\nresults <- svg_test(spe = spe, \n                    cluster_col = \"layer_guess\", \n                    verbose = TRUE)\n\n# For multiple biological replicates (joint modeling)\nmulti_results <- svg_test(spe = spe_combined,\n                          cluster_col = \"layer_guess\",\n                          sample_col = \"sample_id\",\n                          replicates = TRUE)\n\n# Access results\nhead(results$gene_results)\n```\n\n### 2. Identifying Differential Spatial Patterns (DSP)\n\nTo find genes where the spatial expression pattern changes across conditions (e.g., Healthy vs. Diseased):\n\n```r\n# Test for interaction between clusters and conditions\ndsp_results <- dsp_test(spe = spe,\n                        cluster_col = \"spatial_cluster\",\n                        sample_col = \"sample_id\",\n                        condition_col = \"condition\",\n                        test = \"QLF\") # QLF for error control, LRT for sensitivity\n\nhead(dsp_results$gene_results)\n```\n\n### 3. Individual Cluster Testing\n\nTo identify genes specifically over- or under-abundant in a particular cluster compared to the rest of the tissue:\n\n```r\n# For SVGs\ncluster_svgs <- individual_svg(spe, \n                               cluster_col = \"layer_guess\",\n                               edgeR_y = results$estimated_y) # Use pre-computed dispersion to save time\n\n# For DSPs\ncluster_dsps <- individual_dsp(spe,\n                               cluster_col = \"spatial_cluster\",\n                               sample_col = \"sample_id\",\n                               condition_col = \"condition\")\n\n# Combine gene-level and cluster-level results\nmerged <- top_results(results$gene_results, cluster_svgs)\n```\n\n### 4. Modeling Time with Splines\n\nFor time-course spatial data, use a custom design matrix with splines:\n\n```r\nlibrary(splines)\ndesign_model <- model.matrix(~ cluster * ns(day, df = 2), data = metadata)\nresults <- dsp_test(spe,\n                    design = design_model,\n                    cluster_col = \"spatial_cluster\",\n                    sample_col = \"sample_id\",\n                    condition_col = \"condition\")\n```\n\n## Visualization\n\nUse `FeaturePlot` to visualize gene expression in physical space, optionally with cluster outlines:\n\n```r\n# Basic expression plot\nFeaturePlot(spe, feature = \"ENSG000001\", coordinates = c(\"x\", \"y\"))\n\n# Plot with cluster outlines\nFeaturePlot(spe, feature = \"ENSG000001\", \n            cluster_col = \"layer_guess\", \n            cluster = \"WM\", # Outline specific cluster\n            annotation_cluster = TRUE)\n```\n\n## Tips and Best Practices\n\n- **Cluster Consistency:** When analyzing multiple samples, ensure cluster labels are consistent (e.g., \"Cluster 1\" must represent the same tissue type across all samples).\n- **Filtering:** Always perform quality control and filter lowly abundant genes (e.g., genes detected in < 20 spots) before running DESpace.\n- **Dispersion Estimates:** When running `individual_svg`, passing the `estimated_y` object from the global `svg_test` to the `edgeR_y` argument significantly speeds up computation.\n- **Input Objects:** DESpace primarily works with `SpatialExperiment` objects. Ensure `colData` contains the necessary columns for clusters, samples, and conditions.\n\n## Reference documentation\n\n- [Differential Spatial Pattern between conditions](./references/DSP.md)\n- [A framework to discover Spatially Variable genes via spatial clusters](./references/SVG.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-despace",
+    "description": "DESpace identifies spatially variable genes and differential spatial variable patterns in spatial transcriptomics data using pre-annotated spatial clusters. Use when user asks to identify spatially variable genes, find differential spatial patterns across conditions, or perform individual cluster testing in SpatialExperiment or SingleCellExperiment objects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DESpace.html"
+  }
+}

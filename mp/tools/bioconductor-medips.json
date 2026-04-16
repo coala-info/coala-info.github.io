@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-medips",
+  "category": "bioconductor",
+  "name": "bioconductor-medips",
+  "description": "MEDIPS analyzes genome-wide sequencing data from DNA enrichment experiments like MeDIP-seq, ChIP-seq, and MBD-seq. Use when user asks to calculate genome-wide signal densities, perform differential coverage analysis, conduct saturation analysis, or normalize MeDIP-seq data.",
+  "overview": "MEDIPS is a Bioconductor package designed for the analysis of DNA enrichment sequencing data. While originally developed for Methylated DNA Immunoprecipitation (MeDIP-seq), it is highly effective for any quantitative sequencing data (ChIP-seq, CMS-seq) where signal density and differential coverage are of interest. It handles the workflow from BAM/BED files to differential analysis, quality control, and visualization export.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MEDIPS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MEDIPS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MEDIPS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-medips\n\nname: bioconductor-medips\ndescription: Analysis of genome-wide sequencing data from DNA enrichment experiments (MeDIP-seq, ChIP-seq, MBD-seq). Use this skill for calculating genome-wide signal densities, performing differential coverage analysis between conditions, saturation analysis, CpG enrichment quality controls, and normalizing MeDIP-seq data using relative methylation scores (rms).\n\n## Overview\nMEDIPS is a Bioconductor package designed for the analysis of DNA enrichment sequencing data. While originally developed for Methylated DNA Immunoprecipitation (MeDIP-seq), it is highly effective for any quantitative sequencing data (ChIP-seq, CMS-seq) where signal density and differential coverage are of interest. It handles the workflow from BAM/BED files to differential analysis, quality control, and visualization export.\n\n## Core Workflow\n\n### 1. Data Import and Set Creation\nMEDIPS uses \"MEDIPS SETs\" to store coverage information. You must have the appropriate `BSgenome` package installed for your organism.\n\n```R\nlibrary(MEDIPS)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Define parameters\nBSgenome <- \"BSgenome.Hsapiens.UCSC.hg19\"\nuniq <- 1e-3 # p-value for max allowed stacked reads\nextend <- 300 # extend reads to 300nt\nws <- 100 # window size\n\n# Create a MEDIPS SET\nmset <- MEDIPS.createSet(file = \"sample.bam\", \n                         BSgenome = BSgenome, \n                         extend = extend, \n                         uniq = uniq, \n                         window_size = ws, \n                         chr.select = \"chr22\")\n```\n\n### 2. Quality Control\nBefore analysis, evaluate the library saturation and CpG enrichment (for MeDIP/MBD).\n\n*   **Saturation Analysis**: Determines if sequencing depth is sufficient.\n    `sr <- MEDIPS.saturation(file = \"sample.bam\", BSgenome = BSgenome, ...)`\n    `MEDIPS.plotSaturation(sr)`\n*   **CpG Enrichment**: Checks for successful immunoprecipitation.\n    `er <- MEDIPS.CpGenrich(file = \"sample.bam\", BSgenome = BSgenome, ...)`\n\n### 3. Coupling Vectors\nFor MeDIP-seq normalization (rms), you must calculate the local density of the genomic pattern (usually \"CG\").\n\n```R\nCS <- MEDIPS.couplingVector(pattern = \"CG\", refObj = mset)\n```\n\n### 4. Differential Coverage Analysis\nCompare two groups of replicates. MEDIPS supports `edgeR` (recommended) or `ttest`.\n\n```R\n# MSet1 and MSet2 are lists of MEDIPS SETs\nresult.table <- MEDIPS.meth(MSet1 = group1_list, \n                            MSet2 = group2_list, \n                            CSet = CS, \n                            ISet1 = input1_list, # Optional Input/Control\n                            ISet2 = input2_list, \n                            diff.method = \"edgeR\", \n                            p.adj = \"bonferroni\",\n                            MeDIP = TRUE)\n```\n\n### 5. Selecting and Merging Results\nFilter the result table for significant windows and merge adjacent windows into regions.\n\n```R\n# Select significant windows\nsig.windows <- MEDIPS.selectSig(results = result.table, p.value = 0.1, adj = TRUE)\n\n# Merge adjacent windows into regions\nsig.regions <- MEDIPS.mergeFrames(frames = sig.windows, distance = 1)\n```\n\n## Key Functions Reference\n*   `MEDIPS.createSet()`: Imports BAM/BED files into R.\n*   `MEDIPS.meth()`: Main function for coverage calculation and differential testing.\n*   `MEDIPS.selectROIs()`: Extracts data for specific regions of interest (e.g., promoters).\n*   `MEDIPS.exportWIG()`: Exports coverage (counts, rpkm, or rms) to Wiggle format for genome browsers.\n*   `MEDIPS.addCNV()`: Incorporates Copy Number Variation data from Input samples to correct IP signals.\n\n## Tips for Success\n*   **Window Size**: Smaller windows (e.g., 50-100bp) provide higher resolution but require more memory and sequencing depth.\n*   **Input Data**: Always use Input/Control samples when comparing conditions with different genomic backgrounds (e.g., cancer vs. normal) to account for CNVs.\n*   **Memory**: For large genomes, use `chr.select` to process one chromosome at a time if RAM is limited.\n*   **Normalization**: Use `rms` (Relative Methylation Score) for MeDIP-seq to correct for CpG density bias; use `rpkm` for standard ChIP-seq.\n\n## Reference documentation\n- [MEDIPS](./references/MEDIPS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-medips",
+    "description": "MEDIPS analyzes genome-wide sequencing data from DNA enrichment experiments like MeDIP-seq, ChIP-seq, and MBD-seq. Use when user asks to calculate genome-wide signal densities, perform differential coverage analysis, conduct saturation analysis, or normalize MeDIP-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MEDIPS.html"
+  }
+}

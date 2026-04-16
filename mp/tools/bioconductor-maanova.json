@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-maanova",
+  "category": "bioconductor",
+  "name": "bioconductor-maanova",
+  "description": "This tool performs statistical analysis of microarray experiments using fixed and mixed effects ANOVA models. Use when user asks to perform differential expression analysis on microarray data, fit ANOVA models to complex experimental designs, or calculate permutation-based p-values for microarray hypothesis testing.",
+  "overview": "The `maanova` package (MicroArray ANalysis Of VAriance) provides a comprehensive suite of tools for the statistical analysis of microarray data. It is particularly powerful for complex experimental designs where multiple factors are involved. It supports both fixed-effects and mixed-effects models, allowing for the estimation of variance components and the calculation of robust test statistics (F, Fs, and Fss) via permutation-based p-values.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/maanova.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maanova"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/maanova.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-maanova\n\nname: bioconductor-maanova\ndescription: Analysis of microarray experiments using ANOVA models, including fixed and mixed effects. Use this skill when performing differential expression analysis on microarray data (one-color or two-color), specifically for experimental designs involving multiple factors, technical replicates, or biological replicates requiring mixed-model variance component estimation.\n\n# bioconductor-maanova\n\n## Overview\nThe `maanova` package (MicroArray ANalysis Of VAriance) provides a comprehensive suite of tools for the statistical analysis of microarray data. It is particularly powerful for complex experimental designs where multiple factors are involved. It supports both fixed-effects and mixed-effects models, allowing for the estimation of variance components and the calculation of robust test statistics (F, Fs, and Fss) via permutation-based p-values.\n\n## Core Workflow\n\n### 1. Data Preparation and Loading\nData must be formatted as a single file or R matrix. A design file (or data frame) is required to map arrays to experimental factors.\n\n```r\nlibrary(maanova)\n\n# Read data from a tab-delimited file\n# arrayType: 'oneColor' (e.g., Affymetrix) or 'twoColor' (e.g., cDNA)\ndata_obj <- read.madata(datafile=\"data.txt\", designfile=\"design.txt\", arrayType=\"twoColor\")\n\n# For Affymetrix data already processed via 'affy' package:\n# data_obj <- read.madata(exprs(rmaData), designfile=my_design_df)\n```\n\n### 2. Quality Control and Transformation\nFor two-color arrays, visualize spatial patterns and intensity biases before analysis.\n\n```r\n# Visualization\ngridcheck(data_obj)\nriplot(data_obj)\narrayview(data_obj)\n\n# Transformation (e.g., joint lowess)\ndata_transformed <- transform.madata(data_obj, method=\"rlowess\")\n```\n\n### 3. Model Fitting\nDefine the ANOVA model using a formula. Specify random effects (like `Sample` or `Array`) to account for correlations in the data.\n\n```r\n# Fixed effects model\nfit_fix <- fitmaanova(data_transformed, formula = ~Dye + Array + Treatment)\n\n# Mixed effects model (treating Sample as random)\nfit_mix <- fitmaanova(data_transformed, formula = ~Strain + Sample, random = ~Sample)\n\n# Check residuals\nresiplot(data_transformed, fit_mix)\n```\n\n### 4. Hypothesis Testing\nUse `matest` to perform F-tests or T-tests. Permutation is recommended to derive reliable p-values, especially for mixed models.\n\n```r\n# Test for a specific term with 500 permutations\ntest_results <- matest(data_transformed, fit_mix, term=\"Strain\", n.perm=500, test.method=c(1,1))\n\n# Calculate FDR adjusted P-values\ntest_results <- adjPval(test_results, method=\"jsFDR\")\n```\n\n### 5. Summarization and Visualization\nExtract significant genes and visualize results using volcano plots or clustering.\n\n```r\n# Generate a summary table of results\nsummary_tab <- summarytable(test_results, threshold=0.05)\n\n# Volcano plot\nidx <- volcano(test_results, highlight.flag=FALSE)\n\n# Bootstrap K-means clustering for significant genes\ncluster_km <- macluster(fit_mix, term=\"Strain\", idx.gene=idx$idx.all, \n                        method=\"kmean\", kmean.ngroups=5, n.perm=100)\ncon_km <- consensus(cluster_km, 0.7)\n```\n\n## Key Functions Reference\n- `read.madata()`: Imports intensity data and experimental design.\n- `transform.madata()`: Performs normalization (lowess, rlowess, log2, etc.).\n- `fitmaanova()`: Fits the ANOVA model (Fixed or Mixed).\n- `matest()`: Performs F-tests with permutation-based p-values.\n- `adjPval()`: Adjusts p-values for multiple testing (FDR).\n- `volcano()`: Creates volcano plots for differential expression.\n- `macluster()` / `consensus()`: Performs bootstrap clustering and builds consensus trees.\n\n## Tips for Success\n- **Design File**: Ensure the `Array` column matches the data columns exactly. For two-color arrays, `Dye` and `Sample` columns are mandatory.\n- **Missing Data**: `maanova` does not tolerate missing values. Use `fill.missing()` or remove genes with missing observations before analysis.\n- **Reference Samples**: In the `Sample` column of the design file, use `0` to identify reference samples; they are treated as fixed factors and excluded from statistical tests.\n- **Computational Load**: Permutation tests for mixed models are computationally intensive. If running in a cluster environment, `maanova` supports parallel processing via the `snow` package.\n\n## Reference documentation\n- [maanova](./references/maanova.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-maanova",
+    "description": "This tool performs statistical analysis of microarray experiments using fixed and mixed effects ANOVA models. Use when user asks to perform differential expression analysis on microarray data, fit ANOVA models to complex experimental designs, or calculate permutation-based p-values for microarray hypothesis testing.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/maanova.html"
+  }
+}

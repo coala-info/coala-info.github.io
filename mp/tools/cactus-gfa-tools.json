@@ -1,0 +1,56 @@
+{
+  "id": "cactus-gfa-tools",
+  "category": "CLI",
+  "name": "cactus-gfa-tools",
+  "description": "cactus-gfa-tools is a suite of C++ utilities designed to manipulate pangenome graph alignments and coordinate spaces within the Cactus pipeline. Use when user asks to convert GAF files to PAF, filter redundant alignments, split graphs based on reference designations, or map coordinates between stable sequence and graph-node space.",
+  "overview": "The `cactus-gfa-tools` suite is a collection of high-performance C++ utilities designed to support the Cactus Pangenome Pipeline. These tools bridge the gap between graph-based alignments (GAF) and traditional pairwise alignments (PAF), allowing researchers to manipulate coordinates between stable sequence space and unstable graph-node space. They are particularly useful for filtering redundant alignments and splitting pangenome graphs based on reference designations.",
+  "homepage": "https://github.com/ComparativeGenomicsToolkit/cactus-gfa-tools",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/cactus-gfa-tools/overview",
+  "github": "https://github.com/ComparativeGenomicsToolkit/cactus-gfa-tools",
+  "conda_downloads": "489",
+  "conda_downloads_num": 489,
+  "last_updated": "2025-08-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cactus-gfa-tools",
+      "cactus-gfa-tools_gaf2paf",
+      "cactus-gfa-tools_gaf2unstable",
+      "cactus-gfa-tools_gaffilter",
+      "cactus-gfa-tools_rgfa-split",
+      "cactus-gfa-tools_paf2lastz",
+      "cactus-gfa-tools_mzgaf2paf"
+    ],
+    "description": "FAIL to generate CWL: cactus-gfa-tools not found in Singularity image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/cactus-gfa-tools:0.1--h9948957_0",
+    "homepage": "https://github.com/ComparativeGenomicsToolkit/cactus-gfa-tools",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/cactus-gfa-tools/overview",
+    "github": "https://github.com/ComparativeGenomicsToolkit/cactus-gfa-tools",
+    "conda_downloads": "489",
+    "last_updated": "2025-08-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "cactus-gfa-tools_gaf2paf.cwl",
+    "cactus-gfa-tools_gaf2unstable.cwl",
+    "cactus-gfa-tools_gaffilter.cwl",
+    "cactus-gfa-tools_mzgaf2paf.cwl",
+    "cactus-gfa-tools_paf2lastz.cwl",
+    "cactus-gfa-tools_rgfa-split.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# cactus-gfa-tools\n\n## Overview\n\nThe `cactus-gfa-tools` suite is a collection of high-performance C++ utilities designed to support the Cactus Pangenome Pipeline. These tools bridge the gap between graph-based alignments (GAF) and traditional pairwise alignments (PAF), allowing researchers to manipulate coordinates between stable sequence space and unstable graph-node space. They are particularly useful for filtering redundant alignments and splitting pangenome graphs based on reference designations.\n\n## Tool-Specific Usage and Best Practices\n\n### GAF to PAF Conversion\n\nConverting minigraph GAF output to PAF requires specific handling of sequence lengths, as GAF files do not inherently contain target sequence lengths.\n\n*   **Stable Coordinates (`gaf2paf`)**: Use this to convert GAF to PAF in stable sequence space (e.g., chromosome names).\n    *   **Requirement**: You must provide a lengths table using `-l`.\n    *   **Pattern**:\n        ```bash\n        # Generate lengths table from FASTA indices\n        cat *.fai > lengths.tsv\n        gaf2paf input.gaf -l lengths.tsv > output.paf\n        ```\n*   **Unstable Coordinates (`gaf2unstable`)**: Use this when the pipeline requires PAF in node-space (e.g., `s1234`) for better performance.\n    *   **Workflow**:\n        ```bash\n        # 1. Generate unstable GAF and node-lengths table using the rGFA\n        gaf2unstable input.gaf -g graph.gfa -o node-lengths.tsv > unstable.gaf\n        # 2. Convert the resulting unstable GAF to PAF\n        gaf2paf unstable.gaf -l node-lengths.tsv > unstable.paf\n        ```\n\n### Alignment Filtering (`gaffilter`)\n\nUse `gaffilter` to resolve overlapping query intervals in GAF or PAF files. This is critical for cleaning up noisy alignments before graph construction.\n\n*   **Heuristic Logic**: The tool keeps records based on primary status, MAPQ, and block length.\n*   **Sensitivity**: The default MAPQ/length ratio is 2. Adjust this with `-r` (e.g., `-r 5` for stricter filtering).\n*   **PAF Support**: To filter PAF files, you must use the `-p` flag. Note that this expects a `gl` (GAF block length) tag in the PAF.\n\n### Graph Splitting and Assignment (`rgfa-split`)\n\n`rgfa-split` uses rGFA tags to assign query contigs to reference contigs.\n\n*   **Mechanism**: It performs a Breadth-First Search (BFS) from rank-0 nodes to assign every node to its nearest reference contig.\n*   **Assignment**: Query contigs are assigned to the reference contig where they have the highest alignment coverage.\n*   **Expert Tip**: Use the uniqueness and specificity filters to label low-confidence assignments as \"ambiguous\" to prevent false-positive mappings in complex regions.\n\n### Coordinate Mapping and Anchoring\n\n*   **`mzgaf2paf`**: Use this for legacy minigraph outputs generated with `-S --write-mz`. It converts minimizer-based GAFs into PAF records with CIGAR strings, which can serve as initial anchors for Cactus.\n*   **`rgfa2paf`**: Quickly generate a PAF representing the rank-0 (reference) paths within an rGFA file.\n*   **`faprefix.sh`**: A utility script to ensure consistency between FASTA headers and PAF records by adding prefixes (e.g., `mg_anchors`).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| gaf2paf | Convert minigraph GAF to PAF |\n| gaf2unstable | Replace stable sequences in path steps, ex >chr1:500-1000, with the unstable graph node names, ex >s1:1-100>s2:100-600 |\n| gaffilter | Filter GAF record if its query interval overlaps another query interval based on primary/secondary status, MAPQ ratio, or block length ratio. |\n| mzgaf2paf | Convert minigraph --write-mz output(s) to PAF |\n| paf2lastz | Convert PAF(s) with cg cigars to LASTZ cigars |\n| rgfa-split | Partition rGFA nodes into reference contigs. Input must be uncompressed GFA (not stdin) |\n\n## Reference documentation\n- [cactus-gfa-tools README](./references/github_com_ComparativeGenomicsToolkit_cactus-gfa-tools_blob_main_README.md)\n- [faprefix.sh source](./references/github_com_ComparativeGenomicsToolkit_cactus-gfa-tools_blob_main_faprefix.sh.md)\n- [Makefile build targets](./references/github_com_ComparativeGenomicsToolkit_cactus-gfa-tools_blob_main_Makefile.md)",
+  "skill_front_matter": {
+    "name": "cactus-gfa-tools",
+    "description": "cactus-gfa-tools is a suite of C++ utilities designed to manipulate pangenome graph alignments and coordinate spaces within the Cactus pipeline. Use when user asks to convert GAF files to PAF, filter redundant alignments, split graphs based on reference designations, or map coordinates between stable sequence and graph-node space.",
+    "homepage": "https://github.com/ComparativeGenomicsToolkit/cactus-gfa-tools"
+  }
+}

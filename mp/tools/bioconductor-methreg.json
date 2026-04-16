@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methreg",
+  "category": "bioconductor",
+  "name": "bioconductor-methreg",
+  "description": "MethReg performs integrative analysis of DNA methylation, gene expression, and transcription factor binding data to identify functional regulatory triplets. Use when user asks to evaluate the regulatory potential of DNA methylation on gene transcription, identify synergistic transcription factor-methylation interactions, or prioritize CpG-TF-target gene triplets.",
+  "overview": "MethReg is designed to identify functional associations between DNA methylation and gene expression by incorporating Transcription Factor Binding Site (TFBS) information. It operates by creating \"triplets\" consisting of a methylation site (CpG or DMR), a Transcription Factor (TF) that binds near that site, and a putative target gene. It then applies robust linear models to test for interactions between TF activity and methylation levels on target gene expression.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MethReg.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/TransBioInfoLab/MethReg",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MethReg"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MethReg.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/TransBioInfoLab/MethReg",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methreg\n\nname: bioconductor-methreg\ndescription: Integrative analysis of DNA methylation, gene expression, and transcription factor (TF) binding data. Use this skill to evaluate the regulatory potential of DNA methylation (CpGs or DMRs) on gene transcription, identify synergistic TF-methylation interactions, and prioritize regulatory triplets (CpG-TF-Target Gene).\n\n## Overview\n\nMethReg is designed to identify functional associations between DNA methylation and gene expression by incorporating Transcription Factor Binding Site (TFBS) information. It operates by creating \"triplets\" consisting of a methylation site (CpG or DMR), a Transcription Factor (TF) that binds near that site, and a putative target gene. It then applies robust linear models to test for interactions between TF activity and methylation levels on target gene expression.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be matched samples with DNA methylation (Beta or M-values) and gene expression (normalized log2 counts).\n\n```R\nlibrary(MethReg)\nlibrary(SummarizedExperiment)\n\n# Create DNA methylation SE object (supports 450k and EPIC)\ndna.met.se <- make_dnam_se(\n  dnam = dna_matrix, \n  genome = \"hg38\", \n  arrayType = \"450k\"\n)\n\n# Create Gene Expression SE object\ngene.exp.se <- make_exp_se(\n  exp = exp_matrix, \n  genome = \"hg38\"\n)\n```\n\n### 2. Creating Triplets\nTriplets link a genomic region (CpG) to a TF and a target gene.\n\n**Distance-based approach (Promoter or Distal):**\n```R\n# Promoter overlap: links CpG to genes within +/- 2kb of TSS\ntriplet.promoter <- create_triplet_distance_based(\n  region = dna.met.se,\n  target.method = \"genes.promoter.overlap\",\n  genome = \"hg38\",\n  motif.search.window.size = 400 # Search for TF motifs around CpG\n)\n\n# Window-based (Distal): links CpG to genes within a 500kb window\ntriplet.distal <- create_triplet_distance_based(\n  region = dna.met.se,\n  target.method = \"window\",\n  target.window.size = 500000,\n  genome = \"hg38\"\n)\n```\n\n**Regulon-based approach:**\nUses external TF-target databases (e.g., Dorothea).\n```R\ntriplet.regulon <- create_triplet_regulon_based(\n  region = dna.met.se,\n  genome = \"hg38\",\n  tf.target = dorothea::dorothea_hs\n)\n```\n\n### 3. Statistical Modeling\nMethReg tests if the interaction between TF activity and DNA methylation significantly affects target gene expression.\n\n```R\n# Interaction model: log2(Target) ~ log2(TF) + DNAm_Group + log2(TF):DNAm_Group\nresults.inter <- interaction_model(\n  triplet = triplet.promoter,\n  dnam = dna.met.se,\n  exp = gene.exp.se,\n  dnam.group.threshold = 0.25, # Top/Bottom 25% for binary group\n  fdr = TRUE\n)\n\n# Stratified model: assess TF effect separately in High and Low methylation groups\nresults.strat <- stratified_model(\n  triplet = results.inter,\n  dnam = dna.met.se,\n  exp = gene.exp.se\n)\n```\n\n### 4. Visualization\nVisualize the interaction to interpret if methylation enhances or attenuates TF activity.\n\n```R\nplots <- plot_interaction_model(\n  triplet.results = results.inter[1, ], \n  dnam = dna.met.se, \n  exp = gene.exp.se\n)\nplots[[1]]\n```\n\n## Advanced Features\n\n### Controlling for Confounders\nIf data has batch effects, age, or sex bias, use residuals for the analysis.\n```R\n# Extract residuals after adjusting for metadata\nexp.residuals <- get_residuals(gene.exp.se, metadata_df)\ndnam.residuals <- get_residuals(dna.met.se, metadata_df)\n```\n\n### TF Activity Estimation\nInstead of raw TF expression, use Enrichment Scores (ES) from GSVA or VIPER.\n```R\n# Calculate TF activity using Dorothea regulons\ntf.es <- get_tf_ES(\n  exp = assay(gene.exp.se),\n  regulons = dorothea::dorothea_hs\n)\n```\n\n## Key Parameters\n- `motif.search.window.size`: Recommended <= 400bp around the CpG to ensure the methylation site is likely to affect the TF binding site.\n- `target.method`: Use `genes.promoter.overlap` for proximal regulation and `window` or `nearby.genes` for enhancer/distal regulation.\n- `dnam.group.threshold`: Defines the \"High\" vs \"Low\" methylation groups (default 0.25).\n\n## Reference documentation\n- [MethReg: estimating regulatory potential of DNA methylation in gene transcription](./references/MethReg.md)\n- [MethReg Vignette Source](./references/MethReg.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-methreg",
+    "description": "MethReg performs integrative analysis of DNA methylation, gene expression, and transcription factor binding data to identify functional regulatory triplets. Use when user asks to evaluate the regulatory potential of DNA methylation on gene transcription, identify synergistic transcription factor-methylation interactions, or prioritize CpG-TF-target gene triplets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MethReg.html"
+  }
+}

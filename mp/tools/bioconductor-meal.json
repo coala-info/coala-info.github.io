@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-meal",
+  "category": "bioconductor",
+  "name": "bioconductor-meal",
+  "description": "MEAL is an R package designed to analyze Illumina HumanMethylation 450K and EPIC BeadChip data by integrating multiple statistical methods for differential methylation analysis. Use when user asks to identify differentially methylated positions or regions, perform redundancy analysis on genomic ranges, or visualize methylation data using Manhattan and volcano plots.",
+  "overview": "MEAL (Methylation Analysis) is an R package designed to streamline the analysis of Illumina Infinium HumanMethylation 450K and EPIC BeadChip data. It provides a unified interface for multiple statistical methods, including limma for mean differences, DiffVar for variance differences, and various DMR detection algorithms (bumphunter, blockFinder, and DMRcate). It also supports integrative analysis with gene expression data and regional analysis via Redundancy Analysis (RDA).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MEAL.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MEAL"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MEAL.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-meal\n\n## Overview\nMEAL (Methylation Analysis) is an R package designed to streamline the analysis of Illumina Infinium HumanMethylation 450K and EPIC BeadChip data. It provides a unified interface for multiple statistical methods, including limma for mean differences, DiffVar for variance differences, and various DMR detection algorithms (bumphunter, blockFinder, and DMRcate). It also supports integrative analysis with gene expression data and regional analysis via Redundancy Analysis (RDA).\n\n## Core Workflow\n\n### 1. Data Preparation\nMEAL works primarily with `GenomicRatioSet` objects from the `minfi` package.\n\n```r\nlibrary(MEAL)\nlibrary(minfi)\n\n# Convert MethylationSet to GenomicRatioSet\nmeth <- mapToGenome(ratioConvert(MsetEx))\n\n# Recommended preprocessing: remove SNPs and NAs\nmeth <- dropMethylationLoci(meth)\nmeth <- dropLociWithSnps(meth)\nmeth <- meth[!apply(getBeta(meth), 1, function(x) any(is.na(x))), ]\n```\n\n### 2. Running the Analysis Pipeline\nThe `runPipeline` function is a wrapper that executes multiple analyses (DMP and DMR detection) simultaneously.\n\n```r\n# Basic pipeline run\nres <- runPipeline(set = meth, variable_names = \"status\")\n\n# Adjusted model with covariates and specific analyses\nresAdj <- runPipeline(set = meth, \n                      variable_names = \"status\",\n                      covariable_names = \"age\", \n                      analyses = c(\"DiffMean\", \"DiffVar\"),\n                      sva = TRUE) # Run Surrogate Variable Analysis\n```\n\n### 3. Extracting Results\nResults are stored in a `ResultSet` object. Use `getAssociation` or `getProbeResults` to extract data frames.\n\n```r\n# Get top results for a specific analysis\nhead(getAssociation(resAdj, rid = \"DiffMean\"))\n\n# Get results with specific annotation columns\nhead(getProbeResults(resAdj, rid = \"DiffMean\", coef = 2, fNames = c(\"chromosome\", \"start\")))\n\n# Get results for CpGs mapped to a specific gene\ngetGeneVals(resAdj, gene = \"ARMS2\", genecol = \"UCSC_RefGene_Name\")\n```\n\n### 4. Visualization\nMEAL extends the `plot` function for `ResultSet` objects and provides specialized plotting functions.\n\n```r\n# Standard plots: \"manhattan\", \"volcano\", or \"qq\"\nplot(resAdj, rid = \"DiffMean\", type = \"manhattan\")\nplot(resAdj, rid = \"DiffMean\", type = \"volcano\")\n\n# Plot beta values for a specific CpG\nplotFeature(set = meth, feat = \"cg09383816\", variables = \"status\")\n\n# Regional plot showing DMRs and DMPs together\ntargetRange <- GRanges(\"chrX:13000000-14000000\")\nplotRegion(resAdj, targetRange)\n```\n\n### 5. Redundancy Analysis (RDA)\nRDA is used to test if a specific genomic region is differentially methylated as a whole.\n\n```r\ntargetRange <- GRanges(\"chrX:13000000-23000000\")\nresRDA <- runRDA(set = meth, model = ~ status, range = targetRange)\n\n# Get R2 and p-values\ngetRDAresults(resRDA)\n\n# Visualize RDA biplot\nplotRDA(resRDA, pheno = colData(meth)[, \"status\", drop = FALSE])\n```\n\n### 6. Integration with Gene Expression\nMEAL can correlate methylation levels with gene expression using `MultiDataSet`.\n\n```r\n# Create MultiDataSet\nmulti <- createMultiDataSet()\nmulti <- add_genexp(multi, expression_set)\nmulti <- add_methy(multi, genomic_ratio_set)\n\n# Calculate correlation between CpGs and nearby expression probes (within 250kb)\nmethExprs <- correlationMethExprs(multi)\n```\n\n## Tips and Best Practices\n- **SVA**: If your QQ-plots show inflation (lambda != 1), set `sva = TRUE` in `runPipeline` to account for hidden batch effects.\n- **M-values vs Betas**: Use `betas = FALSE` in analysis functions to use M-values, which often have better statistical properties for linear modeling, while using Betas for visualization.\n- **Memory**: For large datasets, subset your `GenomicRatioSet` to the probes of interest before running complex DMR or RDA analyses to save time and memory.\n\n## Reference documentation\n- [Methylation Analysis with MEAL](./references/MEAL.md)\n- [Expression and Methylation Analysis Case Example](./references/caseExample.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-meal",
+    "description": "MEAL is an R package designed to analyze Illumina HumanMethylation 450K and EPIC BeadChip data by integrating multiple statistical methods for differential methylation analysis. Use when user asks to identify differentially methylated positions or regions, perform redundancy analysis on genomic ranges, or visualize methylation data using Manhattan and volcano plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MEAL.html"
+  }
+}

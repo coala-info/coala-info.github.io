@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-derfinder",
+  "category": "bioconductor",
+  "name": "bioconductor-derfinder",
+  "description": "This tool performs annotation-agnostic differential expression analysis of RNA-seq data at base-pair resolution. Use when user asks to identify differentially expressed regions, find expressed regions from BAM or BigWig files, or perform single base-level F-statistics without relying on existing gene models.",
+  "overview": "The `derfinder` package implements the DER Finder approach for RNA-seq data analysis. It identifies contiguous genome regions showing differential expression signal, providing an alternative to feature-counting or transcript assembly. It supports two main workflows: (1) Expressed regions-level analysis, which summarizes coverage and identifies regions passing a mean coverage cutoff, and (2) Single base-level F-statistics, which fits models at every base to identify regions with significant stati",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/derfinder.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-derfinder/overview",
+  "github": "https://github.com/lcolladotor/derfinder",
+  "conda_downloads": "42.7K",
+  "conda_downloads_num": 42700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "derfinder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/derfinder.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-derfinder/overview",
+    "github": "https://github.com/lcolladotor/derfinder",
+    "conda_downloads": "42.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-derfinder\n\nname: bioconductor-derfinder\ndescription: Annotation-agnostic differential expression analysis of RNA-seq data at base-pair resolution. Use this skill to identify differentially expressed regions (DERs) or expressed regions (ERs) from BAM or BigWig files without relying on existing gene models.\n\n# bioconductor-derfinder\n\n## Overview\nThe `derfinder` package implements the DER Finder approach for RNA-seq data analysis. It identifies contiguous genome regions showing differential expression signal, providing an alternative to feature-counting or transcript assembly. It supports two main workflows: (1) Expressed regions-level analysis, which summarizes coverage and identifies regions passing a mean coverage cutoff, and (2) Single base-level F-statistics, which fits models at every base to identify regions with significant statistical differences.\n\n## Installation\n```R\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"derfinder\")\n```\n\n## Core Workflows\n\n### 1. Expressed Regions (ER) Level Analysis\nThis is the recommended starting point. It identifies regions based on mean coverage across samples and then performs differential expression on the resulting matrix.\n\n```R\nlibrary(derfinder)\n\n# 1. Locate and load coverage data (BigWig or BAM)\nfiles <- rawFiles(system.file(\"extdata\", \"AMY\", package = \"derfinderData\"), samplepatt = \"bw\")\nfullCov <- fullCoverage(files = files, chrs = \"chr21\")\n\n# 2. Identify Expressed Regions (ERs) and generate a coverage matrix\n# L = read length; cutoff = mean coverage threshold\nregionMat <- regionMatrix(fullCov, cutoff = 30, L = 76)\n\n# 3. Perform Differential Expression (e.g., using DESeq2)\nlibrary(DESeq2)\ncounts <- round(regionMat$chr21$coverageMatrix)\ndse <- DESeqDataSetFromMatrix(counts, pheno, ~ group + gender)\ndse <- DESeq(dse, test = \"LRT\", reduced = ~gender)\nresults <- results(dse)\n\n# 4. Attach results back to genomic ranges\ners <- regionMat$chr21$regions\nmcols(ers) <- cbind(mcols(ers), results)\n```\n\n### 2. Single Base-Level F-statistics\nUse this for high-resolution discovery. It calculates F-statistics for every base and uses permutations to assign empirical p-values to regions.\n\n```R\n# 1. Prepare models\nsampleDepths <- sampleDepth(collapseFullCoverage(fullCov), 1)\nmodels <- makeModels(sampleDepths, testvars = pheno$group, adjustvars = pheno$gender)\n\n# 2. Analyze chromosome\n# nPermute should be higher (e.g., 100+) for publication-quality p-values\nresults <- analyzeChr(\n    chr = \"chr21\", \n    coverageInfo = filteredCov$chr21, \n    models = models,\n    groupInfo = pheno$group, \n    cutoffFstat = 0.05,\n    nPermute = 20, \n    writeOutput = TRUE\n)\n```\n\n## Key Functions\n- `rawFiles()`: Helper to find input files (BAM or BigWig).\n- `fullCoverage()`: Loads coverage data into memory for specified chromosomes.\n- `filterData()`: Filters bases based on a coverage cutoff.\n- `regionMatrix()`: Identifies ERs and creates a summarized coverage matrix for downstream DE tools.\n- `railMatrix()`: Optimized version of `regionMatrix` for use with Rail-RNA output.\n- `analyzeChr()`: High-level function for base-level F-statistics and permutation testing.\n- `makeModels()`: Helper to create alternative and null model matrices.\n\n## Tips for Success\n- **Memory Management**: `fullCoverage` loads data into memory. For large genomes/many samples, process one chromosome at a time or use `railMatrix` with pre-computed summary files.\n- **Normalization**: If data isn't pre-normalized, use `totalMapped` and `targetSize` arguments in `fullCoverage` or `filterData`.\n- **Visualization**: Use the companion package `derfinderPlot` (specifically `plotRegionCoverage`) to visualize base-level coverage for candidate DERs.\n- **Annotation**: Use `annotateRegions()` to compare discovered DERs against known gene models (exons, introns, intergenic).\n\n## Reference documentation\n- [derfinder quick start guide](./references/derfinder-quickstart.md)\n- [derfinder users guide](./references/derfinder-users-guide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-derfinder",
+    "description": "This tool performs annotation-agnostic differential expression analysis of RNA-seq data at base-pair resolution. Use when user asks to identify differentially expressed regions, find expressed regions from BAM or BigWig files, or perform single base-level F-statistics without relying on existing gene models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/derfinder.html"
+  }
+}

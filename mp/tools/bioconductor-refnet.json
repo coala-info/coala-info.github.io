@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-refnet",
+  "category": "bioconductor",
+  "name": "bioconductor-refnet",
+  "description": "Bioconductor-refnet queries and curates molecular interaction data from PSICQUIC and native datasets to build annotated biological networks. Use when user asks to retrieve protein-protein or transcription factor interactions, filter molecular data by species or provider, and remove duplicate interaction records based on evidence quality.",
+  "overview": "RefNet is a query-based tool for retrieving molecular interactions from a variety of providers. It aggregates data from PSICQUIC (e.g., BioGrid, IntAct, MINT) and native \"curated\" sources (e.g., Gerstein-2012, Recon2). Unlike simple download tools, RefNet provides rich annotations including detection methods, interaction types, and publication IDs to facilitate the construction of context-specific biological networks.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/RefNet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RefNet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/RefNet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-refnet\n\nname: bioconductor-refnet\ndescription: Query and curate molecular interaction data from multiple sources including PSICQUIC and native datasets. Use this skill when you need to retrieve annotated interactions (protein-protein, transcription factor-target, metabolic) for specific genes, proteins, or species, and perform data curation like duplicate removal and evidence filtering.\n\n## Overview\n\nRefNet is a query-based tool for retrieving molecular interactions from a variety of providers. It aggregates data from PSICQUIC (e.g., BioGrid, IntAct, MINT) and native \"curated\" sources (e.g., Gerstein-2012, Recon2). Unlike simple download tools, RefNet provides rich annotations including detection methods, interaction types, and publication IDs to facilitate the construction of context-specific biological networks.\n\n## Core Workflow\n\n### 1. Initialization and Provider Discovery\nInitialize the RefNet object to load available data sources.\n\n```r\nlibrary(RefNet)\nrefnet <- RefNet()\n\n# List available providers (native and PSICQUIC)\nprovs <- providers(refnet)\nprint(provs$native)\nprint(provs$PSICQUIC)\n```\n\n### 2. Querying Interactions\nUse the `interactions()` function to retrieve data. It is highly recommended to filter by species (NCBI taxonomy ID) and specific providers to manage data volume.\n\n```r\n# Query E2F3 interactions in humans (9606) from specific sources\ntbl <- interactions(refnet, \n                    id=\"E2F3\", \n                    species=\"9606\", \n                    provider=c(\"gerstein-2012\", \"BioGrid\"))\n```\n\n**Key Arguments:**\n- `id`: One or more identifiers (Gene symbols, Entrez IDs, etc.).\n- `species`: NCBI taxonomy code (e.g., \"9606\" for human).\n- `speciesExclusive`: Logical; if TRUE, both interactors must be from the specified species.\n- `type`: Limit by interaction type (e.g., \"direct interaction\").\n- `provider`: Limit by specific data sources.\n\n### 3. Mapping Standard Names\nPSICQUIC results often use varied naming schemes (UniProt, RefSeq). Use the `PSICQUIC` package's `IDMapper` to add common gene symbols and canonical IDs.\n\n```r\nlibrary(PSICQUIC)\nidMapper <- IDMapper(\"9606\")\ntbl.named <- addStandardNames(idMapper, tbl)\n# Adds columns: A.common, B.common, A.canonical, B.canonical\n```\n\n### 4. Curation and Duplicate Removal\nQueries often return redundant reports of the same interaction. RefNet provides tools to identify and select the \"best\" evidence based on preferred interaction types.\n\n```r\n# 1. Detect duplicates (adds a 'dupGroup' column)\ntbl.dups <- detectDuplicateInteractions(tbl.named)\n\n# 2. Define preferred interaction types (highest to lowest priority)\npreferred.types <- c(\"direct interaction\", \n                     \"physical association\", \n                     \"transcription factor binding\")\n\n# 3. Pick the best record from each duplicate group\ndupGroups <- sort(unique(tbl.dups$dupGroup))\nbestIndices <- unlist(lapply(dupGroups, function(g) {\n    pickBestFromDupGroup(g, tbl.dups, preferred.types)\n}))\n\n# 4. Filter the table\ntbl.final <- tbl.dups[bestIndices, ]\n```\n\n## Tips for Effective Use\n- **Iterative Refinement**: Start with a broad query and use `table(tbl$detectionMethod)` or `table(tbl$type)` to understand the evidence quality before filtering.\n- **Native Sources**: Native providers like `recon202` (metabolic) or `gerstein-2012` (TF-target) often contain specialized data not found in standard PPI databases.\n- **Identifier Handling**: If `addStandardNames` fails to map an ID, it may be a non-standard identifier that requires manual inspection or `org.Hs.eg.db` lookup.\n- **Abstract Verification**: Use `pubmedAbstract(\"PMID\")` to programmatically fetch publication abstracts to verify the context of a specific interaction.\n\n## Reference documentation\n- [RefNet](./references/RefNet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-refnet",
+    "description": "Bioconductor-refnet queries and curates molecular interaction data from PSICQUIC and native datasets to build annotated biological networks. Use when user asks to retrieve protein-protein or transcription factor interactions, filter molecular data by species or provider, and remove duplicate interaction records based on evidence quality.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/RefNet.html"
+  }
+}

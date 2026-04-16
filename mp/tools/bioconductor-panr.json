@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-panr",
+  "category": "bioconductor",
+  "name": "bioconductor-panr",
+  "description": "This tool infers Posterior Association Networks and functional gene modules from high-dimensional phenotypic data using Bayesian beta-mixture modeling. Use when user asks to quantify gene associations, fit beta-mixture models to phenotypic screens, infer posterior association networks, or identify enriched functional modules.",
+  "overview": "The `PANR` package provides a pipeline for analyzing high-dimensional phenotypic data from genetic screens. It addresses the challenge of selecting significant interactions from dense networks by modeling association densities (typically cosine similarities) as a mixture of three beta distributions: positive association (+), negative association (-), and lack of association (x). It allows for the incorporation of prior biological knowledge through stratified modeling and identifies robust gene m",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PANR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PANR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PANR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-panr\n\nname: bioconductor-panr\ndescription: Inferring Posterior Association Networks (PAN) and enriched functional gene modules from rich phenotypes of gene perturbations (e.g., RNAi screens, cell morphology, gene expression). Use this skill when you need to quantify gene associations using Bayesian beta-mixture modeling, incorporate prior knowledge (like PPIs), and identify functional modules using multiscale bootstrap resampling.\n\n## Overview\n\nThe `PANR` package provides a pipeline for analyzing high-dimensional phenotypic data from genetic screens. It addresses the challenge of selecting significant interactions from dense networks by modeling association densities (typically cosine similarities) as a mixture of three beta distributions: positive association (+), negative association (-), and lack of association (x). It allows for the incorporation of prior biological knowledge through stratified modeling and identifies robust gene modules via hierarchical clustering with bootstrap resampling.\n\n## Typical Workflow\n\n### 1. Data Preparation and Initialization\nInput data should be a numeric matrix where rows are genes (or treatment conditions) and columns are phenotypes/replicates.\n\n```R\nlibrary(PANR)\n# Load example data\ndata(Bakal2007)\n\n# Initialize the BetaMixture object\n# metric: \"cosine\" (recommended) or \"correlation\"\n# model: \"global\" or \"stratified\" (if using prior knowledge)\nbm <- new(\"BetaMixture\", pheno=Bakal2007, metric=\"cosine\", model=\"global\", order=1)\n```\n\n### 2. Beta-Mixture Modeling\nThe process involves fitting a NULL distribution (lack of association) and then fitting the full three-component mixture model.\n\n```R\n# Fit NULL distribution using permutations\nbm <- fitNULL(bm, nPerm=10, thetaNULL=c(alphaNULL=4, betaNULL=4), \n              sumMethod=\"median\", permMethod=\"all\")\n\n# Fit the full Beta-Mixture model (BM)\n# thetaInit: initial shape parameters for Neg, NULL, and Pos components\nbm <- fitBM(bm, para=list(zInit=NULL, \n                          thetaInit=c(alphaNeg=2, betaNeg=4, \n                                      alphaNULL=bm@result$fitNULL$thetaNULL[[\"alphaNULL\"]],\n                                      betaNULL=bm@result$fitNULL$thetaNULL[[\"betaNULL\"]],\n                                      alphaPos=4, betaPos=2), \n                          gamma=NULL),\n            ctrl=list(fitNULL=FALSE, tol=1e-1))\n\n# Visualize results\nview(bm, \"fitBM\")\nsummarize(bm, what=\"ALL\")\n```\n\n### 3. Inferring the Posterior Association Network (PAN)\nConvert the mixture model results into a network by calculating posterior odds or Signal-to-Noise Ratios (SNR).\n\n```R\npan <- new(\"PAN\", bm1=bm)\n\n# Infer edges using SNR (Posterior odds of signal vs noise)\n# cutoff: log(5) is a common threshold for 'substantial' evidence\npan <- infer(pan, para=list(type=\"SNR\", log=TRUE, sign=TRUE, cutoff=log(5)), filter=FALSE)\n\n# Build the graph object (igraph or RedeR engine)\npan <- buildPAN(pan, engine=\"igraph\")\n```\n\n### 4. Searching for Enriched Modules\nUse multiscale bootstrap resampling to find statistically significant clusters.\n\n```R\nlibrary(pvclust)\n# Search for modules (supports parallel computing via 'snow' package)\npan <- pvclustModule(pan, nboot=1000, metric=\"cosine\", hclustMethod=\"average\")\n\n# Retrieve significant modules\n# pValCutoff: significance level (e.g., 0.01)\ninds <- sigModules(pan, pValCutoff=0.01, minSize=3, maxSize=100)\n\n# Visualize specific modules\nviewPAN(pan, what=\"pvclustModule\", moduleID=inds[1])\n```\n\n## Key Functions and Parameters\n\n- `new(\"BetaMixture\", ...)`: Creates the core container. Use `model=\"stratified\"` and provide a `partition` vector if you have prior knowledge (e.g., PPI vs non-PPI pairs).\n- `fitNULL()`: Estimates the parameters for the \"noise\" component. `permMethod=\"replicate\"` is more conservative than `\"all\"`.\n- `fitBM()`: Performs Maximum A Posteriori (MAP) estimation via the EM algorithm.\n- `infer()`: Filters the dense network into a sparse PAN. `type=\"SNR\"` is the standard metric for edge weighting.\n- `pvclustModule()`: Uses the `pvclust` algorithm to assign p-values to clusters.\n\n## Tips for Success\n\n- **Cosine Similarity**: `PANR` prefers cosine similarity (uncentered correlation) because it captures both magnitude and direction of phenotypic changes.\n- **Prior Knowledge**: If you have a list of known interactions (e.g., from STRING), use the stratified model. This allows the EM algorithm to learn different mixing proportions for known vs. unknown pairs.\n- **Visualization**: For complex networks, the `RedeR` engine is recommended over `igraph` for its ability to handle nested containers and hierarchical layouts.\n- **Parallelization**: `pvclustModule` can be slow. Use `options(cluster=makeCluster(n, \"SOCK\"))` to speed up the bootstrap process.\n\n## Reference documentation\n\n- [PANR : Posterior association network and enriched functional gene modules inferred from rich phenotypes of gene perturbations](./references/PANR-Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-panr",
+    "description": "This tool infers Posterior Association Networks and functional gene modules from high-dimensional phenotypic data using Bayesian beta-mixture modeling. Use when user asks to quantify gene associations, fit beta-mixture models to phenotypic screens, infer posterior association networks, or identify enriched functional modules.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PANR.html"
+  }
+}

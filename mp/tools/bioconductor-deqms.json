@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-deqms",
+  "category": "bioconductor",
+  "name": "bioconductor-deqms",
+  "description": "DEqMS is an R package that performs differential expression analysis for proteomics data by adjusting variance estimates based on the number of peptides or PSMs quantified for each protein. Use when user asks to perform differential expression analysis on mass spectrometry data, adjust limma variance estimates using peptide counts, or aggregate PSM-level data to protein-level summaries.",
+  "overview": "DEqMS (Differential Expression of Quantitative Mass Spectrometry) is an R package that improves upon the `limma` framework for proteomics applications. While `limma` assumes a common prior variance for all features, DEqMS estimates prior variance based on the number of PSMs (Peptide Spectrum Matches) or peptides quantified for each protein. This adjustment accounts for the fact that proteins with more measurements generally have more reliable variance estimates, leading to higher statistical pow",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DEqMS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deqms/overview",
+  "github": "https://github.com/yafeng/DEqMS",
+  "conda_downloads": "34.5K",
+  "conda_downloads_num": 34500,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DEqMS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEqMS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deqms/overview",
+    "github": "https://github.com/yafeng/DEqMS",
+    "conda_downloads": "34.5K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-deqms\n\n## Overview\n\nDEqMS (Differential Expression of Quantitative Mass Spectrometry) is an R package that improves upon the `limma` framework for proteomics applications. While `limma` assumes a common prior variance for all features, DEqMS estimates prior variance based on the number of PSMs (Peptide Spectrum Matches) or peptides quantified for each protein. This adjustment accounts for the fact that proteins with more measurements generally have more reliable variance estimates, leading to higher statistical power and better false discovery rate control in proteomics experiments.\n\n## Core Workflow\n\nThe DEqMS workflow typically follows a standard `limma` pipeline with an additional step to incorporate peptide/PSM counts.\n\n### 1. Data Preparation\nInput data should be a log2-transformed expression matrix (proteins in rows, samples in columns).\n\n```r\nlibrary(DEqMS)\n\n# Example: log2 transform and median normalization\ndat.log = log2(dat)\ndat.log = na.omit(dat.log)\ndat.log = equalMedianNormalization(dat.log)\n```\n\n### 2. Linear Modeling (Limma)\nDefine the experimental design and contrasts, then fit the linear model.\n\n```r\ndesign = model.matrix(~0 + condition_factor)\ncolnames(design) = levels(condition_factor)\n\nfit1 = lmFit(dat.log, design)\ncontrast = makeContrasts(GroupA - GroupB, levels = design)\nfit2 = contrasts.fit(fit1, contrasts = contrast)\nfit3 = eBayes(fit2)\n```\n\n### 3. DEqMS Variance Adjustment\nAssign the peptide/PSM count to the fit object and run `spectraCounteBayes`.\n\n```r\n# count_vector must match the rownames of fit3\nfit3$count = count_vector \nfit4 = spectraCounteBayes(fit3)\n```\n\n### 4. Extracting Results\nUse `outputResult` to get the final statistics, including the adjusted p-values (`sca.P.Value`).\n\n```r\nresults = outputResult(fit4, coef_col = 1)\n# Key columns:\n# sca.t: Spectra Count Adjusted t-statistic\n# sca.P.Value: DEqMS p-value\n# sca.adj.pval: BH adjusted p-value\n```\n\n## Specialized Summarization Functions\n\nIf starting from a PSM-level table, DEqMS provides functions to aggregate data to the protein level:\n\n- `medianSweeping`: Summarizes PSM intensities to protein log2 ratios by subtracting spectrum medians.\n- `medianSummary`, `medpolishSummary`, `farmsSummary`: Alternative summarization methods.\n\n```r\n# Example using medianSweeping\nprotein_matrix = medianSweeping(dat.psm.log, group_col = \"ProteinID_column_index\")\n```\n\n## Visualization\n\nDEqMS provides specific plotting functions to evaluate the relationship between variance and peptide counts:\n\n- `VarianceBoxplot(fit, n=20)`: Shows the distribution of variance across different PSM counts.\n- `VarianceScatterplot(fit)`: Visualizes the fit of the DEqMS model (prior variance vs. PSM count).\n- `peptideProfilePlot(dat, col, gene)`: Plots individual PSM/peptide profiles for a specific protein.\n\n## Tips for Success\n\n1. **Count Selection**: For `fit$count`, use the minimum number of PSMs/peptides used for quantification across the samples being compared.\n2. **Log Transformation**: Ensure data is log2 transformed before fitting the linear model.\n3. **Filtering**: It is recommended to filter out proteins with too many missing values (e.g., requiring at least 2 valid values per group) before running DEqMS.\n4. **Pseudo-counts**: If some proteins have 0 peptides in certain samples, add a small pseudo-count (e.g., +1) to the count table to avoid errors in the variance modeling.\n\n## Reference documentation\n\n- [DEqMS R Markdown vignettes](./references/DEqMS-package-vignette.md)\n- [DEqMS R Markdown vignettes (Source)](./references/DEqMS-package-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-deqms",
+    "description": "DEqMS is an R package that performs differential expression analysis for proteomics data by adjusting variance estimates based on the number of peptides or PSMs quantified for each protein. Use when user asks to perform differential expression analysis on mass spectrometry data, adjust limma variance estimates using peptide counts, or aggregate PSM-level data to protein-level summaries.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEqMS.html"
+  }
+}

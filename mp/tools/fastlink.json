@@ -1,0 +1,43 @@
+{
+  "id": "fastlink",
+  "category": "library",
+  "name": "fastlink",
+  "description": "The fastlink tool performs probabilistic record linkage to merge disparate datasets while accounting for typographical errors and missing values. Use when user asks to merge dataframes using probabilistic matching, link records with string similarity, or perform deduplication on large administrative datasets.",
+  "overview": "The `fastlink` skill enables the merging of disparate dataframes by calculating the probability that two records refer to the same entity. Unlike deterministic merging, it accounts for typographical errors, missing values, and varying levels of string similarity. It is specifically optimized for performance on large administrative datasets, utilizing parallelization and efficient algorithms to handle millions of potential record pairs.",
+  "homepage": "https://github.com/kosukeimai/fastLink",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/fastlink/overview",
+  "github": "https://github.com/kosukeimai/fastLink",
+  "conda_downloads": "N/A",
+  "conda_downloads_num": 0,
+  "last_updated": "N/A",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fastlink"
+    ],
+    "description": "FAIL to generate CWL: fastlink not found in Docker image. The image may not provide this executable.",
+    "docker_image": "biocontainers/fastlink:v4.1P-fix100dfsg-2-deb_cv1",
+    "homepage": "https://github.com/kosukeimai/fastLink",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/fastlink/overview",
+    "github": "https://github.com/kosukeimai/fastLink",
+    "conda_downloads": "N/A",
+    "last_updated": "N/A",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# fastlink\n\n## Overview\nThe `fastlink` skill enables the merging of disparate dataframes by calculating the probability that two records refer to the same entity. Unlike deterministic merging, it accounts for typographical errors, missing values, and varying levels of string similarity. It is specifically optimized for performance on large administrative datasets, utilizing parallelization and efficient algorithms to handle millions of potential record pairs.\n\n## Implementation Patterns\n\n### Core Linkage Workflow\nThe primary entry point is the `fastLink()` wrapper, which automates the entire process from parameter estimation to final matching.\n\n```r\nlibrary(fastLink)\n\n# Basic probabilistic merge\nresults <- fastLink(\n  dfA = data1, \n  dfB = data2, \n  varnames = c(\"firstname\", \"lastname\", \"zipcode\"),\n  stringdist.match = c(\"firstname\", \"lastname\"), # Variables for Jaro-Winkler distance\n  partial.match = c(\"firstname\")                 # Variables allowing partial agreement\n)\n```\n\n### Optimization for Large Datasets\nWhen working with very large files (e.g., >100k rows), use these patterns to prevent memory exhaustion and reduce runtime:\n\n1.  **Sampling for EM Estimation**: Run the EM algorithm on a random sample to estimate parameters, then apply those parameters to the full dataset.\n    ```r\n    # Step 1: Estimate parameters on a sample\n    em_estimates <- fastLink(\n      dfA = data1, dfB = data2, varnames = vars,\n      estimate.only = TRUE\n    )\n    \n    # Step 2: Apply estimates to full data\n    results <- fastLink(\n      dfA = data1, dfB = data2, varnames = vars,\n      em.obj = em_estimates\n    )\n    ```\n2.  **Parallelization**: Explicitly set `n.cores` to utilize multi-core processing.\n3.  **Blocking**: While `fastLink` is fast, consider pre-blocking data if the Cartesian product is prohibitively large.\n\n### Expert Tips and Best Practices\n*   **String Distance Thresholds**: The default `cut.a` (full match) is 0.92 and `cut.p` (partial match) is 0.88. Lower these if your data has significant OCR errors or high variance in spelling.\n*   **Deduplication**: Set `dedupe.matches = TRUE` to ensure a 1-to-1 mapping between datasets. For very large N where linear programming is slow, `linprog.dedupe = FALSE` uses a faster iterative maximum posterior selection.\n*   **Gender Blocking**: If matching on gender, use the `gender.field` argument. This enforces near-perfect blocking, preventing matches between different genders and improving EM convergence.\n*   **Handling Movers**: Use `calcMoversPriors()` if you have auxiliary information about population mobility to improve match accuracy across different geographic regions.\n\n## Common Parameters\n*   `varnames`: Vector of variable names present in both dataframes used for matching.\n*   `stringdist.match`: Variables where Jaro-Winkler distance should be calculated instead of exact matching.\n*   `partial.match`: Variables that should have a \"partial agreement\" category (requires being in `stringdist.match`).\n*   `threshold.match`: The posterior probability cutoff (default 0.85). Increase this to reduce false positives.\n\n## Reference documentation\n- [fastLink: Fast Probabilistic Record Linkage](./references/github_com_kosukeimai_fastLink.md)",
+  "skill_front_matter": {
+    "name": "fastlink",
+    "description": "The fastlink tool performs probabilistic record linkage to merge disparate datasets while accounting for typographical errors and missing values. Use when user asks to merge dataframes using probabilistic matching, link records with string similarity, or perform deduplication on large administrative datasets.",
+    "homepage": "https://github.com/kosukeimai/fastLink"
+  }
+}

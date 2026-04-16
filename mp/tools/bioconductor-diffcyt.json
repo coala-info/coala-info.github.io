@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-diffcyt",
+  "category": "bioconductor",
+  "name": "bioconductor-diffcyt",
+  "description": "Bioconductor-diffcyt provides statistical methods for differential discovery in high-dimensional cytometry data such as flow cytometry and CyTOF. Use when user asks to perform differential abundance analysis, conduct differential state analysis, or identify changes in cell population proportions and functional marker expression.",
+  "overview": "The `diffcyt` package provides a framework for differential discovery in high-dimensional cytometry data. It utilizes high-resolution clustering (typically FlowSOM) to define cell populations and applies statistical methods adapted from transcriptomics (edgeR, limma, voom) or mixed models to identify:\n1. **Differential Abundance (DA):** Changes in the proportion of cell populations across conditions.\n2. **Differential States (DS):** Changes in the expression of functional/signaling markers withi",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/diffcyt.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-diffcyt/overview",
+  "github": "https://github.com/lmweber/diffcyt",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "diffcyt"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/diffcyt.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-diffcyt/overview",
+    "github": "https://github.com/lmweber/diffcyt",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-diffcyt\n\nname: bioconductor-diffcyt\ndescription: Statistical methods for differential discovery in high-dimensional cytometry data (flow cytometry, CyTOF). Use this skill when performing differential abundance (DA) or differential state (DS) analysis on cytometry datasets, including data preprocessing, high-resolution clustering with FlowSOM, and empirical Bayes moderated testing.\n\n# bioconductor-diffcyt\n\n## Overview\nThe `diffcyt` package provides a framework for differential discovery in high-dimensional cytometry data. It utilizes high-resolution clustering (typically FlowSOM) to define cell populations and applies statistical methods adapted from transcriptomics (edgeR, limma, voom) or mixed models to identify:\n1. **Differential Abundance (DA):** Changes in the proportion of cell populations across conditions.\n2. **Differential States (DS):** Changes in the expression of functional/signaling markers within specific cell populations.\n\n## Typical Workflow\n\n### 1. Data Preparation\nInput data can be a `flowSet` (from `.fcs` files) or a `daFrame` from the `CATALYST` package.\n\n```r\nlibrary(diffcyt)\nlibrary(HDCytoData)\n\n# Load example data (flowSet)\nd_flowSet <- Bodenmiller_BCR_XL_flowSet()\n\n# Define marker classes: \"type\" (for clustering) and \"state\" (for DS testing)\n# marker_info should have columns: channel_name, marker_name, marker_class\nmarker_info <- data.frame(\n  channel_name = colnames(d_flowSet),\n  marker_name = gsub(\"\\\\(.*$\", \"\", colnames(d_flowSet)),\n  marker_class = factor(c(rep(\"none\", 2), rep(\"type\", 10), rep(\"state\", 14), rep(\"none\", 13)))\n)\n\n# Define experiment info: sample_id, group_id, and optional blocking factors (e.g., patient_id)\nexperiment_info <- data.frame(\n  sample_id = sample_names(d_flowSet),\n  group_id = factor(rep(c(\"Reference\", \"BCR-XL\"), 8)),\n  patient_id = factor(rep(paste0(\"patient\", 1:8), each = 2))\n)\n```\n\n### 2. Experimental Design and Contrasts\nCreate a design matrix for fixed effects and a contrast vector for the comparison of interest.\n\n```r\n# Design matrix (including patient_id for paired analysis)\ndesign <- createDesignMatrix(experiment_info, cols_design = c(\"group_id\", \"patient_id\"))\n\n# Contrast: compare BCR-XL (2nd col) vs Reference (Intercept)\ncontrast <- createContrast(c(0, 1, rep(0, 7)))\n```\n\n### 3. Running the Analysis (Wrapper Function)\nThe `diffcyt()` function is the primary entry point.\n\n```r\n# Differential Abundance (DA)\nout_DA <- diffcyt(d_input = d_flowSet,\n                  experiment_info = experiment_info,\n                  marker_info = marker_info,\n                  design = design,\n                  contrast = contrast,\n                  analysis_type = \"DA\",\n                  seed_clustering = 123)\n\n# Differential State (DS)\nout_DS <- diffcyt(d_input = d_flowSet,\n                  experiment_info = experiment_info,\n                  marker_info = marker_info,\n                  design = design,\n                  contrast = contrast,\n                  analysis_type = \"DS\",\n                  seed_clustering = 123)\n```\n\n### 4. Interpreting Results\nUse `topTable()` to extract significant clusters or cluster-marker combinations.\n\n```r\n# View top results\ntopTable(out_DA, format_vals = TRUE)\ntopTable(out_DS, format_vals = TRUE)\n\n# Filter by FDR threshold\nres <- topTable(out_DS, all = TRUE)\nsig_results <- res[res$p_adj <= 0.1, ]\n```\n\n## Advanced Usage: Individual Functions\nFor more control, run the pipeline steps manually:\n1. `prepareData()`: Convert input to `SummarizedExperiment`.\n2. `transformData()`: Apply `arcsinh` transformation (default cofactor = 5).\n3. `generateClusters()`: Run FlowSOM clustering.\n4. `calcCounts()` and `calcMedians()`: Calculate cluster features.\n5. `testDA_edgeR()` or `testDS_limma()`: Perform statistical testing.\n\n## Visualization\nWhile `diffcyt` provides `plotHeatmap()`, it is highly compatible with `CATALYST`.\n```r\nlibrary(CATALYST)\n# Plot results using CATALYST's enhanced heatmaps\nplotDiffHeatmap(out_DA$d_se, out_DA$res)\n```\n\n## Tips\n- **Marker Classification:** Ensure `marker_class` is correctly set to \"type\" for lineage markers and \"state\" for functional markers.\n- **Transformation:** Mass cytometry data requires `arcsinh` transformation. `diffcyt` handles this automatically in the wrapper, but check cofactors if using flow cytometry.\n- **Reproducibility:** Always set `seed_clustering` for consistent FlowSOM results.\n- **Mixed Models:** For complex designs with random effects, use `method_DA = \"diffcyt-DA-GLMM\"` or `method_DS = \"diffcyt-DS-LMM\"`.\n\n## Reference documentation\n- [diffcyt workflow](./references/diffcyt_workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-diffcyt",
+    "description": "Bioconductor-diffcyt provides statistical methods for differential discovery in high-dimensional cytometry data such as flow cytometry and CyTOF. Use when user asks to perform differential abundance analysis, conduct differential state analysis, or identify changes in cell population proportions and functional marker expression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/diffcyt.html"
+  }
+}

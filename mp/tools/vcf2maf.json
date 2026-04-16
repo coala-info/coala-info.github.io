@@ -1,0 +1,47 @@
+{
+  "id": "vcf2maf",
+  "category": "CLI",
+  "name": "vcf2maf",
+  "description": "vcf2maf converts Variant Call Format files into standardized Mutation Annotation Format files using Ensembl's Variant Effect Predictor. Use when user asks to convert VCF to MAF, reannotate existing MAF files, or standardize variant functional effects across multiple transcripts.",
+  "overview": "vcf2maf is a specialized toolset designed to transform Variant Call Format (VCF) files into Mutation Annotation Format (MAF). Its primary purpose is to address the ambiguity in variant annotation—where a single mutation might affect multiple transcripts—by standardizing the selection of a single functional effect per variant. It relies heavily on Ensembl's Variant Effect Predictor (VEP) for high-quality, CLIA-compliant HGVS annotations. Beyond simple conversion, it provides robust support for pa",
+  "homepage": "https://github.com/mskcc/vcf2maf",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/vcf2maf/overview",
+  "github": "https://github.com/mskcc/vcf2maf",
+  "conda_downloads": "71.5K",
+  "conda_downloads_num": 71500,
+  "last_updated": "2025-12-05",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vcf2maf_vcf2maf.pl",
+      "vcf2maf_maf2maf.pl"
+    ],
+    "description": "Converts VCF files to MAF format.",
+    "docker_image": "quay.io/biocontainers/vcf2maf:1.6.22--hdfd78af_2",
+    "homepage": "https://github.com/mskcc/vcf2maf",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/vcf2maf/overview",
+    "github": "https://github.com/mskcc/vcf2maf",
+    "conda_downloads": "71.5K",
+    "last_updated": "2025-12-05",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "vcf2maf_maf2maf.pl.cwl",
+    "vcf2maf_vcf2maf.pl.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# vcf2maf\n\n## Overview\n\nvcf2maf is a specialized toolset designed to transform Variant Call Format (VCF) files into Mutation Annotation Format (MAF). Its primary purpose is to address the ambiguity in variant annotation—where a single mutation might affect multiple transcripts—by standardizing the selection of a single functional effect per variant. It relies heavily on Ensembl's Variant Effect Predictor (VEP) for high-quality, CLIA-compliant HGVS annotations. Beyond simple conversion, it provides robust support for parsing inconsistent or \"crappy\" bioinformatic formats often encountered in the field.\n\n## Core Workflows\n\n### Converting VCF to MAF\nThe primary script is `vcf2maf.pl`. It requires an input VCF and produces an annotated MAF.\n\n**Basic conversion:**\n```bash\nperl vcf2maf.pl --input-vcf input.vcf --output-maf output.maf\n```\n\n**With Sample ID Mapping:**\nUse these flags to ensure the MAF columns 16 and 17 (Tumor_Sample_Barcode and Matched_Norm_Sample_Barcode) are correctly populated, especially when the VCF uses generic headers like \"TUMOR\" or \"NORMAL\".\n```bash\nperl vcf2maf.pl \\\n  --input-vcf input.vcf \\\n  --output-maf output.maf \\\n  --tumor-id REAL_TUMOR_ID \\\n  --normal-id REAL_NORMAL_ID \\\n  --vcf-tumor-id TUMOR \\\n  --vcf-normal-id NORMAL\n```\n\n### Reannotating Existing MAFs\nIf you have a MAF file that needs updated annotations or a different reference isoform selection, use `maf2maf.pl`. This script internally converts the MAF to a temporary VCF and then runs the standard `vcf2maf` pipeline.\n\n```bash\nperl maf2maf.pl --input-maf old.maf --output-maf reannotated.maf\n```\n\n### Minimalist Conversion (No VEP)\nIf you do not have VEP installed or only need to reformat the VCF data into a MAF-like structure without functional annotation, use the `--inhibit-vep` flag.\n*Note: This is generally discouraged for production pipelines as it bypasses the standardization benefits of the tool.*\n\n```bash\nperl vcf2maf.pl --input-vcf input.vcf --output-maf output.maf --inhibit-vep\n```\n\n## Expert Tips and Best Practices\n\n### Handling VEP Dependencies\nvcf2maf is a wrapper; it does not perform the biological annotation itself. You must provide paths to the VEP executable and its cache if they are not in your default environment:\n- `--vep-path`: Path to the directory containing the `vep` executable.\n- `--vep-data`: Path to the VEP cache directory (e.g., `~/.vep`).\n- `--ref-fasta`: Path to the reference genome fasta file (required for VEP and `maf2vcf`).\n\n### Performance Optimization\nFor large VCFs, use the `--vep-forks` parameter to enable multi-threading in VEP:\n```bash\nperl vcf2maf.pl --input-vcf large.vcf --output-maf output.maf --vep-forks 4\n```\n\n### Dealing with \"MAF-like\" Files\n`maf2maf.pl` is highly tolerant of formatting errors. To successfully process a custom tab-delimited file as a MAF, ensure it contains these minimum columns:\n- `Chromosome`\n- `Start_Position`\n- `Reference_Allele`\n- `Tumor_Seq_Allele2`\n- `Tumor_Sample_Barcode`\n\n### Custom Isoform Selection\nBy default, vcf2maf uses VEP's \"canonical\" transcript. You can override this by providing a custom list of preferred Entrez Gene IDs and their corresponding Ensembl Transcript IDs (ENST) using the `--custom-enst` flag.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| perl maf2maf.pl | Converts MAF files to a VEP-annotated MAF. |\n| perl vcf2maf_vcf2maf.pl | Converts VCF files to MAF format. |\n\n## Reference documentation\n- [vcf2maf Main Documentation](./references/github_com_mskcc_vcf2maf_blob_main_README.md)\n- [vcf2maf.pl Script Details](./references/github_com_mskcc_vcf2maf_blob_main_vcf2maf.pl.md)\n- [maf2maf.pl Script Details](./references/github_com_mskcc_vcf2maf_blob_main_maf2maf.pl.md)\n- [maf2vcf.pl Script Details](./references/github_com_mskcc_vcf2maf_blob_main_maf2vcf.pl.md)",
+  "skill_front_matter": {
+    "name": "vcf2maf",
+    "description": "vcf2maf converts Variant Call Format files into standardized Mutation Annotation Format files using Ensembl's Variant Effect Predictor. Use when user asks to convert VCF to MAF, reannotate existing MAF files, or standardize variant functional effects across multiple transcripts.",
+    "homepage": "https://github.com/mskcc/vcf2maf"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ggkegg",
+  "category": "bioconductor",
+  "name": "bioconductor-ggkegg",
+  "description": "This tool visualizes KEGG pathways, modules, and networks using the grammar of graphics framework in R. Use when user asks to import KEGG data into tidy graph formats, create customizable pathway maps, highlight omics results on KEGG diagrams, or analyze KEGG module completeness.",
+  "overview": "The `ggkegg` package provides a framework for analyzing and visualizing KEGG (Kyoto Encyclopedia of Genes and Genomes) data within the R tidyverse ecosystem. It converts KEGG PATHWAY, MODULE, and NETWORK data into `tbl_graph` objects (via `tidygraph`), allowing users to manipulate biological networks using `dplyr` verbs and visualize them using `ggraph` and `ggplot2`. This approach offers significantly more flexibility than traditional KEGG visualization tools by allowing layer-by-layer customiz",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ggkegg.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ggkegg/overview",
+  "github": "https://github.com/noriakis/ggkegg",
+  "conda_downloads": "1.1K",
+  "conda_downloads_num": 1100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ggkegg"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ggkegg.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ggkegg/overview",
+    "github": "https://github.com/noriakis/ggkegg",
+    "conda_downloads": "1.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ggkegg\n\nname: bioconductor-ggkegg\ndescription: Visualizing KEGG pathways, modules, and networks using the grammar of graphics (ggplot2/ggraph). Use this skill when the user needs to: (1) Import and parse KEGG data into tidy graph formats, (2) Create customizable KEGG pathway maps with specific layouts, (3) Highlight omics results (e.g., from DESeq2 or clusterProfiler) on KEGG maps, (4) Analyze KEGG module completeness and structure, or (5) Overlay raw KEGG images with custom ggplot2 layers.\n\n# bioconductor-ggkegg\n\n## Overview\n\nThe `ggkegg` package provides a framework for analyzing and visualizing KEGG (Kyoto Encyclopedia of Genes and Genomes) data within the R tidyverse ecosystem. It converts KEGG PATHWAY, MODULE, and NETWORK data into `tbl_graph` objects (via `tidygraph`), allowing users to manipulate biological networks using `dplyr` verbs and visualize them using `ggraph` and `ggplot2`. This approach offers significantly more flexibility than traditional KEGG visualization tools by allowing layer-by-layer customization of nodes, edges, and aesthetics.\n\n## Core Workflows\n\n### 1. Visualizing KEGG Pathways\nThe primary workflow involves fetching a pathway, manipulating the graph, and plotting with `ggraph`.\n\n```r\nlibrary(ggkegg)\nlibrary(tidygraph)\nlibrary(ggraph)\nlibrary(dplyr)\n\n# 1. Obtain pathway as a tbl_graph\n# Use layout=\"manual\" with x=x, y=y to preserve original KEGG coordinates\ngraph <- pathway(\"hsa04110\", use_cache = TRUE)\n\n# 2. Optional: Manipulate with tidygraph/dplyr\ngraph <- graph %>%\n  activate(nodes) %>%\n  mutate(label = strsplit(graphics_name, \",\") %>% vapply(\"[\", 1, FUN.VALUE=\"a\"))\n\n# 3. Plot using ggraph\nggraph(graph, layout = \"manual\", x = x, y = y) +\n  geom_edge_parallel(aes(color = subtype_name), \n                     arrow = arrow(length = unit(1, \"mm\")),\n                     end_cap = circle(5, \"mm\")) +\n  geom_node_rect(aes(fill = I(bgcolor), filter = type == \"gene\"), color = \"black\") +\n  geom_node_text(aes(label = label, filter = type == \"gene\"), size = 2) +\n  theme_void()\n```\n\n### 2. Identifier Conversion and Highlighting\nUse `convert_id` to map KEGG IDs to gene symbols and `highlight_set_nodes` to mark specific genes of interest (e.g., hits from a differential expression analysis).\n\n```r\ngraph <- graph %>%\n  activate(nodes) %>%\n  mutate(symbol = convert_id(\"hsa\"),\n         is_hit = highlight_set_nodes(c(\"hsa:7157\", \"hsa:1026\")))\n\n# Use the new columns for aesthetics\nggraph(graph, layout = \"manual\", x = x, y = y) +\n  geom_node_rect(aes(fill = is_hit), filter = type == \"gene\") +\n  scale_fill_manual(values = c(\"TRUE\" = \"red\", \"FALSE\" = \"white\"))\n```\n\n### 3. Overlaying Raw KEGG Maps\nTo maintain the familiar look of KEGG while adding custom data layers, use `overlay_raw_map()`.\n\n```r\nggkegg(\"hsa04110\") +\n  geom_node_rect(aes(fill = my_numeric_data), filter = type == \"gene\", alpha = 0.5) +\n  overlay_raw_map() +\n  scale_fill_viridis_c()\n```\n\n### 4. KEGG Modules and Networks\n`ggkegg` can parse and visualize functional modules.\n\n*   **Text-based:** `module(\"M00002\") %>% module_text() %>% plot_module_text()`\n*   **Network-based:** `module(\"M00002\") %>% obtain_sequential_module_definition() %>% plot_module_blocks()`\n\n## Key Functions\n\n*   `pathway(id)`: Downloads and parses a KEGG pathway into a `tbl_graph`.\n*   `ggkegg(id)`: A high-level wrapper that returns a `ggraph` object for pathways, modules, or networks.\n*   `convert_id(org)`: Helper for `mutate()` to convert KEGG IDs to symbols/names.\n*   `highlight_set_nodes(ids)`: Helper for `mutate()` to create logical vectors for specific nodes.\n*   `overlay_raw_map()`: A ggplot layer that adds the original KEGG PNG background.\n\n## Tips for Success\n\n*   **Coordinate System:** KEGG uses a coordinate system where the Y-axis is often inverted compared to standard Cartesian planes. `ggkegg` handles this, but always use `layout = \"manual\", x = x, y = y` in `ggraph` to ensure nodes align with the pathway map.\n*   **Tidygraph Activation:** Remember to use `activate(nodes)` or `activate(edges)` before applying `dplyr` verbs to the graph object.\n*   **Integration:** `ggkegg` objects are compatible with `patchwork` for multi-panel figures and `ggfx` for advanced visual effects.\n*   **Caching:** Set `use_cache = TRUE` in `pathway()` or `module()` to avoid redundant API calls to KEGG.\n\n## Reference documentation\n\n- [ggkegg](./references/usage_of_ggkegg.md)\n- [ggkegg Rmd](./references/usage_of_ggkegg.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-ggkegg",
+    "description": "This tool visualizes KEGG pathways, modules, and networks using the grammar of graphics framework in R. Use when user asks to import KEGG data into tidy graph formats, create customizable pathway maps, highlight omics results on KEGG diagrams, or analyze KEGG module completeness.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ggkegg.html"
+  }
+}

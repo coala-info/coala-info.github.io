@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-zinbwave",
+  "category": "bioconductor",
+  "name": "bioconductor-zinbwave",
+  "description": "The zinbwave package implements a general and flexible model for dimensionality reduction, normalization, and differential expression analysis of high-dimensional zero-inflated count data. Use when user asks to perform dimensionality reduction on scRNA-seq data, account for zero inflation in single-cell counts, or compute observational weights for differential expression analysis.",
+  "overview": "The `zinbwave` package implements a general and flexible model for the analysis of high-dimensional zero-inflated count data. It is primarily used for single-cell RNA-seq (scRNA-seq) to:\n1.  **Dimensionality Reduction**: Extract low-dimensional latent factors ($W$) while accounting for zero inflation and overdispersion.\n2.  **Normalization**: Produce normalized counts and deviance residuals.\n3.  **Differential Expression**: Compute observational weights that allow standard bulk RNA-seq tools (li",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/zinbwave.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/drisso/zinbwave",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "zinbwave"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/zinbwave.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/drisso/zinbwave",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-zinbwave\n\n## Overview\n\nThe `zinbwave` package implements a general and flexible model for the analysis of high-dimensional zero-inflated count data. It is primarily used for single-cell RNA-seq (scRNA-seq) to:\n1.  **Dimensionality Reduction**: Extract low-dimensional latent factors ($W$) while accounting for zero inflation and overdispersion.\n2.  **Normalization**: Produce normalized counts and deviance residuals.\n3.  **Differential Expression**: Compute observational weights that allow standard bulk RNA-seq tools (like `edgeR` and `DESeq2`) to handle zero-inflated single-cell data.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package works with `SummarizedExperiment` or `SingleCellExperiment` objects. It is recommended to filter lowly expressed genes and focus on highly variable genes (HVGs) for computational efficiency.\n\n```r\nlibrary(zinbwave)\nlibrary(SingleCellExperiment)\n\n# Filter: genes with at least 5 reads in at least 5 samples\nfilter <- rowSums(assay(se) > 5) > 5\nse <- se[filter,]\n\n# Select top 1000 highly variable genes\n# (Assuming log-transformed variance calculation)\nse_hvg <- se[1:1000, ] \n```\n\n### 2. Running ZINB-WaVE\nThe main function is `zinbwave()`. It returns a `SingleCellExperiment` object with the low-dimensional representation in the `reducedDim` slot.\n\n```r\n# K: number of latent variables\n# epsilon: regularization parameter (higher values like 1000 or 1e6 often yield better representations)\nsce <- zinbwave(se_hvg, K = 2, epsilon = 1000)\n\n# Access the low-dimensional factors (W)\nW <- reducedDim(sce, \"zinbwave\")\n```\n\n### 3. Adding Covariates\nYou can include sample-level ($X$) or gene-level ($V$) covariates to account for batch effects or biological factors (e.g., GC-content).\n\n```r\n# Sample-level covariate (e.g., Batch)\nsce_cov <- zinbwave(se_hvg, X = \"~Batch\", K = 2)\n\n# Gene-level covariate (e.g., GC-content in rowData)\nsce_gene <- zinbwave(se_hvg, V = \"~gccontent\", K = 2)\n```\n\n### 4. Normalization and Residuals\nTo obtain normalized values or residuals for visualization and QC:\n\n```r\nsce <- zinbwave(se_hvg, K = 2, normalizedValues = TRUE, residuals = TRUE)\nnorm_counts <- assay(sce, \"normalizedValues\")\nresids <- assay(sce, \"residuals\")\n```\n\n### 5. Differential Expression (DE) with Weights\nZINB-WaVE can \"unlock\" bulk tools by computing observational weights. For DE, use a high `epsilon` (e.g., `1e12`).\n\n```r\n# Compute weights\nsce <- zinbwave(se_hvg, observationalWeights = TRUE, epsilon = 1e12)\nweights <- assay(sce, \"weights\")\n\n# Example with edgeR\nlibrary(edgeR)\ndge <- DGEList(assay(sce, \"counts\"))\ndge$weights <- weights\ndge <- estimateDisp(dge, design)\nfit <- glmFit(dge, design)\nlrt <- glmWeightedF(fit, coef = 2) # Adjusted F-test\n```\n\n## Advanced Features\n\n### Large Datasets (`zinbsurf`)\nFor datasets with tens of thousands of cells, use `zinbsurf` for an approximate strategy that fits the model on a subset and projects the remaining cells.\n\n```r\n# prop_fit: proportion of cells used for the initial fit (default 0.1)\nsce_surf <- zinbsurf(se, K = 2, prop_fit = 0.1)\n```\n\n### Integration with Seurat\nYou can convert the result to a Seurat object for clustering.\n\n```r\nlibrary(Seurat)\nseu <- as.Seurat(sce, counts = \"counts\", data = \"counts\")\n# The 'zinbwave' reduction is automatically transferred\nseu <- FindNeighbors(seu, reduction = \"zinbwave\", dims = 1:2)\nseu <- FindClusters(seu)\n```\n\n## Tips and Best Practices\n- **Parallelization**: Use `BiocParallel::register()` or pass `BPPARAM` to `zinbwave()` to speed up computation on large matrices.\n- **Epsilon**: The penalty parameter `epsilon` is crucial. For dimensionality reduction, `1000` is often sufficient. For Differential Expression weights, use `1e6` to `1e13`.\n- **Assay Names**: If your input object has multiple assays, ensure the raw counts are in the first assay or named \"counts\".\n\n## Reference documentation\n- [An introduction to ZINB-WaVE](./references/intro.Rmd)\n- [An introduction to ZINB-WaVE](./references/intro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-zinbwave",
+    "description": "The zinbwave package implements a general and flexible model for dimensionality reduction, normalization, and differential expression analysis of high-dimensional zero-inflated count data. Use when user asks to perform dimensionality reduction on scRNA-seq data, account for zero inflation in single-cell counts, or compute observational weights for differential expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/zinbwave.html"
+  }
+}

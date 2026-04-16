@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dss",
+  "category": "bioconductor",
+  "name": "bioconductor-dss",
+  "description": "\"bioconductor-dss provides a statistical framework for differential analysis of count-based sequencing data using dispersion shrinkage. Use when user asks to detect differential expression in RNA-seq data or identify differentially methylated loci and regions in BS-seq data.\"",
+  "overview": "The `DSS` (Dispersion Shrinkage for Sequencing data) package provides a statistical framework for differential analysis of count-based sequencing data. It is primarily used for:\n1. **RNA-seq**: Detecting differential expression (DE) using a Negative Binomial model with Bayesian dispersion shrinkage.\n2. **BS-seq**: Detecting differential methylation (DML/DMR) using a Beta-Binomial model.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DSS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dss/overview",
+  "github": "N/A",
+  "conda_downloads": "50.2K",
+  "conda_downloads_num": 50200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DSS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DSS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dss/overview",
+    "github": "N/A",
+    "conda_downloads": "50.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dss\n\n## Overview\n\nThe `DSS` (Dispersion Shrinkage for Sequencing data) package provides a statistical framework for differential analysis of count-based sequencing data. It is primarily used for:\n1. **RNA-seq**: Detecting differential expression (DE) using a Negative Binomial model with Bayesian dispersion shrinkage.\n2. **BS-seq**: Detecting differential methylation (DML/DMR) using a Beta-Binomial model.\n\nThe core advantage of `DSS` is its ability to share information across features (genes or CpG sites) to provide stable variance estimates even with limited biological replicates.\n\n## RNA-seq Differential Expression\n\n### Two-Group Comparison\nFor simple designs, use the high-level wrapper or the step-by-step workflow.\n\n```R\nlibrary(DSS)\n\n# High-level wrapper\n# counts: matrix of integers; designs: vector of 0s and 1s\nresult = DSS.DE(counts, designs)\n\n# Step-by-step workflow (SeqCountSet)\nseqData = newSeqCountSet(counts, designs)\nseqData = estNormFactors(seqData)\nseqData = estDispersion(seqData)\nresult = waldTest(seqData, 0, 1) # Compare group 0 vs 1\n```\n\n### Multi-factor RNA-seq\n`DSS` estimates dispersions which can then be plugged into `edgeR` for complex GLM fitting.\n\n```R\nseqData = newSeqCountSet(counts, as.data.frame(design_matrix))\nseqData = estNormFactors(seqData)\nseqData = estDispersion(seqData)\n\n# Use edgeR for GLM fitting with DSS dispersions\nlibrary(edgeR)\nfit = glmFit(counts, design_matrix, dispersion=dispersion(seqData))\nlrt = glmLRT(fit, coef=2)\n```\n\n## BS-seq Differential Methylation\n\n### Data Preparation\nInput data must be a data frame with columns: `chr`, `pos`, `N` (total reads), and `X` (methylated reads).\n\n```R\n# Create BSseq object\nBSobj = makeBSseqData(list(sample1, sample2, ...), c(\"S1\", \"S2\", ...))\n```\n\n### Two-Group DML/DMR Detection\n1. **Test DML**: Perform the statistical test at each CpG site.\n2. **Call DML**: Filter significant sites.\n3. **Call DMR**: Merge significant sites into regions.\n\n```R\n# 1. Statistical Test (smoothing=TRUE is recommended for WGBS)\ndmlTest = DMLtest(BSobj, group1=c(\"S1\", \"S2\"), group2=c(\"S3\", \"S4\"), smoothing=TRUE)\n\n# 2. Call DML (Loci)\n# delta: optional threshold for methylation difference (e.g., 0.1 for 10%)\ndmls = callDML(dmlTest, p.threshold=0.001)\n\n# 3. Call DMR (Regions)\ndmrs = callDMR(dmlTest, p.threshold=0.01)\n\n# Visualization\nshowOneDMR(dmrs[1,], BSobj)\n```\n\n### General Experimental Design (Multi-factor)\nUses an arcsine link function and a general linear model framework.\n\n```R\n# 1. Fit the model\n# design: data.frame; formula: ~case+cell\nDMLfit = DMLfit.multiFactor(BSobj, design=design, formula=~case+cell)\n\n# 2. Test a specific coefficient or term\n# coef: index or name of the column in design matrix\ndmlTest = DMLtest.multiFactor(DMLfit, coef=\"cellrN\")\n\n# 3. Call DMR\ndmrs = callDMR(dmlTest, p.threshold=0.05)\n```\n\n## Key Tips and Best Practices\n\n- **Smoothing**: Always recommended for BS-seq (WGBS and RRBS). It allows `DSS` to estimate dispersions even without biological replicates by using neighboring sites as \"pseudo-replicates.\"\n- **Count Data**: `DSS` requires raw integer counts. Do not use normalized values (like RPKM/FPKM) or estimated methylation percentages (beta values) as primary input.\n- **Parallel Computing**: For large BS-seq datasets, use the `ncores` parameter in `DMLtest` to speed up calculations (Note: Use `ncores=1` on Windows).\n- **Filtering**: You do not need to pre-filter low-coverage CpG sites; the Beta-Binomial model naturally weights them based on sequencing depth.\n- **Paired Designs**: Handle paired BS-seq data by including the \"pair\" as a factor in the `DMLfit.multiFactor` formula.\n\n## Reference documentation\n- [The DSS User's Guide](./references/DSS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dss",
+    "description": "bioconductor-dss provides a statistical framework for differential analysis of count-based sequencing data using dispersion shrinkage. Use when user asks to detect differential expression in RNA-seq data or identify differentially methylated loci and regions in BS-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DSS.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-switchbox",
+  "category": "bioconductor",
+  "name": "bioconductor-switchbox",
+  "description": "This tool trains and validates K-Top-Scoring-Pair (KTSP) classifiers to build rank-based binary models from high-throughput data. Use when user asks to build rank-based classifiers, identify top-scoring gene pairs, or predict biological groups using normalization-robust decision rules.",
+  "overview": "The `switchBox` package implements the K-Top-Scoring-Pair (KTSP) algorithm, a rank-based classification method. It identifies pairs of features (e.g., genes) where the relative ordering (which one is higher) consistently differs between two biological groups. This approach is highly robust to data normalization because it relies on the rank of features rather than absolute expression values.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/switchBox.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "switchBox"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/switchBox.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-switchbox\n\nname: bioconductor-switchbox\ndescription: Training and validating K-Top-Scoring-Pair (KTSP) classifiers using the switchBox R package. Use this skill when you need to build rank-based binary classifiers from high-throughput data (like gene expression) that are robust to normalization and based on simple decision rules (feature A > feature B).\n\n# bioconductor-switchbox\n\n## Overview\n\nThe `switchBox` package implements the K-Top-Scoring-Pair (KTSP) algorithm, a rank-based classification method. It identifies pairs of features (e.g., genes) where the relative ordering (which one is higher) consistently differs between two biological groups. This approach is highly robust to data normalization because it relies on the rank of features rather than absolute expression values.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package expects a numeric matrix `inputMat` (features in rows, samples in columns) and a factor `phenoGroup` representing the two classes.\n\n```R\nlibrary(switchBox)\ndata(trainingData) # Loads matTraining and trainingGroup\n# trainingGroup should be a factor with two levels\n```\n\n### 2. Training a KTSP Classifier\nUse `SWAP.Train.KTSP` to identify the optimal pairs.\n\n```R\n# Basic training with default Wilcoxon filtering\nclassifier <- SWAP.Train.KTSP(matTraining, trainingGroup, krange=c(3:15))\n\n# Training with no filtering (uses all features - computationally intensive)\nclassifier <- SWAP.Train.KTSP(matTraining, trainingGroup, FilterFunc=NULL)\n\n# Training with restricted pairs (e.g., based on prior biological knowledge)\n# somePairs is a 2-column matrix of feature names\nclassifier <- SWAP.Train.KTSP(matTraining, trainingGroup, RestrictedPairs=somePairs)\n```\n\n### 3. Custom Filtering\nYou can define custom functions to pre-filter features before pair selection. The function must accept `phenoGroup` and `inputMat`.\n\n```R\n# Example: T-test based filtering\ntopRttest <- function(situation, data, quant = 0.75) {\n  out <- apply(data, 1, function(x) t.test(x ~ situation)$statistic)\n  names(out[ abs(out) > quantile(abs(out), quant) ])\n}\n\nclassifier <- SWAP.Train.KTSP(matTraining, trainingGroup, FilterFunc=topRttest, quant=0.9)\n```\n\n### 4. Classification and Prediction\nUse `SWAP.KTSP.Classify` to predict classes for new samples.\n\n```R\n# Predict on test data using majority voting (default)\npredictions <- SWAP.KTSP.Classify(matTesting, classifier)\n\n# Predict using a custom decision rule (e.g., requiring a higher threshold of votes)\npredictions <- SWAP.KTSP.Classify(matTesting, classifier, \n                                  DecisionFunc = function(x) sum(x) > 5.5)\n```\n\n### 5. Statistics and Scores\nTo inspect the performance of individual pairs or calculate scores:\n\n```R\n# Get individual TSP votes and aggregate statistics\nstats <- SWAP.KTSP.Statistics(matTraining, classifier)\n# stats$comparisons shows the TRUE/FALSE for each pair\n# stats$statistics shows the final score per sample\n\n# Calculate signed scores for all possible pairs\nscores <- SWAP.CalculateSignedScore(matTraining, trainingGroup, FilterFunc=NULL)\n```\n\n## Key Functions\n\n- `SWAP.Train.KTSP`: Main training function. Parameters include `krange` (number of pairs to try), `FilterFunc` (feature selection), and `disjoint` (if TRUE, each feature appears in only one pair).\n- `SWAP.KTSP.Classify`: Applies a trained model to new data.\n- `SWAP.Filter.Wilcoxon`: The default filtering method.\n- `SWAP.CalculateSignedScore`: Computes the $s_{ij}$ score for pairs, defined as $P(X_i < X_j | C_1) - P(X_i < X_j | C_2)$.\n\n## Tips for Success\n\n- **Factor Levels**: Ensure your phenotype variable is a factor. The first level is typically treated as the \"baseline\" or class 0.\n- **Tie Handling**: If your data has many ties (identical values), set `handleTies = TRUE` in the training function.\n- **Disjoint Pairs**: By default, `disjoint = TRUE` is used to ensure the classifier is robust and not dominated by a single highly variable feature.\n- **Deprecated Functions**: Avoid `KTSP.Train` and `KTSP.Classify`; use the `SWAP.*` prefixed versions instead.\n\n## Reference documentation\n- [switchBox](./references/switchBox.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-switchbox",
+    "description": "This tool trains and validates K-Top-Scoring-Pair (KTSP) classifiers to build rank-based binary models from high-throughput data. Use when user asks to build rank-based classifiers, identify top-scoring gene pairs, or predict biological groups using normalization-robust decision rules.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/switchBox.html"
+  }
+}

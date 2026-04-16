@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ribosomeprofilingqc",
+  "category": "bioconductor",
+  "name": "bioconductor-ribosomeprofilingqc",
+  "description": "The ribosomeProfilingQC package provides a comprehensive toolkit for assessing the quality of ribosome-protected fragments and quantifying translational metrics. Use when user asks to estimate P-site positions, visualize metagene distributions, calculate translational efficiency, or determine ribosome release scores.",
+  "overview": "The `ribosomeProfilingQC` package provides a comprehensive toolkit for assessing the quality of ribosome-protected fragments (RPFs). It enables researchers to determine the precise P-site position, visualize metagene distributions, and quantify translational efficiency (TE) and ribosome release scores (RRS). It is designed to work with BAM files mapped to the whole genome and requires a `TxDb` object for transcript annotation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ribosomeProfilingQC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ribosomeProfilingQC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ribosomeProfilingQC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ribosomeprofilingqc\n\n## Overview\nThe `ribosomeProfilingQC` package provides a comprehensive toolkit for assessing the quality of ribosome-protected fragments (RPFs). It enables researchers to determine the precise P-site position, visualize metagene distributions, and quantify translational efficiency (TE) and ribosome release scores (RRS). It is designed to work with BAM files mapped to the whole genome and requires a `TxDb` object for transcript annotation.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the necessary genomic and annotation resources.\n```R\nlibrary(ribosomeProfilingQC)\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\nlibrary(TxDb.Hsapiens.UCSC.hg38.knownGene)\n\ngenome <- Hsapiens\ntxdb <- TxDb.Hsapiens.UCSC.hg38.knownGene\nCDS <- prepareCDS(txdb)\n\n# Load BAM file\nbamfilename <- \"path/to/RPF.bam\"\nbamfile <- Rsamtools::BamFile(bamfilename, yieldSize = 10000000)\n```\n\n### 2. P-site Estimation and QC\nDetermine the offset from the 5' or 3' end to the P-site and visualize read distribution.\n```R\n# Estimate P-site (typically 13 for 5' end)\nbestpsite <- estimatePsite(bamfile, CDS, genome)\n\n# Plot reads relative to start/stop codons to verify offset\nre <- readsEndPlot(bamfile, CDS, toStartCodon = TRUE)\n\n# Get P-site coordinates for all reads\npc <- getPsiteCoordinates(bamfile, bestpsite = bestpsite)\n\n# Summary of fragment lengths (expect peak around 28-29nt)\nreadsLen <- summaryReadsLength(pc)\npc.sub <- pc[pc$qwidth %in% c(28, 29)] # Filter for high-quality RPFs\n```\n\n### 3. Diagnostic Plots\nAssess the biological signal of the Ribo-seq library.\n*   **Strand Specificity:** `strandPlot(pc.sub, CDS)` - RPFs should be on the sense strand.\n*   **Genomic Distribution:** `readsDistribution(pc.sub, txdb)` - RPFs should be enriched in CDS.\n*   **Metagene Analysis:** `metaPlot()` - Compare coverage across 5'UTR, CDS, and 3'UTR.\n*   **Reading Frame:** `plotFrameDensity(pc.sub)` - High-quality data shows strong enrichment in Frame 0.\n\n### 4. Quantitative Analysis\nPrepare data for differential translation analysis.\n\n**Counting RPFs:**\n```R\n# Count reads at gene or transcript level\ncnts <- countReads(RPF_bams, gtf = \"path/to/annotation.gtf\", level = \"gene\", bestpsite = 13)\n```\n\n**Translational Efficiency (TE):**\nTE is the ratio of RPF abundance to mRNA abundance.\n```R\nfpkm <- getFPKM(cnts)\nTE <- translationalEfficiency(fpkm)\n\n# For better normalization in lowly expressed genes, use TE90 (90nt window)\ncvgs <- coverageDepth(RPF_bams, mRNA_bams, txdb)\nTE90 <- translationalEfficiency(cvgs, window = 90, normByLibSize = TRUE)\n```\n\n**Ribosome Release Score (RRS):**\nMeasures the drop in RPFs after the stop codon to identify active translation.\n```R\nRRS <- ribosomeReleaseScore(TE90_cds, TE90_utr3, log2 = TRUE)\n```\n\n## Tips and Best Practices\n*   **Input Mapping:** Unlike some packages, `ribosomeProfilingQC` expects BAM files mapped to the **genome**, not the transcriptome.\n*   **Filtering:** It is highly recommended to filter out reads mapping to rRNA, tRNA, and other non-coding RNAs before analysis to reduce noise.\n*   **P-site Anchoring:** While 5' end anchoring is standard for eukaryotes (RNase I), 3' end anchoring (`anchor = \"3end\"`) is often more accurate for bacterial data or MNase digestion.\n*   **ORFscore:** Use `getORFscore(pc.sub)` to quantify the 3-nt periodicity; a high score indicates high-quality RPFs correctly tracking the coding frame.\n\n## Reference documentation\n- [ribosomeProfilingQC Guide](./references/ribosomeProfilingQC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ribosomeprofilingqc",
+    "description": "The ribosomeProfilingQC package provides a comprehensive toolkit for assessing the quality of ribosome-protected fragments and quantifying translational metrics. Use when user asks to estimate P-site positions, visualize metagene distributions, calculate translational efficiency, or determine ribosome release scores.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ribosomeProfilingQC.html"
+  }
+}

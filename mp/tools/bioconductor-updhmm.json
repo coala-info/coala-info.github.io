@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-updhmm",
+  "category": "bioconductor",
+  "name": "bioconductor-updhmm",
+  "description": "This tool detects, classifies, and locates Uniparental Disomy (UPD) events in trio genetic data using a Hidden Markov Model. Use when user asks to identify maternal or paternal isodisomy and heterodisomy from VCF files, filter genomic inheritance artifacts, or visualize UPD events across the genome.",
+  "overview": "UPDhmm is an R/Bioconductor package designed to identify Uniparental Disomy (UPD) events in trio-based genomic data. It utilizes a Hidden Markov Model (HMM) where hidden states represent inheritance patterns (Normal, Maternal/Paternal Isodisomy, and Maternal/Paternal Heterodisomy). The package provides a complete workflow from VCF preprocessing and quality control to event detection, collapsing contiguous segments, and genome-wide visualization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/UPDhmm.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/martasevilla/UPDhmm",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "UPDhmm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/UPDhmm.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/martasevilla/UPDhmm",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-updhmm\n\nname: bioconductor-updhmm\ndescription: Detect, classify, and locate Uniparental Disomy (UPD) events in trio genetic data (proband, mother, father) using a Hidden Markov Model (HMM). Use this skill to identify maternal/paternal isodisomy and heterodisomy from multisample VCF files, apply quality filters, and visualize results.\n\n# bioconductor-updhmm\n\n## Overview\nUPDhmm is an R/Bioconductor package designed to identify Uniparental Disomy (UPD) events in trio-based genomic data. It utilizes a Hidden Markov Model (HMM) where hidden states represent inheritance patterns (Normal, Maternal/Paternal Isodisomy, and Maternal/Paternal Heterodisomy). The package provides a complete workflow from VCF preprocessing and quality control to event detection, collapsing contiguous segments, and genome-wide visualization.\n\n## Core Workflow\n\n### 1. Data Preparation and VCF Checking\nThe input must be a multisample VCF containing genotypes for a trio. Only biallelic variants are supported.\n\n```r\nlibrary(UPDhmm)\nlibrary(VariantAnnotation)\n\n# Load VCF\nvcf <- readVcf(\"trio_data.vcf.gz\")\n\n# Validate trio structure and extract relevant variants\nvcf_checked <- vcfCheck(\n  vcf,\n  proband = \"Sample_Child\",\n  mother  = \"Sample_Mother\",\n  father  = \"Sample_Father\"\n)\n```\n\n### 2. Detecting UPD Events\nThe `calculateEvents` function applies the Viterbi algorithm to infer inheritance states.\n\n```r\n# Detect events and optionally calculate sequencing depth ratios\nevents <- calculateEvents(vcf_checked, add_ratios = TRUE)\n\n# For large datasets, use parallel execution\nlibrary(BiocParallel)\nevents <- calculateEvents(vcf_checked, BPPARAM = MulticoreParam(workers = 2))\n```\n\n### 3. Filtering and Collapsing Events\nRaw HMM output often contains small artifacts or fragmented large events. Use `collapseEvents` to merge contiguous segments of the same type and apply size/error filters.\n\n```r\n# Default filters: n_mendelian_error > 2 and size > 500kb\ncollapsed <- collapseEvents(events)\n\n# Manual filtering example\nlibrary(dplyr)\nfiltered <- events %>%\n  filter(\n    n_mendelian_error > 2,\n    (end - start) > 500000,\n    ratio_proband >= 0.8 & ratio_proband <= 1.2\n  ) %>%\n  collapseEvents()\n```\n\n### 4. Postprocessing and Recurrence Analysis\nIdentify regions that appear across multiple samples, which often indicate technical artifacts or common polymorphisms.\n\n```r\n# Identify regions shared by at least 2 samples\nrecurrent_regions <- identifyRecurrentRegions(\n  df = collapsed,\n  ID_col = \"ID\",\n  min_support = 2\n)\n\n# Annotate the original event list\nannotated_events <- markRecurrentRegions(\n  df = collapsed,\n  recurrent_regions = recurrent_regions\n)\n```\n\n### 5. Visualization\nVisualize events across the genome using `karyoploteR`.\n\n```r\nlibrary(karyoploteR)\nlibrary(regioneR)\n\n# Basic visualization logic\nkp <- plotKaryotype(genome = \"hg19\")\n# Filter for specific group (e.g., maternal isodisomy)\niso_mat <- toGRanges(subset(annotated_events, group == \"iso_mat\"))\nkpPlotRegions(kp, iso_mat, col = \"#E9B864\")\n```\n\n## Key Functions Reference\n\n| Function | Purpose |\n| --- | --- |\n| `vcfCheck()` | Validates trio IDs and filters for biallelic, informative SNPs. |\n| `calculateEvents()` | Main HMM engine; returns a data.frame of detected segments. |\n| `collapseEvents()` | Merges adjacent segments of the same UPD type and applies quality thresholds. |\n| `identifyRecurrentRegions()` | Clusters overlapping events across a cohort to find artifacts. |\n| `markRecurrentRegions()` | Flags events in a table if they overlap known recurrent/artifact regions. |\n\n## Usage Tips\n- **Depth Ratios:** Use `add_ratios = TRUE` in `calculateEvents` to help distinguish true UPD from Copy Number Variations (CNVs). True UPD should have a ratio near 1.0.\n- **Mendelian Errors:** True UPD regions (especially isodisomy) should show a significant accumulation of Mendelian inconsistencies.\n- **Masking:** It is highly recommended to mask centromeres and segmental duplications during VCF preprocessing to reduce false positives.\n\n## Reference documentation\n- [UPDhmm User Guide: From Detection to Postprocessing](./references/UPDhmm.md)\n- [Long reads VCF Preprocessing User Guide](./references/long-reads-processing.Rmd)\n- [VCF Preprocessing User Guide](./references/preprocessing.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-updhmm",
+    "description": "This tool detects, classifies, and locates Uniparental Disomy (UPD) events in trio genetic data using a Hidden Markov Model. Use when user asks to identify maternal or paternal isodisomy and heterodisomy from VCF files, filter genomic inheritance artifacts, or visualize UPD events across the genome.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/UPDhmm.html"
+  }
+}

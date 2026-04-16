@@ -1,0 +1,43 @@
+{
+  "id": "espresso",
+  "category": "library",
+  "name": "espresso",
+  "description": "ESPRESSO is a long-read RNA-seq analysis tool that refines splice junctions and quantifies isoforms by correcting sequencing errors. Use when user asks to identify high-confidence splice sites, quantify transcript abundance from long-read data, or generate corrected SAM files for visualization.",
+  "overview": "ESPRESSO (Error Statistics PRomoted Evaluator of Splice Site Options) is a specialized tool for long-read RNA-seq analysis. It addresses the inherent error rates in long-read sequencing by using a discovery-based approach to refine splice junctions and accurately quantify isoforms. The workflow consists of three primary Perl-based modules that must be executed in sequence: Pre-processing (S), Correction (C), and Quantification (Q).",
+  "homepage": "https://github.com/Xinglab/espresso",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/espresso/overview",
+  "github": "https://github.com/Xinglab/espresso",
+  "conda_downloads": "7.1K",
+  "conda_downloads_num": 7100,
+  "last_updated": "2025-09-21",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "espresso_ESPRESSO_S.pl"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/espresso:1.6.0--pl5321h5ca1c30_1",
+    "homepage": "https://github.com/Xinglab/espresso",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/espresso/overview",
+    "github": "https://github.com/Xinglab/espresso",
+    "conda_downloads": "7.1K",
+    "last_updated": "2025-09-21",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# espresso\n\n## Overview\nESPRESSO (Error Statistics PRomoted Evaluator of Splice Site Options) is a specialized tool for long-read RNA-seq analysis. It addresses the inherent error rates in long-read sequencing by using a discovery-based approach to refine splice junctions and accurately quantify isoforms. The workflow consists of three primary Perl-based modules that must be executed in sequence: Pre-processing (S), Correction (C), and Quantification (Q).\n\n## Core Workflow\n\n### 1. Preparation\nESPRESSO requires a tab-separated `samples.tsv` file mapping file paths to sample names.\n```bash\n# Format: /path/to/alignment.sorted.sam  sample_name\necho -e \"/data/sample1.sort.bam\\tSample1\" > samples.tsv\n```\n**Note**: Input SAM/BAM files must be sorted.\n\n### 2. Pre-processing (ESPRESSO_S)\nThis step identifies high-confidence splice junctions and prepares the work directory.\n```bash\nperl ESPRESSO_S.pl -L samples.tsv -F reference.fasta -A annotation.gtf -O output_dir\n```\n- **Threads**: Limited to 1 thread per input alignment file.\n- **Output**: Generates `output_dir/samples.tsv.updated`, which assigns a target ID (`-X`) to each input file.\n\n### 3. Correction (ESPRESSO_C)\nCorrects and recovers splice junctions for each read. This must be run for every target ID identified in the previous step.\n```bash\n# Run for the first input (ID 0)\nperl ESPRESSO_C.pl -I output_dir -F reference.fasta -X 0 -T 8\n```\n- **Parallelization**: Run multiple instances of `ESPRESSO_C.pl` simultaneously for different `-X` values to save time.\n- **Memory**: Approximately `num_threads * 6` GB.\n\n### 4. Quantification (ESPRESSO_Q)\nFinalizes isoform identification and calculates abundance.\n```bash\nperl ESPRESSO_Q.pl -L output_dir/samples.tsv.updated -A annotation.gtf -T 8\n```\n- **Threads**: Limited to 1 thread per chromosome.\n- **Key Outputs**: \n  - `*_abundance.esp`: Isoform quantification results.\n  - `*_updated.gtf`: Refined transcript annotations.\n\n## Advanced Utilities\n\n### Generating Corrected SAM Files\nTo obtain a SAM file with corrected alignments (useful for downstream visualization or analysis), use the provided Python script:\n```bash\npython3 snakemake/scripts/create_corrected_sam.py \\\n    --samples-tsv samples.tsv \\\n    --espresso-out-dir output_dir \\\n    --out-dir corrected_sam_dir \\\n    --fasta reference.fasta \\\n    --libparasail-so-path ./src/libparasail.so\n```\n\n### Visualization\nGenerate browser-compatible files for specific genes:\n```bash\npython3 visualization/visualize.py \\\n    --genome-fasta reference.fasta \\\n    --updated-gtf output_dir/samples_N2_R0_updated.gtf \\\n    --abundance-esp output_dir/samples_N2_R0_abundance.esp \\\n    --target-gene GENE_NAME \\\n    --output-dir viz_out\n```\n\n## Expert Tips & Best Practices\n- **Memory Estimation**: For the Q step, use the formula: `num_threads * (1 + 8 * num_reads_in_group / 1,000,000)` GB.\n- **Large Datasets**: If processing very large datasets, use `snakemake/scripts/split_espresso_s_output_for_c.py` to split reads into smaller groups for the C step to prevent memory bottlenecks.\n- **Splice Site Discovery**: By default, ESPRESSO groups reads based on annotated gene coordinates. Use `--alignment_read_groups` if you want to group reads based on overlapping alignment coordinates instead (useful for novel gene discovery).\n- **Dependency Check**: Ensure `hmmer` (>= 3.3.1), `BLAST` (>= 2.8.1), and `samtools` (>= 1.6) are in your `$PATH`.\n\n## Reference documentation\n- [ESPRESSO GitHub Repository](./references/github_com_Xinglab_espresso.md)\n- [Bioconda ESPRESSO Overview](./references/anaconda_org_channels_bioconda_packages_espresso_overview.md)",
+  "skill_front_matter": {
+    "name": "espresso",
+    "description": "ESPRESSO is a long-read RNA-seq analysis tool that refines splice junctions and quantifies isoforms by correcting sequencing errors. Use when user asks to identify high-confidence splice sites, quantify transcript abundance from long-read data, or generate corrected SAM files for visualization.",
+    "homepage": "https://github.com/Xinglab/espresso"
+  }
+}

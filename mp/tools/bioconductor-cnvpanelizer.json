@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnvpanelizer",
+  "category": "bioconductor",
+  "name": "bioconductor-cnvpanelizer",
+  "description": "CNVPanelizer detects copy number variations in amplicon-based targeted sequencing data using a subsampling strategy and background noise correction. Use when user asks to process BED files, count reads from BAM files, perform TMM normalization, or call CNVs using bootstrap-based estimation.",
+  "overview": "CNVPanelizer is a Bioconductor package specifically designed for detecting somatic and germline CNVs in targeted sequencing (amplicon) data. It addresses the unique noise profiles of small panels by using a subsampling strategy (similar to Random Forest) and a novel background noise correction method. It is particularly effective for panels with varying numbers of amplicons per gene.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVPanelizer.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNVPanelizer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVPanelizer.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnvpanelizer\n\nname: bioconductor-cnvpanelizer\ndescription: Expert assistance for the CNVPanelizer R package to detect Copy Number Variations (CNVs) in amplicon-based targeted sequencing data. Use this skill when performing CNV analysis from BAM files, including BED file processing, read counting, TMM normalization, bootstrap-based CNV calling, and background noise estimation.\n\n# bioconductor-cnvpanelizer\n\n## Overview\n\nCNVPanelizer is a Bioconductor package specifically designed for detecting somatic and germline CNVs in targeted sequencing (amplicon) data. It addresses the unique noise profiles of small panels by using a subsampling strategy (similar to Random Forest) and a novel background noise correction method. It is particularly effective for panels with varying numbers of amplicons per gene.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a BED file defining amplicons and two sets of BAM files (Test samples and Reference samples).\n\n```r\nlibrary(CNVPanelizer)\n\n# 1. Process BED file\n# ampliconColumn is the column index for gene names (usually 4)\ngenomicRanges <- BedToGenomicRanges(\"panel.bed\", ampliconColumn = 4, split = \"_\")\n\n# Extract metadata for later use\ngeneNames <- elementMetadata(genomicRanges)[\"geneNames\"][, 1]\nampliconNames <- elementMetadata(genomicRanges)[\"ampliconNames\"][, 1]\n```\n\n### 2. Read Counting\nCounts reads overlapping amplicons. Mapping quality ≥ 20 is required by default.\n\n```r\n# removeDup = TRUE is recommended for Ion Torrent; FALSE for Illumina\nremovePcrDuplicates <- FALSE \n\n# Count for Reference and Test samples\nrefCounts <- ReadCountsFromBam(refBamFiles, genomicRanges, \n                               sampleNames = refBamFiles, \n                               ampliconNames = ampliconNames, \n                               removeDup = removePcrDuplicates)\n\nsampleCounts <- ReadCountsFromBam(sampleBamFiles, genomicRanges, \n                                 sampleNames = sampleBamFiles, \n                                 ampliconNames = ampliconNames, \n                                 removeDup = removePcrDuplicates)\n```\n\n### 3. Normalization and CNV Calling\nUses TMM normalization followed by a bootstrap procedure to estimate confidence intervals for gene-level ratios.\n\n```r\n# Normalize\nnormCounts <- CombinedNormalizedCounts(sampleCounts, refCounts, ampliconNames = ampliconNames)\nsamplesNorm <- normCounts$samples\nrefNorm <- normCounts$reference\n\n# Bootstrap (Subsampling amplicons)\n# replicates = 10000 is recommended for production\nbootList <- BootList(geneNames, samplesNorm, refNorm, replicates = 10000)\n```\n\n### 4. Background Noise Estimation\nCorrects for bias in genes with low amplicon counts.\n\n```r\n# robust = TRUE uses median/MAD instead of mean/SD\nbackgroundNoise <- Background(geneNames, samplesNorm, refNorm, bootList,\n                              replicates = 10000, significanceLevel = 0.1, robust = TRUE)\n```\n\n### 5. Results and Visualization\nGenerate tabular reports and diagnostic plots.\n\n```r\n# Generate report tables\nreportTables <- ReportTables(geneNames, samplesNorm, refNorm, bootList, backgroundNoise)\n\n# Plot distributions (returns a list of ggplot objects)\nplots <- PlotBootstrapDistributions(bootList, reportTables)\n# View first sample plot\nprint(plots[[1]])\n```\n\n## Interpreting Results\n\nThe `ReportTables` output includes several critical columns:\n- **Signif.**: Boolean; TRUE if the bootstrap confidence interval (95%) does not cross 1.\n- **AboveNoise**: Boolean; TRUE if the observed ratio exceeds the estimated background noise for that specific number of amplicons.\n- **PutativeStatus**: The raw call (Amplification/Deletion/Normal).\n- **ReliableStatus**: \n    - `2`: Reliable Change (Both Significant and Above Noise).\n    - `1`: Non-Reliable Change (Significant but within noise levels).\n    - `0`: No Change.\n\n## Interactive Analysis\nFor a GUI-based exploration of the data and results:\n```r\nRunCNVPanelizerShiny(port = 8080)\n```\n\n## Reference documentation\n- [CNVPanelizer](./references/CNVPanelizer.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnvpanelizer",
+    "description": "CNVPanelizer detects copy number variations in amplicon-based targeted sequencing data using a subsampling strategy and background noise correction. Use when user asks to process BED files, count reads from BAM files, perform TMM normalization, or call CNVs using bootstrap-based estimation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVPanelizer.html"
+  }
+}

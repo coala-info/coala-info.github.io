@@ -1,0 +1,43 @@
+{
+  "id": "weeder",
+  "category": "library",
+  "name": "weeder",
+  "description": "Weeder is a static analysis tool for Haskell that detects unreachable code. Use when user asks to find unused Haskell code, identify dead code in a Haskell project, or generate a default configuration.",
+  "overview": "Weeder is a specialized static analysis tool for Haskell that detects \"weeds\"—code that is defined but never reachable from specified entry points (roots). While GHC provides module-local warnings for unused code, Weeder performs whole-program analysis by traversing a dependency graph built from GHC-generated `.hie` files. This allows it to find code that is exported but never actually imported or used by any other part of the application or test suite.",
+  "homepage": "https://github.com/ocharles/weeder",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/weeder/overview",
+  "github": "https://github.com/ocharles/weeder",
+  "conda_downloads": "20.8K",
+  "conda_downloads_num": 20800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "weeder"
+    ],
+    "description": "FAIL to generate CWL: weeder not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/weeder:2.0--h9948957_10",
+    "homepage": "https://github.com/ocharles/weeder",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/weeder/overview",
+    "github": "https://github.com/ocharles/weeder",
+    "conda_downloads": "20.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# weeder\n\n## Overview\n\nWeeder is a specialized static analysis tool for Haskell that detects \"weeds\"—code that is defined but never reachable from specified entry points (roots). While GHC provides module-local warnings for unused code, Weeder performs whole-program analysis by traversing a dependency graph built from GHC-generated `.hie` files. This allows it to find code that is exported but never actually imported or used by any other part of the application or test suite.\n\n## Preparation\n\nTo use Weeder, you must first configure GHC to produce `.hie` files, which contain the symbol resolution and type information Weeder requires.\n\n### For Cabal Projects\nAdd the following to your `cabal.project.local`:\n```text\nprogram-options\n  ghc-options: -fwrite-ide-info\n```\nThen perform a full rebuild:\n```bash\ncabal clean\ncabal build all\n```\n\n### For Stack Projects\nAdd the following to your `stack.yaml`:\n```yaml\nghc-options:\n  \"$locals\": -fwrite-ide-info\n```\nThen rebuild:\n```bash\nstack clean\nstack build\n```\n\n## Configuration (weeder.toml)\n\nWeeder requires a `weeder.toml` file in the project root to define what code is considered \"alive.\"\n\n### Common Configuration Patterns\n```toml\n# Define entry points for the analysis\nroots = [\n  \"^Main.main$\",          # Standard executable entry point\n  \"^Paths_.*\",            # Ignore Cabal-generated Paths modules\n  \"MyLibrary.Public.API\"  # Specific public API modules\n]\n\n# Handle type classes\ntype-class-roots = true   # Consider all instances as roots (prevents flagging instances as dead)\n\n# Mark specific modules as roots (all exports considered alive)\nroot-modules = [ \"^MyProject\\\\.Public\\\\..*$\" ]\n\n# Enable analysis for unused types (disabled by default)\nunused-types = true\n```\n\n## CLI Usage and Patterns\n\n### Basic Execution\nRun the tool from the project root:\n```bash\nweeder\n```\n\n### Initialization\nIf no configuration exists, generate a default one:\n```bash\nweeder --write-default-config\n```\n\n### CI Integration\nWeeder uses specific exit codes that are useful for CI/CD pipelines:\n- **0**: No weeds found.\n- **228**: One or more weeds found (use this to fail a build).\n- **2**: GHC version mismatch (HIE files incompatible).\n- **4**: No HIE files found (check build step).\n\n### Strict Configuration\nTo ensure your configuration is explicit and not relying on hidden defaults:\n```bash\nweeder --no-default-fields\n```\n\n## Expert Tips and Limitations\n\n- **Template Haskell**: Weeder cannot parse the results of Template Haskell splices. If TH code refers to other symbols, Weeder may report those symbols as dead (false positives). Manually add these to `roots` in `weeder.toml`.\n- **Overloaded Syntax**: Symbols used only via overloaded literals (like `fromInteger` for `Num` or `fromString` for `IsString`) might be flagged as weeds on some GHC versions. Use `type-class-roots = true` or specific `root-instances` to mitigate this.\n- **Type Families**: Weeder currently marks type family instances as implicit roots when `unused-types` is enabled because it cannot yet fully analyze their usage.\n- **Dead Instances**: To find unused type class instances in a specific module `M`, add `{ module = \"^M$\" }` to `root-instances`.\n\n## Reference documentation\n- [Weeder Main Documentation](./references/github_com_ocharles_weeder.md)",
+  "skill_front_matter": {
+    "name": "weeder",
+    "description": "Weeder is a static analysis tool for Haskell that detects unreachable code. Use when user asks to find unused Haskell code, identify dead code in a Haskell project, or generate a default configuration.",
+    "homepage": "https://github.com/ocharles/weeder"
+  }
+}

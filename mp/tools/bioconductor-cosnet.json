@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cosnet",
+  "category": "bioconductor",
+  "name": "bioconductor-cosnet",
+  "description": "This tool predicts binary labels in partially-labeled graphs using a cost-sensitive Hopfield network designed for highly imbalanced datasets. Use when user asks to classify nodes in a graph, predict gene functions, categorize drugs, or rank unlabeled nodes in a network.",
+  "overview": "COSNet (Cost-Sensitive Network) is an R package designed for semi-supervised node label prediction in graphs. It is particularly effective for \"imbalanced\" datasets where the positive class is a small minority. The algorithm transforms the graph into a parametric Hopfield network, learns optimal activation parameters ($\\alpha$ and $\\gamma$) to handle the class imbalance, and reaches an equilibrium state to infer labels for unknown nodes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/COSNet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/m1frasca/COSNet_GitHub",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "COSNet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/COSNet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/m1frasca/COSNet_GitHub",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cosnet\n\nname: bioconductor-cosnet\ndescription: Predicts binary labels in partially-labeled graphs using a cost-sensitive Hopfield network. Use this skill when you need to classify nodes in a graph (e.g., gene function prediction, drug categorization) where labels are highly unbalanced (few positives vs. many negatives). It supports semi-supervised learning, cross-validation, and ranking of unlabeled nodes.\n\n# bioconductor-cosnet\n\n## Overview\nCOSNet (Cost-Sensitive Network) is an R package designed for semi-supervised node label prediction in graphs. It is particularly effective for \"imbalanced\" datasets where the positive class is a small minority. The algorithm transforms the graph into a parametric Hopfield network, learns optimal activation parameters ($\\alpha$ and $\\gamma$) to handle the class imbalance, and reaches an equilibrium state to infer labels for unknown nodes.\n\n## Core Workflow\n\n### 1. Data Preparation\nCOSNet requires a symmetric similarity matrix $W$ (values in $[0, 1]$) and a labeling vector or matrix.\n- **Similarity Matrix**: A square matrix where $W_{ij}$ represents the similarity between node $i$ and $j$.\n- **Labels**: Binary labels must be coded as $\\{1, -1\\}$ for known nodes and $0$ for unlabeled nodes.\n\n```r\nlibrary(COSNet)\n# Example: Convert 0/1 labels to 1/-1 for COSNet\nlabels[labels == 0] <- -1\n# Hide labels for the test set by setting them to 0\nlabels[test_indices] <- 0\n```\n\n### 2. Automated Prediction (High-Level)\nThe simplest way to use COSNet is through the high-level wrapper or cross-validation functions.\n\n```r\n# Single run on a specific labeling\n# W: similarity matrix, labels: vector with {1, -1, 0}\nresults <- COSNet(W, labels, cost = 0.0001)\n\n# 5-fold Cross-validation\n# labeling: matrix where columns are different classes\nout <- cosnet.cross.validation(labeling, W, 5, cost = 0.0001)\n```\n\n### 3. Manual Parameter Learning (Low-Level)\nFor more control, you can separate the parameter learning from the network execution.\n\n```r\n# 1. Generate 2D projections for training\n# training_labels should contain 1, -1, and 0 for the test set\npoints <- generate_points(W, test_indices, training_labels)\n\n# 2. Optimize alpha and gamma parameters\nopt <- optimizep(points$pos_vect[train_indices], \n                 points$neg_vect[train_indices], \n                 training_labels[train_indices])\n\n# 3. Run the sub-network to infer labels for the 0-labeled nodes\nres <- runSubnet(W, training_labels, opt$alpha, opt$c, cost = 0.0001)\n```\n\n## Interpreting Results\nThe output (from `COSNet` or `runSubnet`) typically contains:\n- `state`: Predicted binary labels (1 or -1).\n- `scores`: Ranking scores based on internal energy at equilibrium. Higher scores indicate higher confidence in the positive class.\n- `alpha` / `c`: The learned activation values and thresholds.\n\n## Performance Evaluation\nSince COSNet is often used for imbalanced data, use the `PerfMeas` package to evaluate results via F-score, AUC, or Precision at Recall (PxR).\n\n```r\nlibrary(PerfMeas)\n# AUC for a single class\nauc_val <- AUC.single(res$scores, ground_truth_labels)\n\n# F-measure\nf_val <- F.measure.single(res$state, ground_truth_labels)\n```\n\n## Tips\n- **Cost Parameter**: The `cost` parameter regularizes the model. Small values (e.g., 0.0001) often improve generalization.\n- **Imbalance**: COSNet is specifically designed for cases where the positive class is rare. If your classes are balanced, standard graph-based methods might suffice, but COSNet will still function.\n- **Input Matrix**: Ensure the similarity matrix $W$ is symmetric and has a null diagonal.\n\n## Reference documentation\n- [COSNet: An R Package for Predicting Binary Labels in Partially-Labeled Graphs](./references/COSNet_v.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cosnet",
+    "description": "This tool predicts binary labels in partially-labeled graphs using a cost-sensitive Hopfield network designed for highly imbalanced datasets. Use when user asks to classify nodes in a graph, predict gene functions, categorize drugs, or rank unlabeled nodes in a network.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/COSNet.html"
+  }
+}

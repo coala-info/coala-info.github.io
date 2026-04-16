@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-artms",
+  "category": "bioconductor",
+  "name": "bioconductor-artms",
+  "description": "\"bioconductor-artms analyzes and integrates large-scale mass-spectrometry-based proteomics datasets obtained from MaxQuant. Use when user asks to perform quality control, relative quantification using MSstats, downstream enrichment analysis, or convert MaxQuant evidence files for specialized PTM and AP-MS tools.\"",
+  "overview": "The `artMS` package is a Bioconductor tool designed for the analysis of proteomics data, specifically optimized for outputs from MaxQuant. It provides a streamlined workflow for handling `evidence.txt` files, performing rigorous quality control, and executing statistical relative quantification. It supports various experiment types, including global protein abundance (AB), affinity purification mass spectrometry (APMS), and post-translational modifications (PTM) like phosphorylation (PH), ubiqui",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/artMS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-artms/overview",
+  "github": "https://github.com/biodavidjm/artMS",
+  "conda_downloads": "30.3K",
+  "conda_downloads_num": 30300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "artMS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/artMS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-artms/overview",
+    "github": "https://github.com/biodavidjm/artMS",
+    "conda_downloads": "30.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-artms\n\nname: bioconductor-artms\ndescription: Analysis and integration of large-scale proteomics (mass-spectrometry-based) datasets obtained from MaxQuant. Use this skill when you need to perform quality control (QC), relative quantification using MSstats, downstream analysis (enrichment, clustering, PCA), or generate input files for other tools (SAINTq, SAINTexpress, Photon, Phosfate) from MaxQuant evidence.txt files.\n\n## Overview\n\nThe `artMS` package is a Bioconductor tool designed for the analysis of proteomics data, specifically optimized for outputs from MaxQuant. It provides a streamlined workflow for handling `evidence.txt` files, performing rigorous quality control, and executing statistical relative quantification. It supports various experiment types, including global protein abundance (AB), affinity purification mass spectrometry (APMS), and post-translational modifications (PTM) like phosphorylation (PH), ubiquitination (UB), and acetylation (AC).\n\n## Basic Workflow\n\n### 1. Setup and Input Files\nSet your working directory to the project folder. `artMS` requires three tab-delimited files:\n- `evidence.txt`: The standard MaxQuant output.\n- `keys.txt`: User-generated file describing the experimental design (RawFile, IsotopeLabelType, Condition, BioReplicate, Run).\n- `contrast.txt`: User-generated file defining the comparisons (e.g., `ConditionA-ConditionB`).\n\n### 2. Quality Control (QC)\nPerform QC before quantification to ensure data integrity.\n```R\nlibrary(artMS)\n\n# Basic QC (Intensity stats, correlation matrices, PTM stats)\nartmsQualityControlEvidenceBasic(\n  evidence_file = \"evidence.txt\",\n  keys_file = \"keys.txt\",\n  prot_exp = \"PH\" # Use \"AB\" for global abundance\n)\n\n# Extended QC (Charge states, PCA, peptide/protein detection frequency)\nartmsQualityControlEvidenceExtended(\n  evidence_file = \"evidence.txt\",\n  keys_file = \"keys.txt\"\n)\n```\n\n### 3. Relative Quantification\nQuantification is driven by a YAML configuration file.\n```R\n# 1. Generate a template config file\nartmsWriteConfigYamlFile(config_file_name = \"my_config.yaml\")\n\n# 2. Edit the YAML (set file paths, filters, and MSstats parameters)\n\n# 3. Run quantification\nartmsQuantification(yaml_config_file = \"my_config.yaml\")\n```\n\n### 4. Downstream Analysis\nAfter quantification, use `artmsAnalysisQuantifications` for clustering, PCA, and enrichment.\n```R\nartmsAnalysisQuantifications(\n  log2fc_file = \"results.txt\",\n  modelqc_file = \"results_ModelQC.txt\",\n  species = \"human\",\n  output_dir = \"AnalysisResults\"\n)\n```\n\n## Specialized Tasks\n\n### PTM Site-Specific Analysis\nTo quantify specific modification sites rather than total protein:\n1. Convert the evidence file using a reference proteome (FASTA):\n```R\nartmsProtein2SiteConversion(\n  evidence_file = \"evidence.txt\",\n  ref_proteome_file = \"proteome.fasta\",\n  output_file = \"evidence-site.txt\",\n  mod_type = \"PH\"\n)\n```\n2. Update your YAML config to point to `evidence-site.txt` and run `artmsQuantification`.\n\n### Metabolomics (Untargeted)\n`artMS` can process MarkerView alignment tables:\n```R\n# Convert MarkerView output to evidence-like format\nartmsConvertMetabolomics(input_file = \"markview.txt\", out_file = \"metab-evidence.txt\")\n\n# Run Metabolomics QC\nartmsQualityControlMetabolomics(evidence_file = \"metab-evidence.txt\", keys_file = \"keys.txt\")\n```\n\n### Integration with Other Tools\nGenerate input files for external software:\n- **SAINTexpress**: `artmsEvidenceToSaintExpress(evidence_file, keys_file, ref_proteome_file)`\n- **SAINTq**: `artmsEvidenceToSAINTq(evidence_file, keys_file)`\n- **Photon/Phosfate**: `artmsPhotonOutput(inputFile)` or `artmsPhosfateOutput(inputFile)`\n\n## Tips and Best Practices\n- **Condition Names**: Must not start with a number. Use only letters, numbers, and underscores.\n- **Imputation**: `artmsAnalysisQuantifications` uses a \"naive imputation\" (parameter `mnbr`) for proteins found in one condition but missing in another.\n- **Filtering**: By default, `artMS` removes contaminants (`CON__`) and reverse sequences (`REV__`).\n- **Species Support**: Downstream enrichment analysis primarily supports \"human\" and \"mouse\".\n\n## Reference documentation\n- [artMS: Analytical R Tools for Mass Spectrometry](./references/artMS_vignette.md)\n- [artMS Vignette Source](./references/artMS_vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-artms",
+    "description": "bioconductor-artms analyzes and integrates large-scale mass-spectrometry-based proteomics datasets obtained from MaxQuant. Use when user asks to perform quality control, relative quantification using MSstats, downstream enrichment analysis, or convert MaxQuant evidence files for specialized PTM and AP-MS tools.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/artMS.html"
+  }
+}

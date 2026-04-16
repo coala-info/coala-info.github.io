@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-quartpac",
+  "category": "bioconductor",
+  "name": "bioconductor-quartpac",
+  "description": "Bioconductor-quartpac identifies mutational clusters in protein quaternary structures by integrating data from multiple subunits. Use when user asks to identify somatic mutation hotspots in protein assemblies, analyze mutational clusters across different protein chains, or run iPAC, GraphPAC, and SpacePAC algorithms on quaternary structures.",
+  "overview": "QuartPAC (Quaternary Protein Amino acid Clustering) identifies statistically significant mutational hotspots by considering the entire protein assembly rather than individual subunits in isolation. It acts as a preprocessing and integration layer that maps mutational data onto quaternary structures (from .pdb1 files) and then executes established clustering algorithms (iPAC, GraphPAC, and SpacePAC). This approach can reveal clusters that span across different protein chains which would be missed",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/QuartPAC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "QuartPAC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/QuartPAC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-quartpac\n\nname: bioconductor-quartpac\ndescription: Identify mutational clusters in protein quaternary structures by integrating data from multiple subunits. Use this skill when analyzing somatic mutation hotspots while accounting for the 3D arrangement of protein assemblies, specifically using the iPAC, GraphPAC, and SpacePAC algorithms on quaternary structures.\n\n## Overview\nQuartPAC (Quaternary Protein Amino acid Clustering) identifies statistically significant mutational hotspots by considering the entire protein assembly rather than individual subunits in isolation. It acts as a preprocessing and integration layer that maps mutational data onto quaternary structures (from .pdb1 files) and then executes established clustering algorithms (iPAC, GraphPAC, and SpacePAC). This approach can reveal clusters that span across different protein chains which would be missed in tertiary structure analysis.\n\n## Core Workflow\n\n### 1. Data Preparation\nQuartPAC requires four specific data components:\n- **UniProt ID**: The accession number for the protein subunits.\n- **Mutation Data**: An $m \\times n$ matrix (individuals $\\times$ residues) where 1 indicates a mutation. Column headers must be \"V1\", \"V2\", ..., \"Vn\".\n- **Tertiary Structure**: Standard .pdb file.\n- **Quaternary Structure**: The assembly file (.pdb1).\n\n### 2. Loading Mutations\nUse `getMutations` to aggregate mutation files for all subunits in the assembly.\n\n```r\nlibrary(QuartPAC)\n\n# List paths to mutation text files for each subunit\nmutation_files <- list(\n  system.file(\"extdata\", \"Subunit1_Mutations.txt\", package = \"QuartPAC\"),\n  system.file(\"extdata\", \"Subunit2_Mutations.txt\", package = \"QuartPAC\")\n)\n\n# Corresponding UniProt IDs\nuniprots <- list(\"Q30201\", \"P61769\")\n\nmutation.data <- getMutations(mutation_files = mutation_files, uniprots = uniprots)\n```\n\n### 3. Creating the Superstructure\nAlign the mutational data with the quaternary assembly using `makeAlignedSuperStructure`.\n\n```r\npdb.location <- \"https://files.rcsb.org/view/1A6Z.pdb\"\nassembly.location <- \"https://files.rcsb.org/download/1A6Z.pdb1\"\n\nstructural.data <- makeAlignedSuperStructure(pdb.location, assembly.location)\n```\n\n### 4. Running Cluster Analysis\nThe `quartCluster` function executes the analysis. You can toggle specific algorithms (iPAC, GraphPAC, SpacePAC) on or off.\n\n```r\nquart_results <- quartCluster(\n  mutation.data, \n  structural.data, \n  perform.ipac = \"Y\", \n  perform.graphpac = \"Y\", \n  perform.spacepac = \"Y\",\n  create.map = \"Y\",        # Generates MDS remapping plot\n  alpha = 0.05,            # Significance threshold\n  MultComp = \"BH\",         # Multiple comparison adjustment (e.g., \"None\", \"BH\")\n  radii.vector = c(1:3)    # For SpacePAC simulation\n)\n```\n\n## Interpreting Results\n\n### Accessing Cluster Information\nResults are organized by the method used. Note that amino acid positions in QuartPAC refer to **serial numbers** within the .pdb1 file.\n\n- **iPAC/GraphPAC**: `quart_results$ipac` or `quart_results$graphpac`\n- **SpacePAC**: `quart_results$spacepac$optimal.sphere`\n\n### Mapping Serial Numbers to Residues\nTo find which specific residue a cluster serial number refers to, query the `aligned_structure` within the structural data object:\n\n```r\n# Find residue info for serial number 1265\nres_info <- structural.data$aligned_structure[structural.data$aligned_structure$serial == 1265, ]\nprint(res_info)\n```\n\n### Visualization\n- **MDS Plot**: Automatically generated if `create.map = \"Y\"` in `quartCluster`.\n- **Jump Plot (GraphPAC)**: Use `Plot.Protein.Linear` to visualize the reordering of the protein path.\n\n```r\nPlot.Protein.Linear(\n  quart_results$graphpac$candidate.path, \n  colCount = 10, \n  title = \"GraphPAC 1D Reordering\"\n)\n```\n\n## Tips and Constraints\n- **Input Format**: Ensure mutation matrices use the \"V\" prefix for column names (V1, V2...).\n- **Mutation Types**: Only missense mutations are supported; indels are currently excluded.\n- **Significance**: If no clusters are found for iPAC or GraphPAC after multiple comparison adjustment, the result may return null. SpacePAC always returns the most significant spheres regardless of p-value.\n- **External Tools**: For 3D visualization (like PyMOL), use the `chainID` and `resSeq` columns extracted from `structural.data$aligned_structure` using the cluster serial numbers.\n\n## Reference documentation\n- [QuartPAC](./references/QuartPAC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-quartpac",
+    "description": "Bioconductor-quartpac identifies mutational clusters in protein quaternary structures by integrating data from multiple subunits. Use when user asks to identify somatic mutation hotspots in protein assemblies, analyze mutational clusters across different protein chains, or run iPAC, GraphPAC, and SpacePAC algorithms on quaternary structures.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/QuartPAC.html"
+  }
+}

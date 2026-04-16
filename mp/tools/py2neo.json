@@ -1,0 +1,49 @@
+{
+  "id": "py2neo",
+  "category": "CLI",
+  "name": "py2neo",
+  "description": "py2neo provides a high-level Python API for interacting with Neo4j graph databases and modeling graph entities as native objects. Use when user asks to connect to a Neo4j instance, ingest data from pandas DataFrames, execute Cypher queries, or convert graph results into matrices and DataFrames.",
+  "overview": "The py2neo skill enables efficient interaction between Python applications and Neo4j graph databases. It provides a high-level API for graph modeling, allowing you to treat graph entities as native Python objects. This skill is particularly useful for automating data ingestion from structured formats like Excel or CSV into a graph structure, performing complex graph traversals, and converting graph results into matrices or DataFrames for downstream data science workflows.",
+  "homepage": "https://github.com/MazzaWill/neo4j-python-pandas-py2neo-v3",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/conda-forge/packages/py2neo/overview",
+  "github": "https://github.com/MazzaWill/neo4j-python-pandas-py2neo-v3",
+  "conda_downloads": "153.7K",
+  "conda_downloads_num": 153700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "py2neo_run",
+      "py2neo_evaluate",
+      "py2neo"
+    ],
+    "description": "Run a Cypher statement",
+    "docker_image": "quay.io/biocontainers/py2neo:3.1.2--py34_0",
+    "homepage": "https://github.com/MazzaWill/neo4j-python-pandas-py2neo-v3",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/conda-forge/packages/py2neo/overview",
+    "github": "https://github.com/MazzaWill/neo4j-python-pandas-py2neo-v3",
+    "conda_downloads": "153.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "py2neo.cwl",
+    "py2neo_evaluate.cwl",
+    "py2neo_run.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# py2neo\n\n## Overview\n\nThe py2neo skill enables efficient interaction between Python applications and Neo4j graph databases. It provides a high-level API for graph modeling, allowing you to treat graph entities as native Python objects. This skill is particularly useful for automating data ingestion from structured formats like Excel or CSV into a graph structure, performing complex graph traversals, and converting graph results into matrices or DataFrames for downstream data science workflows.\n\n## Core Workflows\n\n### Database Connection\nEstablish a connection to the Neo4j instance using the `Graph` class.\n```python\nfrom py2neo import Graph\n\n# Standard connection\ngraph = Graph(\"bolt://localhost:7687\", auth=(\"neo4j\", \"password\"))\n\n# HTTP connection (often used in web interfaces)\ngraph = Graph(\"http://localhost:7474\", username=\"neo4j\", password=\"password\")\n```\n\n### Data Ingestion from Pandas\nA common pattern involves using pandas to clean data before loading it into Neo4j as triplets (Source-Relation-Target).\n\n1. **Extract**: Load data into a DataFrame.\n2. **Transform**: Generate lists of unique nodes and relationship dictionaries.\n3. **Load**: Use py2neo to commit to the database.\n\n```python\nimport pandas as pd\nfrom py2neo import Node, Relationship\n\n# Example: Creating nodes from a list\ndef create_nodes(graph, labels, names):\n    for name in names:\n        node = Node(labels, name=name)\n        graph.create(node)\n\n# Example: Creating relationships from a DataFrame\ndef create_relationships(graph, df):\n    for _, row in df.iterrows():\n        source_node = graph.nodes.match(\"Label\", name=row['source']).first()\n        target_node = graph.nodes.match(\"Label\", name=row['target']).first()\n        if source_node and target_node:\n            rel = Relationship(source_node, row['relation'], target_node)\n            graph.create(rel)\n```\n\n### Executing Cypher Queries\nUse the `.run()` method to execute raw Cypher queries and return data in a format compatible with Python dictionaries.\n\n```python\n# Querying specific patterns\nquery = \"MATCH (n:Person {name: $name})-[r]->(m) RETURN m.name AS friend\"\ndata = graph.run(query, name=\"Alice\").data()\n\n# Converting query results directly to a pandas DataFrame\ndf = pd.DataFrame(graph.run(\"MATCH (n:Label) RETURN n.prop1, n.prop2\").data())\n```\n\n### Graph to Matrix Conversion\nFor machine learning tasks, you may need to convert graph relationships into adjacency matrices.\n\n```python\nimport numpy as np\n\ndef get_adjacency_matrix(graph, label):\n    nodes = [n['n']['name'] for n in graph.run(f\"MATCH (n:{label}) RETURN n\").data()]\n    size = len(nodes)\n    matrix = np.zeros((size, size))\n    \n    # Map names to indices\n    idx = {name: i for i, name in enumerate(nodes)}\n    \n    rels = graph.run(f\"MATCH (a:{label})-[r]->(b:{label}) RETURN a.name, b.name\").data()\n    for r in rels:\n        matrix[idx[r['a.name']]][idx[r['b.name']]] = 1\n    return pd.DataFrame(matrix, index=nodes, columns=nodes)\n```\n\n## Best Practices\n- **Batching**: When loading large datasets (e.g., from Excel), avoid individual `graph.create()` calls in a loop for thousands of records. Use `Transaction` objects or Cypher `UNWIND` for better performance.\n- **Node Matching**: Always ensure properties used for matching (like `name` or `id`) have indexes or unique constraints in Neo4j to prevent performance degradation.\n- **Data Types**: Ensure all data extracted from spreadsheets is explicitly cast to the correct type (e.g., `str(val)`) before passing to py2neo to avoid serialization errors with numpy/pandas types.\n- **Regex Parsing**: When handling raw string representations of relationships, use regex patterns like `^\\(|\\{\\}\\]\\-\\>\\(|\\)\\-\\[\\:|\\)$` to clean and tokenize node/edge names.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| evaluate | Evaluate a Cypher statement |\n| py2neo | A tool to run or evaluate Cypher statements against a Neo4j database. |\n| run | Run a Cypher statement |\n\n## Reference documentation\n- [Neo4j Python Pandas py2neo V3 Overview](./references/github_com_MazzaWill_neo4j-python-pandas-py2neo-v3_blob_master_README.md)\n- [Data Ingestion Script Example](./references/github_com_MazzaWill_neo4j-python-pandas-py2neo-v3_blob_master_invoice_neo4j.py.md)\n- [Graph to Matrix Conversion Logic](./references/github_com_MazzaWill_neo4j-python-pandas-py2neo-v3_blob_master_neo4j_matrix.py.md)\n- [Neo4j to DataFrame Interface](./references/github_com_MazzaWill_neo4j-python-pandas-py2neo-v3_blob_master_neo4j_to_dataframe.py.md)",
+  "skill_front_matter": {
+    "name": "py2neo",
+    "description": "py2neo provides a high-level Python API for interacting with Neo4j graph databases and modeling graph entities as native objects. Use when user asks to connect to a Neo4j instance, ingest data from pandas DataFrames, execute Cypher queries, or convert graph results into matrices and DataFrames.",
+    "homepage": "https://github.com/MazzaWill/neo4j-python-pandas-py2neo-v3"
+  }
+}

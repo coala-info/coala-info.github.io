@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nullranges",
+  "category": "bioconductor",
+  "name": "bioconductor-nullranges",
+  "description": "This tool generates null hypothesis genomic ranges by matching covariates or performing block bootstrapping to preserve biological properties. Use when user asks to perform covariate-matched sampling with matchRanges, generate random null sets using bootRanges, or maintain genomic architecture during hypothesis testing.",
+  "overview": "The `nullranges` package provides tools for generating null sets of genomic ranges that maintain specific biological or statistical properties of a focal set. It primarily addresses two workflows:\n1.  **Covariate Matching (`matchRanges`)**: Selecting a subset from a background pool that matches the focal set's covariate distributions (e.g., matching loop anchors to non-anchors based on GC content or DNase signal).\n2.  **Block Bootstrapping (`bootRanges`)**: Generating random genomic null sets by",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/nullranges.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/nullranges/nullranges",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nullranges"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nullranges.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/nullranges/nullranges",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nullranges\n\nname: bioconductor-nullranges\ndescription: Expert guidance for the Bioconductor package 'nullranges' to generate null hypothesis genomic ranges. Use this skill when you need to perform covariate-matched sampling (matchRanges) or block bootstrapping (bootRanges) for genomic features like ChIP-seq peaks, ATAC-seq bins, or chromatin interactions (GInteractions).\n\n# bioconductor-nullranges\n\n## Overview\nThe `nullranges` package provides tools for generating null sets of genomic ranges that maintain specific biological or statistical properties of a focal set. It primarily addresses two workflows:\n1.  **Covariate Matching (`matchRanges`)**: Selecting a subset from a background pool that matches the focal set's covariate distributions (e.g., matching loop anchors to non-anchors based on GC content or DNase signal).\n2.  **Block Bootstrapping (`bootRanges`)**: Generating random genomic null sets by sampling blocks of ranges, preserving local genomic architecture and inter-range distances.\n\n## Covariate Matching with matchRanges\n\nUse `matchRanges()` when you have a \"focal\" set (e.g., hits) and a \"pool\" set (e.g., background) and want to select a control set with similar characteristics.\n\n### Basic Workflow\n```r\nlibrary(nullranges)\n\n# focal: ranges of interest; pool: background ranges to sample from\nmgr <- matchRanges(focal = focal_gr, \n                   pool = pool_gr, \n                   covar = ~feature1 + feature2,\n                   method = \"stratified\", # or \"nearest\", \"rejection\"\n                   replace = FALSE)\n\n# Access the matched set\nmatched_gr <- matched(mgr)\n```\n\n### Matching Methods\n-   **stratified**: (Default) Bins propensity scores and samples; robust for most cases.\n-   **nearest**: Fast rolling-join matching; best for very large datasets (usually requires `replace = TRUE`).\n-   **rejection**: Probability-based sampling; fast for sampling without replacement on large data.\n\n### Quality Control\nAlways assess the balance of covariates after matching:\n```r\n# Text summary of means/SDs across sets\noverview(mgr)\n\n# Visual checks\nplotPropensity(mgr, sets = c('f', 'm', 'p'))\nplotCovariate(mgr, covar = \"feature1\", sets = c('f', 'm', 'p'))\n```\n\n## Block Bootstrapping with bootRanges\n\nUse `bootRanges()` to generate null sets that preserve the clustering and spacing of your original ranges.\n\n### Basic Workflow\n```r\n# blockLength: size of genomic chunks to shuffle\n# R: number of bootstrap iterations\nboots <- bootRanges(ranges, blockLength = 5e5, R = 100)\n\n# Result is a BootRanges object (GRanges subclass) with an 'iter' column\n```\n\n### Segmented Bootstrapping\nFor whole-genome analysis, it is recommended to use a **segmentation** (e.g., based on gene density) to account for genomic heterogeneity.\n```r\n# Use pre-built hg38 segmentation from ExperimentHub\nlibrary(ExperimentHub)\neh <- ExperimentHub()\nseg <- eh[[\"EH7307\"]] \n\n# Bootstrap within segments\nboots <- bootRanges(ranges, blockLength = 5e5, R = 50, seg = seg)\n```\n\n### Integration with plyranges\n`nullranges` is designed to work with `plyranges` for tidy analysis.\n```r\nlibrary(plyranges)\n\n# Calculate overlaps for each bootstrap iteration\nboot_stats <- x_ranges %>% \n  join_overlap_inner(boots) %>%\n  group_by(iter) %>%\n  summarize(n_overlaps = n())\n```\n\n## Working with Chromatin Interactions\n`matchRanges` supports `GInteractions` objects (from the `InteractionSet` package), allowing you to match bin-pairs based on distance and anchor signal.\n```r\nmgi <- matchRanges(focal = focal_gi, \n                   pool = pool_gi, \n                   covar = ~distance + anchor_signal)\n```\n\n## Tips for Efficiency\n-   **Filtering**: Filter the `pool` set to a reasonable size before matching to save memory.\n-   **Metadata**: Only keep essential metadata columns in the input ranges; `bootRanges` replicates metadata `R` times, which can lead to high memory usage.\n-   **Exclusion**: Use `exclude` regions (e.g., ENCODE blacklists) in `bootRanges` to avoid placing null ranges in unmappable areas.\n\n## Reference documentation\n- [Introduction to bootRanges](./references/bootRanges.md)\n- [Introduction to matchRanges](./references/matchRanges.md)\n- [Case study II: CTCF orientation (Rmd)](./references/matching_ginteractions.Rmd)\n- [Case study II: CTCF orientation (md)](./references/matching_ginteractions.md)\n- [Case study I: CTCF occupancy (Rmd)](./references/matching_granges.Rmd)\n- [Case study I: CTCF occupancy (md)](./references/matching_granges.md)\n- [Matching Pool Set](./references/matching_pool_set.md)\n- [Matching Ranges Tutorial](./references/matching_ranges.Rmd)\n- [Main nullranges Vignette (Rmd)](./references/nullranges.Rmd)\n- [Main nullranges Vignette (md)](./references/nullranges.md)\n- [Segmented Bootstrapping](./references/segmented_boot_ranges.Rmd)\n- [Unsegmented Bootstrapping](./references/unseg_boot_ranges.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-nullranges",
+    "description": "This tool generates null hypothesis genomic ranges by matching covariates or performing block bootstrapping to preserve biological properties. Use when user asks to perform covariate-matched sampling with matchRanges, generate random null sets using bootRanges, or maintain genomic architecture during hypothesis testing.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/nullranges.html"
+  }
+}

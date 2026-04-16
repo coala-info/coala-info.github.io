@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mobilitytransformr",
+  "category": "bioconductor",
+  "name": "bioconductor-mobilitytransformr",
+  "description": "This tool transforms migration time scales in Capillary Electrophoresis-Mass Spectrometry data into effective mobility scales to improve data reproducibility. Use when user asks to convert migration time to effective mobility, handle electroosmotic flow fluctuations, or normalize CE-MS metabolomics and proteomics datasets.",
+  "overview": "`MobilityTransformR` is an R package designed to transform the migration time (MT) scale of CE-MS data into an effective mobility ($µ_{eff}$) scale. This transformation is critical for CE-MS because migration times are often inconsistent due to fluctuations in the Electroosmotic Flow (EOF). The package supports transformation of single values, `Spectra` objects, and `OnDiskMSnExp` objects, allowing for seamless integration with the `xcms` and `MSnbase` ecosystems.",
+  "homepage": "https://bioconductor.org/packages/3.16/bioc/html/MobilityTransformR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/LiesaSalzer/MobilityTransformR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MobilityTransformR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.16/bioc/html/MobilityTransformR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/LiesaSalzer/MobilityTransformR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mobilitytransformr\n\nname: bioconductor-mobilitytransformr\ndescription: Perform effective mobility transformation of Capillary Electrophoresis-Mass Spectrometry (CE-MS) data. Use this skill when you need to convert migration time (MT) scales to effective mobility (µeff) scales to improve reproducibility and handle EOF fluctuations in metabolomics or proteomics datasets.\n\n# bioconductor-mobilitytransformr\n\n## Overview\n`MobilityTransformR` is an R package designed to transform the migration time (MT) scale of CE-MS data into an effective mobility ($µ_{eff}$) scale. This transformation is critical for CE-MS because migration times are often inconsistent due to fluctuations in the Electroosmotic Flow (EOF). The package supports transformation of single values, `Spectra` objects, and `OnDiskMSnExp` objects, allowing for seamless integration with the `xcms` and `MSnbase` ecosystems.\n\n## Core Workflow\n\n### 1. Data Loading\nLoad CE-MS data (typically .mzML) using `MSnbase` or `Spectra`.\n\n```r\nlibrary(MobilityTransformR)\nlibrary(xcms)\nlibrary(Spectra)\n\n# Load as OnDiskMSnExp\nfl <- list.files(system.file(\"extdata/\", package = \"MobilityTransformR\"), \n                 pattern = \".mzML\", full.names = TRUE)\nraw_data <- readMSData(files = fl, mode = \"onDisk\")\n\n# Or load as Spectra object\nspectra_data <- Spectra(fl[1], backend = MsBackendMzR())\n```\n\n### 2. Determining Marker Migration Times\nBefore transformation, you must identify the migration times of markers (e.g., Paracetamol for EOF, Procaine for charged markers) in your specific runs.\n\n```r\n# Define mz and mt windows for the marker\nmz_paracetamol <- c(152.071154 - 0.005, 152.071154 + 0.005)\nmt_paracetamol <- c(600, 900)\n\n# Extract and find the exact peak time\nparacetamol_mt <- getMtime(raw_data, mz = mz_paracetamol, mt = mt_paracetamol)\n```\n\n### 3. Defining Marker Information\nCreate a data frame containing the migration time (`rtime`) and the known effective mobility (`mobility`) for your markers.\n\n```r\n# EOF marker has mobility 0\nmarker_df <- paracetamol_mt\nmarker_df$markerID <- \"Paracetamol\"\nmarker_df$mobility <- 0\n```\n\n### 4. Performing Transformation\nThe `mobilityTransform` function handles different input types and transformation equations based on the markers provided.\n\n**Option A: Single Marker (requires system parameters)**\nUse this if you only have an EOF marker. Requires Voltage ($U$ in kV) and Capillary Length ($L$ in mm).\n```r\n# Transform a single numeric value\nmu_eff <- mobilityTransform(x = 450.239, marker = marker_df[1,], \n                            tR = 3/60, U = 30, L = 800)\n```\n\n**Option B: Two Markers (Relative transformation)**\nIf you provide two markers (e.g., EOF and a secondary charged marker), the system parameters ($U$, $L$) are not required as they cancel out in the equation.\n```r\n# Add secondary marker to the data frame\nprocaine_row <- data.frame(rtime = 450.239, fileIdx = 1, \n                           markerID = \"Procaine\", mobility = 1327.35)\nmarker_df <- rbind(marker_df, procaine_row)\n\n# Transform whole dataset\nmobility_data <- mobilityTransform(x = raw_data, marker = marker_df)\n```\n\n### 5. Exporting and Analysis\nTransformed data retains its class (`OnDiskMSnExp` or `Spectra`) but the `rtime` slot now contains $µ_{eff}$ values.\n\n```r\n# Export to mzML\nwriteMSData(mobility_data, file = \"transformed_data.mzML\", copy = FALSE)\n\n# Plotting (Note: x-axis will be µ_eff)\nlysine_EIE <- mobility_data |> \n    filterMz(mz = c(147.10, 147.12)) |> \n    filterRt(rt = c(1000, 2500))\nplot(chromatogram(lysine_EIE))\n```\n\n## Tips and Best Practices\n- **Narrow Windows**: When using `getMtime`, keep `mz` and `mt` windows as narrow as possible to avoid picking incorrect peaks.\n- **Units**: The resulting unit of effective mobility is $\\frac{mm^2}{kV \\cdot min}$.\n- **Field Ramp**: Use the `tR` parameter (field ramping time in minutes) for more accurate calculations if your CE method includes a significant ramp-up period.\n- **Compatibility**: Because the package overwrites the \"retention time\" field with \"effective mobility\", standard `xcms` plotting functions will label the x-axis as \"retention time\" unless manually overridden in the plot call.\n\n## Reference documentation\n- [Description and usage of MobilityTransformR](./references/MobilityTransformR.Rmd)\n- [Description and usage of MobilityTransformR](./references/MobilityTransformR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mobilitytransformr",
+    "description": "This tool transforms migration time scales in Capillary Electrophoresis-Mass Spectrometry data into effective mobility scales to improve data reproducibility. Use when user asks to convert migration time to effective mobility, handle electroosmotic flow fluctuations, or normalize CE-MS metabolomics and proteomics datasets.",
+    "homepage": "https://bioconductor.org/packages/3.16/bioc/html/MobilityTransformR.html"
+  }
+}

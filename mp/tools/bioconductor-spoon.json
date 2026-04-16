@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spoon",
+  "category": "bioconductor",
+  "name": "bioconductor-spoon",
+  "description": "The spoon package mitigates the mean-variance technical bias in spatial transcriptomics data by generating weights for spatially variable gene detection. Use when user asks to estimate mean-variance relationships in SRT data, generate weights for Gaussian Process Regression, or run weighted nnSVG to identify spatially variable genes.",
+  "overview": "The `spoon` package provides a method to mitigate the \"mean-variance relationship\" technical bias in spatial transcriptomics. In SRT data, gene-level variance is often correlated with mean expression, which can confound the ranking of spatially variable genes (SVGs). `spoon` fits a spline curve to estimate this relationship and generates weights that can be used in Gaussian Process Regression models (like `nnSVG`) to produce a more informative and less biased set of SVGs.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/spoon.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kinnaryshah/spoon",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spoon"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spoon.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kinnaryshah/spoon",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spoon\n\n## Overview\n\nThe `spoon` package provides a method to mitigate the \"mean-variance relationship\" technical bias in spatial transcriptomics. In SRT data, gene-level variance is often correlated with mean expression, which can confound the ranking of spatially variable genes (SVGs). `spoon` fits a spline curve to estimate this relationship and generates weights that can be used in Gaussian Process Regression models (like `nnSVG`) to produce a more informative and less biased set of SVGs.\n\n## Installation\n\nInstall the package via Bioconductor:\n\n```r\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"spoon\")\n```\n\n## Typical Workflow\n\nThe standard workflow involves preprocessing a `SpatialExperiment` object, generating weights, and then running a weighted SVG detection algorithm.\n\n### 1. Data Preparation\n`spoon` works best with `SpatialExperiment` objects. Ensure your data is filtered and normalized (logcounts) before processing.\n\n```r\nlibrary(spoon)\nlibrary(SpatialExperiment)\nlibrary(scuttle)\n\n# Example: Filter genes and calculate logcounts\nspe <- filter_genes(spe)\nspe <- computeLibraryFactors(spe)\nspe <- logNormCounts(spe)\n\n# Ensure spots with zero counts are removed to avoid errors in weight generation\nspe <- spe[, colSums(logcounts(spe)) > 0]\n```\n\n### 2. Generate Weights\nThe `generate_weights` function estimates the mean-variance relationship and produces a weight matrix.\n\n```r\n# stabilize = TRUE is recommended to handle extreme values\nweights <- generate_weights(input = spe,\n                            stabilize = TRUE,\n                            BPPARAM = BiocParallel::MulticoreParam(workers = 1))\n```\n\n### 3. Weighted SVG Detection\nYou can use the built-in wrapper for `nnSVG` or manually apply weights to other tools.\n\n**Using the built-in weighted nnSVG:**\n```r\nspe <- weighted_nnSVG(input = spe,\n                      w = weights,\n                      BPPARAM = BiocParallel::MulticoreParam(workers = 1))\n\n# Results are stored in rowData\nrowData(spe)\n```\n\n**Using weights with other SVG tools:**\nIf a tool does not natively support weights, rescale the logcounts matrix manually:\n```r\nassay_name <- \"logcounts\"\n# Apply weights to the expression matrix\nweighted_logcounts <- t(weights) * assays(spe)[[assay_name]]\nassay(spe, \"weighted_logcounts\") <- weighted_logcounts\n\n# Use 'weighted_logcounts' as input for your preferred SVG detection tool\n```\n\n## Key Functions\n\n- `generate_weights()`: Calculates individual observation weights based on the mean-variance relationship.\n- `weighted_nnSVG()`: A specialized implementation of the `nnSVG` algorithm that incorporates `spoon` weights to identify SVGs.\n- `filter_genes()`: Utility to remove mitochondrial genes and low-expressed genes (essential for stable model fitting).\n\n## Tips for Success\n\n- **Filtering**: Always filter out low-quality genes and spots with zero total counts before running `generate_weights()`. Zeros can cause warnings or errors during the spline fitting process.\n- **Parallelization**: Weight generation and SVG detection are computationally intensive. Use the `BPPARAM` argument to utilize multiple cores via the `BiocParallel` package.\n- **Interpretation**: The `weighted_rank` in the output `rowData` provides the prioritized list of genes after accounting for the mean-variance bias.\n\n## Reference documentation\n\n- [spoon Tutorial](./references/spoon.Rmd)\n- [spoon Tutorial (Markdown)](./references/spoon.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spoon",
+    "description": "The spoon package mitigates the mean-variance technical bias in spatial transcriptomics data by generating weights for spatially variable gene detection. Use when user asks to estimate mean-variance relationships in SRT data, generate weights for Gaussian Process Regression, or run weighted nnSVG to identify spatially variable genes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spoon.html"
+  }
+}

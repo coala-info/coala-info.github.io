@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rtrm",
+  "category": "bioconductor",
+  "name": "bioconductor-rtrm",
+  "description": "This tool identifies Transcriptional Regulatory Modules by integrating protein-protein interaction networks, transcription factor binding motifs, and gene expression data. Use when user asks to identify transcriptional regulatory modules, find transcription factors that cooperate with a target protein, or visualize regulatory networks using specialized layouts.",
+  "overview": "The `rTRM` package identifies Transcriptional Regulatory Modules (TRMs) by finding paths in a protein-protein interaction (PPI) network between a \"target\" TF (experimentally verified, e.g., via ChIP-seq) and \"query\" TFs (identified via motif enrichment in the target's binding regions). It supports the inclusion of \"bridge\" proteins to connect TFs that do not interact directly and allows filtering by cell-type-specific gene expression.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/rTRM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ddiez/rTRM",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rTRM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rTRM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ddiez/rTRM",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rtrm\n\nname: bioconductor-rtrm\ndescription: Identification of Transcriptional Regulatory Modules (TRMs) by integrating ChIP-seq data, transcription factor (TF) binding motifs, protein-protein interaction (PPI) networks, and gene expression. Use this skill to find TFs that cooperate with a target TF (e.g., from ChIP-seq) either through direct interaction or via bridge proteins.\n\n## Overview\n\nThe `rTRM` package identifies Transcriptional Regulatory Modules (TRMs) by finding paths in a protein-protein interaction (PPI) network between a \"target\" TF (experimentally verified, e.g., via ChIP-seq) and \"query\" TFs (identified via motif enrichment in the target's binding regions). It supports the inclusion of \"bridge\" proteins to connect TFs that do not interact directly and allows filtering by cell-type-specific gene expression.\n\n## Core Workflow\n\n### 1. Data Preparation\nTRM identification requires a PPI network (igraph object), a target TF, and a list of query TFs (usually Entrez Gene IDs).\n\n```R\nlibrary(rTRM)\nlibrary(igraph)\nlibrary(org.Mm.eg.db) # Or org.Hs.eg.db for human\n\n# Load default BioGRID mouse PPI network\ndata(biogrid_mm)\nppi <- biogrid_mm\n\n# Define target (e.g., Sox2)\ntarget_id <- select(org.Mm.eg.db, keys=\"Sox2\", columns=\"ENTREZID\", keytype=\"SYMBOL\")$ENTREZID\n\n# Define query TFs (e.g., from motif enrichment)\nquery_ids <- c(\"18999\", \"20674\", \"16600\") \n```\n\n### 2. Network Pre-processing\nIt is recommended to remove high-degree ubiquitin/sumo outliers and filter the network for genes expressed in your specific biological context.\n\n```R\n# Remove common outliers\noutliers <- c(\"22190\", \"22218\", \"170930\", \"20610\") # Ubc, Sumo1, Sumo2, Sumo3\nppi <- delete_vertices(ppi, V(ppi)[name %in% outliers])\n\n# Filter by expression (eg_esc is a vector of expressed Entrez IDs)\nppi_filtered <- induced_subgraph(ppi, V(ppi)[name %in% eg_esc])\n\n# Keep only the largest connected component\nppi_filtered <- getLargestComp(ppi_filtered)\n```\n\n### 3. Identifying the TRM\nUse `findTRM` to extract the sub-network connecting the target and query nodes.\n\n```R\n# max.bridge = 1 allows one intermediate protein between target and query\ntrm_graph <- findTRM(ppi_filtered, target = target_id, query = query_ids, \n                     method = \"nsa\", max.bridge = 1)\n```\n\n### 4. Visualization\n`rTRM` provides specialized layouts to represent the hierarchical nature of the module.\n\n```R\n# Concentric layout: Target in center, bridges in middle, queries in outer ring\ncl <- getConcentricList(trm_graph, target = target_id, query = query_ids)\nl_concentric <- layout.concentric(trm_graph, cl, order = \"label\")\n\n# Plotting\nplotTRM(trm_graph, layout = l_concentric, vertex.cex = 15, label.cex = 0.8)\nplotTRMlegend(trm_graph, title = \"My TRM\", cex = 0.8)\n\n# Alternative: Linear arc layout\nl_arc <- layout.arc(trm_graph, target = target_id, query = query_ids)\nplotTRM(trm_graph, layout = l_arc)\n```\n\n## Database Utilities\n\nThe package includes a built-in SQLite database for TF annotations and PWMs.\n\n- `getMatrices()`: Retrieve Position Specific Weight Matrices.\n- `getAnnotations()`: Get TF family and domain information.\n- `getMaps()`: Map PWM IDs to Entrez Gene IDs.\n- `getOrthologFromMatrix(ids, organism)`: Convert motif IDs to Entrez IDs for a specific organism (human/mouse).\n- `getBiogridData()` / `processBiogrid()`: Download and process the latest PPI data from BioGRID.\n\n## Tips for Success\n- **ID Mapping**: Ensure all node names in your igraph object are Entrez Gene IDs (character strings), as this is the standard for `rTRM`'s internal mapping.\n- **Bridge Nodes**: Setting `max.bridge = 0` finds only direct interactors. `max.bridge = 1` is usually sufficient for biological relevance without creating \"hairball\" networks.\n- **External Enrichment**: While `rTRM` provides some motif tools, you can use `PWMEnrich` or `MotifDb` to generate the initial `query` list from ChIP-seq peaks.\n\n## Reference documentation\n- [Introduction](./references/Introduction.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rtrm",
+    "description": "This tool identifies Transcriptional Regulatory Modules by integrating protein-protein interaction networks, transcription factor binding motifs, and gene expression data. Use when user asks to identify transcriptional regulatory modules, find transcription factors that cooperate with a target protein, or visualize regulatory networks using specialized layouts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rTRM.html"
+  }
+}

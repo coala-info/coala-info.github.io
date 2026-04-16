@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-barcodetrackr",
+  "category": "bioconductor",
+  "name": "bioconductor-barcodetrackr",
+  "description": "The barcodetrackR package analyzes clonal tracking data from barcode count matrices to visualize and quantify clonal dynamics. Use when user asks to create SummarizedExperiment objects for clonal tracking, filter barcodes using thresholds, visualize clonal patterns with heatmaps or chord diagrams, or analyze clonal bias and diversity.",
+  "overview": "The `barcodetrackR` package is designed for the analysis of clonal tracking data, typically represented as matrices of barcode counts across multiple samples (e.g., different cell types or timepoints). It utilizes the `SummarizedExperiment` framework to manage data and metadata, providing a suite of tools for visualization (heatmaps, chord diagrams, ridge plots) and statistical analysis (diversity indices, correlation, and clonal bias).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/barcodetrackR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/dunbarlabNIH/barcodetrackR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "barcodetrackR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/barcodetrackR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/dunbarlabNIH/barcodetrackR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-barcodetrackr\n\n## Overview\nThe `barcodetrackR` package is designed for the analysis of clonal tracking data, typically represented as matrices of barcode counts across multiple samples (e.g., different cell types or timepoints). It utilizes the `SummarizedExperiment` framework to manage data and metadata, providing a suite of tools for visualization (heatmaps, chord diagrams, ridge plots) and statistical analysis (diversity indices, correlation, and clonal bias).\n\n## Core Workflow\n\n### 1. Data Preparation and Object Creation\nThe package requires a count dataframe (rows = barcodes, columns = samples) and a metadata dataframe. The metadata must contain a `SAMPLENAME` column matching the count matrix columns.\n\n```r\nlibrary(barcodetrackR)\nlibrary(SummarizedExperiment)\n\n# Create SummarizedExperiment (SE) object\n# threshold = 0 includes all barcodes initially\nmy_SE <- create_SE(your_data = count_dataframe,\n                   meta_data = metadata_dataframe,\n                   threshold = 0)\n\n# Access different data transformations (assays)\n# Options: \"counts\", \"proportions\", \"ranks\", \"normalized\" (CPM), \"logs\"\nassay(my_SE, \"proportions\")\n```\n\n### 2. Thresholding\nFilter out low-abundance barcodes that may represent sequencing noise.\n\n```r\n# Estimate a biological threshold based on capture efficiency\nmy_thresh <- estimate_barcode_threshold(capture_efficiency = 0.4,\n                                        population_size = 500000,\n                                        proportion_labeled = 0.3,\n                                        confidence_level = 0.95)\n\n# Apply threshold to the SE object\n# threshold_type can be \"relative\" (proportion) or \"absolute\" (counts)\nmy_SE_filtered <- threshold_SE(your_SE = my_SE,\n                               threshold_value = 0.005,\n                               threshold_type = \"relative\")\n```\n\n### 3. Visualizing Clonal Patterns\n\n#### Heatmaps\nUse `barcode_ggheatmap` to visualize the top N clones across samples.\n\n```r\nbarcode_ggheatmap(your_SE = my_SE[, samples_of_interest],\n                  n_clones = 10,\n                  assay = \"proportions\",\n                  dendro = TRUE,\n                  cellnote_assay = \"stars\") # Mark top clones\n```\n\n#### Chord Diagrams\nVisualize shared clones between compartments.\n\n```r\n# Unweighted: link width = number of shared clones\nchord_diagram(my_SE[, samples], plot_label = \"celltype\")\n\n# Weighted: link width = proportional contribution of shared clones\nchord_diagram(my_SE[, samples], weighted = TRUE)\n```\n\n### 4. Clonal Bias and Diversity\n\n#### Clonal Bias\nCompare the abundance of clones between two lineages or conditions.\n\n```r\n# Ridge plot for density estimation of bias\nbias_ridge_plot(your_SE = my_SE,\n                split_bias_on = \"celltype\",\n                bias_1 = \"B\",\n                bias_2 = \"Gr\",\n                split_bias_over = \"months\",\n                weighted = TRUE)\n\n# Line plot to track individual clone bias over time\nbias_lineplot(your_SE = my_SE,\n              split_bias_on = \"celltype\",\n              bias_1 = \"Gr\",\n              bias_2 = \"Mo\",\n              split_bias_over = \"months\")\n```\n\n#### Diversity Indices\nCalculate alpha diversity (within-sample) or beta diversity (between-sample).\n\n```r\n# Alpha diversity: Shannon, Simpson, or Invsimpson\nclonal_diversity(my_SE,\n                 plot_over = \"months\",\n                 group_by = \"celltype\",\n                 index_type = \"shannon\")\n\n# Beta diversity: MDS/PCoA plot\nmds_plot(my_SE, \n         group_by = \"celltype\",\n         method_dist = \"bray\", \n         assay = \"proportions\")\n```\n\n## Statistical Testing\nMost functions include a `return_table` argument. Set this to `TRUE` to retrieve the raw calculations instead of the plot.\n\n```r\n# Statistical comparison of barcode proportions between samples\nstats <- barcode_stat_test(your_SE = my_SE[, samples],\n                           sample_size = rep(40000, length(samples)),\n                           stat_test = \"chi-squared\",\n                           stat_option = \"subsequent\")\n```\n\n## Tips for Success\n- **Sample Ordering**: Always ensure your `colData(my_SE)` is ordered correctly before plotting longitudinal data.\n- **Assay Selection**: Use `\"proportions\"` for most visualizations and `\"logs\"` for distance-based clustering or MDS plots.\n- **Shiny App**: For interactive exploration, use `barcodetrackR::launchApp()`.\n- **Filtering**: Use `filter_by` and `filter_selection` within plotting functions to subset data dynamically without creating new SE objects.\n\n## Reference documentation\n- [Introduction to barcodetrackR](./references/Introduction_to_barcodetrackR.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-barcodetrackr",
+    "description": "The barcodetrackR package analyzes clonal tracking data from barcode count matrices to visualize and quantify clonal dynamics. Use when user asks to create SummarizedExperiment objects for clonal tracking, filter barcodes using thresholds, visualize clonal patterns with heatmaps or chord diagrams, or analyze clonal bias and diversity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/barcodetrackR.html"
+  }
+}

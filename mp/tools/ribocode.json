@@ -1,0 +1,51 @@
+{
+  "id": "ribocode",
+  "category": "CLI",
+  "name": "ribocode",
+  "description": "RiboCode identifies translated open reading frames by analyzing the periodic patterns of ribosome-protected fragments in Ribo-seq data. Use when user asks to identify translated ORFs, determine P-site offsets, prepare transcriptome annotations, or quantify ribosome-protected fragments for predicted ORFs.",
+  "overview": "RiboCode is a computational framework designed to detect translated ORFs by analyzing the periodic patterns of ribosome-protected fragments (RPFs). It transforms raw sequencing alignments into high-confidence translation maps by identifying the specific P-site locations for different read lengths and applying statistical tests to distinguish true translation from background noise. It is particularly useful for discovering non-canonical ORFs, such as those in lncRNAs, uORFs, or alternative frames",
+  "homepage": "https://github.com/xryanglab/RiboCode",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ribocode/overview",
+  "github": "https://github.com/xryanglab/RiboCode",
+  "conda_downloads": "44.9K",
+  "conda_downloads_num": 44900,
+  "last_updated": "2025-12-15",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ribocode_prepare_transcripts",
+      "ribocode_GTFupdate",
+      "ribocode_metaplots",
+      "ribocode_RiboCode"
+    ],
+    "description": "This script is designed for preparing transcripts annotation files.",
+    "docker_image": "quay.io/biocontainers/ribocode:1.2.15--pyhdc42f0e_1",
+    "homepage": "https://github.com/xryanglab/RiboCode",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ribocode/overview",
+    "github": "https://github.com/xryanglab/RiboCode",
+    "conda_downloads": "44.9K",
+    "last_updated": "2025-12-15",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ribocode_GTFupdate.cwl",
+    "ribocode_RiboCode.cwl",
+    "ribocode_metaplots.cwl",
+    "ribocode_prepare_transcripts.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ribocode\n\n## Overview\nRiboCode is a computational framework designed to detect translated ORFs by analyzing the periodic patterns of ribosome-protected fragments (RPFs). It transforms raw sequencing alignments into high-confidence translation maps by identifying the specific P-site locations for different read lengths and applying statistical tests to distinguish true translation from background noise. It is particularly useful for discovering non-canonical ORFs, such as those in lncRNAs, uORFs, or alternative frames.\n\n## Core Workflow\n\n### 1. Annotation Preparation\nBefore analysis, convert genomic GTF and FASTA files into a RiboCode-optimized format.\n```bash\nprepare_transcripts -g annotation.gtf -f genome.fa -o RiboCode_annot\n```\n*Note: If your GTF lacks 'gene' or 'transcript' features (common in non-GENCODE/Ensembl files), use `GTFupdate original.gtf > updated.gtf` first.*\n\n### 2. Metaplot Analysis & P-site Identification\nIdentify the P-site offset for each RPF read length. This step is critical for capturing the 3-nucleotide periodicity of the ribosome.\n```bash\nmetaplots -a RiboCode_annot -r alignment.toTranscriptome.bam -o output_metaplots\n```\n*   **Input**: Must be a BAM file aligned to the **transcriptome**.\n*   **Output**: A config file (usually `config.txt`) containing the optimal read lengths and their corresponding P-site offsets.\n\n### 3. ORF Detection\nRun the main engine to identify translated ORFs based on the periodicity of the P-sites.\n```bash\nRiboCode -a RiboCode_annot -c config.txt -l long -o final_results\n```\n*   **-l**: Use 'long' for the longest ORF strategy or 'all' to report all potential ORFs.\n*   **-p**: Set a p-value cutoff (default is 0.05).\n\n### 4. One-Step Execution\nFor standard pipelines, use the wrapper command to run the entire process (excluding annotation prep).\n```bash\nRiboCode_onestep -a RiboCode_annot -r alignment.bam -o output_dir\n```\n\n## Advanced CLI Patterns\n\n### Statistical Adjustments\nFor more stringent ORF detection, especially in complex transcriptomes:\n*   `--pval_adj`: Apply multiple testing correction to p-values.\n*   `--stouffer_adj`: Adjust combined p-values to account for dependence between frame tests (F0 vs F1 and F0 vs F2).\n*   `--dependence_test`: Measure density dependence between frames to determine if p-value adjustment is necessary.\n\n### Quantifying RPFs\nTo count reads aligned to the predicted ORFs for downstream differential translation analysis:\n```bash\nORFcount -a RiboCode_annot -c config.txt -r alignment.bam -f final_results.txt -o ORF_counts.txt\n```\n\n### Output Formats\nBy default, results are tabular. Use the following to generate genome-browser compatible files:\n*   `--gtf`: Output predicted ORFs in GTF format.\n*   `--plot-annotated-orf`: Generate plots for specific annotated ORFs to visually inspect periodicity.\n\n## Expert Tips\n*   **Alignment Requirements**: Ensure Ribo-seq reads are aligned with `EndToEnd` mapping (no soft-clipping) and mapped to the transcriptome for `metaplots`. STAR is the recommended aligner.\n*   **rRNA Depletion**: Always perform an initial alignment to rRNA sequences (using Bowtie) before mapping to the genome to reduce noise.\n*   **Periodicity Check**: Review the PDF output from `metaplots`. If you do not see a clear peak at a specific offset for a given read length, exclude that length from the `config.txt` to improve signal-to-noise ratio.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| GTFupdate | This script is designed for preparing the appropriate GTF file from custom GTF file (or those not from ENSEMBL/GENCODE database) |\n| RiboCode | The main function designed for detecting ORF using ribosome-profiling data. |\n| metaplots | This script create aggregate plots of distances from the 5'end of reads to start or stop codons, which help determine the length range of the PRF reads that are most likely originated from the translating ribosomes and identify the P-site locations for each reads lengths. |\n| prepare_transcripts | This script is designed for preparing transcripts annotation files. |\n\n## Reference documentation\n- [RiboCode GitHub README](./references/github_com_xryanglab_RiboCode_blob_master_README.rst.md)\n- [GTF Preparation Guide](./references/github_com_xryanglab_RiboCode_blob_master_data_GTF_update.rst.md)\n- [ChangeLog and Version History](./references/github_com_xryanglab_RiboCode_blob_master_ChangeLog.rst.md)",
+  "skill_front_matter": {
+    "name": "ribocode",
+    "description": "RiboCode identifies translated open reading frames by analyzing the periodic patterns of ribosome-protected fragments in Ribo-seq data. Use when user asks to identify translated ORFs, determine P-site offsets, prepare transcriptome annotations, or quantify ribosome-protected fragments for predicted ORFs.",
+    "homepage": "https://github.com/xryanglab/RiboCode"
+  }
+}

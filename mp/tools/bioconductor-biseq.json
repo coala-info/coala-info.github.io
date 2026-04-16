@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biseq",
+  "category": "bioconductor",
+  "name": "bioconductor-biseq",
+  "description": "BiSeq analyzes targeted bisulfite sequencing data to detect differentially methylated regions through CpG clustering and beta regression. Use when user asks to detect differentially methylated regions, perform CpG clustering, smooth methylation data, or test for group-wise methylation differences in RRBS data.",
+  "overview": "The `BiSeq` package is designed for the analysis of targeted bisulfite sequencing data (e.g., RRBS). It provides a specialized workflow to detect Differentially Methylated Regions (DMRs) by clustering CpG sites, smoothing methylation levels, and applying a hierarchical testing procedure based on beta regression. It handles both group-wise comparisons and two-sample comparisons.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BiSeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biseq/overview",
+  "github": "N/A",
+  "conda_downloads": "41.4K",
+  "conda_downloads_num": 41400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BiSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiSeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biseq/overview",
+    "github": "N/A",
+    "conda_downloads": "41.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biseq\n\nname: bioconductor-biseq\ndescription: Analysis of targeted bisulfite sequencing (BS) data, such as RRBS. Use this skill to detect differentially methylated regions (DMRs) between groups or samples, perform CpG clustering, smooth methylation data using beta regression, and test predefined genomic regions.\n\n# bioconductor-biseq\n\n## Overview\n\nThe `BiSeq` package is designed for the analysis of targeted bisulfite sequencing data (e.g., RRBS). It provides a specialized workflow to detect Differentially Methylated Regions (DMRs) by clustering CpG sites, smoothing methylation levels, and applying a hierarchical testing procedure based on beta regression. It handles both group-wise comparisons and two-sample comparisons.\n\n## Data Import and Classes\n\nThe package utilizes two primary classes derived from `RangedSummarizedExperiment`:\n- `BSraw`: Holds raw data (total reads and methylated reads).\n- `BSrel`: Holds relative methylation levels (0 to 1).\n\n### Importing Bismark Output\n```R\nlibrary(BiSeq)\n# files: vector of paths to Bismark methylation extractor output\n# colData: DataFrame with sample metadata\nrrbs <- readBismark(files, colData)\n```\n\n### Manual Object Creation\n```R\n# Create BSraw\nrrbs <- BSraw(metadata = list(), rowRanges = gr, colData = df, \n              totalReads = total_mat, methReads = meth_mat)\n\n# Convert to BSrel\nrrbs.rel <- rawToRel(rrbs)\n```\n\n## Workflow: Detection of DMRs (Groups)\n\n### 1. Define CpG Clusters\nIdentify regions with high spatial density of CpG sites.\n```R\nrrbs.clust <- clusterSites(object = rrbs, \n                           groups = colData(rrbs)$group, \n                           perc.samples = 4/5, \n                           min.sites = 20, \n                           max.dist = 100)\n```\n\n### 2. Smooth Methylation Data\nLimit coverage to reduce bias and predict methylation levels.\n```R\n# Limit coverage to 90% quantile\nquant <- quantile(totalReads(rrbs.clust)[totalReads(rrbs.clust) > 0], 0.9)\nrrbs.lim <- limitCov(rrbs.clust, maxCov = quant)\n\n# Smooth data\npredictedMeth <- predictMeth(object = rrbs.lim, mc.cores = 4)\n```\n\n### 3. Model and Test Group Effect\nUse beta regression to model methylation.\n```R\nbetaResults <- betaRegression(formula = ~group, \n                              link = \"probit\", \n                              object = predictedMeth, \n                              type = \"BR\")\n```\n\n### 4. Hierarchical Testing\nEstimate the variogram under the null hypothesis (using resampled data) to account for spatial correlation, then test clusters.\n```R\n# 1. Estimate variogram (usually on resampled/null data)\nvario <- makeVariogram(betaResultsNull)\nvario.sm <- smoothVariogram(vario, sill = 0.9)\n\n# 2. Estimate local correlation\nvario.sm$pValsList <- makeVariogram(betaResults, make.variogram=FALSE)$pValsList\nlocCor <- estLocCor(vario.sm)\n\n# 3. Test clusters\nclusters.rej <- testClusters(locCor, FDR.cluster = 0.1)\n\n# 4. Trim clusters to find specific CpG sites\nclusters.trimmed <- trimClusters(clusters.rej, FDR.loc = 0.05)\n```\n\n### 5. Define DMR Boundaries\n```R\nDMRs <- findDMRs(clusters.trimmed, max.dist = 100, diff.dir = TRUE)\n```\n\n## Two-Sample Comparison\nFor comparing exactly two samples without replicates:\n```R\nDMRs.2 <- compareTwoSamples(object = predictedMeth, \n                            sample1 = \"SampleA\", \n                            sample2 = \"SampleB\", \n                            minDiff = 0.3, \n                            max.dist = 100)\n```\n\n## Testing Predefined Regions\nInstead of `clusterSites`, assign CpG sites to known regions (e.g., promoters).\n```R\n# Subset data by overlaps with promoters GRanges\nrrbs.red <- subsetByOverlaps(rrbs, promoters)\nov <- findOverlaps(rrbs.red, promoters)\nrowRanges(rrbs.red)$cluster.id[queryHits(ov)] <- promoters$id[subjectHits(ov)]\n\n# Proceed with smoothing and betaRegression\n```\n\n## Visualization and Annotation\n- `plotMeth(object.raw, object.rel, region)`: Compare raw and smoothed data.\n- `plotMethMap(predictedMeth, region, groups)`: Heatmap of methylation levels.\n- `plotSmoothMeth(predictedMeth, region, groups)`: Plot smoothed curves.\n- `annotateGRanges(DMRs, regions, name, regionInfo)`: Annotate DMRs with genomic features.\n- `writeBED(object, name, file)`: Export tracks for IGV visualization.\n\n## Reference documentation\n- [BiSeq](./references/BiSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biseq",
+    "description": "BiSeq analyzes targeted bisulfite sequencing data to detect differentially methylated regions through CpG clustering and beta regression. Use when user asks to detect differentially methylated regions, perform CpG clustering, smooth methylation data, or test for group-wise methylation differences in RRBS data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BiSeq.html"
+  }
+}

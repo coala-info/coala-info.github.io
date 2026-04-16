@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-purecn",
+  "category": "bioconductor",
+  "name": "bioconductor-purecn",
+  "description": "PureCN performs purity and ploidy aware copy number calling and SNV classification for cancer samples using targeted sequencing data. Use when user asks to estimate tumor purity, infer integer copy number, classify variants as germline or somatic, and normalize coverage against a pool of normals.",
+  "overview": "PureCN is a specialized R package for copy number calling and variant classification in cancer samples, particularly optimized for targeted sequencing without matched normals (though matched normals are supported). It jointly utilizes target-level coverage data and allelic fractions of SNVs to provide a purity/ploidy-aware model of the tumor genome.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PureCN.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/lima1/PureCN",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PureCN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PureCN.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/lima1/PureCN",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-purecn\n\nname: bioconductor-purecn\ndescription: Purity and ploidy aware copy number calling and SNV classification for cancer samples. Use this skill when analyzing targeted sequencing data (hybrid capture) to estimate tumor purity, infer integer copy number, and classify variants as germline vs. somatic or clonal vs. sub-clonal.\n\n# bioconductor-purecn\n\n## Overview\n\nPureCN is a specialized R package for copy number calling and variant classification in cancer samples, particularly optimized for targeted sequencing without matched normals (though matched normals are supported). It jointly utilizes target-level coverage data and allelic fractions of SNVs to provide a purity/ploidy-aware model of the tumor genome.\n\n## Core Workflow\n\n### 1. Pre-processing Intervals\nBefore analysis, optimize the capture kit's target intervals (BED file). This step splits large targets and annotates them with GC-content and mappability.\n\n```r\nlibrary(PureCN)\nreference.file <- \"path/to/reference.fa\"\nbed.file <- \"path/to/targets.bed\"\nmappability.file <- \"path/to/mappability.bigWig\"\n\nintervals <- import(bed.file)\npreprocessIntervals(intervals, reference.file, \n                    mappability = mappability.file, \n                    output.file = \"targets_gc.txt\")\n```\n\n### 2. Coverage Calculation and Normalization\nCalculate coverage from BAM files and normalize against a pool of normals (PON) to remove assay-specific biases.\n\n```r\n# Calculate coverage for a single BAM\ncalculateBamCoverageByInterval(bam.file = \"tumor.bam\", \n                               interval.file = \"targets_gc.txt\", \n                               output.file = \"tumor_coverage.txt\")\n\n# Create a Normal Database (PON)\nnormal.coverage.files <- c(\"norm1_cov.txt\", \"norm2_cov.txt\")\nnormalDB <- createNormalDatabase(normal.coverage.files)\nsaveRDS(normalDB, file = \"normalDB.rds\")\n```\n\n### 3. Mapping Bias Estimation\nUse a VCF containing variants from the normal samples to learn position-specific mapping biases.\n\n```r\nbias <- calculateMappingBiasVcf(\"normal_panel.vcf.gz\", genome = \"hg19\")\nsaveRDS(bias, \"mapping_bias.rds\")\n```\n\n### 4. Main Analysis Run\nThe `runAbsoluteCN` function is the primary entry point. It performs the joint likelihood estimation of purity, ploidy, and copy number.\n\n```r\nret <- runAbsoluteCN(tumor.coverage.file = \"tumor_coverage.txt\",\n                     vcf.file = \"variants.vcf.gz\",\n                     genome = \"hg19\",\n                     sampleid = \"Sample1\",\n                     interval.file = \"targets_gc.txt\",\n                     normalDB = normalDB,\n                     args.setMappingBiasVcf = list(mapping.bias.file = \"mapping_bias.rds\"),\n                     post.optimize = TRUE)\n```\n\n## Interpreting Results\n\n### Visualizing Solutions\nPureCN generates multiple candidate solutions. The first one is the maximum likelihood solution.\n\n```r\n# Plot the overview of local optima\nplotAbs(ret, type = \"overview\")\n\n# Plot the copy number fit (histogram and BAF) for the top solution\nplotAbs(ret, 1, type = \"hist\")\nplotAbs(ret, 1, type = \"BAF\")\n```\n\n### Extracting Data\n*   **Somatic Status:** Use `predictSomatic(ret)` to get posterior probabilities for somatic vs. germline status and cellular fraction.\n*   **Gene-level Calls:** Use `callAlterations(ret)` to identify amplifications and deletions.\n*   **LOH:** Use `callLOH(ret)` to find genomic regions with loss of heterozygosity.\n\n## Best Practices\n\n*   **Pool of Normals:** Always use a PON for coverage normalization, even if a matched normal is available. A PON of 10-50 samples is ideal.\n*   **Off-target Reads:** For targeted panels, including off-target coverage can significantly improve segmentation, especially in \"quiet\" genomes.\n*   **Curation:** Always manually curate the results using `createCurationFile(file.rds)`. Check if the log-ratio peaks align with integer copy number states in the histogram.\n*   **Low Purity:** For samples with <10% purity (e.g., cfDNA), use `callAmplificationsInLowPurity` which employs a z-score approach.\n\n## Reference documentation\n\n- [PureCN: Copy number calling and SNV classification](./references/PureCN.md)\n- [PureCN Best Practices](./references/Quick.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-purecn",
+    "description": "PureCN performs purity and ploidy aware copy number calling and SNV classification for cancer samples using targeted sequencing data. Use when user asks to estimate tumor purity, infer integer copy number, classify variants as germline or somatic, and normalize coverage against a pool of normals.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PureCN.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-illuminahumanv3.db",
+  "category": "bioconductor",
+  "name": "bioconductor-illuminahumanv3.db",
+  "description": "This package provides annotation data for mapping Illumina Humanv3 expression microarray probe identifiers to biological metadata like Gene Symbols, Entrez IDs, and GO terms. Use when user asks to map Illumina Humanv3 probes to gene identifiers, retrieve probe sequences, assess probe quality, or perform functional annotation using KEGG and GO pathways.",
+  "overview": "The `illuminaHumanv3.db` package is a Bioconductor annotation data package for the Illumina Humanv3 platform. It provides SQLite-based mappings between manufacturer probe identifiers and various public identifiers. A unique feature of this package is the inclusion of \"New Mappings\" based on a re-annotation pipeline that provides probe-specific quality grades and genomic coordinates.",
+  "homepage": "https://bioconductor.org/packages/release/data/annotation/html/illuminaHumanv3.db.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-illuminahumanv3.db/overview",
+  "github": "N/A",
+  "conda_downloads": "5.5K",
+  "conda_downloads_num": 5500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "illuminaHumanv3.db"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/illuminaHumanv3.db.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-illuminahumanv3.db/overview",
+    "github": "N/A",
+    "conda_downloads": "5.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-illuminahumanv3.db\n\nname: bioconductor-illuminahumanv3.db\ndescription: Use this skill when working with the Bioconductor annotation package illuminaHumanv3.db. This is essential for mapping Illumina Humanv3 expression microarray probe identifiers to various biological annotations such as Entrez Gene IDs, Gene Symbols, GO terms, KEGG pathways, and genomic locations. Use this skill to perform identifier conversions, retrieve probe sequences, or assess probe quality based on re-annotation data.\n\n## Overview\n\nThe `illuminaHumanv3.db` package is a Bioconductor annotation data package for the Illumina Humanv3 platform. It provides SQLite-based mappings between manufacturer probe identifiers and various public identifiers. A unique feature of this package is the inclusion of \"New Mappings\" based on a re-annotation pipeline that provides probe-specific quality grades and genomic coordinates.\n\n## Core Workflows\n\n### Loading the Package and Exploring Objects\nTo begin, load the library and list available mapping objects:\n```R\nlibrary(illuminaHumanv3.db)\n# List all available mapping objects\nls(\"package:illuminaHumanv3.db\")\n```\n\n### Basic Identifier Mapping\nMappings are typically used by converting the map object to a list or using the `select()` function from `AnnotationDbi`.\n\n**Using `as.list()`:**\n```R\n# Map probes to Gene Symbols\nprobes <- c(\"ILMN_1720131\", \"ILMN_1804541\")\nsymbols <- as.list(illuminaHumanv3SYMBOL[probes])\n\n# Map probes to Entrez IDs\nentrez_ids <- as.list(illuminaHumanv3ENTREZID[probes])\n```\n\n**Using `mappedkeys()` to find annotated probes:**\n```R\nx <- illuminaHumanv3SYMBOL\nmapped_probes <- mappedkeys(x)\n# Get first 5 mappings\nas.list(x[mapped_probes[1:5]])\n```\n\n### Using Re-annotation Data (Custom Mappings)\nThis package provides enhanced probe information not found in standard chip packages.\n\n**Checking Probe Quality:**\nIt is recommended to filter for \"Perfect\" or \"Good\" probes.\n```R\n# View available custom mappings\nilluminaHumanv3listNewMappings()\n\n# Get probe quality grades\nqual <- as.list(illuminaHumanv3PROBEQUALITY)\ntable(unlist(qual)) # Summary of quality across the chip\n```\n\n**Retrieving Probe Sequences and Genomic Locations:**\n```R\n# Get 50-mer probe sequences\nseqs <- as.list(illuminaHumanv3PROBESEQUENCE[probes])\n\n# Get genomic coordinates (hg19)\nlocs <- as.list(illuminaHumanv3GENOMICLOCATION[probes])\n```\n\n### Functional Annotation (GO and KEGG)\n**Gene Ontology (GO):**\n`illuminaHumanv3GO` provides direct associations. For all associations (including child terms), use `illuminaHumanv3GO2ALLPROBES`.\n```R\n# Get GO terms for a probe\nprobe_go <- as.list(illuminaHumanv3GO[[\"ILMN_1720131\"]])\n# Access specific elements: GOID, Ontology (BP, CC, MF), Evidence\nprobe_go[[1]][[\"Ontology\"]]\n```\n\n**KEGG Pathways:**\n```R\n# Map probes to KEGG pathway IDs\npathways <- as.list(illuminaHumanv3PATH[[\"ILMN_1720131\"]])\n```\n\n### Reverse Mappings\nTo map from a biological identifier back to Illumina probes, use `revmap()`:\n```R\n# Map Gene Symbols back to Probes\nsym_to_probe <- revmap(illuminaHumanv3SYMBOL)\nprobes_for_gene <- sym_to_probe[[\"TP53\"]]\n```\n\n## Database Connection and Metadata\nTo query the underlying SQLite database directly or check metadata:\n```R\n# Get database metadata\nilluminaHumanv3_dbInfo()\n\n# Get number of mapped keys for all maps\nilluminaHumanv3MAPCOUNTS\n\n# Direct SQL query example\nconn <- illuminaHumanv3_dbconn()\ndbGetQuery(conn, \"SELECT COUNT(*) FROM probes\")\n```\n\n## Tips\n- **Probe Quality:** Always check `illuminaHumanv3PROBEQUALITY`. Probes marked as \"Bad\" or \"No match\" should generally be excluded from downstream analysis.\n- **Consensus IDs:** For `ENTREZID` mappings, if multiple IDs exist, the package attempts to select a consensus or the smallest identifier.\n- **Version Info:** Use `illuminaHumanv3ORGANISM` and `illuminaHumanv3ORGPKG` to programmatically confirm the target species (Homo sapiens) and the underlying organism package (org.Hs.eg.db).\n\n## Reference documentation\n- [illuminaHumanv3.db Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-illuminahumanv3.db",
+    "description": "This package provides annotation data for mapping Illumina Humanv3 expression microarray probe identifiers to biological metadata like Gene Symbols, Entrez IDs, and GO terms. Use when user asks to map Illumina Humanv3 probes to gene identifiers, retrieve probe sequences, assess probe quality, or perform functional annotation using KEGG and GO pathways.",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/illuminaHumanv3.db.html"
+  }
+}

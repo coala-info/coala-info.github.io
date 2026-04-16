@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msgbsr",
+  "category": "bioconductor",
+  "name": "bioconductor-msgbsr",
+  "description": "This package analyzes Methylation Sensitive Genotyping by Sequencing (MS-GBS) data to identify differentially methylated sites. Use when user asks to import read counts from BAM files, verify restriction enzyme cut sites, perform differential methylation analysis, or visualize genomic distributions of methylation data.",
+  "overview": "The `msgbsR` package is designed for the analysis of Methylation Sensitive Genotyping by Sequencing (MS-GBS) data. It allows users to import read counts from BAM files, verify that the reads correspond to correct restriction enzyme (RE) cut sites (e.g., MspI), perform differential methylation analysis using an edgeR-based wrapper, and visualize results through count plots and circos plots.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/msgbsR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "msgbsR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msgbsR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msgbsr\n\nname: bioconductor-msgbsr\ndescription: Analysis of Methylation Sensitive Genotyping by Sequencing (MS-GBS) data. Use when analyzing BAM files from MS-GBS experiments to identify differentially methylated sites, verify restriction enzyme cut sites, and visualize read counts or genomic distributions.\n\n# bioconductor-msgbsr\n\n## Overview\nThe `msgbsR` package is designed for the analysis of Methylation Sensitive Genotyping by Sequencing (MS-GBS) data. It allows users to import read counts from BAM files, verify that the reads correspond to correct restriction enzyme (RE) cut sites (e.g., MspI), perform differential methylation analysis using an edgeR-based wrapper, and visualize results through count plots and circos plots.\n\n## Workflow\n\n### 1. Data Import\nThe pipeline begins with sorted and indexed BAM files. Use `rawCounts` to generate a `RangedSummarizedExperiment` object.\n\n```r\nlibrary(msgbsR)\nlibrary(GenomicRanges)\nlibrary(SummarizedExperiment)\n\n# Import data from a directory of BAM files\nse <- rawCounts(bamFilepath = \"path/to/bam_directory\", threads = 1)\n\n# Add sample metadata\ncolData(se) <- DataFrame(Group = c(\"Control\", \"Control\", \"Experimental\", \"Experimental\"),\n                         row.names = colnames(assay(se)))\n```\n\n### 2. Verification of Cut Sites\nTo ensure data quality, verify that the reads align with the expected restriction enzyme recognition sequence.\n\n**Note:** You must adjust the cut site coordinates to cover the recognition sequence based on the strand. For MspI (C/CGG):\n\n```r\ncutSites <- rowRanges(se)\n\n# Adjust positions to overlap the recognition site\nstart(cutSites) <- ifelse(test = strand(cutSites) == '+', \n                          yes = end(cutSites) + 2, no = end(cutSites) + 1)\nend(cutSites) <- ifelse(test = strand(cutSites) == '+', \n                        yes = start(cutSites) - 1, no = start(cutSites) - 2)\n\n# Check against a BSgenome or fasta file\nlibrary(BSgenome.Rnorvegicus.UCSC.rn6)\ncorrectCuts <- checkCuts(cutSites = cutSites, genome = \"rn6\", seq = \"CCGG\")\n\n# Filter the SummarizedExperiment to keep only correct sites\nse <- subsetByOverlaps(se, correctCuts)\n```\n\n### 3. Visualization of Read Counts\nVisualize the distribution of total reads versus the number of unique cut sites per sample to identify outliers or group-wise biases.\n\n```r\nplotCounts(se = se, cateogory = \"Group\")\n```\n\n### 4. Differential Methylation Analysis\n`msgbsR` provides a wrapper for `edgeR` to identify differentially methylated sites.\n\n```r\ntop <- diffMeth(se = se, \n                cateogory = \"Group\", \n                condition1 = \"Control\", \n                condition2 = \"Experimental\",\n                cpmThreshold = 1, \n                thresholdSamples = 1)\n\n# Filter for significant sites\nsig_sites <- top[top$FDR < 0.05, ]\n```\n\n### 5. Genomic Visualization\nUse `plotCircos` to visualize the genomic distribution of differentially methylated sites.\n\n```r\n# Define chromosome lengths (example for Rat chr20)\nratChr <- seqlengths(BSgenome.Rnorvegicus.UCSC.rn6)[\"chr20\"]\n\n# Extract significant sites as GRanges\nmy_cuts <- GRanges(top$site[which(top$FDR < 0.05)])\n\n# Generate plot\nplotCircos(cutSites = my_cuts, \n           seqlengths = ratChr,\n           cutSite.colour = \"red\", \n           seqlengths.colour = \"blue\")\n```\n\n## Tips\n- **BAM Requirements:** Ensure BAM files are both sorted and indexed (.bai files must be present in the same directory).\n- **Strand Specificity:** The adjustment of cut sites is critical for `checkCuts()`. If using an enzyme other than MspI, the offset values (+2, +1, etc.) must be modified to match that enzyme's specific cleavage pattern.\n- **Memory:** For large datasets, use the `threads` parameter in `rawCounts` to speed up processing.\n\n## Reference documentation\n- [msgbsR Vignette](./references/msgbsR_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msgbsr",
+    "description": "This package analyzes Methylation Sensitive Genotyping by Sequencing (MS-GBS) data to identify differentially methylated sites. Use when user asks to import read counts from BAM files, verify restriction enzyme cut sites, perform differential methylation analysis, or visualize genomic distributions of methylation data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msgbsR.html"
+  }
+}

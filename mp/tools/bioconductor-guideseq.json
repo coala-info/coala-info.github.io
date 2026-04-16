@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-guideseq",
+  "category": "bioconductor",
+  "name": "bioconductor-guideseq",
+  "description": "This package analyzes GUIDE-seq and PEtag-seq data to identify CRISPR-Cas9 off-target cleavage sites. Use when user asks to identify off-target sites, process UMI-tagged sequencing data, call peaks from double-stranded oligonucleotide integration assays, or map sequence homology to a guide RNA.",
+  "overview": "The `GUIDEseq` package provides a comprehensive pipeline for analyzing GUIDE-seq (Genome-wide Unbiased Identification of DSBs Enabled by Sequencing) data. It processes raw alignment files to identify unique cleavage events, clusters them into peaks, and annotates these peaks by searching for homology with the target guide RNA (gRNA) and Protospacer Adjacent Motif (PAM).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GUIDEseq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-guideseq/overview",
+  "github": "N/A",
+  "conda_downloads": "33.4K",
+  "conda_downloads_num": 33400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GUIDEseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GUIDEseq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-guideseq/overview",
+    "github": "N/A",
+    "conda_downloads": "33.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-guideseq\n\nname: bioconductor-guideseq\ndescription: Analysis of GUIDE-seq and PEtag-seq data to identify CRISPR-Cas9 off-target cleavage sites. Use this skill when analyzing high-throughput sequencing data from double-stranded oligonucleotide (dsODN) integration assays, including UMI filtering, peak calling, and off-target sequence homology mapping.\n\n# bioconductor-guideseq\n\n## Overview\n\nThe `GUIDEseq` package provides a comprehensive pipeline for analyzing GUIDE-seq (Genome-wide Unbiased Identification of DSBs Enabled by Sequencing) data. It processes raw alignment files to identify unique cleavage events, clusters them into peaks, and annotates these peaks by searching for homology with the target guide RNA (gRNA) and Protospacer Adjacent Motif (PAM).\n\n## Core Workflow\n\nThe package can be used either as a single wrapper function or as a step-by-step pipeline for finer control.\n\n### 1. All-in-One Analysis\nThe `GUIDEseqAnalysis` function executes the entire pipeline from alignment files to annotated off-targets.\n\n```r\nlibrary(GUIDEseq)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\nresults <- GUIDEseqAnalysis(\n    alignment.inputfile = \"path/to/sorted.bam\",\n    umi.inputfile = \"path/to/umi_reads.txt\",\n    gRNA.file = \"path/to/gRNA.fa\",\n    BSgenomeName = Hsapiens,\n    min.reads = 1,\n    n.cores.max = 1\n)\n# Access results\nresults$offTargets    # Annotated off-target sites\nresults$merged.peaks  # Identified cleavage sites\n```\n\n### 2. Step-by-Step Pipeline\n\n#### Step 1: Remove PCR Bias\nUse `getUniqueCleavageEvents` to filter reads and collapse PCR duplicates using Unique Molecular Identifiers (UMIs).\n\n```r\nuniqueCleavageEvents <- getUniqueCleavageEvents(\n    alignment.file = \"sorted.bam\", \n    umi.inputfile = \"umi.txt\",\n    n.cores.max = 1\n)\n# Returns a GRanges object of unique cleavage sites\ncleavage.gr <- uniqueCleavageEvents$cleavage.gr\n```\n\n#### Step 2: Peak Calling\nSummarize cleavage events into peaks using a sliding window approach.\n\n```r\npeaks <- getPeaks(\n    cleavage.gr, \n    window.size = 20, \n    step = 20, \n    min.reads = 2\n)\npeaks.gr <- peaks$peaks\n```\n\n#### Step 3: Merge Strands\nMerge peaks from the plus and minus strands that represent the same double-strand break.\n\n```r\nmergedPeaks <- mergePlusMinusPeaks(\n    peaks.gr = peaks.gr,\n    distance.threshold = 40,\n    plus.strand.start.gt.minus.strand.end = TRUE\n)\n```\n\n#### Step 4: Off-target Annotation\nSearch for sequence homology between identified peaks and the gRNA.\n\n```r\noffTargets <- offTargetAnalysisOfPeakRegions(\n    gRNA = \"gRNA.fa\",\n    peaks = mergedPeaks$mergedPeaks.gr,\n    BSgenomeName = Hsapiens,\n    max.mismatch = 3,\n    PAM.pattern = \"(NAG|NGG|NGA)$\",\n    PAM.size = 3,\n    gRNA.size = 20\n)\n```\n\n## Input Requirements\n\n- **Alignment File**: A BAM or BED file. If using BED, it must contain CIGAR information.\n- **UMI File**: A tab-delimited file with at least two columns: Read ID and the corresponding UMI sequence.\n- **Genome**: A `BSgenome` object corresponding to the organism (e.g., `BSgenome.Hsapiens.UCSC.hg19`).\n- **gRNA File**: A FASTA file containing the target spacer sequence (without the PAM).\n\n## Key Parameters\n\n- `min.reads`: Minimum number of unique reads required to call a peak. Increase this to reduce false positives in high-background datasets.\n- `window.size` / `step`: Controls the resolution of peak calling. Default is 20bp.\n- `distance.threshold`: Maximum distance between plus and minus strand peaks to be considered a single cleavage event.\n- `upstream` / `downstream`: The region around the peak to search for gRNA homology (default 50bp).\n\n## Reference documentation\n\n- [GUIDEseq user's guide](./references/GUIDEseq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-guideseq",
+    "description": "This package analyzes GUIDE-seq and PEtag-seq data to identify CRISPR-Cas9 off-target cleavage sites. Use when user asks to identify off-target sites, process UMI-tagged sequencing data, call peaks from double-stranded oligonucleotide integration assays, or map sequence homology to a guide RNA.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GUIDEseq.html"
+  }
+}

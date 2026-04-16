@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-narrowpeaks",
+  "category": "bioconductor",
+  "name": "bioconductor-narrowpeaks",
+  "description": "This package applies functional principal component analysis to ChIP-seq data to refine peak boundaries and analyze differential binding shapes. Use when user asks to shorten genomic peak locations, refine candidate peaks using FPCA, or quantify differences in peak shapes across conditions.",
+  "overview": "The `NarrowPeaks` package applies Functional Principal Component Analysis (FPCA) to ChIP-seq data. It is primarily used for two purposes:\n1. **Peak Refinement**: Post-processing candidate peaks (from callers like MACS or CSAR) to shorten genomic locations while preserving a specific proportion of variation in enrichment profiles.\n2. **Differential Binding**: Quantifying differences in peak shapes across multiple conditions or replicates using Hotelling’s T2 tests on functional principal componen",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/NarrowPeaks.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NarrowPeaks"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/NarrowPeaks.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-narrowpeaks\n\n## Overview\n\nThe `NarrowPeaks` package applies Functional Principal Component Analysis (FPCA) to ChIP-seq data. It is primarily used for two purposes:\n1. **Peak Refinement**: Post-processing candidate peaks (from callers like MACS or CSAR) to shorten genomic locations while preserving a specific proportion of variation in enrichment profiles.\n2. **Differential Binding**: Quantifying differences in peak shapes across multiple conditions or replicates using Hotelling’s T2 tests on functional principal component scores.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package works with enrichment scores. You must first convert WIG files into the binary format used by the `CSAR` package.\n\n```R\nlibrary(NarrowPeaks)\n# Convert WIG to CSAR binary format\n# nbchr: number of chromosomes; chrle: vector of chromosome lengths\nwigScores <- wig2CSARScore(wigfilename=\"data.wig\", nbchr = 1, chrle=c(30427671))\n```\n\n### 2. Defining Candidate Regions\nYou need a `GRanges` object of candidate peaks. These can be generated via `CSAR` or imported from BED files.\n\n```R\nlibrary(CSAR)\n# Generate candidates using CSAR\ncandidates <- sigWin(experiment=wigScores$infoscores, t=1.0, g=30)\n\n# OR import from BED (ensure a 'score' metadata column exists)\n# library(rtracklayer)\n# candidates <- import(\"peaks.bed\")\n```\n\n### 3. Narrowing Peaks\nThe `narrowpeaks` function is the primary tool for trimming regions based on FPCA.\n\n```R\n# nbf: number of B-spline basis functions\n# pv: percentage of variance to capture\n# pmaxscor: narrowing threshold (0 = no trimming, 100 = punctate source)\nres <- narrowpeaks(inputReg=candidates, \n                   scoresInfo=wigScores$infoscores, \n                   nbf=25, \n                   pv=80, \n                   pmaxscor=3.0)\n\n# Access results\nbroad <- res$broadPeaks   # Original peaks with FPCA scores\nnarrow <- res$narrowPeaks # Trimmed/shortened peaks\n```\n\n### 4. Differential Variation Analysis\nTo compare shapes across conditions, use `narrowpeaksDiff`. This requires a consensus list of peaks and multiple samples.\n\n```R\n# Hotelling's T2 test is used to identify significant differences in shapes\n# across conditions (requires replicates > number of PCs)\n# result <- narrowpeaksDiff(bedFile=\"consensus_peaks.bed\", \n#                           samples=list(cond1_reps, cond2_reps), ...)\n```\n\n## Key Parameters\n\n- `nbf`: Number of B-spline basis functions. Increase for complex peak shapes; 25 is a standard starting point.\n- `pv`: Minimum percentage of variance to be explained by the principal components.\n- `pmaxscor`: The \"Narrowing Threshold\". \n    - `0.0`: No trimming; useful for ranking peaks by `fpcaScore` without changing coordinates.\n    - `1.0-10.0`: Typical range for refining peak boundaries.\n    - `100.0`: Returns only the single point of maximum variation.\n- `ms`: Merge distance. If sub-peaks are within `ms` bp after trimming, they are merged.\n\n## Exporting Results\nResults are standard `GRanges` objects and can be exported using `rtracklayer`.\n\n```R\nlibrary(rtracklayer)\nexport.bed(res$narrowPeaks, con=\"refined_peaks.bed\")\n```\n\n## Reference documentation\n\n- [Analysis of Transcription Factor Binding ChIP-seq Data using Functional PCA](./references/NarrowPeaks.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-narrowpeaks",
+    "description": "This package applies functional principal component analysis to ChIP-seq data to refine peak boundaries and analyze differential binding shapes. Use when user asks to shorten genomic peak locations, refine candidate peaks using FPCA, or quantify differences in peak shapes across conditions.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/NarrowPeaks.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rnamodr.ml",
+  "category": "bioconductor",
+  "name": "bioconductor-rnamodr.ml",
+  "description": "This tool detects post-transcriptional RNA modifications by integrating machine learning models into the RNAmodR framework. Use when user asks to define custom ModifierML classes, extract training data from sequencing datasets, integrate ranger or keras models into RNAmodR workflows, or evaluate model performance using ROC analysis.",
+  "overview": "The `RNAmodR.ML` package extends the `RNAmodR` framework by providing machine learning (ML) capabilities to detect RNA modifications. While classical methods rely on simple thresholds or ratios, `RNAmodR.ML` allows for the training of models (such as Random Forests via `ranger` or Neural Networks via `keras`) on complex patterns in sequencing data (Pileup and Coverage) to identify modified positions like Dihydrouridine (D).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAmodR.ML.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/FelixErnst/RNAmodR.ML",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RNAmodR.ML"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAmodR.ML.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/FelixErnst/RNAmodR.ML",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rnamodr.ml\n\nname: bioconductor-rnamodr.ml\ndescription: Use when detecting post-transcriptional RNA modifications using machine learning models within the RNAmodR framework. This skill is applicable for: (1) Defining custom ModifierML classes for specific modifications, (2) Extracting training data from high-throughput sequencing datasets, (3) Integrating ranger or keras models into the RNAmodR workflow, and (4) Evaluating model performance using ROC analysis.\n\n# bioconductor-rnamodr.ml\n\n## Overview\n\nThe `RNAmodR.ML` package extends the `RNAmodR` framework by providing machine learning (ML) capabilities to detect RNA modifications. While classical methods rely on simple thresholds or ratios, `RNAmodR.ML` allows for the training of models (such as Random Forests via `ranger` or Neural Networks via `keras`) on complex patterns in sequencing data (Pileup and Coverage) to identify modified positions like Dihydrouridine (D).\n\n## Core Workflow\n\n### 1. Define a Custom ModifierML Class\nCreate a class that inherits from `RNAModifierML`. Specify the modification type, the score column name, and the required data types.\n\n```r\nlibrary(RNAmodR.ML)\n\nsetClass(\"ModMLExample\",\n         contains = c(\"RNAModifierML\"),\n         prototype = list(mod = c(\"D\"),\n                          score = \"score\",\n                          dataType = c(\"PileupSequenceData\", \"CoverageSequenceData\"),\n                          mlModel = character(0)))\n\n# Constructor\nModMLExample <- function(x, annotation, sequences, ...){\n  RNAmodR:::Modifier(\"ModMLExample\", x = x, annotation = annotation,\n                     sequences = sequences, ...)\n}\n```\n\n### 2. Gather Training Data\nUse known modified and unmodified coordinates to extract features from an aggregated `Modifier` object.\n\n```r\n# Initialize object (without model initially to aggregate data)\nme <- ModMLExample(files, annotation, sequences)\n\n# Extract training data using GRanges coordinates\n# coord should contain known modified and unmodified positions\ntData <- trainingData(me, coord)\ntData <- unlist(tData, use.names = FALSE)\ntData$labels <- as.integer(tData$labels)\n```\n\n### 3. Train and Wrap the Model\nTrain a model using standard R packages and wrap it in a `ModifierMLModel` class (e.g., `ModifierMLranger`).\n\n```r\nlibrary(ranger)\nrf_model <- ranger(labels ~ ., data.frame(tData))\n\n# Create the wrapper class\nsetClass(\"MyMLModel\",\n         contains = c(\"ModifierMLranger\"),\n         prototype = list(model = rf_model))\n\nmy_ml_model <- new(\"MyMLModel\")\n```\n\n### 4. Apply the Model for Detection\nSet the model to the modifier object and implement the `useMLModel` and `findMod` methods to generate scores and identify modifications.\n\n```r\n# Assign model\nsetMLModel(me) <- my_ml_model\n\n# Implement useMLModel to populate the 'score' column\nsetMethod(f = \"useMLModel\",\n          signature = signature(x = \"ModMLExample\"),\n          definition = function(x){\n            predictions <- useModel(getMLModel(x), x)\n            data <- getAggregateData(x)\n            unlisted_data <- unlist(data, use.names = FALSE)\n            unlisted_data$score <- unlist(predictions)\n            x@aggregate <- relist(unlisted_data, data)\n            x\n          })\n\n# Run aggregation and modification calling\nme <- aggregate(me, force = TRUE)\nmods <- modifications(me)\n```\n\n## Performance Evaluation\n\nUse the `plotROC` function to evaluate how well the model distinguishes between modified and unmodified positions based on the prediction scores.\n\n```r\n# Plot ROC curve using known modification coordinates\nplotROC(me, known_dmod_coords)\n```\n\n## Tips and Best Practices\n\n- **Feature Engineering**: Use the `aggregateData` method to perform feature engineering. If using deep learning (e.g., `keras`), you may prefer to pass raw sequence data as tensors.\n- **Flanking Sequences**: When using `trainingData`, providing a flanking value can convert 2D tensors (sample, values) into 3D tensors (sample, position, values) for convolutional neural networks.\n- **Model Refinement**: If the model identifies noise as modifications, retrain the model by including those false-positive positions in the training set as \"unmodified\" labels.\n- **ModifierSets**: Combine multiple models or samples into a `ModifierSet` to analyze average performance across different conditions.\n\n## Reference documentation\n\n- [RNAmodR.ML: detecting patterns of post-transcriptional modifications using machine learning](./references/RNAmodR.ML.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rnamodr.ml",
+    "description": "This tool detects post-transcriptional RNA modifications by integrating machine learning models into the RNAmodR framework. Use when user asks to define custom ModifierML classes, extract training data from sequencing datasets, integrate ranger or keras models into RNAmodR workflows, or evaluate model performance using ROC analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAmodR.ML.html"
+  }
+}

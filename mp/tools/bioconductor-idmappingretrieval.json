@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-idmappingretrieval",
+  "category": "bioconductor",
+  "name": "bioconductor-idmappingretrieval",
+  "description": "This tool facilitates biological identifier mapping and annotation retrieval from online services like Ensembl, NetAffx, and EnVision using a two-tier caching system. Use when user asks to retrieve ID maps, manage one-to-many identifier mappings, or fetch annotation data frames for microarray platforms.",
+  "overview": "The `IdMappingRetrieval` package provides a unified interface for retrieving biological identifier mappings from online bioinformatics services. It features a robust two-tier caching system that stores raw data frames and processed ID maps locally, significantly speeding up subsequent retrieval. The package supports both query-based services (automated via APIs like biomaRt or ENVISIONQuery) and file-based services (processing manual downloads from NetAffx or Ensembl).",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/IdMappingRetrieval.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-idmappingretrieval/overview",
+  "github": "N/A",
+  "conda_downloads": "8.7K",
+  "conda_downloads_num": 8700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IdMappingRetrieval"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/IdMappingRetrieval.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-idmappingretrieval/overview",
+    "github": "N/A",
+    "conda_downloads": "8.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-idmappingretrieval\n\nname: bioconductor-idmappingretrieval\ndescription: Facilitates biological identifier mapping and annotation retrieval from online services (NetAffx, Ensembl, EnVision) using the IdMappingRetrieval R package. Use this skill when you need to create, cache, and manage one-to-many ID maps (e.g., Uniprot to Affymetrix Probeset IDs) or retrieve complete annotation data frames for specific microarray platforms.\n\n# bioconductor-idmappingretrieval\n\n## Overview\n\nThe `IdMappingRetrieval` package provides a unified interface for retrieving biological identifier mappings from online bioinformatics services. It features a robust two-tier caching system that stores raw data frames and processed ID maps locally, significantly speeding up subsequent retrieval. The package supports both query-based services (automated via APIs like biomaRt or ENVISIONQuery) and file-based services (processing manual downloads from NetAffx or Ensembl).\n\n## Session Initialization\n\nEvery session must begin by defining a caching directory. This directory stores `.RData` files organized by service and array type.\n\n```R\nlibrary(IdMappingRetrieval)\n\n# 1. Initialize the caching system\nAnnotation$init(directory=\"./annotationData\", verbose=TRUE)\n\n# 2. Set credentials (required for Affymetrix/NetAffx services)\nAnnotationAffx$setCredentials(user=\"your_email@example.com\", password=\"your_password\")\n```\n\n## Service Object Configuration\n\nService objects are created based on the data source. Common parameters include `cacheFolderName`, `primaryColumn`, `secondaryColumn`, and `species`.\n\n### Query-Based Services (Automated)\n*   **AnnotationEnsembl**: Uses `biomaRt` to query Ensembl.\n*   **AnnotationEnvision**: Uses `ENVISIONQuery` for EnVision Web Services.\n*   **AnnotationAffx**: Uses `AffyCompatible` for Affymetrix repositories.\n\n```R\n# Example: Ensembl Query Service\nannEnsembl <- AnnotationEnsembl(\n  cacheFolderName=\"Ensembl\",\n  primaryColumn=\"uniprot_swissprot_accession\",\n  secondaryColumn=\"affy_hg_u133_plus_2\",\n  species=\"hsapiens\"\n)\n```\n\n### File-Based Services (Manual)\n*   **AnnotationEnsemblCsv**: Processes CSV exports from Ensembl BioMart.\n*   **AnnotationNetAffx**: Processes batch query results from Affymetrix.\n\n```R\n# Example: Ensembl CSV Service\nannEnsemblCsv <- AnnotationEnsemblCsv(\n  cacheFolderName=\"EnsemblCsv\",\n  df_filename=\"path/to/biomart_export.txt\",\n  primaryColumn=c(\"UniProt.SwissProt.Accession\", \"UniProt.TrEMBL.Accession\"),\n  full.merge=TRUE\n)\n```\n\n## Data Retrieval Workflows\n\n### Retrieving ID Maps\nAn ID map is a two-column data frame where the secondary column contains comma-separated strings for one-to-many mappings.\n\n```R\narrayType <- \"HG-U133_Plus_2\"\n\n# Retrieve from a single service\nidMap <- getIdMap(annEnsembl, \n                  arrayType=arrayType, \n                  primaryKey=\"Uniprot\", \n                  secondaryKey=\"Affy\")\n\n# Retrieve from multiple services using a list\nservices <- list(Ensembl=annEnsembl, Affy=annAffx_Q)\nidMapList <- lapply(services, getIdMap, \n                    arrayType=arrayType, \n                    primaryKey=\"Uniprot\", \n                    secondaryKey=\"Affy\")\n```\n\n### Using the ServiceManager\nThe `ServiceManager` acts as a container to manage multiple services simultaneously and provides interactive selection menus.\n\n```R\n# Create manager with default services\nsvm <- ServiceManager(ServiceManager$getDefaultServices())\n\n# Retrieve ID maps for specific services\nidMapList <- getIdMapList(svm, \n                          arrayType=arrayType, \n                          selection=c(\"Ensembl\", \"NetAffx_Q\"),\n                          primaryKey=\"Uniprot\", \n                          secondaryKey=\"Affy\")\n\n# Interactive mode (opens menus for array and service selection)\nidMapList <- ServiceManager$getIdMapList(arrayType=\"menu\", selection=\"menu\")\n```\n\n### Retrieving Raw Annotation Data\nTo get the full annotation table rather than just the mapping pair:\n\n```R\nrawDF <- getDataFrame(annEnsembl, arrayType=arrayType)\n```\n\n## Tips for Success\n*   **Column Merging**: If `primaryColumn` or `secondaryColumn` contains multiple names, the service object automatically merges those columns.\n*   **Swapping**: Use `swap=TRUE` in the constructor to reverse the mapping direction (e.g., changing a Uniprot->Affy map to Affy->Uniprot).\n*   **Force Update**: If online data has changed, set `force=TRUE` in `getIdMap` or `getDataFrame` to bypass the cache and re-download.\n*   **Species**: Ensure the `species` parameter matches the naming convention of the underlying service (e.g., \"Homo sapiens\" for Envision vs \"hsapiens\" for Ensembl).\n\n## Reference documentation\n- [IdMappingRetrieval](./references/IdMappingRetrieval.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-idmappingretrieval",
+    "description": "This tool facilitates biological identifier mapping and annotation retrieval from online services like Ensembl, NetAffx, and EnVision using a two-tier caching system. Use when user asks to retrieve ID maps, manage one-to-many identifier mappings, or fetch annotation data frames for microarray platforms.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/IdMappingRetrieval.html"
+  }
+}

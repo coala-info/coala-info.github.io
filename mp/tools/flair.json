@@ -1,0 +1,63 @@
+{
+  "id": "flair",
+  "category": "CLI",
+  "name": "flair",
+  "description": "FLAIR is a computational suite that processes long-read RNA-seq data to identify, correct, and quantify high-confidence transcript isoforms. Use when user asks to align long reads to a reference, correct splice junctions, collapse reads into isoforms, quantify transcript expression, or detect gene fusions.",
+  "overview": "FLAIR is a computational suite designed to transform noisy long-read RNA-seq data into high-confidence transcript models. Because long reads (particularly from Nanopore) often contain errors at splice junctions, FLAIR uses orthogonal data—such as short-read splice junctions or reference annotations—to \"correct\" alignments. It then collapses these corrected reads into a set of representative isoforms, quantifies their expression across samples, and provides modules for differential splicing and e",
+  "homepage": "https://github.com/BrooksLabUCSC/flair",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/flair/overview",
+  "github": "https://github.com/BrooksLabUCSC/flair",
+  "conda_downloads": "18.7K",
+  "conda_downloads_num": 18700,
+  "last_updated": "2026-01-31",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "flair_align",
+      "flair_correct",
+      "flair_transcriptome",
+      "flair_collapse",
+      "flair_quantify",
+      "flair_combine",
+      "flair_variants",
+      "flair_fusion",
+      "flair_diffexp",
+      "flair_diffsplice"
+    ],
+    "description": "FLAIR align outputs an unfiltered bam file and a filtered bed file for use in the downstream pipeline",
+    "docker_image": "quay.io/biocontainers/flair:3.0.0--pyhdfd78af_0",
+    "homepage": "https://github.com/BrooksLabUCSC/flair",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/flair/overview",
+    "github": "https://github.com/BrooksLabUCSC/flair",
+    "conda_downloads": "18.7K",
+    "last_updated": "2026-01-31",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "flair_align.cwl",
+    "flair_collapse.cwl",
+    "flair_combine.cwl",
+    "flair_correct.cwl",
+    "flair_diffexp.cwl",
+    "flair_diffsplice.cwl",
+    "flair_fusion.cwl",
+    "flair_quantify.cwl",
+    "flair_transcriptome.cwl",
+    "flair_variants.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# flair\n\n## Overview\n\nFLAIR is a computational suite designed to transform noisy long-read RNA-seq data into high-confidence transcript models. Because long reads (particularly from Nanopore) often contain errors at splice junctions, FLAIR uses orthogonal data—such as short-read splice junctions or reference annotations—to \"correct\" alignments. It then collapses these corrected reads into a set of representative isoforms, quantifies their expression across samples, and provides modules for differential splicing and expression analysis.\n\n## Core Workflow and CLI Patterns\n\n### 1. Alignment (flair align)\nAligns raw long reads to a reference genome.\n- **Basic usage**: `flair align -g genome.fa -r reads.fastq [options]`\n- **Output**: Produces a filtered BED file of alignments and a BAM file.\n\n### 2. Correction (flair correct)\nRefines splice junctions using short-read data or annotations.\n- **Junction Inputs**: In v3.0.0+, specify the junction source explicitly:\n  - Use `--junction_bed` for BED format junctions.\n  - Use `--junction_tab` for STAR-style `SJ.out.tab` files.\n- **Long-read Junctions**: You can now detect junctions directly from long reads using `intronProspector` and pass them to `flair correct` via `--junction_bed`.\n- **Optimization**: The `-g genome` option is no longer required in v3.0.0+, significantly increasing processing speed.\n\n### 3. Isoform Definition (flair collapse)\nCollapses corrected reads into a high-confidence transcriptome.\n- **Basic usage**: `flair collapse -g genome.fa -r reads.fastq -q corrected.bed [options]`\n- **CDS Prediction**: Use `--predictCDS` to include coding sequence prediction during the collapse step.\n- **Internal Priming**: To remove potential artifacts, use `--remove_internal_priming` along with `--intprimingthreshold`.\n- **Output**: Generates `isoforms.bed`, `isoforms.gtf`, `isoforms.fa`, and `isoform.read.map.txt`.\n\n### 4. Quantification (flair quantify)\nQuantifies isoform usage across multiple samples.\n- **Manifest File**: Requires a TSV manifest linking sample names to their respective read files.\n- **Basic usage**: `flair quantify -r manifest.tsv -i isoforms.fa [options]`\n- **Efficiency**: v3.0.0+ features improved memory handling for large multi-sample datasets.\n\n### 5. Streamlined Workflow (flair transcriptome)\nA modern module that combines `correct` and `collapse` into a single step.\n- **Input**: Runs directly from an aligned BAM file.\n- **Parallelization**: Supports effective parallel processing via `--parallelmode`.\n\n## Advanced Modules\n\n- **flair fusion**: Detects gene fusions and fusion-specific isoforms with high accuracy.\n- **flair variants**: Identifies variant-aware transcripts by clustering reads with shared variants (e.g., from Longshot).\n- **flair combine**: Merges transcriptomes generated from different samples or combines fusion isoforms with standard collapsed isoforms.\n\n## Expert Tips and Best Practices\n\n- **MAPQ Filtering**: The default minimum MAPQ is 0 in recent versions. This allows more reads to contribute to isoform models without significantly sacrificing accuracy.\n- **Annotation Parsing**: Ensure GTF files are well-formatted; v3.0.0+ has improved robustness for unsorted or complex annotation files.\n- **Memory Management**: When running `quantify` on many samples, ensure your manifest is correctly formatted to take advantage of the improved multi-sample processing speed.\n- **Version 3.0.0+ Changes**: Note that dependencies on `pandas` and `rpy2` have been removed, and the tool now produces sorted output files by default.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| diffsplice | Differential splicing analysis using DRIMSeq, taking isoforms and count matrices as input. |\n| flair align | FLAIR align outputs an unfiltered bam file and a filtered bed file for use in the downstream pipeline |\n| flair collapse | take bed file of corrected reads and generate confident collapsed isoform models |\n| flair combine | Combine transcriptomes from multiple samples based on a manifest file. |\n| flair correct | take bed file of long RNA-seq reads and filter out those with anomalous splice junctions correct remaining to nearest orthogonally supported splice site |\n| flair diffexp | Differential expression analysis of isoforms using flair. It performs parallel DRIMSeq and filters isoforms based on expression thresholds. |\n| flair fusion | FLAIR fusion detection module for identifying gene fusions from transcriptomic data. |\n| flair transcriptome | Defines isoforms from genomic alignments and optional short-read junction support. |\n| quantify | takes in many long-read RNA-seq reads files and quantifies them against a single transcriptome. A stringent, full-read-match-based approach |\n| variants | FLAIR variants module for calling variants from isoform data. |\n\n## Reference documentation\n- [github_com_BrooksLabUCSC_flair_blob_master_README.md](./references/github_com_BrooksLabUCSC_flair_blob_master_README.md)\n- [github_com_BrooksLabUCSC_flair_blob_master_CHANGELOG.md](./references/github_com_BrooksLabUCSC_flair_blob_master_CHANGELOG.md)",
+  "skill_front_matter": {
+    "name": "flair",
+    "description": "FLAIR is a computational suite that processes long-read RNA-seq data to identify, correct, and quantify high-confidence transcript isoforms. Use when user asks to align long reads to a reference, correct splice junctions, collapse reads into isoforms, quantify transcript expression, or detect gene fusions.",
+    "homepage": "https://github.com/BrooksLabUCSC/flair"
+  }
+}

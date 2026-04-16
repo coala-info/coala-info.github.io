@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-eir",
+  "category": "bioconductor",
+  "name": "bioconductor-eir",
+  "description": "This tool performs accelerated similarity searching and clustering of small molecules using geometric embedding and Locality Sensitive Hashing. Use when user asks to manage large chemical compound databases, perform fast nearest neighbor lookups, or execute Jarvis-Patrick clustering on chemical structures.",
+  "overview": "The `eiR` package enables efficient similarity searching in massive chemical compound databases. It works by selecting reference compounds and embedding the entire database into a d-dimensional space based on distances to these references. This approach, combined with Locality Sensitive Hashing (LSH), allows for extremely fast queries that avoid linear scans of the entire dataset. It uses an SQL backend (typically SQLite) to store compound definitions and descriptors.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/eiR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eir/overview",
+  "github": "https://github.com/girke-lab/eiR",
+  "conda_downloads": "27.3K",
+  "conda_downloads_num": 27300,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "eiR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/eiR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eir/overview",
+    "github": "https://github.com/girke-lab/eiR",
+    "conda_downloads": "27.3K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-eir\n\nname: bioconductor-eir\ndescription: Accelerated similarity searching and clustering of small molecules using geometric embedding and Locality Sensitive Hashing (LSH). Use this skill to manage large chemical compound databases, perform sub-linear time nearest neighbor lookups, and execute fast Jarvis-Patrick clustering on chemical structures (SDF or SMILES).\n\n## Overview\n\nThe `eiR` package enables efficient similarity searching in massive chemical compound databases. It works by selecting reference compounds and embedding the entire database into a d-dimensional space based on distances to these references. This approach, combined with Locality Sensitive Hashing (LSH), allows for extremely fast queries that avoid linear scans of the entire dataset. It uses an SQL backend (typically SQLite) to store compound definitions and descriptors.\n\n## Core Workflow\n\n### 1. Initialization\nCreate a database and compute descriptors (atom-pair \"ap\" or fingerprint \"fp\").\n\n```r\nlibrary(eiR)\nlibrary(ChemmineR)\ndata(sdfsample)\n\n# Initialize database with first 99 compounds\n# Creates a 'data' directory in the current working directory\neiInit(sdfsample[1:99], priorityFn=randomPriorities)\n```\n\n### 2. Creating the Searchable Index\nEmbed the compounds into a searchable space. This creates a `run-r-d` directory.\n\n```r\n# r: number of reference compounds\n# d: number of dimensions\nr <- 60\nd <- 40\nrunId <- eiMakeDb(r, d, descriptorType = \"ap\")\n```\n\n### 3. Similarity Queries\nSearch for compounds similar to a query structure.\n\n```r\n# Search for top 10 matches for the 45th compound in the sample\n# asSimilarity=TRUE returns Tanimoto-like scores (0 to 1)\nresult <- eiQuery(runId, sdfsample[45], K=10, asSimilarity=TRUE)\n\n# result is a data frame: query, target, similarity, target_ids\nprint(result)\n```\n\n### 4. Adding Compounds\nAdd new structures to an existing index without re-embedding the entire database.\n\n```r\neiAdd(runId, sdfsample[100])\n```\n\n### 5. Clustering\nPerform Jarvis-Patrick clustering using the LSH index for speed.\n\n```r\n# K: neighbors to fetch; minNbrs: required shared neighbors\nclustering <- eiCluster(runId, K=5, minNbrs=2, cutoff=0.5)\n\n# View results\nbyCluster(clustering)\n```\n\n## Advanced Customization\n\n### Custom Distance Functions\nYou can override default distance measures (1-Tanimoto) for specific descriptor types.\n\n```r\nsetDefaultDistance(\"ap\", function(d1, d2) 1 - cmp.similarity(d1, d2))\n```\n\n### Custom Descriptors (Transforms)\nUse `addTransform` to define how to convert chemical formats to descriptors and how to serialize them for the SQL backend.\n\n```r\naddTransform(\"ap\", \"sdf\", toObject = function(input, conn=NULL, dir=\".\") {\n    # Logic to convert input to APset object\n    sdfset <- if(inherits(input, \"SDFset\")) input else read.SDFset(input)\n    list(names=sdfid(sdfset), descriptors=sdf2ap(sdfset))\n})\n```\n\n## Tips and Best Practices\n- **Directory Management**: `eiR` creates local directories (`data/` and `run-r-d/`). Always run scripts from the same parent directory or specify the path using the `dir` argument.\n- **Parameter Tuning**: For large databases, `d=100` is a recommended starting point for dimensions.\n- **Parallelization**: `eiInit` and `eiMakeDb` support SNOW clusters for parallel processing, provided the backend (like PostgreSQL) supports parallel writes.\n- **LSH Accuracy**: LSH is an approximate algorithm. If you receive fewer than `K` results or unexpected matches, try increasing the expansion ratio or `K` value.\n\n## Reference documentation\n- [eiR: Accelerated Similarity Searching of Small Molecules](./references/eiR.Rmd)\n- [eiR: Accelerated Similarity Searching of Small Molecules (Markdown)](./references/eiR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-eir",
+    "description": "This tool performs accelerated similarity searching and clustering of small molecules using geometric embedding and Locality Sensitive Hashing. Use when user asks to manage large chemical compound databases, perform fast nearest neighbor lookups, or execute Jarvis-Patrick clustering on chemical structures.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/eiR.html"
+  }
+}

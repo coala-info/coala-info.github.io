@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metabomxtr",
+  "category": "bioconductor",
+  "name": "bioconductor-metabomxtr",
+  "description": "This tool performs mixture model analysis and normalization for non-targeted metabolomics data with missing values. Use when user asks to analyze metabolite data using Bernoulli/lognormal mixture models, perform batch normalization using control samples, or conduct likelihood ratio tests for metabolite significance.",
+  "overview": "The `metabomxtr` package provides tools for metabolite-by-metabolite analysis using Bernoulli/lognormal mixture models. This approach is specifically designed for non-targeted metabolomics data where missing values (NAs) are common. It simultaneously models the probability of a metabolite being present (discrete portion) and the mean abundance of observed values (continuous portion). The package also includes a mixture model-based normalization method (`mixnorm`) to account for batch effects and",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/metabomxtr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metabomxtr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metabomxtr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metabomxtr\n\nname: bioconductor-metabomxtr\ndescription: Mixture model analysis and normalization for non-targeted metabolomics data. Use when analyzing metabolite data with missing values (NAs) using Bernoulli/lognormal mixture models, or when performing batch normalization using control samples.\n\n# bioconductor-metabomxtr\n\n## Overview\n\nThe `metabomxtr` package provides tools for metabolite-by-metabolite analysis using Bernoulli/lognormal mixture models. This approach is specifically designed for non-targeted metabolomics data where missing values (NAs) are common. It simultaneously models the probability of a metabolite being present (discrete portion) and the mean abundance of observed values (continuous portion). The package also includes a mixture model-based normalization method (`mixnorm`) to account for batch effects and technical variability using control samples.\n\n## Mixture Model Analysis Workflow\n\nUse this workflow to determine if phenotype or other covariates significantly affect metabolite levels while accounting for missing data.\n\n### 1. Prepare Data\nData can be a `data.frame`, `matrix`, or `ExpressionSet`. Ensure metabolites are in columns (for data frames) or rows (for ExpressionSet `exprs`).\n\n```r\nlibrary(metabomxtr)\ndata(metabdata)\n\n# Define metabolites of interest\nyvars <- c(\"malonic.acid\", \"ribose\", \"phenylalanine\", \"pyruvic.acid\")\n\n# Set reference levels for categorical predictors\nmetabdata$PHENO <- relevel(metabdata$PHENO, ref=\"MomLowFPG\")\n```\n\n### 2. Specify and Run Models\nModels use the formula syntax `~ discrete_covariates | continuous_covariates`.\n\n```r\n# Full model: PHENO affects both presence/absence and mean abundance\nfullModel <- ~ PHENO | PHENO + age_ogtt_mc + storageTimesYears_mc\n\n# Reduced model: Remove PHENO to test its significance\nreducedModel <- ~ 1 | age_ogtt_mc + storageTimesYears_mc\n\n# Run models\nfullResults <- mxtrmod(ynames=yvars, mxtrModel=fullModel, data=metabdata)\nredResults <- mxtrmod(ynames=yvars, mxtrModel=reducedModel, data=metabdata, fullModel=fullModel)\n```\n\n### 3. Likelihood Ratio Testing\nCompare models to calculate p-values.\n\n```r\n# Perform LRT with Benjamini-Hochberg adjustment\nfinalResult <- mxtrmodLRT(fullmod=fullResults, redmod=redResults, adj=\"BH\")\n```\n\n## Normalization Workflow\n\nUse `mixnorm` to remove technical artifacts (batch, run-order) based on quality control (QC) pool samples.\n\n### 1. Execute Normalization\nRequires experimental data and a separate QC/control dataset.\n\n```r\n# batchTvals: batch-specific thresholds of detectability (optional)\n# qc.sd.outliers: SD threshold for excluding QC outliers (default is 2)\nnormOut <- mixnorm(ynames = c('pyruvic_acid', 'malonic_acid'), \n                   batch = \"batch\", \n                   mxtrModel = ~ pheno + batch | pheno + batch,\n                   cData = euMetabCData, \n                   data = euMetabData, \n                   qc.sd.outliers = 2)\n\n# Access normalized experimental data\nnormalized_data <- normOut$obsNorm\n```\n\n### 2. Visualize Results\nAssess normalization performance by comparing raw and normalized distributions.\n\n```r\nmetabplot(metabolite = \"malonic_acid\", \n          batch = \"batch\", \n          raw.obs.data = euMetabData, \n          raw.cont.data = euMetabCData,\n          norm.obs.data = normOut$obsNorm, \n          norm.cont.data = normOut$ctlNorm,\n          color.var = \"pheno\")\n```\n\n## Key Functions and Parameters\n\n- `mxtrmod()`: Fits the mixture model.\n    - `ynames`: Character vector of metabolite names.\n    - `mxtrModel`: Formula `~ discrete | continuous`.\n- `mixnorm()`: Performs normalization.\n    - `removeCorrection`: Use this to include a covariate in the model (to estimate batch effects accurately) but NOT remove its effect from the final normalized data (e.g., `removeCorrection=\"pheno\"`).\n- `mxtrmodLRT()`: Compares two `mxtrmod` objects.\n- `metabplot()`: Generates diagnostic plots showing batch-specific means and outliers.\n\n## Tips for Success\n\n- **Convergence**: Check the `conv` column in results. A value of `0` indicates successful convergence.\n- **Missing Batch Data**: If a batch is entirely missing data for a metabolite, `mixnorm` will return `NA` for that batch effect and set experimental values for that batch to `Inf`.\n- **Formula Consistency**: When running reduced models, always pass the `fullModel` object to the `fullModel` parameter in `mxtrmod()` to ensure both models use the same set of observations.\n- **Outliers**: Use `qc.sd.outliers` in `mixnorm` to prevent extreme QC samples from skewing batch effect estimates.\n\n## Reference documentation\n- [An Introduction to the metabomxtr package](./references/Metabomxtr_Vignette.md)\n- [An Introduction Mixture Model Normalization with the metabomxtr Package](./references/mixnorm_Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metabomxtr",
+    "description": "This tool performs mixture model analysis and normalization for non-targeted metabolomics data with missing values. Use when user asks to analyze metabolite data using Bernoulli/lognormal mixture models, perform batch normalization using control samples, or conduct likelihood ratio tests for metabolite significance.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metabomxtr.html"
+  }
+}

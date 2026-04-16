@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sarks",
+  "category": "bioconductor",
+  "name": "bioconductor-sarks",
+  "description": "bioconductor-sarks identifies sequence motifs and multi-motif domains that correlate with numeric scores using suffix array kernel smoothing. Use when user asks to find k-mers associated with continuous variables like gene expression, perform de novo motif discovery without binary classification, or identify clusters of motifs in DNA sequences.",
+  "overview": "The `sarks` package implements the Suffix Array Kernel Smoothing algorithm to identify sequence motifs whose presence is significantly associated with numeric scores assigned to those sequences. Unlike traditional motif discovery which often relies on binary classification (e.g., \"target\" vs \"background\"), `sarks` uses the full range of numeric scores. It employs suffix arrays for efficient string processing and kernel smoothing to detect regions in the suffix space where high-scoring sequences ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/sarks.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/denniscwylie/sarks",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sarks"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sarks.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/denniscwylie/sarks",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sarks\n\nname: bioconductor-sarks\ndescription: De novo discovery of correlative sequence motifs and multi-motif domains (MMDs) using Suffix Array Kernel Smoothing (SArKS). Use this skill when you need to identify sequence patterns (k-mers) in DNA or other alphabets that correlate with numeric scores (e.g., gene expression levels, binding affinities).\n\n# bioconductor-sarks\n\n## Overview\n\nThe `sarks` package implements the Suffix Array Kernel Smoothing algorithm to identify sequence motifs whose presence is significantly associated with numeric scores assigned to those sequences. Unlike traditional motif discovery which often relies on binary classification (e.g., \"target\" vs \"background\"), `sarks` uses the full range of numeric scores. It employs suffix arrays for efficient string processing and kernel smoothing to detect regions in the suffix space where high-scoring sequences cluster.\n\n## Core Workflow\n\n### 1. Initialization and Java Setup\n`sarks` relies on `rJava`. You must initialize the Java Virtual Machine with sufficient heap space before loading the library.\n\n```R\noptions(java.parameters = '-Xmx8G') # Adjust memory as needed\nlibrary(rJava)\n.jinit()\nlibrary(sarks)\n```\n\n### 2. Input Data Requirements\n- **Sequences**: A named character vector or a FASTA file path.\n- **Scores**: A named numeric vector where names match the sequence names.\n\n```R\n# Example using package data\ndata(simulatedSeqs)\ndata(simulatedScores)\n```\n\n### 3. Running the SArKS Analysis\nThe analysis follows a specific sequence: object creation, filter definition, permutation testing for thresholds, and peak calling.\n\n```R\n# 1. Create Sarks object\n# halfWindow: smoothing window size (try n/20, n/10, n/5 where n is sequence count)\n# spatialLength: for spatial smoothing (MMDs); set to 0 to disable\nsarks <- Sarks(simulatedSeqs, simulatedScores, halfWindow=4, spatialLength=0)\n\n# 2. Define filters\n# minGini: 1.1 is a recommended starting point to filter repetitive sequence bias\nfilters <- sarksFilters(halfWindow=4, spatialLength=0, minGini=1.1)\n\n# 3. Generate permutation distribution (Null model)\npermDist <- permutationDistribution(sarks, reps=250, filters, seed=123)\n\n# 4. Calculate thresholds\n# nSigma: stringency (e.g., 2.0 for discovery, 5.0 for high stringency)\nthresholds <- permutationThresholds(filters, permDist, nSigma=2.0)\n\n# 5. Identify k-mer peaks\npeaks <- kmerPeaks(sarks, filters, thresholds)\n```\n\n### 4. Refining Results\nRaw peaks often contain redundant or overlapping k-mers. Use these functions to simplify output:\n\n```R\n# Remove redundant sub-peaks\nnonRedundant <- mergedKmerSubPeaks(sarks, filters, thresholds)\n\n# Extend k-mers to their full length in the source sequences\nextended <- extendKmers(sarks, nonRedundant)\n```\n\n### 5. Spatial Smoothing (MMDs)\nTo detect Multi-Motif Domains (clusters of motifs), set `spatialLength` > 0. This requires higher `nSigma` values.\n\n```R\nsarksSpatial <- Sarks(simulatedSeqs, simulatedScores, halfWindow=4, spatialLength=3)\nfiltersSpatial <- sarksFilters(halfWindow=4, spatialLength=3, minGini=1.1)\n# ... follow permutation steps ...\npeaksSpatial <- kmerPeaks(sarksSpatial, filtersSpatial, thresholdsSpatial)\n```\n\n## Key Functions and Parameters\n\n- `Sarks()`: Main constructor. Use `nThreads` for multithreading permutational analysis.\n- `sarksFilters()`: Defines the parameter space to test. You can pass vectors to `halfWindow` or `spatialLength` to test multiple combinations simultaneously.\n- `kmerCounts()`: Utility to count occurrences of identified k-mers across the input sequences.\n- `clusterKmers()`: Groups similar k-mers into broader motifs. Use `directional=FALSE` for DNA if reverse complements should be treated as the same motif.\n- `estimateFalsePositiveRate()`: Validates the significance of the results using an independent set of permutations.\n\n## Tips for Success\n- **Memory**: SArKS is memory-intensive due to suffix array construction. Always set `-Xmx` in `java.parameters` before loading the package.\n- **Gini Filter**: If you get too many false positives from a single sequence dominating a window, increase `minGini` (values > 1 are more stringent).\n- **Multiple Testing**: The `estimateFalsePositiveRate` function accounts for testing multiple parameter combinations defined in the `filters` object (Family-Wise Error Rate).\n\n## Reference documentation\n- [Suffix Array Kernel Smoothing for de novo discovery of correlative sequence motifs and multi-motif domains: the sarks package](./references/sarks-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sarks",
+    "description": "bioconductor-sarks identifies sequence motifs and multi-motif domains that correlate with numeric scores using suffix array kernel smoothing. Use when user asks to find k-mers associated with continuous variables like gene expression, perform de novo motif discovery without binary classification, or identify clusters of motifs in DNA sequences.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sarks.html"
+  }
+}

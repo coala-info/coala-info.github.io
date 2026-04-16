@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cepo",
+  "category": "bioconductor",
+  "name": "bioconductor-cepo",
+  "description": "\"Cepo identifies genes that define cell identity by calculating differential stability across cell types in single-cell transcriptomic data. Use when user asks to identify cell-type-specific marker genes, calculate differential stability metrics, or find genes with stable expression patterns in large single-cell atlases.\"",
+  "overview": "Cepo is a Bioconductor package designed to identify genes that govern cell identity using a metric called **Differential Stability (DS)**. Unlike standard Differential Expression (DE) methods that focus on changes in mean abundance, Cepo prioritizes genes that show stable expression patterns within a cell type compared to others. This approach is computationally efficient, making it ideal for large single-cell atlases.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Cepo.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cepo/overview",
+  "github": "N/A",
+  "conda_downloads": "6.7K",
+  "conda_downloads_num": 6700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Cepo"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Cepo.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cepo/overview",
+    "github": "N/A",
+    "conda_downloads": "6.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cepo\n\n## Overview\n\nCepo is a Bioconductor package designed to identify genes that govern cell identity using a metric called **Differential Stability (DS)**. Unlike standard Differential Expression (DE) methods that focus on changes in mean abundance, Cepo prioritizes genes that show stable expression patterns within a cell type compared to others. This approach is computationally efficient, making it ideal for large single-cell atlases.\n\n## Core Workflow\n\n### 1. Data Preparation\nCepo requires a normalized expression matrix (e.g., log-counts, CPM) and a vector of cell-type labels.\n\n```r\nlibrary(Cepo)\nlibrary(SingleCellExperiment)\n\n# Input: log-normalized matrix and cell type labels\n# exprsMat: genes (rows) x cells (columns)\n# cellTypes: vector of labels corresponding to columns\nds_res <- Cepo(exprsMat = logcounts(sce), \n               cellTypes = sce$celltype)\n```\n\n### 2. Filtering and Refinement\nYou can filter for lowly expressed genes or minimum log fold-change directly within the `Cepo` function:\n- `exprsPct`: Keep genes expressed in at least X% of cells in at least one cell type (recommended: 0.05 to 0.07).\n- `logfc`: Keep genes with at least X absolute log fold-change.\n\n```r\nds_res_filtered <- Cepo(exprsMat = logcounts(sce),\n                        cellTypes = sce$celltype,\n                        exprsPct = 0.05,\n                        logfc = 0.2)\n```\n\n### 3. Handling Batches\nIf the data contains batches, use the `block` argument to perform analysis independently per batch and then average the results.\n\n```r\nds_res_batches <- Cepo(exprsMat = logcounts(sce),\n                       cellTypes = sce$celltype,\n                       block = sce$batch)\n\n# Access averaged results\navg_stats <- ds_res_batches$average$stats\n```\n\n### 4. Significance Testing\nCepo supports two p-value computation methods:\n- **Fast approach (Default)**: Uses normal approximation (set `computePvalue` to ~200).\n- **Permutation approach**: Set `computeFastPvalue = FALSE` (recommended `computePvalue = 10000`).\n\n```r\nds_res_p <- Cepo(exprsMat = logcounts(sce),\n                 cellTypes = sce$celltype,\n                 computePvalue = 200)\n```\n\n## Interpreting and Visualizing Results\n\n### Extracting Top Genes\nUse `topGenes` to retrieve the most stable markers for each cell type.\n\n```r\n# Get top 10 identity genes per cell type\ntop_markers <- topGenes(ds_res, n = 10)\n```\n\n### Visualization\nCepo provides `plotDensities` to visualize the expression distribution of identified genes across cell types.\n\n```r\nplotDensities(x = sce,\n              cepoOutput = ds_res,\n              nGenes = 2,\n              assay = \"logcounts\",\n              celltypeColumn = \"celltype\")\n```\n\n## Large-Scale Data (Out-of-Memory)\nFor datasets with millions of cells, Cepo integrates with `HDF5Array` and `DelayedArray` to perform computations without loading the entire matrix into RAM.\n\n```r\nlibrary(HDF5Array)\nlibrary(BiocParallel)\n\n# Wrap matrix as HDF5\nda_matrix <- DelayedArray(realize(logcounts(sce), \"HDF5Array\"))\n\n# Optional: Set up parallel processing\nDelayedArray::setAutoBPPARAM(BPPARAM = MulticoreParam(workers = 4))\n\nda_output <- Cepo(exprsMat = da_matrix, cellTypes = sce$celltype)\n```\n\n## Tips for Success\n- **Input Scale**: Always use normalized data (log-counts or CPM). Raw counts are not appropriate for DS analysis.\n- **Cell Labels**: Ensure `cellTypes` is a factor or character vector of the same length as the number of columns in your matrix.\n- **Downstream**: The DS statistics from `ds_res$stats` can be used directly as ranked lists for Gene Set Enrichment Analysis (GSEA) using packages like `fgsea`.\n\n## Reference documentation\n- [Cepo for differential stability analysis of scRNA-seq data](./references/cepo.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cepo",
+    "description": "Cepo identifies genes that define cell identity by calculating differential stability across cell types in single-cell transcriptomic data. Use when user asks to identify cell-type-specific marker genes, calculate differential stability metrics, or find genes with stable expression patterns in large single-cell atlases.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Cepo.html"
+  }
+}

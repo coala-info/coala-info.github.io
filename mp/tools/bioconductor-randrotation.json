@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-randrotation",
+  "category": "bioconductor",
+  "name": "bioconductor-randrotation",
+  "description": "This package generates randomly rotated data to resample null distributions of linear model-based test statistics in high-dimensional biological datasets. Use when user asks to perform valid resampling-based p-value or FDR estimation, account for dependencies introduced by batch effect correction, or generate random orthogonal matrices for linear models.",
+  "overview": "The `randRotation` package provides a methodology for generating randomly rotated data to resample null distributions of linear model-based test statistics. Its primary application is in high-dimensional biology (e.g., transcriptomics) where batch effect correction methods (like ComBat) can skew p-value distributions by introducing dependencies between samples. By using random orthogonal matrices, the package allows for valid resampling-based p-values and False Discovery Rate (FDR) estimation ev",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/randRotation.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/phettegger/randRotation",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "randRotation"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/randRotation.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/phettegger/randRotation",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-randrotation\n\n## Overview\n\nThe `randRotation` package provides a methodology for generating randomly rotated data to resample null distributions of linear model-based test statistics. Its primary application is in high-dimensional biology (e.g., transcriptomics) where batch effect correction methods (like ComBat) can skew p-value distributions by introducing dependencies between samples. By using random orthogonal matrices, the package allows for valid resampling-based p-values and False Discovery Rate (FDR) estimation even after complex data preprocessing.\n\n## Core Workflow\n\n### 1. Initialization\nPrepare the random rotation object by specifying the data, the design matrix, and the coefficient(s) associated with the null hypothesis ($H_0$).\n\n```r\nlibrary(randRotation)\n\n# mod1: full model matrix\n# coef.h: index of the coefficient to test (e.g., 2 for 'phenotype')\n# batch: vector indicating batch membership\nrr <- initBatchRandrot(Y = edata, X = mod1, coef.h = 2, batch = pdata$batch)\n```\n\n### 2. Defining the Statistic Function\nCreate a function that encapsulates the entire data analysis pipeline (preprocessing + testing). This function must return a scale-independent statistic (e.g., t-values).\n\n```r\nstatistic <- function(Y, batch, mod) {\n  # 1. Batch effect correction\n  Y_corr <- sva::ComBat(dat = Y, batch = batch, mod = mod)\n  \n  # 2. Linear model fit (e.g., using limma)\n  fit <- limma::lmFit(Y_corr, design = mod)\n  fit <- limma::eBayes(fit)\n  \n  # Return absolute t-values for two-sided testing in pFdr\n  abs(fit$t[, 2])\n}\n```\n\n### 3. Rotating and Calculating Statistics\nUse `rotateStat` to apply the statistic function to the original data and $R$ rotated versions.\n\n```r\n# R = 10 is often sufficient when using pooling\nrs <- rotateStat(initialised.obj = rr, R = 10, statistic = statistic,\n                 batch = pdata$batch, mod = mod1)\n```\n\n### 4. P-value and FDR Estimation\nCalculate resampling-based p-values or FDR using `pFdr`.\n\n```r\n# Resampling-based p-values\np_vals <- pFdr(rs)\n\n# Resampling-based FDR (options: \"fdr.q\", \"fdr.qu\", \"BH\")\nfdr_q <- pFdr(rs, \"fdr.q\")\n```\n\n## Advanced Usage\n\n### Working with Contrasts\nTo test specific contrasts, use `contrastModel` to transform the design matrix before initialization.\n\n```r\ncontrasts1 <- limma::makeContrasts(\"GroupA-GroupB\", levels = mod_groups)\nmod_cont <- contrastModel(X = mod_groups, C = contrasts1)\nrr_cont <- initBatchRandrot(Y = edata, X = mod_cont, batch = pdata$batch)\n```\n\n### Linear Mixed Models\nFor repeated measures or nested designs, provide a correlation matrix (`cormat`) to `initBatchRandrot`.\n\n```r\n# Example for a block-design correlation matrix\nrr_mixed <- initBatchRandrot(Y = edata, X = mod1, coef.h = 2, \n                             batch = pdata$batch, cormat = list_of_cormats)\n```\n\n## Implementation Tips\n\n- **Pivotal Quantities**: Always use t-statistics or similar scale-independent values in the `statistic` function rather than raw coefficients.\n- **Pooling**: `pFdr` defaults to pooling statistics across all features. This significantly reduces the number of rotations ($R$) required to achieve stable p-values.\n- **Parallelization**: For large datasets or complex pipelines, set `parallel = TRUE` in `rotateStat`. Ensure functions are called with their namespace (e.g., `sva::ComBat`) within the statistic function.\n- **Two-tailed Tests**: Ensure the statistic function returns absolute values if a two-tailed test is intended, as `pFdr` considers larger values more significant.\n\n## Reference documentation\n\n- [Random Rotation Package Introduction](./references/randRotationIntro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-randrotation",
+    "description": "This package generates randomly rotated data to resample null distributions of linear model-based test statistics in high-dimensional biological datasets. Use when user asks to perform valid resampling-based p-value or FDR estimation, account for dependencies introduced by batch effect correction, or generate random orthogonal matrices for linear models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/randRotation.html"
+  }
+}

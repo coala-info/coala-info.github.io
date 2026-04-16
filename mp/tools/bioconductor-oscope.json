@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-oscope",
+  "category": "bioconductor",
+  "name": "bioconductor-oscope",
+  "description": "Oscope identifies co-oscillating genes and reconstructs cyclic cell orders from unsynchronized single-cell RNA-seq data. Use when user asks to identify oscillatory genes, cluster genes by oscillation frequency using paired-sine models, or reconstruct the temporal order of cells in unsynchronized experiments.",
+  "overview": "Oscope is designed to identify groups of co-oscillating genes in unsynchronized scRNA-seq data. Unlike traditional time-series analysis, Oscope does not require synchronized cells; instead, it leverages the fact that unsynchronized cells represent different states in a cycle. It identifies candidate oscillators, clusters them by frequency, and reconstructs the temporal order of cells for each cluster.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Oscope.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Oscope"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Oscope.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-oscope\n\nname: bioconductor-oscope\ndescription: Statistical pipeline for identifying oscillatory genes in unsynchronized single-cell RNA-seq (scRNA-seq) experiments. Use this skill to perform normalization, pre-processing, candidate oscillator screening via paired-sine models, K-medoids clustering of gene groups, and reconstruction of cyclic cell orders (base cycles).\n\n# bioconductor-oscope\n\n## Overview\n\nOscope is designed to identify groups of co-oscillating genes in unsynchronized scRNA-seq data. Unlike traditional time-series analysis, Oscope does not require synchronized cells; instead, it leverages the fact that unsynchronized cells represent different states in a cycle. It identifies candidate oscillators, clusters them by frequency, and reconstructs the temporal order of cells for each cluster.\n\n## Typical Workflow\n\n### 1. Data Preparation and Normalization\nOscope requires a G x S matrix (genes by samples) of expression estimates (e.g., RSEM or Cufflinks counts).\n\n```R\nlibrary(Oscope)\ndata(OscopeExampleData)\n\n# Median normalization (similar to DESeq)\nSizes <- MedianNorm(OscopeExampleData)\nDataNorm <- GetNormalizedMat(OscopeExampleData, Sizes)\n\n# Alternative: Quantile normalization\n# Sizes <- QuantileNorm(OscopeExampleData, .75)\n```\n\n### 2. Pre-processing (Mean-Variance Filtering)\nFocus on high-mean, high-variance genes to reduce technical noise.\n\n```R\n# Identify genes with high mean (>100 by default) and high variance\nMV <- CalcMV(Data = OscopeExampleData, Sizes = Sizes)\nDataSubset <- DataNorm[MV$GeneToUse, ]\n```\n\n### 3. Rescaling for Paired-Sine Model\nOscope requires input values to be rescaled between -1 and 1.\n\n```R\n# Rescales data and handles outliers via quantile imputation (default 5th/95th)\nDataInput <- NormForSine(DataSubset)\n```\n\n### 4. Screening Candidate Oscillators\nThe paired-sine model identifies gene pairs oscillating with the same frequency but potentially different phases.\n\n```R\n# Run paired-sine model (can be parallelized)\nSineRes <- OscopeSine(DataInput, parallel = TRUE)\n\n# SineRes contains:\n# $SimiMat: Sine scores (higher = more likely co-oscillating)\n# $DiffMat: Dissimilarity estimates\n# $ShiftMat: Estimated phase shifts\n```\n\n### 5. Clustering and Filtering\nCluster genes into groups with similar frequencies using K-medoids.\n\n```R\n# Cluster top 5% of genes (by minimal distance)\nKMRes <- OscopeKM(SineRes, maxK = 10)\n\n# Flag clusters that lack significant oscillation or phase shifts (e.g., linear correlation)\nToRM <- FlagCluster(SineRes, KMRes, DataInput)\nKMResUse <- KMRes[-ToRM$FlagID]\n```\n\n### 6. Reconstructing Cell Order\nRecover the cyclic order (base cycle) for each gene cluster.\n\n```R\n# Reconstruct order using Extended Nearest Insertion (ENI)\nENIRes <- OscopeENI(KMRes = KMResUse, Data = DataInput, NCThre = 1000)\n\n# Access recovered order for a specific cluster\ncluster2_order <- ENIRes[[\"cluster2\"]]\nDataOrdered <- DataNorm[, cluster2_order]\n```\n\n## Tips and Interpretation\n\n- **Parallelization**: `OscopeSine` and `OscopeENI` support `parallel = TRUE`. Configure cores via the `parallelParam` argument.\n- **Linear vs. Oscillatory**: Always use `FlagCluster`. It identifies groups that appear correlated but lack the phase diversity required to define a true cycle.\n- **Downstream Analysis**: Once the cell order is recovered, you can apply standard time-series methods (like FFT) to the reordered data to find weaker oscillators that were not in the initial high-variance subset.\n- **Visualization**: Plot expression against the recovered order to verify the sinusoidal pattern.\n\n## Reference documentation\n\n- [Oscope: a statistical pipeline for identifying oscillatory genes in unsynchronized single cell RNA-seq experiments](./references/Oscope_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-oscope",
+    "description": "Oscope identifies co-oscillating genes and reconstructs cyclic cell orders from unsynchronized single-cell RNA-seq data. Use when user asks to identify oscillatory genes, cluster genes by oscillation frequency using paired-sine models, or reconstruct the temporal order of cells in unsynchronized experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Oscope.html"
+  }
+}

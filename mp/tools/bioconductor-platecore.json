@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-platecore",
+  "category": "bioconductor",
+  "name": "bioconductor-platecore",
+  "description": "This tool analyzes high-throughput flow cytometry data organized in 96 or 384-well plate formats. Use when user asks to manage flowPlate objects, perform automated gating based on negative controls, apply background correction for cell size, or summarize results across multiple plates.",
+  "overview": "The `plateCore` package extends `flowCore` and `flowViz` to handle large-scale flow cytometry datasets organized in plates. It simplifies the management of well annotations, matching test samples to negative controls (isotypes), and automating the gating process across hundreds of samples.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/plateCore.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "plateCore"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/plateCore.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-platecore\n\nname: bioconductor-platecore\ndescription: Analysis of high-throughput flow cytometry data in plate formats (96 or 384-well). Use this skill to manage flowPlate objects, perform automated gating based on negative controls, apply background correction for cell size (FSC), and summarize results across multiple plates.\n\n## Overview\n\nThe `plateCore` package extends `flowCore` and `flowViz` to handle large-scale flow cytometry datasets organized in plates. It simplifies the management of well annotations, matching test samples to negative controls (isotypes), and automating the gating process across hundreds of samples.\n\n## Core Workflow\n\n### 1. Data Initialization\nA `flowPlate` requires a `flowSet` (from `flowCore`), a well annotation data frame, and a unique plate name.\n\n```r\nlibrary(plateCore)\ndata(plateCore) # Loads example pbmcPlate, wellAnnotation, and compensationSet\n\n# Create the flowPlate\npbmcFP <- flowPlate(pbmcPlate, wellAnnotation, plateName=\"PBMC.001\")\n```\n\n**Well Annotation Requirements:**\nThe annotation data frame must contain at least:\n- `Well.Id`: Unique identifier (e.g., \"A01\", \"B05\").\n- `Sample.Type`: \"Unstained\", \"Test\", \"Negative.Control\", or \"Isotype\".\n- `Ab.Name`: Antibody name or descriptor.\n- `Channel`: The fluorescence channel (e.g., \"FL1-H\").\n- `Negative.Control`: The `Well.Id` of the corresponding negative control for that test well.\n\n### 2. Pre-processing and Gating\nStandard `flowCore` filters can be applied to `flowPlate` objects using `Subset()`.\n\n```r\n# Define gates for population of interest (e.g., Lymphocytes)\nrectGate <- rectangleGate(\"FSC-H\"=c(300,700), \"SSC-H\"=c(50,400))\nnormGate <- norm2Filter(\"SSC-H\", \"FSC-H\", scale.factor=1.5)\n\n# Subset the plate\npbmcFP.lymph <- Subset(pbmcFP, rectGate & normGate)\n```\n\n### 3. Background Correction\n`fixAutoFl` corrects for the effects of cell size (FSC) on background fluorescence by fitting a log-log linear model to unstained wells.\n\n```r\npbmcFPbgc <- fixAutoFl(pbmcFP.lymph, fsc=\"FSC-H\", chanCols=c(\"FL1-H\", \"FL2-H\", \"FL4-H\"))\n```\n\n### 4. Automated Control Gating\n`plateCore` automates the definition of positive/negative thresholds based on negative control wells.\n\n```r\n# Set gates based on Median + N * MAD (Median Absolute Deviation)\npbmcFPbgc <- setControlGates(pbmcFPbgc, gateType=\"Negative.Control\", numMads=5)\n\n# Apply the calculated gates to the test wells\npbmcFPbgc <- applyControlGates(pbmcFPbgc)\n```\n\n### 5. Summarizing and Extracting Results\n`summaryStats` populates the `wellAnnotation` slot with metrics like `Percent.Positive`, `MFI`, and `MFI.Ratio`.\n\n```r\npbmcFPbgc <- summaryStats(pbmcFPbgc)\n\n# View results\nhead(wellAnnotation(pbmcFPbgc))\n\n# Export results\nwrite.csv(wellAnnotation(pbmcFPbgc), file=\"plate_results.csv\")\n```\n\n## Visualization\n\n`plateCore` integrates with `lattice` via `flowViz`. Use `xyplot` to visualize gates and populations.\n\n```r\n# Plot specific wells with gates\n# Use filter=\"Negative.Control\" to show the automated gates\nxyplot(transform(\"FL1-H\"=log10) %on% pbmcFPbgc[c(\"A03\", \"B03\")], \n       displayFilter=TRUE, \n       filter=\"Negative.Control\",\n       flowStrip=c(\"Well.Id\", \"Ab.Name\", \"Percent.Positive\"))\n```\n\n## Working with Multiple Plates\nCombine multiple `flowPlate` objects into a single virtual plate for cross-plate analysis.\n\n```r\n# Combine plates\nvirtPlate <- fpbind(plate1, plate2, plate3)\n\n# Plot results conditioned by plate\ndensityplot(~ `FL2-H` | as.factor(plateName), \n            virtPlate[c(\"A01\", \"A02\")], \n            filterResult=\"Negative.Control\")\n```\n\n## Quality Assessment\n- **Event Counts**: Check `Total.Count` in `wellAnnotation` to ensure sufficient events per well.\n- **Fluidic Stability**: Use `flowViz::ecdfplot(~ `FSC-H` | as.factor(Column.Id), data=plateSet(fp))` to check for row/column effects or bubbles.\n- **Gating Consistency**: Use `mfiPlot(fp)` to plot MFI Ratio vs. Percent Positive. Outliers from the robust regression line may indicate failed gates or experimental artifacts.\n\n## Reference documentation\n- [Analysis of High Throughput Flow Cytometry Data using plateCore](./references/plateCoreVig.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-platecore",
+    "description": "This tool analyzes high-throughput flow cytometry data organized in 96 or 384-well plate formats. Use when user asks to manage flowPlate objects, perform automated gating based on negative controls, apply background correction for cell size, or summarize results across multiple plates.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/plateCore.html"
+  }
+}

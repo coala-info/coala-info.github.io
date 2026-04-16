@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-adsplit",
+  "category": "bioconductor",
+  "name": "bioconductor-adsplit",
+  "description": "This tool performs annotation-driven unsupervised clustering of microarray gene expression data using functional gene sets like GO terms or KEGG pathways. Use when user asks to perform unsupervised clustering of samples based on biological annotations, identify patient subgroups using specific gene sets, or calculate DLD scores and empirical p-values for gene set splits.",
+  "overview": "The `adSplit` package implements a method for \"Annotation-Driven Splits.\" Unlike standard clustering which uses all genes, `adSplit` uses functional annotations to define candidate gene sets. For each set, it performs a 2-means clustering (initialized via divisive hierarchical clustering) and calculates a Diagonal Linear Discriminant (DLD) score to assess clustering strength. It also supports empirical p-value calculation via random gene set sampling to determine the statistical significance of ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/adSplit.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-adsplit/overview",
+  "github": "N/A",
+  "conda_downloads": "50.4K",
+  "conda_downloads_num": 50400,
+  "last_updated": "2025-04-30",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "adSplit"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/adSplit.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-adsplit/overview",
+    "github": "N/A",
+    "conda_downloads": "50.4K",
+    "last_updated": "2025-04-30",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-adsplit\n\nname: bioconductor-adsplit\ndescription: Annotation-driven class discovery for microarray gene expression data. Use this skill to perform unsupervised clustering of samples (e.g., patients) based on specific biological gene sets (GO terms or KEGG pathways). It is particularly useful for identifying clinically relevant patient subgroups that are characterized by specific biological processes, providing both a clustering and a functional rationale.\n\n## Overview\n\nThe `adSplit` package implements a method for \"Annotation-Driven Splits.\" Unlike standard clustering which uses all genes, `adSplit` uses functional annotations to define candidate gene sets. For each set, it performs a 2-means clustering (initialized via divisive hierarchical clustering) and calculates a Diagonal Linear Discriminant (DLD) score to assess clustering strength. It also supports empirical p-value calculation via random gene set sampling to determine the statistical significance of the observed splits.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package works with `ExpressionSet` objects or expression matrices. It requires Bioconductor annotation metadata packages (e.g., `hu6800.db`) to map probes to GO/KEGG terms.\n\n```r\nlibrary(adSplit)\nlibrary(golubEsets)\ndata(Golub_Merge)\n\n# Extract expression matrix if needed\ne <- exprs(Golub_Merge)\n```\n\n### 2. Basic Clustering (diana2means)\nTo perform a split on a specific matrix without annotation logic, use `diana2means`. This function uses a robust initialization (centroids from `diana`) for `k-means`.\n\n```r\n# Perform split on the 10% most variable genes\nvars <- apply(e, 1, var)\ne_sub <- e[vars > quantile(vars, 0.9), ]\n\n# Get DLD score only\nscore <- diana2means(e_sub)\n\n# Get split object (assignments and score)\nresult <- diana2means(e_sub, return.cut = TRUE)\nprint(result$cut)   # Cluster assignments (0 and 1)\nprint(result$score) # DLD score\n```\n\n### 3. Annotation-Driven Splits (adSplit)\nThe primary function `adSplit` automates the process of fetching genes for a term and performing the clustering.\n\n```r\n# Split based on a specific GO term\n# Arguments: ExpressionSet, Term ID, Chip name\nresult <- adSplit(Golub_Merge, \"GO:0006915\", \"hu6800\")\n\n# Split based on all KEGG pathways\nkegg_splits <- adSplit(Golub_Merge, \"KEGG\", \"hu6800\")\n\n# Filter by max probes to avoid overly generic terms\ngeneric_split <- adSplit(Golub_Merge, \"GO:0007165\", \"hu6800\", max.probes=7000)\n```\n\n### 4. Significance Testing\nTo compute empirical p-values, set the `B` argument (number of permutations). This compares the observed DLD score against scores from `B` random gene sets of the same size.\n\n```r\n# Compute splits with 1000 permutations for p-values\nsignificant_splits <- adSplit(Golub_Merge, \"KEGG\", \"hu6800\", B=1000)\n\n# Access results\nsignificant_splits$pvalue   # Empirical p-values\nsignificant_splits$qvalues  # FDR corrected (Benjamini-Hochberg)\n```\n\n## Visualization\n\nThe package provides specific methods for `splitSet` objects:\n\n```r\n# Histogram of p-values with FDR (q-value) curve\nhist(significant_splits)\n\n# Heatmap of splits\n# filter.fdr: only show splits meeting a specific False Discovery Rate threshold\nimage(significant_splits, filter.fdr = 0.3)\n```\n\n## Key Parameters\n- `max.probes`: Maximum number of genes allowed for a term (default is often too restrictive for generic terms).\n- `min.probes`: Minimum number of genes required to attempt a split (default is 20).\n- `ignore.genes`: Number of top-scoring genes to ignore when calculating DLD score (prevents single-gene dominance).\n- `B`: Number of random draws for empirical p-value calculation.\n\n## Reference documentation\n\n- [Annotation-Driven Class Discovery: User's Guide to the Bioconductor package adSplit](./references/tr_2005_02.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-adsplit",
+    "description": "This tool performs annotation-driven unsupervised clustering of microarray gene expression data using functional gene sets like GO terms or KEGG pathways. Use when user asks to perform unsupervised clustering of samples based on biological annotations, identify patient subgroups using specific gene sets, or calculate DLD scores and empirical p-values for gene set splits.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/adSplit.html"
+  }
+}

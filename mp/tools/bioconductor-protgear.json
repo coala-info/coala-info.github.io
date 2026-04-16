@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-protgear",
+  "category": "bioconductor",
+  "name": "bioconductor-protgear",
+  "description": "This tool processes protein microarray data through a workflow of background correction, normalization, and technical replicate management. Use when user asks to import GPR files, perform background correction, calculate coefficients of variation for replicates, or normalize protein microarray data.",
+  "overview": "The `protGear` package is designed for the pre-processing of protein microarray data. It provides a structured workflow to transform raw fluorescence intensity files (typically from GenePix) into analysis-ready data. Key features include spatial visualization of slides, multiple background correction methods, robust CV estimation for selecting the best technical replicates, and various normalization techniques.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/protGear.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Keniajin/protGear",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "protGear"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/protGear.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Keniajin/protGear",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-protgear\n\nname: bioconductor-protgear\ndescription: Protein microarray data processing using the protGear Bioconductor package. Use this skill to import .gpr or .txt files, perform background correction (local, global, normexp, etc.), merge sample identifiers, calculate Coefficient of Variation (CV) for technical replicates, perform TAG subtraction, and normalize data (vsn, loess, rlm).\n\n# bioconductor-protgear\n\n## Overview\nThe `protGear` package is designed for the pre-processing of protein microarray data. It provides a structured workflow to transform raw fluorescence intensity files (typically from GenePix) into analysis-ready data. Key features include spatial visualization of slides, multiple background correction methods, robust CV estimation for selecting the best technical replicates, and various normalization techniques.\n\n## Analysis Setup and Parameters\nBefore processing, define the experimental parameters using `array_vars()`. This function centralizes metadata required for the workflow.\n\n```r\nlibrary(protGear)\n\ngenepix_vars <- array_vars(\n  channel = \"635\", # Fluorescence channel (e.g., 635, 532)\n  chip_path = \"path/to/gpr_files\", # Folder containing .gpr or .txt files\n  totsamples = 21, # Number of samples per slide\n  blockspersample = 2, # Blocks occupied by one sample\n  sampleID_path = \"path/to/sample_ids\", # Folder with matching .csv ID files\n  machine = 1, # Optional machine identifier\n  date_process = \"2023-10-30\"\n)\n```\n\n## Data Import and Quality Control\n1. **Check IDs**: Ensure every data file has a corresponding sample ID file using `check_sampleID_files()`.\n2. **Spatial Visualization**: Inspect slides for spatial bias using `visualize_slide(infile, MFI_var)` or `visualize_slide_2d()`.\n3. **Read Files**: Use `read_array_files()` to load data. It is common to use `purrr::map` for batch processing.\n\n```r\nfilenames <- list.files(genepix_vars$paths[[1]], pattern = \"*.txt$|*.gpr$\")\ndata_files <- purrr::map(filenames, read_array_files, \n                         data_path = \"path/to/data/\", \n                         genepix_vars = genepix_vars)\n```\n\n## Background Correction\nExtract background values with `extract_bg()` and apply correction with `bg_correct()`. Supported methods include `subtract_local`, `subtract_global`, `moving_min`, `normexp`, and `edwards`.\n\n```r\n# Merge sample IDs and correct background\nsample_ID_merged_dfs <- purrr::map(names(data_files), merge_sampleID, \n                                  data_files = data_files, \n                                  genepix_vars = genepix_vars, \n                                  method = \"subtract_local\")\n```\n\n## Replicate Management (CV)\n`protGear` excels at handling technical replicates.\n- **CV Estimation**: Use `cv_estimation()` to calculate CVs across replicates.\n- **Best Replicates**: If you have >2 replicates, `best_CV_estimation()` automatically selects the pair with the lowest CV to minimize variability.\n\n```r\ndataCV <- purrr::map(sample_ID_merged_dfs, cv_estimation, \n                     lab_replicates = 3, cv_cut_off = 20)\n\ndataCV_best2 <- purrr::map(dataCV, best_CV_estimation, \n                           lab_replicates = 3, cv_cut_off = 20)\n```\n\n## TAG Subtraction and Normalization\n- **TAG Subtraction**: For antigens with purification tags (e.g., GST, MBP), use `tag_subtract()` with a mapping file to remove tag-specific signals.\n- **Normalization**: Use `matrix_normalise()` to apply `vsn`, `loess`, `rlm`, or `log2` methods.\n\n```r\n# Normalization example\nnorm_list <- matrix_normalise(matrix_antigen, \n                              method = \"vsn\", \n                              array_matrix = array_matrix, \n                              return_plot = TRUE)\n# Access normalized matrix\nnormalized_data <- norm_list$matrix_antigen_normalised\n```\n\n## Interactive Dashboard\nTo launch the Shiny-based GUI for a guided step-by-step processing experience:\n```r\nprotGear::launch_protGear_interactive()\n```\n\n## Reference documentation\n- [protGear vignette (Rmd)](./references/vignette.Rmd)\n- [protGear vignette (Markdown)](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-protgear",
+    "description": "This tool processes protein microarray data through a workflow of background correction, normalization, and technical replicate management. Use when user asks to import GPR files, perform background correction, calculate coefficients of variation for replicates, or normalize protein microarray data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/protGear.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-simbindprofiles",
+  "category": "bioconductor",
+  "name": "bioconductor-simbindprofiles",
+  "description": "This tool analyzes genome tiling array data to identify common and unique binding regions, increased binding, and compensation events across different datasets. Use when user asks to compare genomic signal profiles, identify differentially bound regions without peak calling, or classify binding events across multiple ChIP-chip or DamID experiments.",
+  "overview": "SimBindProfiles implements a threshold-based approach to compare genomic signal data (SGR format) across different conditions or transcription factors. It is particularly useful for identifying functional redundancy, compensation, or increased binding between datasets.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/SimBindProfiles.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SimBindProfiles"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/SimBindProfiles.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-simbindprofiles\n\nname: bioconductor-simbindprofiles\ndescription: Analysis of genome tiling array data (ChIP-chip, DamID) to identify common and unique binding regions, increased binding, and compensation events. Use this skill when comparing binding profiles processed on the same array platform to find differentially bound regions without relying on peak calling.\n\n## Overview\n\nSimBindProfiles implements a threshold-based approach to compare genomic signal data (SGR format) across different conditions or transcription factors. It is particularly useful for identifying functional redundancy, compensation, or increased binding between datasets.\n\n## Core Workflow\n\n### 1. Data Loading and Normalization\n\nData should be in SGR format (tab-delimited: chromosome, position, signal).\n\n```R\nlibrary(SimBindProfiles)\n\n# Read SGR files and perform quantile normalization\n# File names are specified without the .txt extension\ndataPath <- \"path/to/sgr/files\"\nsgr_files <- c(\"Sample1\", \"Sample2\", \"Sample3\")\nSGR <- readSgrFiles(X = sgr_files, dataPath = dataPath)\n\n# Visualize correlations and distributions\neSetScatterPlot(SGR)\n```\n\n### 2. Defining Thresholds\n\nTwo critical thresholds must be defined:\n- `bound.cutoff`: Signal level above which a probe is considered \"bound\".\n- `diff.cutoff`: Minimum difference between signals to consider a probe \"uniquely\" bound in one set compared to another.\n\n```R\n# Find bound cutoff using a mixture of two Gaussians (recommended)\n# fdr parameter controls the stringency\nbound.cutoff <- findBoundCutoff(SGR, method = \"twoGaussiansNull\", fdr = 0.25)\n\n# Set difference cutoff (typically 75% to 100% of bound.cutoff)\ndiff.cutoff <- round(bound.cutoff * 0.75, 2)\n\n# QC: Plot histogram with cutoff\nhist(exprs(SGR)[,1], breaks=1000)\nabline(v=bound.cutoff, col=\"red\")\n```\n\n### 3. Region Classification\n\nThe package provides several functions to classify probes into regions based on the thresholds and spatial parameters:\n- `probes`: Minimum number of probes required to form a region.\n- `probe.max.spacing`: Maximum distance (bp) between probes before splitting a region.\n\n#### Pairwise Comparison\nIdentifies unique regions in set 1, unique in set 2, and common regions.\n```R\npairwiseR <- pairwiseRegions(SGR, sgrset = c(1, 2), \n                             bound.cutoff, diff.cutoff, \n                             probes = 10, probe.max.spacing = 200)\n```\n\n#### Three-way Comparison\nIdentifies unique and common regions across three datasets (7 possible classes).\n```R\nthreewayR <- threewayRegions(SGR, sgrset = c(1, 2, 3), \n                             bound.cutoff, diff.cutoff, \n                             probes = 10, probe.max.spacing = 200)\n```\n\n#### Increased Binding\nIdentifies regions where binding is significantly higher in one set compared to another.\n```R\nincreasedR <- increasedBindingRegions(SGR, sgrset = c(2, 3), \n                                      bound.cutoff, diff.cutoff, \n                                      probes = 10, probe.max.spacing = 200)\n```\n\n#### Compensation\nIdentifies regions bound in two sets (e.g., Factor A in WT and Factor B in A-mutant) but not in a third (e.g., Factor B in WT).\n```R\ncompR <- compensationRegions(SGR, sgrset = c(1, 2, 3), \n                             bound.cutoff, diff.cutoff, \n                             probes = 10, probe.max.spacing = 200)\n```\n\n### 4. Visualization\n\n```R\n# Create probe annotation for plotting\nprobeAnno <- probeAnnoFromESet(SGR, probeLength = 50)\n\n# Plot signal profiles along a chromosome\nplot(SGR, probeAnno, chrom = \"X\", xlim = c(start, end), samples = c(1, 2))\n\n# Scatterplot of classified probes\nplotBoundProbes(SGR, sgrset = c(1, 2), method = \"pairwise\", \n                bound.cutoff, diff.cutoff)\n```\n\n## Tips for Success\n\n- **Data Sorting**: Ensure SGR files are sorted by chromosome and ascending position before reading.\n- **Parameter Selection**: Use `probeLengthPlot` to help determine the `probes` parameter by looking at the frequency of probes per bound region.\n- **Output**: Classification functions automatically write `.bed` files to the working directory, which can be loaded into genome browsers like IGV.\n- **Score Calculation**: The \"score\" in the output regions represents the mean difference in signal (for unique/increased classes) or mean signal (for common classes) across the probes in that region.\n\n## Reference documentation\n\n- [SimBindProfiles](./references/SimBindProfiles.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-simbindprofiles",
+    "description": "This tool analyzes genome tiling array data to identify common and unique binding regions, increased binding, and compensation events across different datasets. Use when user asks to compare genomic signal profiles, identify differentially bound regions without peak calling, or classify binding events across multiple ChIP-chip or DamID experiments.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/SimBindProfiles.html"
+  }
+}

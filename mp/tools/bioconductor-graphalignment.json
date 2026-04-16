@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-graphalignment",
+  "category": "bioconductor",
+  "name": "bioconductor-graphalignment",
+  "description": "This tool aligns two networks by considering both node similarity and interaction topology using a Bayesian scoring scheme and iterative heuristic. Use when user asks to align protein-protein interaction networks, perform cross-species analysis of biological networks, or find optimal one-to-one mappings between nodes in two different graphs.",
+  "overview": "The `GraphAlignment` package provides a framework for aligning two networks (represented as adjacency matrices) by considering both node similarity (e.g., sequence homology) and link similarity (interaction topology). It uses a Bayesian scoring scheme and an iterative algorithm with simulated annealing to find an optimal one-to-one mapping between nodes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GraphAlignment.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-graphalignment/overview",
+  "github": "N/A",
+  "conda_downloads": "31.8K",
+  "conda_downloads_num": 31800,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GraphAlignment"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GraphAlignment.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-graphalignment/overview",
+    "github": "N/A",
+    "conda_downloads": "31.8K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-graphalignment\n\nname: bioconductor-graphalignment\ndescription: Find alignments between two networks (graphs) based on link and node similarity. Use this skill when you need to perform cross-species analysis of biological networks, align protein-protein interaction (PPI) networks, or find functional relationships between nodes in two different graphs using an iterative heuristic based on the linear assignment problem.\n\n# bioconductor-graphalignment\n\n## Overview\nThe `GraphAlignment` package provides a framework for aligning two networks (represented as adjacency matrices) by considering both node similarity (e.g., sequence homology) and link similarity (interaction topology). It uses a Bayesian scoring scheme and an iterative algorithm with simulated annealing to find an optimal one-to-one mapping between nodes.\n\n## Core Workflow\n\n### 1. Data Preparation\nNetworks must be represented as adjacency matrices. Node similarities (e.g., BLAST scores) are stored in a similarity matrix $R$.\n```r\nlibrary(GraphAlignment)\n# A and B are adjacency matrices; R is the similarity matrix\n# Generate dummy data for testing:\nex <- GenerateExample(dimA=20, dimB=20, filling=0.5, covariance=0.6, numOrths=10)\nA <- ex$a\nB <- ex$b\nR <- ex$r\n```\n\n### 2. Initial Alignment\nCreate a starting point for the iterative algorithm. A common choice is using reciprocal best matches from the similarity matrix.\n```r\n# psize must be >= dimA and dimB to accommodate dummy nodes\np_init <- InitialAlignment(psize=40, r=R, mode=\"reciprocal\")\n```\n\n### 3. Parameter Estimation\nDefine lookup tables (bins) for link weights and node similarities, then estimate scoring parameters based on the initial alignment.\n```r\n# Define bins (e.g., for binary data or specific weight ranges)\nlookupLink <- c(-0.5, 0.5, 1.5) \nlookupNode <- c(-0.5, 0.5, 1.5)\n\n# Compute log-likelihood parameters\nlinkParams <- ComputeLinkParameters(A, B, p_init, lookupLink)\nnodeParams <- ComputeNodeParameters(dim(A)[1], dim(B)[1], R, p_init, lookupNode)\n```\n\n### 4. Network Alignment\nRun the iterative alignment algorithm. Use `bStart` and `bEnd` to control simulated annealing (inverse temperature).\n```r\nal <- AlignNetworks(A=A, B=B, R=R, P=p_init,\n                    linkScore=linkParams$ls,\n                    selfLinkScore=linkParams$lsSelf,\n                    nodeScore1=nodeParams$s1, \n                    nodeScore0=nodeParams$s0,\n                    lookupLink=lookupLink, \n                    lookupNode=lookupNode,\n                    bStart=0.1, bEnd=30,\n                    maxNumSteps=50)\n```\n\n### 5. Analysis and Scoring\nExtract the aligned pairs and calculate the final alignment score.\n```r\n# Get matrix of aligned node indices\npairs <- AlignedPairs(A, B, al)\n\n# Calculate link (sl) and node (sn) scores\nscores <- ComputeScores(A, B, R, al, \n                        linkParams$ls, linkParams$lsSelf, \n                        nodeParams$s1, nodeParams$s0, \n                        lookupLink, lookupNode, symmetric=TRUE)\n\n# Analyze alignment quality\nanalysis <- AnalyzeAlignment(A, B, R, al, lookupNode, epsilon=0.5)\n```\n\n## Key Functions\n- `AlignNetworks`: The main iterative solver.\n- `ComputeM`: Calculates the score matrix $M$ for the linear assignment problem.\n- `LinearAssignment`: Solves the underlying optimization problem (Jonker-Volgenant algorithm).\n- `EncodeDirectedGraph`: Converts directed binary graphs into a symmetric representation for alignment.\n- `GenerateExample`: Useful for creating synthetic networks with known correlations for benchmarking.\n\n## Tips for Success\n- **Permutation Vector**: The alignment `al` is a vector where `al[i]` is the node in B aligned to node `i` in A. If `al[i] > dim(B)`, node `i` is unaligned (mapped to a dummy node).\n- **Dummy Nodes**: Always ensure `psize` in `InitialAlignment` is large enough (e.g., `dim(A) + dim(B)`). If the number of aligned nodes equals the minimum possible, increase `psize`.\n- **Self-Consistency**: For better results, recalculate parameters using the output alignment and run `AlignNetworks` again until the alignment converges.\n- **Directed Graphs**: Set `directed=TRUE` in `AlignNetworks` and use `EncodeDirectedGraph` if working with directed networks.\n\n## Reference documentation\n- [GraphAlignment](./references/GraphAlignment.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-graphalignment",
+    "description": "This tool aligns two networks by considering both node similarity and interaction topology using a Bayesian scoring scheme and iterative heuristic. Use when user asks to align protein-protein interaction networks, perform cross-species analysis of biological networks, or find optimal one-to-one mappings between nodes in two different graphs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GraphAlignment.html"
+  }
+}

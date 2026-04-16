@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ppinfer",
+  "category": "bioconductor",
+  "name": "bioconductor-ppinfer",
+  "description": "This tool infers functionally related proteins using protein-protein interaction networks and Support Vector Machines. Use when user asks to identify putative protein functions, find proteins closely related to a target set, or perform network-based functional enrichment analysis.",
+  "overview": "PPInfer implements a network-based statistical learning method to infer protein functions. It uses a kernel Support Vector Machine (KSVM) based on the regularized Laplacian matrix of a PPI network. The package employs a unique two-step approach: first using a One-Class SVM (OCSVM) to identify background/pseudo-absence proteins, followed by a classical binary SVM to rank proteins most closely related to a user-provided target set.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PPInfer.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PPInfer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PPInfer.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ppinfer\n\nname: bioconductor-ppinfer\ndescription: Infer functionally related proteins using protein-protein interaction (PPI) networks and Support Vector Machines (SVM). Use this skill to identify putative functions of proteins, find closely related proteins to a target set, and perform network-based functional enrichment analysis (ORA/GSEA).\n\n## Overview\n\nPPInfer implements a network-based statistical learning method to infer protein functions. It uses a kernel Support Vector Machine (KSVM) based on the regularized Laplacian matrix of a PPI network. The package employs a unique two-step approach: first using a One-Class SVM (OCSVM) to identify background/pseudo-absence proteins, followed by a classical binary SVM to rank proteins most closely related to a user-provided target set.\n\n## Core Workflow\n\n### 1. Network and Kernel Preparation\nThe package works with `igraph` objects or adjacency matrices. A kernel matrix must be generated from the graph to represent protein similarities.\n\n```r\nlibrary(PPInfer)\nlibrary(igraph)\n\n# Load or create a graph (e.g., from igraph)\n# K <- net.kernel(graph) \n```\n\n### 2. Inferring Related Proteins\nThe primary function is `net.infer()`. It requires a target set of proteins (interesting proteins) and a pre-calculated kernel matrix.\n\n```r\n# target_proteins: vector of protein names/IDs matching kernel rownames\n# K: kernel matrix\n# top: number of top related proteins to return\nresults <- net.infer(target_proteins, K, top = 20)\n\n# Access results\nresults$top    # Names of the top inferred proteins\nresults$score  # SVM scores for ranking\nresults$CVerror # Cross-validation error\n```\n\nFor iterative semi-supervised learning, use `net.infer.ST()` (Self-Training), which builds the classifier incrementally.\n\n### 3. Species-Specific PPI Inference\nPPInfer provides wrapper functions for Human and Mouse that handle ID mapping via `biomaRt`.\n\n```r\n# For Human\n# K.9606 is the human kernel matrix (often downloaded from Zenodo)\nhuman_results <- ppi.infer.human(list.proteins, K.9606, input=\"entrezgene\", output=\"entrezgene\", top=100)\n\n# For Mouse\nmouse_results <- ppi.infer.mouse(list.proteins, K.10090, input=\"entrezgene\", output=\"entrezgene\", top=100)\n```\n\n### 4. Functional Enrichment Analysis\nAfter identifying related proteins, you can perform Over-Representation Analysis (ORA) or Gene Set Enrichment Analysis (GSEA).\n\n```r\n# ORA\nres_ora <- ORA(pathways, results$top)\nORA.barplot(res_ora, category = \"Category\", pvalue = \"pvalue\")\n\n# GSEA (requires scores)\n# Scale scores for GSEA\nscaled_scores <- as.numeric(scale(results$score))\nnames(scaled_scores) <- results$top\nres_gsea <- fgsea(pathways, scaled_scores, nperm=1000)\n\n# Visualize GSEA network\nenrich.net(res_gsea, pathways, pvalue.cutoff = 0.25)\n```\n\n## Usage Tips\n\n- **Kernel Matrices**: Calculating kernels for large networks (like STRING) is computationally expensive. It is recommended to download pre-calculated matrices for Human (Taxon 9606) and Mouse (Taxon 10090) from public repositories like Zenodo as indicated in the package documentation.\n- **ID Mapping**: When using `net.infer` directly, ensure the `target_proteins` IDs exactly match the `rownames` of the kernel matrix.\n- **Constraint**: The number of target proteins ($n$) must be less than half the total proteins ($N$) in the kernel matrix ($N - 2n > 0$) for the pseudo-absence selection logic to function correctly.\n- **Pseudo-absence**: The package automatically defines \"other class\" proteins by selecting those with zero similarity to the target class via OCSVM before running the final binary SVM.\n\n## Reference documentation\n\n- [PPInfer](./references/PPInfer.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ppinfer",
+    "description": "This tool infers functionally related proteins using protein-protein interaction networks and Support Vector Machines. Use when user asks to identify putative protein functions, find proteins closely related to a target set, or perform network-based functional enrichment analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PPInfer.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-lpe",
+  "category": "bioconductor",
+  "name": "bioconductor-lpe",
+  "description": "This tool performs statistical analysis of microarray data with small numbers of replicates using the Local Pooled Error test. Use when user asks to perform differential expression analysis on limited replicates, estimate baseline error distributions, calculate z-statistics for gene expression, or apply False Discovery Rate correction.",
+  "overview": "The `LPE` package implements the Local Pooled Error test, specifically designed for microarray experiments with very few replicates (typically 2-3). It improves statistical power by pooling error estimates across genes with similar expression intensities, rather than relying on gene-specific variance which is unstable at low sample sizes. The workflow typically involves data normalization, calculating a baseline error distribution for each condition, and then performing the LPE test to identify ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/LPE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "LPE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/LPE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-lpe\n\nname: bioconductor-lpe\ndescription: Statistical analysis of microarray data with small numbers of replicates (2-3) using the Local Pooled Error (LPE) test. Use this skill to perform differential expression analysis when sample sizes are limited, including data normalization, baseline error distribution estimation, z-statistic calculation, and False Discovery Rate (FDR) correction.\n\n# bioconductor-lpe\n\n## Overview\n\nThe `LPE` package implements the Local Pooled Error test, specifically designed for microarray experiments with very few replicates (typically 2-3). It improves statistical power by pooling error estimates across genes with similar expression intensities, rather than relying on gene-specific variance which is unstable at low sample sizes. The workflow typically involves data normalization, calculating a baseline error distribution for each condition, and then performing the LPE test to identify differentially expressed genes.\n\n## Core Workflow\n\n### 1. Data Preparation and Normalization\nLoad the library and prepare your expression matrix. While LPE provides a `preprocess` function, you can use other methods like RMA or MAS5.\n\n```R\nlibrary(LPE)\n\n# Example using built-in dataset 'Ley'\ndata(Ley)\n# Use a subset for testing\nley_subset <- Ley[1:1000, ]\n\n# Preprocess (IQR normalization, thresholding, log2 transformation)\n# columns 2:7 contain the expression data\nley_norm <- ley_subset\nley_norm[, 2:7] <- preprocess(ley_subset[, 2:7], data.type = \"MAS5\")\n\n# Remove control spots if necessary (e.g., Affymetrix 'AFFX' prefixes)\nley_final <- ley_norm[substring(ley_norm$ID, 1, 4) != \"AFFX\", ]\n```\n\n### 2. Estimating Baseline Error\nYou must calculate the baseline error distribution for each experimental condition separately.\n\n```R\n# Condition 1 (e.g., columns 2, 3, 4)\nvar_cond1 <- baseOlig.error(ley_final[, 2:4], q = 0.01)\n\n# Condition 2 (e.g., columns 5, 6, 7)\nvar_cond2 <- baseOlig.error(ley_final[, 5:7], q = 0.01)\n```\n\n### 3. Performing the LPE Test\nThe `lpe` function compares the two conditions using the baseline distributions calculated above.\n\n```R\nlpe_results <- lpe(ley_final[, 5:7], # Condition 2 data\n                   ley_final[, 2:4], # Condition 1 data\n                   var_cond2,        # Condition 2 error\n                   var_cond1,        # Condition 1 error\n                   probe.set.name = ley_final$ID)\n```\n\n### 4. FDR Correction\nApply False Discovery Rate (FDR) adjustment to the results. LPE supports several methods: \"BH\" (Benjamini-Hochberg), \"BY\", \"Bonferroni\", and \"resamp\" (Rank-invariant resampling).\n\n```R\n# Benjamini-Hochberg adjustment\nfdr_bh <- fdr.adjust(lpe_results, adjp = \"BH\")\n\n# Resampling-based FDR (Recommended for small samples, but slower)\n# Returns a table of target FDR vs critical z-values\nfdr_resamp <- fdr.adjust(lpe_results, adjp = \"resamp\", iterations = 250)\n```\n\n## Key Functions\n\n- `preprocess`: Performs IQR normalization, thresholding (min value 1.0), and log2 transformation.\n- `baseOlig.error`: Calculates the A vs M (average vs difference) error distribution used as a baseline.\n- `lpe`: The core function that calculates z-statistics based on the pooled error model.\n- `fdr.adjust`: Adjusts p-values or provides critical z-values for multiple testing correction.\n\n## Interpretation Tips\n\n- **Z-statistics**: Higher absolute z-statistics indicate more significant differential expression.\n- **Resampling FDR**: When using `adjp=\"resamp\"`, look at the `z.critical` column. If the target FDR is 0.05 and the corresponding `z.critical` is 1.77, any gene with `abs(z.stats) > 1.77` is considered significant at that threshold.\n- **Replicates**: LPE is specifically optimized for 2 or 3 replicates. For paired data, consider the `LPEP` library; for more than two conditions, consider the `HEM` library.\n\n## Reference documentation\n\n- [LPE](./references/LPE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-lpe",
+    "description": "This tool performs statistical analysis of microarray data with small numbers of replicates using the Local Pooled Error test. Use when user asks to perform differential expression analysis on limited replicates, estimate baseline error distributions, calculate z-statistics for gene expression, or apply False Discovery Rate correction.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/LPE.html"
+  }
+}
