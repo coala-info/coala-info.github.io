@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rificomparative",
+  "category": "bioconductor",
+  "name": "bioconductor-rificomparative",
+  "description": "This package compares RNA half-life and intensity data across two conditions to distinguish between transcriptional and post-transcriptional regulation. Use when user asks to compare transcriptomics data across treatments, segment half-life and intensity differences, or identify changes in RNA synthesis and decay rates.",
+  "overview": "The `rifiComparative` package is designed to compare transcriptomics data (specifically RNA half-life and intensity) across two different conditions or treatments. It serves as a successor to the `rifi` package, providing a workflow to align and segment data from different conditions that might otherwise be impossible to compare due to varying gene structures or fragmentation patterns.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/rifiComparative.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/CyanolabFreiburg/rifiComparative",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rifiComparative"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rifiComparative.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/CyanolabFreiburg/rifiComparative",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rificomparative\n\n## Overview\n\nThe `rifiComparative` package is designed to compare transcriptomics data (specifically RNA half-life and intensity) across two different conditions or treatments. It serves as a successor to the `rifi` package, providing a workflow to align and segment data from different conditions that might otherwise be impossible to compare due to varying gene structures or fragmentation patterns.\n\nThe core logic involves independent segmentation of half-life differences and intensity log2 fold-changes (log2FC). By comparing these segments, the package helps distinguish between transcriptional regulation (synthesis) and post-transcriptional regulation (decay).\n\n## Workflow and Key Functions\n\n### 1. Data Preparation and Joining\nTo begin, you must have `rifi_fit` or `rifi_stats` objects from two conditions and a differential expression analysis at the probe/bin level.\n\n```r\nlibrary(rifiComparative)\nlibrary(dplyr)\n\n# Load condition-specific data and differential expression results\n# differential_expression must contain: logFC_int, P.Value, position, and strand\ninp_s <- loading_fun(stats_se_cdt1, stats_se_cdt2, differential_expression)[[1]]\ninp_f <- loading_fun(stats_se_cdt1, stats_se_cdt2, differential_expression)[[2]]\n\n# Combine data by row\ndata_combined <- joining_data_row(input1 = inp_s, input2 = inp_f)\n\n# Combine data by column for comparison\ndf_comb <- joining_data_column(data = data_combined)\n```\n\n### 2. Penalty Calculation and Segmentation\nThe package uses dynamic programming for segmentation. You must first determine optimal penalties for both half-life (HL) and intensity (int).\n\n```r\n# Calculate penalties\npen_results <- penalties(df_comb)\npenalties_df <- pen_results[[1]]\npen_HL <- pen_results[[2]]\npen_int <- pen_results[[3]]\n\n# Perform fragmentation\n# Half-life fragmentation\nfragmented_df <- fragment_HL(\n    probe = penalties_df,\n    cores = 2,\n    pen = pen_HL[[1]][[9]],\n    pen_out = pen_HL[[1]][[10]]\n)\n\n# Intensity fragmentation\nfragmented_df <- fragment_inty(\n    probe = fragmented_df,\n    cores = 2,\n    pen = pen_int[[1]][[9]],\n    pen_out = pen_int[[1]][[10]]\n)\n```\n\n### 3. Statistical Analysis and Output Generation\nAfter fragmentation, perform statistical tests to identify significant segments and adjust the fragments to the genome annotation.\n\n```r\n# Run t-tests on segments\nstats_results <- statistics(data = fragmented_df)\nstats_df <- stats_results[[1]]\n\n# Preprocess GFF3 for annotation\nannot_list <- gff3_preprocess(path = \"path/to/your/annotation.gff\")\n\n# Generate final summary table with synthesis and decay rates\nfinal_summary <- adjusting_HLToInt(data = stats_df, annotation = annot_list[[1]])\n```\n\n### 4. Visualization\n`rifiComparative` provides specialized plots to interpret the relationship between synthesis and decay.\n\n```r\n# Genome-wide fragment comparison\nrifi_visualization_comparison(\n    data = data_combined,\n    data_c = stats_df,\n    genomeLength = annot_list[[2]],\n    annot = annot_list[[1]]\n)\n\n# Comparative figures (Decay vs Synthesis, Volcano, Density, etc.)\nfigures_fun(\n    data.1 = final_summary, \n    data.2 = data_combined, \n    input.1 = df_comb, \n    input.2 = differential_expression, \n    cdt1 = \"condition1_name\", \n    cdt2 = \"condition2_name\"\n)\n```\n\n## Key Output Columns\n*   **log2FC(decay_rate)**: Comparison of RNA decay between conditions.\n*   **log2FC(synthesis_rate)**: Calculated as the sum of decay rate log2FC and intensity log2FC.\n*   **p_value**: Marked with `*` if either the half-life or intensity fragment shows significant change.\n\n## Reference documentation\n- [rifiComparative Vignette (Rmd)](./references/rifiComparative.Rmd)\n- [rifiComparative Vignette (Markdown)](./references/rifiComparative.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rificomparative",
+    "description": "This package compares RNA half-life and intensity data across two conditions to distinguish between transcriptional and post-transcriptional regulation. Use when user asks to compare transcriptomics data across treatments, segment half-life and intensity differences, or identify changes in RNA synthesis and decay rates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rifiComparative.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ichip",
+  "category": "bioconductor",
+  "name": "bioconductor-ichip",
+  "description": "This tool performs Bayesian modeling of ChIP-chip data from multiple platforms using Ising models to account for spatial dependency between genomic probes. Use when user asks to calculate enrichment statistics, apply first-order or second-order Ising models to detect enriched genomic regions, or generate BED files for visualization.",
+  "overview": "The `iChip` package implements Bayesian hierarchical models to analyze ChIP-chip data. It uses Ising models to account for spatial dependency between genomic probes. The package is platform-independent and works with various genomic resolutions. It primarily provides two modeling approaches: `iChip1` (first-order Ising model) and `iChip2` (second-order Ising model).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/iChip.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ichip/overview",
+  "github": "N/A",
+  "conda_downloads": "46.2K",
+  "conda_downloads_num": 46200,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iChip"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iChip.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ichip/overview",
+    "github": "N/A",
+    "conda_downloads": "46.2K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ichip\n\nname: bioconductor-ichip\ndescription: Bayesian modeling of ChIP-chip data from multiple platforms (Agilent, Affymetrix, NimbleGen) using Ising models. Use this skill to calculate enrichment statistics (limma t-statistics), apply first-order or second-order Ising models to detect enriched genomic regions, and generate BED files for visualization.\n\n# bioconductor-ichip\n\n## Overview\n\nThe `iChip` package implements Bayesian hierarchical models to analyze ChIP-chip data. It uses Ising models to account for spatial dependency between genomic probes. The package is platform-independent and works with various genomic resolutions. It primarily provides two modeling approaches: `iChip1` (first-order Ising model) and `iChip2` (second-order Ising model).\n\n## Typical Workflow\n\n### 1. Data Preparation\nData must be normalized (e.g., quantile or loess) before using `iChip`. The input data frame must be sorted by chromosome and then by genomic position.\n\n```r\nlibrary(iChip)\n# Sort data\nmydata = mydata[order(mydata$chr, mydata$position), ]\n```\n\n### 2. Calculate Enrichment Statistics\nThe package suggests using empirical Bayes t-statistics. The `lmtstat` function is a wrapper for this calculation.\n\n*   **For independent samples (e.g., quantile normalized):**\n    `stats = lmtstat(IP_data, Control_data)`\n*   **For paired samples (e.g., loess normalized log2 ratios):**\n    `stats = lmtstat(log2ratio_matrix)`\n\n### 3. Running the Ising Models\n\n#### Second-Order Ising Model (iChip2)\nRecommended for a balance between sensitivity and FDR.\n```r\n# Y must be a matrix/df with: Col 1 = Chromosome, Col 2 = Enrichment Statistic\nY = cbind(mydata$chr, stats)\nres2 = iChip2(Y=Y, burnin=2000, sampling=10000, winsize=2, sdcut=2, beta=1.25)\n```\n*   `winsize`: 2 is standard for second-order.\n*   `beta`: Smoothing parameter. Increasing `beta` makes the criterion for enrichment more stringent.\n\n#### First-Order Ising Model (iChip1)\n```r\nres1 = iChip1(enrich=stats, burnin=2000, sampling=10000, sdcut=2, beta0=3)\n```\n\n### 4. Quality Control and Convergence\nCheck MCMC convergence by plotting parameters. Parameters should fluctuate around a stable mode.\n```r\npar(mfrow=c(2,2))\nplot(res2$mu0, type=\"l\"); plot(res2$mu1, type=\"l\")\n# Check posterior probabilities (should be dichotomized at 0 and 1)\nhist(res2$pp)\n```\n\n### 5. Calling Enriched Regions\nUse `enrichreg` to identify specific genomic intervals based on posterior probability (pp) or False Discovery Rate (FDR).\n\n```r\n# Using Posterior Probability cutoff\nregs = enrichreg(pos=mydata[,1:2], enrich=stats, pp=res2$pp, cutoff=0.9, method=\"ppcut\", maxgap=500)\n\n# Using FDR cutoff\nregs_fdr = enrichreg(pos=mydata[,1:2], enrich=stats, pp=res2$pp, cutoff=0.01, method=\"fdrcut\", maxgap=500)\n```\n\n### 6. Exporting Results\nCreate BED files for UCSC Genome Browser or motif analysis:\n```r\nbed = data.frame(chr=paste0(\"chr\", regs$chr), regs$gstart, regs$gend)\n```\n\n## Tips and Troubleshooting\n\n*   **No Enriched Regions:** If the warning \"all probes are in the same state\" appears, or if all posterior probabilities are 1 (or 0), it usually indicates no enrichment was found in the noise.\n*   **Beta Selection:** For high-resolution data (e.g., 35bp), `beta` values of 2–4 are often appropriate. For low-resolution promoter arrays, `beta` values around 1.0–1.25 are common.\n*   **Phase Transition:** If posterior probabilities are not dichotomized (not clustered at 0 and 1), increase the `beta` value to reach the \"super-paramagnetic\" phase.\n*   **Large Datasets:** For millions of probes, use parallel computation (e.g., via `snowfall`) to process chromosomes independently.\n\n## Reference documentation\n- [iChip](./references/iChip.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ichip",
+    "description": "This tool performs Bayesian modeling of ChIP-chip data from multiple platforms using Ising models to account for spatial dependency between genomic probes. Use when user asks to calculate enrichment statistics, apply first-order or second-order Ising models to detect enriched genomic regions, or generate BED files for visualization.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iChip.html"
+  }
+}

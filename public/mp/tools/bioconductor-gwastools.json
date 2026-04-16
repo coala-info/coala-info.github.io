@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gwastools",
+  "category": "bioconductor",
+  "name": "bioconductor-gwastools",
+  "description": "This tool provides infrastructure for quality control and analysis of genome-wide association study data using high-performance GDS and NetCDF formats. Use when user asks to prepare SNP and scan annotation objects, convert raw genotype data to GDS format, perform batch quality checks, verify sample sex, or estimate population structure.",
+  "overview": "GWASTools provides a comprehensive infrastructure for GWAS data management and quality control. It utilizes high-performance data formats (GDS and NetCDF) to handle large-scale datasets that exceed system memory. The package centers around three main object classes: `SnpAnnotationDataFrame`, `ScanAnnotationDataFrame`, and `GenotypeData`/`IntensityData` (which link annotations to the underlying data files).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GWASTools.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gwastools/overview",
+  "github": "https://github.com/smgogarten/GWASTools",
+  "conda_downloads": "27.3K",
+  "conda_downloads_num": 27300,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GWASTools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GWASTools.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gwastools/overview",
+    "github": "https://github.com/smgogarten/GWASTools",
+    "conda_downloads": "27.3K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gwastools\n\nname: bioconductor-gwastools\ndescription: Expert guidance for using the GWASTools R package for quality control and analysis of Genome-Wide Association Study (GWAS) data. Use this skill when you need to prepare SNP and Scan annotation objects, convert raw genotype/intensity data into GDS or NetCDF formats, perform batch quality checks (missingness, chi-square tests), conduct sample quality checks (BAF variance, heterozygosity, sex verification), or estimate relatedness and population structure.\n\n## Overview\n\nGWASTools provides a comprehensive infrastructure for GWAS data management and quality control. It utilizes high-performance data formats (GDS and NetCDF) to handle large-scale datasets that exceed system memory. The package centers around three main object classes: `SnpAnnotationDataFrame`, `ScanAnnotationDataFrame`, and `GenotypeData`/`IntensityData` (which link annotations to the underlying data files).\n\n## Core Workflow\n\n### 1. Creating Annotation Objects\nAnnotations are the backbone of GWASTools. They must contain specific required variables.\n\n**SNP Annotation:**\nRequires `snpID` (unique integer), `chromosome` (integer 1-27), and `position` (base pair).\n```r\nlibrary(GWASTools)\n# df is a data frame with snpID, chromosome, position\nsnpAnnot <- SnpAnnotationDataFrame(df)\n# Add metadata for clarity\nvarMetadata(snpAnnot)[\"chromosome\", \"labelDescription\"] <- \"1:22=autosomes, 23=X, 24=XY, 25=Y, 26=M, 27=U\"\n```\n\n**Scan Annotation:**\nRequires `scanID` (unique integer) and `sex` (\"M\"/\"F\").\n```r\n# df is a data frame with scanID, subjectID, sex\nscanAnnot <- ScanAnnotationDataFrame(df)\n```\n\n### 2. Data File Creation (GDS)\nConvert raw text files (e.g., Affymetrix CHP or Illumina CSV) into GDS format using `createDataFile`.\n\n```r\n# Define column mapping\ncol.nums <- as.integer(c(2, 3))\nnames(col.nums) <- c(\"snp\", \"geno\")\n\ncreateDataFile(path = \"path/to/raw\",\n               filename = \"output.gds\",\n               file.type = \"gds\",\n               variables = \"genotype\",\n               snp.annotation = snp_df,\n               scan.annotation = scan_df,\n               col.nums = col.nums,\n               sep.type = \"\\t\",\n               skip.num = 1)\n```\n\n### 3. Linking Data and Annotations\nCreate a `GenotypeData` or `IntensityData` object to perform analyses.\n\n```r\ngds <- GdsGenotypeReader(\"output.gds\")\ngenoData <- GenotypeData(gds, snpAnnot=snpAnnot, scanAnnot=scanAnnot)\n\n# Access data\ngetGenotype(genoData, snp=c(1,10), scan=c(1,5))\nclose(genoData)\n```\n\n## Quality Control Procedures\n\n### Missingness Analysis\nCalculate missing call rates per SNP and per Scan.\n*   `missingGenotypeBySnpSex(genoData)`: Returns missing fraction per SNP, handling Y chromosome correctly for females.\n*   `missingGenotypeByScanChrom(genoData)`: Returns missing fraction per scan across chromosomes.\n\n### Sex Verification\nIdentify mis-annotated samples by comparing genetic data to records.\n*   `meanIntensityByScanChrom(intenData)`: Calculate mean X and Y intensities.\n*   `hetByScanChrom(genoData)`: Calculate X chromosome heterozygosity (expected high in females, near zero in males).\n\n### B-Allele Frequency (BAF) and Log R Ratio (LRR)\nUsed to detect chromosomal anomalies (duplications, deletions, or contamination).\n*   `BAFfromGenotypes()`: Calculates BAF/LRR from intensities and genotypes (primarily for Affymetrix).\n*   `sdByScanChromWindow()`: Identifies regions of high BAF variance using a sliding window.\n*   `chromIntensityPlot()`: Visualizes BAF and LRR across a chromosome for specific scans.\n\n### Batch Effects\n*   `batchChisqTest()`: Performs chi-square tests for allele frequency differences between batches.\n*   `batchFisherTest()`: Use for low-frequency SNPs.\n\n## Relatedness and Population Structure\nGWASTools integrates with `SNPRelate` for high-performance IBD and PCA.\n*   `snpgdsIBDKING()`: Robust kinship estimation.\n*   `snpgdsPCA()`: Principal Component Analysis to identify population stratification.\n\n## Best Practices\n*   **Integer Chromosomes:** Always use the 1-27 integer mapping. Use `getChromosome(obj, char=TRUE)` for display.\n*   **Closing Files:** Always use `close(genoData)` or `close(gds)` to free file handles and prevent data corruption.\n*   **Ordering:** Ensure SNP annotations are ordered by chromosome and position before creating GDS files.\n*   **Diagnostics:** Always check the output of `createDataFile` (e.g., `diag$chk`) to ensure all raw files were read correctly.\n\n## Reference documentation\n- [Preparing Affymetrix Data](./references/Affymetrix.md)\n- [GWAS Data Cleaning](./references/DataCleaning.md)\n- [Data Formats](./references/Formats.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gwastools",
+    "description": "This tool provides infrastructure for quality control and analysis of genome-wide association study data using high-performance GDS and NetCDF formats. Use when user asks to prepare SNP and scan annotation objects, convert raw genotype data to GDS format, perform batch quality checks, verify sample sex, or estimate population structure.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GWASTools.html"
+  }
+}

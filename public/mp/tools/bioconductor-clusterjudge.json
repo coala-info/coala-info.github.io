@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-clusterjudge",
+  "category": "bioconductor",
+  "name": "bioconductor-clusterjudge",
+  "description": "This tool evaluates the quality of cluster analysis by measuring its mutual information against external entity-attribute associations. Use when user asks to judge clustering quality, compare clusters to Gene Ontology terms, or validate cluster assignments using external information.",
+  "overview": "The `ClusterJudge` package provides a framework for judging the quality of a cluster analysis based on external information. It uses Mutual Information (MI) to quantify how well a clustering \"agrees\" with a system of attributes (like Gene Ontology). A high-quality clustering should show a significant decrease in total mutual information when entities are randomly swapped between clusters.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ClusterJudge.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ClusterJudge"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ClusterJudge.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-clusterjudge\n\n## Overview\n\nThe `ClusterJudge` package provides a framework for judging the quality of a cluster analysis based on external information. It uses Mutual Information (MI) to quantify how well a clustering \"agrees\" with a system of attributes (like Gene Ontology). A high-quality clustering should show a significant decrease in total mutual information when entities are randomly swapped between clusters.\n\n## Core Workflow\n\n### 1. Prepare Clustering Data\nThe clustering must be a **named vector** where values are cluster IDs and names are entity IDs (e.g., Gene IDs). Ensure there are no `NA` values and each entity belongs to exactly one cluster.\n\n```r\n# Example: Convert a dataframe to a named vector\n# clusters_df has columns 'GeneID' and 'Cluster'\nclusters <- clusters_df$Cluster\nnames(clusters) <- clusters_df$GeneID\n```\n\n### 2. Obtain Entity-Attribute Associations\nYou need a data frame with two columns: Entity IDs and Attribute IDs (e.g., GO terms).\n\n*   **For Yeast:** Use the built-in dataset `data(Yeast.GO.assocs)`.\n*   **For other species:** Use `biomaRt` to fetch GO terms or custom mappings.\n*   **Validation:** Always run `validate_association(your_assoc_df)` to check for NAs, NULLs, or duplicates.\n\n### 3. Consolidate Attributes\nTo improve performance and reduce noise, consolidate attributes that are too rare or highly redundant.\n\n*   **Filter by frequency:** Remove attributes associated with very few entities.\n*   **Filter by redundancy:** Use mutual information to remove redundant attributes based on an uncertainty limit (`U.limit`).\n\n```r\n# Consolidate based on frequency and redundancy\n# mi.GO.Yeast is a pre-calculated MI matrix for Yeast\ndata(mi.GO.Yeast)\nconsolidated <- consolidate_entity_attribute(\n  entity.attribute = Yeast.GO.assocs,\n  min.entities.per.attr = 3,\n  mut.inf = mi.GO.Yeast,\n  U.limit = c(0.1, 0.001) # Lower limit = more aggressive consolidation\n)\n\n# Access a specific level\nassoc_to_use <- consolidated[[\"0.001\"]]\n```\n\n### 4. Judge the Clustering\nThe `clusterJudge` function performs random swaps of entities between clusters and tracks the change in mutual information.\n\n```r\nmi_results <- clusterJudge(\n  clusters = clusters,\n  entity.attribute = assoc_to_use,\n  plot.notes = 'Description of the experiment',\n  plot.saveRDS.file = 'results_plot.rds'\n)\n```\n\n## Interpreting Results\n\n*   **Decreasing Trend:** If the plot shows a sharp decrease in Mutual Information as the number of random swaps increases, the original clustering is well-supported by the attributes.\n*   **Flat Trend:** If the MI remains constant or changes minimally, the clustering does not align with the provided attributes.\n*   **Increasing Trend (Rare):** May suggest the clustering captures novel relationships that contradict or complement existing annotations, provided the experimental data is highly reliable.\n\n## Key Functions\n\n*   `validate_association(df)`: Checks integrity of entity-attribute mapping.\n*   `entities_attribute_stats(df)`: Visualizes the distribution of entities per attribute.\n*   `consolidate_entity_attribute(...)`: Reduces attribute set size via frequency and MI thresholds.\n*   `attribute_mut_inf(df)`: Calculates the mutual information matrix for a new set of attributes (computationally intensive).\n*   `clusterJudge(clusters, entity.attribute)`: The main evaluation and plotting function.\n\n## Reference documentation\n\n- [ClusterJudge](./references/ClusterJudge-intro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-clusterjudge",
+    "description": "This tool evaluates the quality of cluster analysis by measuring its mutual information against external entity-attribute associations. Use when user asks to judge clustering quality, compare clusters to Gene Ontology terms, or validate cluster assignments using external information.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ClusterJudge.html"
+  }
+}

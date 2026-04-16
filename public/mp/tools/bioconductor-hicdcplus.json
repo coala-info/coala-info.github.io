@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hicdcplus",
+  "category": "bioconductor",
+  "name": "bioconductor-hicdcplus",
+  "description": "HiCDCPlus performs statistical analysis of Hi-C and HiChIP data to identify significant genomic interactions while accounting for systematic biases. Use when user asks to identify significant chromatin interactions, perform differential interaction analysis, call Topologically Associating Domains, or extract A/B compartments.",
+  "overview": "`HiCDCPlus` is an R package designed for the systematic analysis of Hi-C and HiChIP datasets. It utilizes a negative binomial generalized linear model (HiC-DC+) to account for genomic biases such as GC content, mappability, and effective length. The package supports various input formats including `.hic`, HiC-Pro outputs, and `HiTC` objects.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCDCPlus.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hicdcplus/overview",
+  "github": "N/A",
+  "conda_downloads": "13.2K",
+  "conda_downloads_num": 13200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HiCDCPlus"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCDCPlus.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hicdcplus/overview",
+    "github": "N/A",
+    "conda_downloads": "13.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hicdcplus\n\nname: bioconductor-hicdcplus\ndescription: Statistical analysis of Hi-C and HiChIP data using the HiCDCPlus Bioconductor package. Use this skill to identify significant genomic interactions, perform differential interaction analysis between conditions, call Topologically Associating Domains (TADs) using TopDom, and extract A/B compartments.\n\n# bioconductor-hicdcplus\n\n## Overview\n\n`HiCDCPlus` is an R package designed for the systematic analysis of Hi-C and HiChIP datasets. It utilizes a negative binomial generalized linear model (HiC-DC+) to account for genomic biases such as GC content, mappability, and effective length. The package supports various input formats including `.hic`, HiC-Pro outputs, and `HiTC` objects.\n\nKey capabilities:\n- **Interaction Calling**: Identifying statistically significant chromatin interactions.\n- **Differential Analysis**: Using a modified DESeq2 framework to find differences between conditions.\n- **TAD Calling**: Implementation of the TopDom algorithm.\n- **Compartment Analysis**: Integration with Juicer for A/B compartment detection.\n\n## Standard Workflow\n\n### 1. Feature Construction\nBefore modeling, you must generate genomic features (GC, mappability, length) for your specific binning strategy.\n\n```r\nlibrary(HiCDCPlus)\n\n# Generate features for 50kb uniform bins\nconstruct_features(output_path = \"hg19_50kb_GATC\",\n                   gen = \"Hsapiens\", gen_ver = \"hg19\",\n                   sig = \"GATC\",\n                   bin_type = \"Bins-uniform\",\n                   binsize = 50000,\n                   chrs = c(\"chr21\", \"chr22\"))\n```\n\n### 2. Data Ingestion (The gi_list)\n`HiCDCPlus` uses a `gi_list` object (a list of `InteractionSet` objects) to store data.\n\n```r\n# Initialize gi_list from features\ngi_list <- generate_bintolen_gi_list(bintolen_path = \"hg19_50kb_GATC_bintolen.txt.gz\")\n\n# Add counts from a .hic file\ngi_list <- add_hic_counts(gi_list, hic_path = \"path/to/data.hic\")\n\n# For HiC-Pro data:\n# gi_list <- add_hicpro_matrix_counts(gi_list, absfile_path, matrixfile_path)\n```\n\n### 3. Significance Calling\nExpand 1D features to 2D space and run the model.\n\n```r\n# Expand features\ngi_list <- expand_1D_features(gi_list)\n\n# Run the model (use HiCDCPlus_parallel for multiple cores)\nset.seed(1010)\ngi_list <- HiCDCPlus(gi_list)\n\n# Results are in the metadata columns: pvalue, qvalue (FDR), mu (expected), sdev\nhead(gi_list$chr21)\n```\n\n### 4. Differential Interaction Analysis\nRequires significant interactions called for each replicate/condition.\n\n```r\n# input_paths is a named list of paths to gi_list_write outputs\nhicdcdiff(input_paths = list(Cond1 = c(\"rep1.txt.gz\", \"rep2.txt.gz\"),\n                             Cond2 = c(\"rep3.txt.gz\", \"rep4.txt.gz\")),\n          filter_file = \"union_significant_indices.txt.gz\",\n          output_path = \"diff_results/\",\n          chrs = \"chr22\",\n          binsize = 50000)\n```\n\n## Domain-Specific Tasks\n\n### TAD Calling (TopDom)\nRequires ICE normalized counts.\n\n```r\n# Normalize .hic to ICE\ngi_list_ice <- hic2icenorm_gi_list(hic_path, binsize = 50e3, chrs = 'chr22')\n\n# Call TADs\ntads <- gi_list_topdom(gi_list_ice, chrs = \"chr22\", window.size = 10)\n```\n\n### Exporting Results\nResults can be saved to text or converted back to `.hic` for visualization in Juicebox or HiCExplorer.\n\n```r\n# Save to text\ngi_list_write(gi_list, fname = \"results.txt.gz\")\n\n# Save to .hic (mode can be 'pvalue', 'qvalue', 'normcounts', or 'zvalue')\nhicdc2hic(gi_list, hicfile = \"results.hic\", mode = 'normcounts', gen_ver = 'hg19')\n```\n\n## Tips for Success\n- **Distance Thresholds**: For Hi-C, the default `Dmax` is usually sufficient. For HiChIP, consider reducing the threshold (e.g., 1.5e6).\n- **Parallelization**: Use `HiCDCPlus_parallel` to speed up processing across chromosomes.\n- **Custom Features**: Use `add_1D_features` or `add_2D_features` to incorporate user-defined genomic tracks into the model.\n\n## Reference documentation\n- [Analyzing Hi-C and HiChIP data with HiCDCPlus](./references/HiCDCPlus.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hicdcplus",
+    "description": "HiCDCPlus performs statistical analysis of Hi-C and HiChIP data to identify significant genomic interactions while accounting for systematic biases. Use when user asks to identify significant chromatin interactions, perform differential interaction analysis, call Topologically Associating Domains, or extract A/B compartments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCDCPlus.html"
+  }
+}

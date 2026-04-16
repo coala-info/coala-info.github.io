@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-crlmm",
+  "category": "bioconductor",
+  "name": "bioconductor-crlmm",
+  "description": "This tool performs genotyping and copy number estimation for Affymetrix and Illumina SNP arrays using the CRLMM algorithm. Use when user asks to preprocess CEL or IDAT files, perform genotype calling, calculate confidence scores, or estimate B-allele frequencies and Log R Ratios.",
+  "overview": "The `crlmm` package provides a fast, memory-efficient implementation of the Corrected Robust Linear Model with Maximum likelihood (CRLMM) algorithm. It is designed to handle large-scale SNP array datasets by utilizing the `ff` package for on-disk data storage, allowing analysis of thousands of samples on standard hardware. The package supports both Affymetrix and Illumina platforms, providing genotype calls (AA, AB, BB), confidence scores, and infrastructure for downstream copy number analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/crlmm.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "crlmm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/crlmm.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-crlmm\n\nname: bioconductor-crlmm\ndescription: Genotyping and copy number estimation for Affymetrix (SNP 5.0, 6.0) and Illumina Infinium arrays using the CRLMM algorithm. Use this skill to preprocess CEL or IDAT files, perform genotype calling, calculate confidence scores, and estimate raw copy number or B-allele frequencies (BAF) and Log R Ratios (LRR).\n\n# bioconductor-crlmm\n\n## Overview\n\nThe `crlmm` package provides a fast, memory-efficient implementation of the Corrected Robust Linear Model with Maximum likelihood (CRLMM) algorithm. It is designed to handle large-scale SNP array datasets by utilizing the `ff` package for on-disk data storage, allowing analysis of thousands of samples on standard hardware. The package supports both Affymetrix and Illumina platforms, providing genotype calls (AA, AB, BB), confidence scores, and infrastructure for downstream copy number analysis.\n\n## Core Workflow: Affymetrix (SNP 5.0/6.0)\n\n### 1. Setup and Data Identification\nIdentify CEL files and define an output directory for the `ff` files.\n\n```r\nlibrary(crlmm)\nlibrary(ff)\n\n# Set path for ff objects (crucial for memory management)\nldPath(\"path/to/output_dir\")\nocProbesets(100000) # Process 100k probes at a time\nocSamples(200)      # Process 200 samples at a time\n\ncelFiles <- list.celfiles(\"path/to/cels\", full.names=TRUE)\n```\n\n### 2. Genotyping\nFor simple genotyping (SnpSet output):\n```r\nresult <- crlmm(celFiles)\n# Access results\ngcalls <- calls(result)\nconfs <- confs(result) # Confidence scores\nsnr <- result[[\"SNR\"]] # Signal-to-Noise Ratio\n```\n\n### 3. Copy Number Preprocessing\nFor copy number workflows, use the `CNSet` container:\n```r\n# Define batches (e.g., by plate or scan date)\nbatches <- rep(\"batch1\", length(celFiles))\n\ncnSet <- constructAffyCNSet(celFiles, batch=batches, cdfName=\"genomewidesnp6\", genome=\"hg19\")\ncnrmaAffy(cnSet)   # Quantile normalization for non-polymorphic markers\nsnprmaAffy(cnSet)  # Quantile normalization for SNPs\ngenotypeAffy(cnSet) # Perform genotyping\n```\n\n## Core Workflow: Illumina Infinium\n\n### 1. Setup\nIllumina requires a sample sheet and IDAT files.\n```r\nsamplesheet <- read.csv(\"sample_map.csv\")\narrayNames <- file.path(\"path/to/idats\", samplesheet$SentrixPosition)\n\n# Specify platform (e.g., \"human370v1c\")\ncnSet <- genotype.Illumina(sampleSheet=samplesheet, \n                           arrayNames=arrayNames, \n                           cdfName=\"human370v1c\", \n                           batch=rep(\"1\", nrow(samplesheet)))\n```\n\n## Copy Number Estimation\n\nOnce a `CNSet` is genotyped, estimate copy number parameters:\n\n```r\n# Fit linear model for copy number\ncrlmmCopynumber(cnSet)\n\n# Extract raw total copy number for specific samples/probes\n# i = probe index, j = sample index\nrawCN <- totalCopynumber(cnSet, i=1:1000, j=1:5)\n\n# Extract allele-specific copy number\nca <- CA(cnSet, i=1:100, j=1:2)\ncb <- CB(cnSet, i=1:100, j=1:2)\n```\n\n## Downstream Integration\n\n### Converting to SnpMatrix (for GWAS)\nUse `snpStats` for association testing:\n```r\nlibrary(snpStats)\n# Convert calls (1=AA, 2=AB, 3=BB) to SnpMatrix format (0, 1, 2)\ntheCalls <- t(calls(result)) - 1L\nsnpMat <- new(\"SnpMatrix\", theCalls)\n```\n\n### BAF and LRR for HMMs\nCoerce to `BafLrrSetList` for use in packages like `VanillaICE`:\n```r\nlibrary(VanillaICE)\nopen(cnSet)\noligoSetList <- BafLrrSetList(cnSet)\nlrr_values <- lrr(oligoSetList)\nbaf_values <- baf(oligoSetList)\nclose(cnSet)\n```\n\n## Tips and Quality Control\n\n- **Memory Management**: Always use `ldPath()` to specify where `ff` files should be stored. Use `open(cnSet)` and `close(cnSet)` when accessing `ff`-backed data to manage file connections.\n- **SNR**: Signal-to-Noise Ratio is a primary QC metric. For Affymetrix, SNR < 5 often indicates poor quality; for Illumina, the threshold is typically < 25.\n- **Batch Effects**: Copy number estimation requires at least 10 samples per batch. Ensure the `batch` variable correctly reflects processing groups.\n- **Annotation**: Ensure the correct Crlmm annotation package is installed (e.g., `genomewidesnp6Crlmm`, `human370v1cCrlmm`).\n\n## Reference documentation\n- [Preprocessing & Genotyping Affymetrix Arrays for Copy Number Analysis](./references/AffyGW.md)\n- [Overview of vignettes for copy number estimation](./references/CopyNumberOverview.md)\n- [Preprocessing and Genotyping Illumina Arrays for Copy Number Analysis](./references/IlluminaPreprocessCN.md)\n- [Infrastructure for copy number analysis in crlmm](./references/Infrastructure.md)\n- [Genotyping with the crlmm Package](./references/genotyping.md)\n- [crlmm to downstream data analysis](./references/gtypeDownstream.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-crlmm",
+    "description": "This tool performs genotyping and copy number estimation for Affymetrix and Illumina SNP arrays using the CRLMM algorithm. Use when user asks to preprocess CEL or IDAT files, perform genotype calling, calculate confidence scores, or estimate B-allele frequencies and Log R Ratios.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/crlmm.html"
+  }
+}

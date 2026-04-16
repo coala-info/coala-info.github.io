@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-distinct",
+  "category": "bioconductor",
+  "name": "bioconductor-distinct",
+  "description": "Bioconductor-distinct performs differential state analysis in single-cell data by comparing full cumulative distribution functions between groups using hierarchical non-parametric permutation tests. Use when user asks to perform differential state analysis, compare expression distributions within cell clusters, or identify changes in distribution shape such as unimodal versus bimodal shifts.",
+  "overview": "`distinct` is a statistical framework for differential testing between two or more groups of distributions. Unlike methods that focus solely on mean abundance, `distinct` compares full cumulative distribution functions (CDFs) using hierarchical non-parametric permutation tests. This allows for the detection of subtle variations, such as shifts from unimodal to bimodal distributions, even if the mean remains constant. It is specifically designed for \"differential state\" analysis in single-cell RN",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/distinct.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-distinct/overview",
+  "github": "https://github.com/SimoneTiberi/distinct",
+  "conda_downloads": "19.0K",
+  "conda_downloads_num": 19000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "distinct"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/distinct.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-distinct/overview",
+    "github": "https://github.com/SimoneTiberi/distinct",
+    "conda_downloads": "19.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-distinct\n\nname: bioconductor-distinct\ndescription: Statistical method for differential state analysis in single-cell data (scRNA-seq, HDCyto) using hierarchical non-parametric permutation tests. Use when comparing full distributions (CDFs) between two groups to identify changes in mean or shape (e.g., unimodal vs. bimodal) within cell clusters.\n\n# bioconductor-distinct\n\n## Overview\n`distinct` is a statistical framework for differential testing between two or more groups of distributions. Unlike methods that focus solely on mean abundance, `distinct` compares full cumulative distribution functions (CDFs) using hierarchical non-parametric permutation tests. This allows for the detection of subtle variations, such as shifts from unimodal to bimodal distributions, even if the mean remains constant. It is specifically designed for \"differential state\" analysis in single-cell RNA-seq or high-dimensional cytometry data, where testing is performed within specific cell clusters.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe input should be a `SingleCellExperiment` object containing cell-type/cluster labels and sample identifiers in the `colData`.\n\n```r\nlibrary(distinct)\nlibrary(SingleCellExperiment)\n\n# Example: Kang_subset dataset\ndata(\"Kang_subset\", package = \"distinct\")\n```\n\n### 2. Experimental Design\nCreate a design matrix where rows correspond to unique sample IDs.\n\n```r\nsamples = Kang_subset@metadata$experiment_info$sample_id\ngroup = Kang_subset@metadata$experiment_info$stim\ndesign = model.matrix(~group)\nrownames(design) = samples\n```\n\n### 3. Differential Testing\nUse `distinct_test` to perform the permutation tests. It is highly recommended to use log-normalized data (e.g., `logcounts`).\n\n```r\nset.seed(61217)\nres = distinct_test(x = Kang_subset, \n                    name_assays_expression = \"logcounts\",\n                    name_cluster = \"cell\",\n                    name_sample = \"sample_id\",\n                    design = design,\n                    column_to_test = 2, # Index of the condition in design matrix\n                    min_non_zero_cells = 20,\n                    n_cores = 2)\n```\n\n### 4. Calculating Fold Changes\nTo compute Fold Change (FC) and log2-FC, use normalized but **non-logarithmic** data (e.g., CPM).\n\n```r\nres = log2_FC(res = res,\n              x = Kang_subset, \n              name_assays_expression = \"cpm\",\n              name_group = \"stim\",\n              name_cluster = \"cell\")\n```\n\n### 5. Extracting and Filtering Results\nUse `top_results` to rank and filter significant hits.\n\n```r\n# View top global results\nhead(top_results(res))\n\n# View results for a specific cluster, sorted by log2FC\ntop_results(res, cluster = \"Dendritic cells\", sort_by = \"log2FC\")\n\n# Filter for down-regulated genes in a specific cluster\ntop_results(res, up_down = \"down\", cluster = \"Dendritic cells\")\n```\n\n## Visualization\n\n### Distribution Plots\nVisualize the differences in expression distributions between groups.\n\n```r\n# Density plot per sample\nplot_densities(x = Kang_subset, gene = \"ISG15\", cluster = \"Dendritic cells\",\n               name_assays_expression = \"logcounts\", name_cluster = \"cell\",\n               name_sample = \"sample_id\", name_group = \"stim\")\n\n# Aggregated group-level density\nplot_densities(x = Kang_subset, gene = \"ISG15\", cluster = \"Dendritic cells\",\n               name_group = \"stim\", group_level = TRUE, ...)\n\n# CDF plot\nplot_cdfs(x = Kang_subset, gene = \"ISG15\", cluster = \"Dendritic cells\",\n          name_assays_expression = \"logcounts\", name_cluster = \"cell\",\n          name_sample = \"sample_id\", name_group = \"stim\")\n```\n\n## Advanced Usage and Tips\n\n*   **Covariates and Batch Effects**: Add batch factors to the `model.matrix`. `distinct` fits a linear model per cluster and performs testing on the residuals.\n*   **Permutation Precision**: For finer p-value ranking of highly significant genes, increase the `P_4` parameter (e.g., `P_4 = 20000`).\n*   **Normalization**: Always use normalized data. Log-normalized data is preferred for the test itself (especially with covariates), while CPM/non-log data is required for FC calculations.\n*   **Sample Requirements**: The method requires at least 2 biological replicates per group.\n*   **P-value Adjustment**: The output provides both `p_adj.loc` (adjusted within each cluster) and `p_adj.glb` (adjusted across all clusters and genes).\n\n## Reference documentation\n- [distinct: a method for differential analyses via hierarchical permutation tests](./references/distinct.Rmd)\n- [distinct: a method for differential analyses via hierarchical permutation tests](./references/distinct.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-distinct",
+    "description": "Bioconductor-distinct performs differential state analysis in single-cell data by comparing full cumulative distribution functions between groups using hierarchical non-parametric permutation tests. Use when user asks to perform differential state analysis, compare expression distributions within cell clusters, or identify changes in distribution shape such as unimodal versus bimodal shifts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/distinct.html"
+  }
+}

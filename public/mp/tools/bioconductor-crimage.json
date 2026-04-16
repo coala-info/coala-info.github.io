@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-crimage",
+  "category": "bioconductor",
+  "name": "bioconductor-crimage",
+  "description": "CRImage performs image analysis and calculates tumor cellularity for biological and histological images. Use when user asks to perform color space conversion, segment cell nuclei, classify cell types, calculate tumor cellularity, or correct copy number data.",
+  "overview": "CRImage is a specialized package for the analysis of biological images, particularly histological sections. It provides tools for image processing, cell segmentation using watershed algorithms, and cell classification via Support Vector Machines (SVM). A primary use case is the calculation of tumor cellularity (the proportion of tumor cells in a sample), which is critical for downstream genomic analyses like copy number correction.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CRImage.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CRImage"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CRImage.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-crimage\n\nname: bioconductor-crimage\ndescription: Image analysis and cellularity calculation for biological images. Use this skill to perform color space conversion, image thresholding, cell segmentation, and classification of cell types (e.g., malignant vs. normal) in histological images. It is specifically designed for calculating tumor cellularity and correcting copy number data based on cellularity estimates.\n\n# bioconductor-crimage\n\n## Overview\nCRImage is a specialized package for the analysis of biological images, particularly histological sections. It provides tools for image processing, cell segmentation using watershed algorithms, and cell classification via Support Vector Machines (SVM). A primary use case is the calculation of tumor cellularity (the proportion of tumor cells in a sample), which is critical for downstream genomic analyses like copy number correction.\n\n## Core Workflows\n\n### 1. Image Pre-processing and Thresholding\nBefore segmentation, images often require color space conversion or thresholding to create a binary mask of nuclei.\n\n```r\nlibrary(CRImage)\nlibrary(EBImage)\n\nf = system.file(\"extdata\", \"exImg2.jpg\", package=\"CRImage\")\nimg = readImage(f)\n\n# Color Space Conversion\nimgHSV = convertRGBToHSV(img)\nimgLAB = convertRGBToLAB(img)\n\n# Thresholding (Otsu or Phansalkar)\nimgG = EBImage::channel(img, \"gray\")\n# Define mask for white/background pixels to exclude\nwhitePixelMask = img[,,1]>0.85 & img[,,2]>0.85 & img[,,3]>0.85\nimgB = createBinaryImage(imgG, img, method=\"otsu\", numWindows=4, whitePixelMask=whitePixelMask)\n```\n\n### 2. Image Segmentation\nThe `segmentImage` function identifies individual cell nuclei.\n\n```r\n# Returns a list: [[1]] original, [[2]] segmented mask, [[3]] feature table\nsegValues = segmentImage(filename=f, maxShape=800, minShape=40, failureRegion=2000, threshold=\"otsu\")\n\n# Display segmented nuclei\n# display(segValues[[2]])\n```\n- `maxShape`: Maximum size of a nucleus; larger objects are re-segmented.\n- `minShape`: Minimum size; smaller objects are discarded.\n- `failureRegion`: Size threshold to remove large dark artifacts.\n\n### 3. Classification and Cellularity\nTo calculate cellularity, you must first train a classifier or use an existing training set.\n\n**Creating a Classifier:**\n```r\n# Load training data (table with features and a 'class' column)\ntFile = system.file(\"extdata\", \"trainingData.txt\", package=\"CRImage\")\ntrainingData = read.table(tFile, header=TRUE)\n\n# Create SVM classifier\nclassifierValues = createClassifier(trainingData)\nclassifier = classifierValues[[1]]\n```\n\n**Calculating Cellularity:**\n```r\n# Calculate proportion of tumor cells\ncellularity = calculateCellularity(classifier=classifier, filename=f, \n                                   KS=TRUE, maxShape=800, minShape=40, \n                                   cancerIdentifier=\"1\", # Label for tumor class\n                                   numDensityWindows=2)\n```\n\n### 4. Copy Number Correction\nAdjust copy number log-ratios (LRR) and BAF values based on the estimated cellularity (p).\n\n```r\n# z is a data frame with Chrom, Pos, LRR, and BAF\nres = correctCopyNumber(arr=\"Sample1\", chr=1, p=0.75, z=z)\n\n# Visualize results\nplotCorrectedCN(res, chr=1)\n```\n\n### 5. Processing Large Slides (Aperio)\nFor large-scale images saved in CWS format (subimages), use `processAperio`.\n\n```r\nprocessAperio(classifier=classifier, inputFolder=\"path/to/images\", \n             outputFolder=\"AperiOutput\", identifier=\"Da\", \n             cancerIdentifier=\"c\", maxShape=800)\n```\n\n## Tips and Best Practices\n- **EBImage Integration**: CRImage relies heavily on `EBImage`. Use `display()` to visualize intermediate steps and `readImage()` for loading files.\n- **Training Sets**: When creating a training set with `createTrainingSet`, ensure you have representative examples for every class. You can use up to 10 classes.\n- **Kernel Smoothing (KS)**: Setting `KS=TRUE` in classification functions enables a kernel smoothing approach, which is often more robust for spatial density estimation but may require specifying a specific cancer class.\n\n## Reference documentation\n- [CRImage](./references/CRImage.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-crimage",
+    "description": "CRImage performs image analysis and calculates tumor cellularity for biological and histological images. Use when user asks to perform color space conversion, segment cell nuclei, classify cell types, calculate tumor cellularity, or correct copy number data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CRImage.html"
+  }
+}

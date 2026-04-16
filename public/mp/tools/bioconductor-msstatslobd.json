@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msstatslobd",
+  "category": "bioconductor",
+  "name": "bioconductor-msstatslobd",
+  "description": "MSstatsLOBD calculates the Limit of Blank and Limit of Detection for mass spectrometry proteomics data using linear and non-linear regression models. Use when user asks to calculate LOB and LOD, estimate detection limits from spike-in experiments, or visualize quantification limits.",
+  "overview": "The `MSstatsLOBD` package provides tools to calculate the Limit of Blank (LOB) and Limit of Detection (LOD) from spike-in experiments. It is particularly useful for mass spectrometry-based proteomics where the relationship between spiked concentration and measured intensity may be non-linear at low concentrations (e.g., leveling off due to noise). The package supports both standard linear regression and an \"elbow\" non-linear regression model to better capture the detection threshold.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MSstatsLOBD.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Vitek-Lab/MSstatsLODQ",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MSstatsLOBD"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSstatsLOBD.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Vitek-Lab/MSstatsLODQ",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msstatslobd\n\n## Overview\n\nThe `MSstatsLOBD` package provides tools to calculate the Limit of Blank (LOB) and Limit of Detection (LOD) from spike-in experiments. It is particularly useful for mass spectrometry-based proteomics where the relationship between spiked concentration and measured intensity may be non-linear at low concentrations (e.g., leveling off due to noise). The package supports both standard linear regression and an \"elbow\" non-linear regression model to better capture the detection threshold.\n\n## Core Workflow\n\n### 1. Data Preparation and Normalization\n\nThe input data must be a data frame containing columns for concentration, intensity, peptide name, and replicate. A common workflow involves normalizing light peptide intensities against heavy (reference) peptides.\n\n```r\nlibrary(MSstatsLOBD)\nlibrary(dplyr)\n\n# Example normalization workflow\n# 1. Sum fragment areas and log transform\ndf_summed <- raw_data %>%\n  group_by(Peptide.Sequence, Replicate, Concentration) %>%\n  summarize(A_light = sum(light.Area), A_heavy = sum(heavy.Area)) %>%\n  mutate(log2light = log2(A_light), log2heavy = log2(A_heavy))\n\n# 2. Normalize light area based on heavy median\ndf_norm <- df_summed %>%\n  group_by(Peptide.Sequence) %>%\n  mutate(medianlog2heavy = median(log2heavy),\n         log2light_norm = log2light + (medianlog2heavy - log2heavy),\n         A_light_norm = 2^log2light_norm)\n\n# 3. Format for MSstatsLOBD\ndf_input <- df_norm %>%\n  ungroup() %>%\n  select(INTENSITY = A_light_norm, \n         CONCENTRATION = Concentration, \n         NAME = Peptide.Sequence, \n         REPLICATE = Replicate)\n```\n\n### 2. Estimating LOB and LOD\n\nThe package provides two main functions for estimation. `nonlinear_quantlim` is generally preferred as it automatically adapts to either linear or \"elbow\" (threshold) behaviors.\n\n**Non-linear Estimation (Recommended):**\n```r\n# Filter for a specific peptide\npeptide_data <- df_input %>% filter(NAME == \"PEPTIDE_SEQUENCE\")\n\n# Run non-linear estimation\nquant_out <- nonlinear_quantlim(peptide_data)\n\n# View results (LOB and LOD are columns in the output)\nhead(quant_out)\n```\n\n**Linear Estimation:**\n```r\n# Use if you assume a strictly linear response across all concentrations\nquant_out_lin <- linear_quantlim(peptide_data)\n```\n\n### 3. Visualization\n\nUse `plot_quantlim` to visualize the fit, the prediction intervals, and the calculated LOB/LOD intersections.\n\n```r\n# address = FALSE displays the plot in the R session\nplot_quantlim(spikeindata = peptide_data, \n              quantlim_out = quant_out, \n              address = FALSE)\n```\n\n## Key Functions\n\n- `nonlinear_quantlim(data, alpha = 0.05, beta = 0.05, Npoints = 100)`: Fits a non-linear model. `alpha` is the probability of false positive (LOB); `beta` is the probability of false negative at LOD.\n- `linear_quantlim(data, alpha = 0.05, beta = 0.05)`: Fits a standard linear model.\n- `plot_quantlim(...)`: Generates diagnostic plots showing the MEAN fit (red), LOW/UP prediction intervals (orange/red shade), and the noise threshold (blue).\n\n## Tips for Success\n\n- **Blank Samples:** Ensure your dataset includes \"0\" concentration samples (blanks) to accurately estimate the noise distribution.\n- **Discretization:** If the fit looks \"jagged\" in plots, increase the `Npoints` parameter in `nonlinear_quantlim` for a smoother discretization of the concentration axis.\n- **Column Names:** The package is strict about input column names. Ensure your data frame has `INTENSITY`, `CONCENTRATION`, `NAME`, and `REPLICATE`.\n- **Interpretation:** \n  - **LOB:** The highest apparent concentration expected in a blank sample.\n  - **LOD:** The concentration where we can reliably distinguish the signal from the blank.\n\n## Reference documentation\n\n- [LOB/LOD Estimation Workflow](./references/MSstatsLOBD_workflow.md)\n- [LOB/LOD Estimation Workflow (Rmd Source)](./references/MSstatsLOBD_workflow.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-msstatslobd",
+    "description": "MSstatsLOBD calculates the Limit of Blank and Limit of Detection for mass spectrometry proteomics data using linear and non-linear regression models. Use when user asks to calculate LOB and LOD, estimate detection limits from spike-in experiments, or visualize quantification limits.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSstatsLOBD.html"
+  }
+}

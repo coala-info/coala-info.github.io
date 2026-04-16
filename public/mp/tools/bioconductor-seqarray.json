@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-seqarray",
+  "category": "bioconductor",
+  "name": "bioconductor-seqarray",
+  "description": "Bioconductor-seqarray provides high-performance data management and analysis of large-scale genome-wide sequence variants by converting VCF files into the efficient GDS format. Use when user asks to convert VCF files to GDS, filter genomic data by samples or ranges, perform parallelized genotype calculations, or integrate with downstream analysis tools like SNPRelate and GENESIS.",
+  "overview": "The `SeqArray` package provides an infrastructure for managing large-scale whole-genome sequencing (WGS) data. It converts Variant Call Format (VCF) files into the Genomic Data Structure (GDS) format, which stores data in a binary, array-oriented manner. This allows for high-performance computing, efficient random access, and significant data compression (especially for rare variants). It is designed to work seamlessly with multi-core architectures and cluster environments.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SeqArray.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/zhengxwen/SeqArray",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SeqArray"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SeqArray.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/zhengxwen/SeqArray",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-seqarray\n\nname: bioconductor-seqarray\ndescription: Data management and high-performance analysis of genome-wide sequence variants (WGS) from VCF files. Use when you need to: (1) Convert large VCF files to the efficient GDS format, (2) Filter genomic data by samples, variants, or genomic ranges (GRanges), (3) Perform parallelized calculations on genotypes (allele frequencies, PCA, relatedness), or (4) Integrate with other Bioconductor packages like SeqVarTools, SNPRelate, and GENESIS for downstream analysis.\n\n# bioconductor-seqarray\n\n## Overview\n\nThe `SeqArray` package provides an infrastructure for managing large-scale whole-genome sequencing (WGS) data. It converts Variant Call Format (VCF) files into the Genomic Data Structure (GDS) format, which stores data in a binary, array-oriented manner. This allows for high-performance computing, efficient random access, and significant data compression (especially for rare variants). It is designed to work seamlessly with multi-core architectures and cluster environments.\n\n## Key Workflows\n\n### 1. Data Conversion and Setup\nThe primary entry point is converting VCF files to GDS.\n\n```R\nlibrary(SeqArray)\n\n# Convert VCF to GDS\nvcf.fn <- \"path/to/data.vcf.gz\"\nseqVCF2GDS(vcf.fn, \"data.gds\", storage.option=\"LZMA_RA\")\n\n# Open the GDS file\ngenofile <- seqOpen(\"data.gds\")\n\n# Get a summary of the file contents\nseqSummary(genofile)\n```\n\n### 2. Filtering Samples and Variants\nUse `seqSetFilter` to define subsets. This is highly efficient as it doesn't load the data into memory until requested.\n\n```R\n# Filter by specific IDs\nseqSetFilter(genofile, sample.id=c(\"ID1\", \"ID2\"), variant.id=1:100)\n\n# Filter by genomic ranges (requires GenomicRanges)\nlibrary(GenomicRanges)\ncoords <- GRanges(seqnames=\"22\", ranges=IRanges(1000000, 2000000))\nseqSetFilter(genofile, variant.sel=coords)\n\n# Reset filters\nseqResetFilter(genofile)\n```\n\n### 3. Data Retrieval\nRetrieve specific fields for the currently filtered subset.\n\n```R\n# Get genotypes (returns a 3D array: ploidy x sample x variant)\ngeno <- seqGetData(genofile, \"genotype\")\n\n# Get allele frequencies or missing rates\nafreq <- seqAlleleFreq(genofile)\nmiss <- seqMissing(genofile)\n```\n\n### 4. High-Performance Computing with seqApply\n`seqApply` is the workhorse for custom calculations. It applies a function over variants or samples.\n\n```R\n# Calculate reference allele frequency manually\naf <- seqApply(genofile, \"genotype\", margin=\"by.variant\", as.is=\"double\",\n               FUN=function(x) { mean(x == 0L, na.rm=TRUE) })\n\n# Use multiple cores\naf <- seqApply(genofile, \"genotype\", margin=\"by.variant\", as.is=\"double\",\n               FUN=function(x) { mean(x == 0L, na.rm=TRUE) }, parallel=4)\n```\n\n### 5. Integration with Downstream Packages\n`SeqArray` serves as the data backend for several specialized analysis packages:\n\n*   **SNPRelate**: For PCA and Relatedness (IBD/IBS) analysis.\n*   **SeqVarTools**: For HWE, Mendelian errors, and regression.\n*   **GENESIS**: For mixed-model association testing in structured populations.\n\n```R\nlibrary(SNPRelate)\n# Run PCA directly on the SeqArray file\npca <- snpgdsPCA(genofile, num.thread=2)\n```\n\n## Tips and Best Practices\n*   **Memory Management**: Always use `seqClose(genofile)` when finished to release file handles.\n*   **Dosage Data**: Use `$dosage` in `seqApply` to get the count of alternate alleles (0, 1, 2) instead of the raw 3D genotype array when appropriate.\n*   **Parallel Setup**: For complex parallel tasks, use `seqParallelSetup(cores)` at the start of your script and `seqParallelSetup(FALSE)` at the end.\n*   **C++ Integration**: For maximum speed, pass `Rcpp` functions to `seqApply`.\n\n## Reference documentation\n- [SeqArray Overview](./references/OverviewSlides.md)\n- [R Integration](./references/SeqArray.md)\n- [SeqArray Data Format and Access](./references/SeqArrayTutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-seqarray",
+    "description": "Bioconductor-seqarray provides high-performance data management and analysis of large-scale genome-wide sequence variants by converting VCF files into the efficient GDS format. Use when user asks to convert VCF files to GDS, filter genomic data by samples or ranges, perform parallelized genotype calculations, or integrate with downstream analysis tools like SNPRelate and GENESIS.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SeqArray.html"
+  }
+}

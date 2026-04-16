@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-proteodisco",
+  "category": "bioconductor",
+  "name": "bioconductor-proteodisco",
+  "description": "ProteoDisco generates customized protein databases for proteogenomics by incorporating genomic and transcriptomic variants into protein sequences. Use when user asks to create FASTA databases from VCF or MAF files, import splice junctions, incorporate genomic variants into transcripts, or identify proteotypic peptides for mass spectrometry.",
+  "overview": "ProteoDisco is a Bioconductor package designed for proteogenomics research. It facilitates the generation of novel variant protein sequences and their proteotypic peptides based on observed genomic or transcriptomic variants (SNVs, MNVs, InDels, fusions, and splice events). The package centers around a `ProteoDiscography` object which manages the relationship between reference genome sequences, gene annotations, and observed variants.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ProteoDisco.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ErasmusMC-CCBC/ProteoDisco",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ProteoDisco"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ProteoDisco.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ErasmusMC-CCBC/ProteoDisco",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-proteodisco\n\nname: bioconductor-proteodisco\ndescription: Generating customized protein databases for proteogenomics by incorporating genomic and transcriptomic variants into protein sequences. Use this skill when you need to create FASTA databases containing variant protein sequences from VCF/MAF files, splice junctions, or manual transcript sequences using the ProteoDisco R package.\n\n# bioconductor-proteodisco\n\n## Overview\nProteoDisco is a Bioconductor package designed for proteogenomics research. It facilitates the generation of novel variant protein sequences and their proteotypic peptides based on observed genomic or transcriptomic variants (SNVs, MNVs, InDels, fusions, and splice events). The package centers around a `ProteoDiscography` object which manages the relationship between reference genome sequences, gene annotations, and observed variants.\n\n## Core Workflow\n\n### 1. Initialize the ProteoDiscography\nThe `ProteoDiscography` object requires a `TxDb` (transcript annotations) and a `BSgenome` or `DNAStringSet` (genome sequences).\n\n```r\nlibrary(ProteoDisco)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\n\n# Using pre-generated Bioconductor resources\npd <- generateProteoDiscography(\n  TxDb = TxDb.Hsapiens.UCSC.hg19.knownGene, \n  genomeSeqs = BSgenome.Hsapiens.UCSC.hg19,\n  geneticCode = \"Standard\"\n)\n```\n\n### 2. Import Variants\nYou can import genomic variants (VCF/MAF), manual sequences, or splice junctions.\n\n**Genomic Variants (SNVs/InDels):**\n```r\npd <- importGenomicVariants(\n  ProteoDiscography = pd,\n  files = \"path/to/variants.vcf\",\n  samplenames = \"Sample1\",\n  performAnchorCheck = TRUE # Validates ref allele against genome\n)\n```\n\n**Splice Junctions:**\n```r\npd <- importSpliceJunctions(\n  ProteoDiscography = pd,\n  inputSpliceJunctions = \"path/to/junctions.bed\",\n  isTopHat = FALSE\n)\n\n# Generate models for non-canonical junctions\npd <- generateJunctionModels(pd, skipCanonical = TRUE)\n```\n\n**Manual Sequences (e.g., Fusions):**\n```r\nmanual_df <- S4Vectors::DataFrame(\n  sample = \"Sample1\",\n  identifier = \"Fusion_Event_1\",\n  gene = \"GENE-A\",\n  Tx.SequenceMut = Biostrings::DNAStringSet(\"ATGC...\")\n)\npd <- importTranscriptSequences(pd, transcripts = manual_df)\n```\n\n### 3. Incorporate Variants into Transcripts\nThis step maps the imported genomic variants onto the coding sequences (CDS) defined in the `ProteoDiscography`.\n\n```r\npd <- incorporateGenomicVariants(\n  ProteoDiscography = pd,\n  aggregateSamples = FALSE,           # Keep samples separate\n  aggregateWithinTranscript = TRUE,    # Combine multiple mutations in one transcript\n  ignoreOverlappingMutations = TRUE\n)\n```\n\n### 4. Identify Proteotypic Peptides (Optional)\nTo reduce search space in MS/MS, identify peptides unique to the mutant sequences.\n\n```r\npd <- checkProteotypicFragments(\n  pd,\n  enzymUsed = \"trypsin\",\n  missedCleavages = 1,\n  checkWithinMutantSeqs = TRUE # Ensure uniqueness among all generated variants\n)\n```\n\n### 5. Export to FASTA\nExport the customized protein database for use in proteomics search engines.\n\n```r\nexportProteoDiscography(\n  ProteoDiscography = pd,\n  outFile = \"custom_database.fasta\",\n  aggregateSamples = TRUE # Combine all samples into one FASTA\n)\n```\n\n## Utility Functions\n- `summary(pd)`: Provides an overview of imported variants and generated mutant transcripts.\n- `getDiscography(pd)`: Retrieves the raw imported records.\n- `mutantTranscripts(pd)`: Retrieves the generated mutant transcript and amino acid sequences.\n- `setMutantTranscripts()`: Manually update or subset the generated mutant transcripts.\n\n## Tips for Success\n- **Anchor Checks:** Always keep `performAnchorCheck = TRUE` during import unless you are certain the VCF reference alleles match the `BSgenome` version exactly.\n- **Parallelization:** Functions like `incorporateGenomicVariants` and `generateJunctionModels` support a `threads` argument for faster processing.\n- **Gene Symbols:** If your `TxDb` uses Entrez IDs, use `org.Hs.eg.db` to map them to Symbols before exporting to make the FASTA headers more readable.\n- **Logging:** Use `ParallelLogger` to monitor progress, especially for large VCF files.\n\n## Reference documentation\n- [Overview of ProteoDisco](./references/Overview_ProteoDisco.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-proteodisco",
+    "description": "ProteoDisco generates customized protein databases for proteogenomics by incorporating genomic and transcriptomic variants into protein sequences. Use when user asks to create FASTA databases from VCF or MAF files, import splice junctions, incorporate genomic variants into transcripts, or identify proteotypic peptides for mass spectrometry.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ProteoDisco.html"
+  }
+}

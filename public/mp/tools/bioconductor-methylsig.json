@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methylsig",
+  "category": "bioconductor",
+  "name": "bioconductor-methylsig",
+  "description": "\"bioconductor-methylsig provides a beta-binomial framework for testing differential methylation in WGBS and RRBS experiments. Use when user asks to filter methylation loci by coverage or location, aggregate CpG data into tiles, and perform differential methylation testing for group comparisons or complex experimental designs.\"",
+  "overview": "The `methylSig` package provides a robust framework for testing differential methylation in whole-genome bisulfite sequencing (WGBS) and reduced representation bisulfite sequencing (RRBS) experiments. It utilizes a beta-binomial model to account for both biological variation among replicates and the sampling variation inherent in bisulfite sequencing. The package is designed to work seamlessly with `BSseq` objects from the `bsseq` package.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/methylSig.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/sartorlab/methylSig",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "methylSig"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylSig.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/sartorlab/methylSig",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methylsig\n\n## Overview\n\nThe `methylSig` package provides a robust framework for testing differential methylation in whole-genome bisulfite sequencing (WGBS) and reduced representation bisulfite sequencing (RRBS) experiments. It utilizes a beta-binomial model to account for both biological variation among replicates and the sampling variation inherent in bisulfite sequencing. The package is designed to work seamlessly with `BSseq` objects from the `bsseq` package.\n\n## Typical Workflow\n\n### 1. Reading Data\nData should be read using `bsseq::read.bismark()`. This function supports Bismark coverage files, cytosine reports, and MethylDackel bedGraphs.\n\n```r\nlibrary(methylSig)\nlibrary(bsseq)\n\nfiles = c('sample1.cov', 'sample2.cov')\npData = data.frame(Type = c('cancer', 'normal'), row.names = c('s1', 's2'))\n\nbs = bsseq::read.bismark(\n    files = files,\n    colData = pData,\n    rmZeroCov = FALSE,\n    strandCollapse = FALSE\n)\n```\n\n### 2. Filtering Loci\nFiltering is essential to remove low-confidence sites and potential artifacts.\n\n*   **By Coverage:** Remove sites with too few reads (low power) or too many reads (potential PCR duplicates).\n    ```r\n    bs = filter_loci_by_coverage(bs, min_count = 5, max_count = 500)\n    ```\n*   **By Location:** Remove known SNPs (e.g., C-to-T or G-to-A) that confound bisulfite conversion.\n    ```r\n    remove_gr = GenomicRanges::GRanges(seqnames = 'chr21', ranges = IRanges::IRanges(9411552, 9411552))\n    bs = filter_loci_by_location(bs = bs, gr = remove_gr)\n    ```\n*   **By Group Coverage:** Ensure a minimum number of samples per group have sufficient coverage before testing.\n    ```r\n    bs = filter_loci_by_group_coverage(bs, group_column = 'Type', c('cancer' = 2, 'normal' = 2))\n    ```\n\n### 3. Aggregating Data (Tiling)\nTo increase power or identify DMRs, aggregate CpG-level data into windows or specific regions.\n\n*   **Windows:** `tile_by_windows(bs, win_size = 500)`\n*   **Regions:** `tile_by_regions(bs, gr = promoters_gr)`\n\n### 4. Differential Methylation Testing\n`methylSig` provides three primary testing approaches:\n\n#### MethylSig Test (Beta-Binomial)\nBest for group-versus-group comparisons without complex covariates.\n```r\ndiff_gr = diff_methylsig(\n    bs = bs,\n    group_column = 'Type',\n    comparison_groups = c('case' = 'cancer', 'control' = 'normal'),\n    disp_groups = c('case' = TRUE, 'control' = TRUE),\n    t_approx = TRUE\n)\n```\n\n#### DSS Test (General Linear Models)\nBest for complex designs (e.g., paired samples, continuous covariates). This is a two-step process: fit then test.\n```r\n# 1. Fit the model\ndiff_fit = diff_dss_fit(bs = bs, design = pData(bs), formula = ~ Type + Pair)\n\n# 2. Define contrast and test\n# Example: testing the second coefficient in the model matrix\ncontrast = matrix(c(0, 1, 0), ncol = 1)\ndiff_gr = diff_dss_test(\n    bs = bs,\n    diff_fit = diff_fit,\n    contrast = contrast,\n    methylation_group_column = 'Type',\n    methylation_groups = c('case' = 'cancer', 'control' = 'normal')\n)\n```\n\n#### Binomial Test\nA basic test that does not account for biological variance (primarily for benchmarking).\n```r\ndiff_gr = diff_binomial(bs = bs, group_column = 'Type', comparison_groups = c('case' = 'cancer', 'control' = 'normal'))\n```\n\n## Tips for Success\n*   **Object Types:** Always ensure your input is a `BSseq` object. Use `bsseq::getCoverage(bs, type = 'Cov')` and `bsseq::getCoverage(bs, type = 'M')` to inspect raw counts.\n*   **Dispersion:** In `diff_methylsig`, setting `disp_groups` allows for group-specific variance estimation, which is more flexible than a pooled estimate.\n*   **Continuous Covariates:** When testing continuous variables with `diff_dss_test`, omit the `methylation_groups` parameter. The function will automatically group samples by the top/bottom 25th percentiles to calculate a representative methylation difference.\n*   **Legacy Code:** If updating code from `methylSig` < 0.99.0, replace `methylSigReadData()` with `bsseq::read.bismark()` and `methylSigCalc()` with `diff_methylsig()`.\n\n## Reference documentation\n- [Updating methylSig code](./references/updating-methylSig-code.md)\n- [Using methylSig](./references/using-methylSig.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-methylsig",
+    "description": "bioconductor-methylsig provides a beta-binomial framework for testing differential methylation in WGBS and RRBS experiments. Use when user asks to filter methylation loci by coverage or location, aggregate CpG data into tiles, and perform differential methylation testing for group comparisons or complex experimental designs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylSig.html"
+  }
+}

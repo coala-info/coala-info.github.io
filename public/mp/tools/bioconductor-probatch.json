@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-probatch",
+  "category": "bioconductor",
+  "name": "bioconductor-probatch",
+  "description": "The proBatch package provides a comprehensive pipeline for diagnosing and correcting technical variation and batch effects in large-scale mass spectrometry proteomics data. Use when user asks to normalize proteomics data, correct continuous signal drift, perform batch effect diagnostics, or apply ComBat and LOESS normalization to mass spectrometry experiments.",
+  "overview": "The `proBatch` package provides a comprehensive pipeline for correcting technical variation in large-scale proteomics experiments. It is specifically designed to handle mass spectrometry-specific issues like continuous signal drift (using LOESS fitting) and discrete batch effects (using ComBat or median centering). The workflow follows a logical progression: data preparation, initial assessment, normalization, batch diagnostics, correction, and final quality control.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/proBatch.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/symbioticMe/proBatch",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "proBatch"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/proBatch.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/symbioticMe/proBatch",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-probatch\n\n## Overview\n\nThe `proBatch` package provides a comprehensive pipeline for correcting technical variation in large-scale proteomics experiments. It is specifically designed to handle mass spectrometry-specific issues like continuous signal drift (using LOESS fitting) and discrete batch effects (using ComBat or median centering). The workflow follows a logical progression: data preparation, initial assessment, normalization, batch diagnostics, correction, and final quality control.\n\n## Core Workflow\n\n### 1. Data Preparation\n`proBatch` requires three main components: a measurement table (long or wide), sample annotation, and feature (peptide) annotation.\n\n```r\nlibrary(proBatch)\n\n# Load example data\ndata(\"example_proteome\", \"example_sample_annotation\", \"example_peptide_annotation\", package = \"proBatch\")\n\n# 1. Define sample order from date/time\nsample_annotation <- date_to_sample_order(\n  example_sample_annotation,\n  time_column = c(\"RunDate\", \"RunTime\"),\n  dateTimeFormat = c(\"%b_%d\", \"%H:%M:%S\")\n)\n\n# 2. Convert long to matrix if needed\ndata_matrix <- long_to_matrix(\n  example_proteome,\n  feature_id_col = \"peptide_group_label\",\n  measure_col = \"Intensity\",\n  sample_id_col = \"FullRunName\"\n)\n\n# 3. Log transform\nlog_matrix <- log_transform_dm(data_matrix, log_base = 2, offset = 1)\n\n# 4. Define consistent color scheme\ncolor_list <- sample_annotation_to_colors(\n  sample_annotation,\n  factor_columns = c(\"MS_batch\", \"Strain\", \"Diet\"),\n  numeric_columns = c(\"order\")\n)\n```\n\n### 2. Initial Assessment & Normalization\nVisualize the raw data to identify global trends or distribution shifts.\n\n```r\n# Plot global average vs run order\nplot_sample_mean(log_matrix, sample_annotation, batch_col = \"MS_batch\")\n\n# Normalization (Median Centering or Quantile)\nquantile_normalized_matrix <- normalize_data_dm(\n  log_matrix, \n  normalize_func = \"quantile\"\n)\n```\n\n### 3. Batch Diagnostics\nIdentify the driving forces of variation in the normalized data.\n\n```r\n# Hierarchical Clustering\nplot_hierarchical_clustering(\n  quantile_normalized_matrix, \n  sample_annotation = sample_annotation,\n  factors_to_plot = c(\"MS_batch\", \"Diet\")\n)\n\n# PCA\nplot_PCA(\n  quantile_normalized_matrix, \n  sample_annotation, \n  color_by = \"MS_batch\"\n)\n\n# PVCA (Quantify variance components - computationally expensive)\nplot_PVCA(\n  quantile_normalized_matrix, \n  sample_annotation,\n  technical_factors = c(\"MS_batch\", \"digestion_batch\"),\n  biological_factors = c(\"Strain\", \"Diet\")\n)\n```\n\n### 4. Batch Correction\nAddress both continuous drift (within-batch) and discrete shifts (between-batch).\n\n```r\n# Option A: Step-by-step\n# 1. Correct continuous drift (LOESS)\nquantile_long <- matrix_to_long(quantile_normalized_matrix)\nloess_fit_df <- adjust_batch_trend_df(quantile_long, sample_annotation, span = 0.7)\n\n# 2. Correct discrete shifts (ComBat)\nfinal_df <- correct_with_ComBat_df(loess_fit_df, sample_annotation, batch_col = \"MS_batch\")\n\n# Option B: Universal Function (Recommended)\nbatch_corrected_df <- correct_batch_effects_df(\n  df_long = quantile_long,\n  sample_annotation = sample_annotation,\n  discrete_func = \"ComBat\",\n  continuous_func = \"loess_regression\",\n  abs_threshold = 5\n)\n```\n\n### 5. Quality Control\nEvaluate if biological signal is preserved and technical noise is reduced.\n\n```r\n# Compare sample correlation before/after\nplot_sample_corr_distribution(\n  batch_corrected_matrix, \n  sample_annotation, \n  batch_col = \"MS_batch\",\n  plot_param = \"batch_replicate\"\n)\n\n# Check peptide correlation within proteins\nplot_peptide_corr_distribution(\n  batch_corrected_matrix, \n  example_peptide_annotation, \n  protein_col = \"Gene\"\n)\n```\n\n## Key Functions Reference\n\n| Function | Purpose |\n| :--- | :--- |\n| `date_to_sample_order` | Infers run order from timestamp strings. |\n| `normalize_data_dm` | Performs \"medianCentering\" or \"quantile\" normalization. |\n| `plot_sample_mean` | Visualizes signal drift over time/order. |\n| `plot_PVCA` | Quantifies % variance explained by technical vs biological factors. |\n| `adjust_batch_trend_df` | Fits LOESS curves to correct MS-specific signal drift. |\n| `correct_with_ComBat_df` | Applies Empirical Bayes batch correction. |\n| `correct_batch_effects_df` | One-stop function for both drift and batch correction. |\n\n## Reference documentation\n- [proBatch package overview](./references/proBatch.md)\n- [proBatch R Markdown Source](./references/proBatch.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-probatch",
+    "description": "The proBatch package provides a comprehensive pipeline for diagnosing and correcting technical variation and batch effects in large-scale mass spectrometry proteomics data. Use when user asks to normalize proteomics data, correct continuous signal drift, perform batch effect diagnostics, or apply ComBat and LOESS normalization to mass spectrometry experiments.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/proBatch.html"
+  }
+}

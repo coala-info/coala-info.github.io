@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cosmiq",
+  "category": "bioconductor",
+  "name": "bioconductor-cosmiq",
+  "description": "\"bioconductor-cosmiq preprocesses liquid- or gas-chromatography mass spectrometry data to improve signal-to-noise ratios and detect peaks. Use when user asks to preprocess LCMS or GCMS data, combine mass spectra into a master spectrum, or perform peak picking using continuous wavelet transformation.\"",
+  "overview": "`cosmiq` is a Bioconductor package designed for the preprocessing of liquid- or gas-chromatography mass spectrometry (LCMS/GCMS) data. It is particularly effective for high-resolution data (e.g., TOF or Q-TOF). The package improves signal-to-noise ratios (SNR) by combining mass spectra across scans and datasets to create a \"master spectrum\" for peak detection. It utilizes Continuous Wavelet Transformation (CWT) for robust peak picking in both the mass (m/z) and retention time (RT) domains.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cosmiq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cosmiq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cosmiq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cosmiq\n\n## Overview\n`cosmiq` is a Bioconductor package designed for the preprocessing of liquid- or gas-chromatography mass spectrometry (LCMS/GCMS) data. It is particularly effective for high-resolution data (e.g., TOF or Q-TOF). The package improves signal-to-noise ratios (SNR) by combining mass spectra across scans and datasets to create a \"master spectrum\" for peak detection. It utilizes Continuous Wavelet Transformation (CWT) for robust peak picking in both the mass (m/z) and retention time (RT) domains.\n\n## Typical Workflow\n\n### 1. Data Initialization\n`cosmiq` uses the `xcmsSet` object structure. You must first define your input files and metadata.\n\n```R\nlibrary(cosmiq)\nlibrary(faahKO)\n\n# Locate files\ncdfpath <- file.path(find.package(\"faahKO\"), \"cdf\")\nmy.input.files <- dir(c(paste(cdfpath, \"WT\", sep='/'), \n                        paste(cdfpath, \"KO\", sep='/')), full.names=TRUE)\n\n# Initialize xcmsSet\nxs <- new(\"xcmsSet\")\nxs@filepaths <- my.input.files\nclass <- as.data.frame(c(rep(\"KO\", 6), rep(\"WT\", 6)))\nrownames(class) <- basename(my.input.files)\nxs@phenoData <- class\n```\n\n### 2. The Wrapper Function\nFor a quick end-to-end execution, use the `cosmiq()` wrapper.\n\n```R\n# Run full pipeline\nx <- cosmiq(files=my.input.files, mzbin=0.25, SNR.Th=0, linear=TRUE)\n\n# Visualize results\nimage(t(x$eicmatrix), main='mz versus RT map')\nhead(x$xs@peaks)\n```\n\n### 3. Step-by-Step Manual Processing\nIf fine-tuning is required, execute the pipeline stages manually:\n\n**A. Combine Spectra**\nOverlay and sum intensities from all scans and datasets to generate a master spectrum.\n```R\nx_combined <- combine_spectra(xs=xs, mzbin=0.25, linear=TRUE, continuum=FALSE)\nplot(x_combined$mz, x_combined$intensity, type='l')\n```\n\n**B. Detect Relevant Masses**\nIdentify m/z peaks on the master spectrum using CWT.\n```R\nxy <- peakdetection(x=x_combined$mz, y=x_combined$intensity, \n                    scales=1:10, SNR.Th=1.0, SNR.area=20, mintr=0.5)\n```\n\n**C. Retention Time Correction**\nAlign samples using the `obiwarp` algorithm.\n```R\n# Create dummy peaks for xcms compatibility\nxs@peaks <- matrix(c(rep(1, length(my.input.files) * 6), \n                     1:length(my.input.files)), ncol=7)\ncolnames(xs@peaks) <- c(\"mz\", \"mzmin\", \"mzmax\", \"rt\", \"rtmin\", \"rtmax\", \"sample\")\n\n# Align\nxs <- xcms::retcor(xs, method=\"obiwarp\", profStep=1, distFunc=\"cor\", center=1)\n```\n\n**D. Generate EIC Matrix and Detect RT Peaks**\nCompute the Extracted Ion Chromatogram (EIC) matrix and identify chromatographic peaks.\n```R\neicmat <- eicmatrix(xs=xs, xy=xy, center=1)\n\nrxy <- retention_time(xs=xs, RTscales=c(1:10, seq(12,32, by=2)), \n                      xy=xy, eicmatrix=eicmat, RTSNR.Th=120, RTSNR.area=20)\n```\n\n**E. Quantify and Export**\nCreate the final data matrix and extract the peak table.\n```R\nxs <- create_datamatrix(xs=xs, rxy=rxy)\npeaktable <- xcms::peakTable(xs)\n```\n\n## Key Functions\n- `cosmiq()`: Main wrapper function for the entire workflow.\n- `combine_spectra()`: Merges all scans into a single master spectrum to increase SNR.\n- `peakdetection()`: Uses CWT to find peaks in the m/z domain.\n- `eicmatrix()`: Generates a matrix of extracted ion chromatograms.\n- `retention_time()`: Detects peaks in the chromatographic (RT) domain.\n- `create_datamatrix()`: Quantifies features across all samples based on detected mz/RT coordinates.\n\n## Tips\n- **High Resolution**: `cosmiq` is optimized for high-accuracy mass data (FWHM > 20,000).\n- **Alignment**: Because features are detected on a combined master spectrum/EIC, traditional feature alignment between runs is often unnecessary; the data matrix is calculated directly from the master list.\n- **Memory**: For very large datasets, consider processing reduced m/z ranges if memory limits are reached.\n\n## Reference documentation\n- [cosmiq - COmbining Single Masses Into Quantities](./references/cosmiq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cosmiq",
+    "description": "bioconductor-cosmiq preprocesses liquid- or gas-chromatography mass spectrometry data to improve signal-to-noise ratios and detect peaks. Use when user asks to preprocess LCMS or GCMS data, combine mass spectra into a master spectrum, or perform peak picking using continuous wavelet transformation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cosmiq.html"
+  }
+}

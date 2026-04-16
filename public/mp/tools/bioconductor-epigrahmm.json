@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-epigrahmm",
+  "category": "bioconductor",
+  "name": "bioconductor-epigrahmm",
+  "description": "epigraHMM performs consensus and differential peak calling in epigenomic sequencing data using Hidden Markov Models. Use when user asks to call peaks, identify differential enrichment across conditions, normalize epigenomic count data, or analyze ChIP-seq and ATAC-seq experiments.",
+  "overview": "epigraHMM is a Bioconductor package designed for the analysis of high-throughput epigenomic assays. It utilizes Hidden Markov Models (HMM) to segment the genome into background and enrichment regions. It is particularly effective for both narrow and broad peak profiles. The package supports two primary workflows:\n1.  **Consensus Peak Calling**: Detecting consistent enrichment across replicates of a single condition.\n2.  **Differential Peak Calling**: Identifying changes in enrichment across mult",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/epigraHMM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epigrahmm/overview",
+  "github": "N/A",
+  "conda_downloads": "15.4K",
+  "conda_downloads_num": 15400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "epigraHMM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/epigraHMM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epigrahmm/overview",
+    "github": "N/A",
+    "conda_downloads": "15.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-epigrahmm\n\nname: bioconductor-epigrahmm\ndescription: Expert guidance for using the epigraHMM R package for consensus and differential peak calling in epigenomic sequencing data (ChIP-seq, ATAC-seq, DNase-seq). Use this skill when performing end-to-end epigenomic analysis including data pre-processing from BAM files, non-linear normalization, HMM-based peak detection, and visualization of genomic enrichment patterns across multiple conditions.\n\n## Overview\n\nepigraHMM is a Bioconductor package designed for the analysis of high-throughput epigenomic assays. It utilizes Hidden Markov Models (HMM) to segment the genome into background and enrichment regions. It is particularly effective for both narrow and broad peak profiles. The package supports two primary workflows:\n1.  **Consensus Peak Calling**: Detecting consistent enrichment across replicates of a single condition.\n2.  **Differential Peak Calling**: Identifying changes in enrichment across multiple conditions or genomic segmentation across different marks.\n\n## Core Workflow\n\n### 1. Data Input and Object Creation\n\nepigraHMM uses the `epigraHMMDataSet` object (a subclass of `RangedSummarizedExperiment`).\n\n**From BAM files:**\n```r\nlibrary(epigraHMM)\nbamFiles <- c(\"sample1.bam\", \"sample2.bam\")\ncolData <- data.frame(condition = c('A','A'), replicate = c(1,2))\n\nobject <- epigraHMMDataSetFromBam(bamFiles = bamFiles,\n                                  colData = colData,\n                                  genome = 'hg38', # or GRanges of chrom sizes\n                                  windowSize = 1000,\n                                  gapTrack = TRUE,\n                                  blackList = TRUE)\n```\n\n**From Count Matrices:**\n```r\n# countData can be a matrix or a named list (e.g., list(counts=mat, controls=ctrl_mat))\nobject <- epigraHMMDataSetFromMatrix(countData = countData,\n                                     colData = colData,\n                                     rowRanges = rowRanges)\n```\n\n### 2. Normalization\n\nNon-linear normalization is critical for epigenomic data. Use `normalizeCounts` to create model offsets based on loess smoothing.\n\n```r\nobject <- normalizeCounts(object = object, control = controlEM())\n```\n*Note: If you have custom offsets (e.g., GC-content), use `addOffsets()` before running `normalizeCounts()`.*\n\n### 3. Peak Calling Execution\n\nThe analysis requires an initialization step followed by the main HMM fitting.\n\n```r\n# 1. Initialize parameters\nobject <- initializer(object = object, control = controlEM())\n\n# 2. Run HMM (type = 'consensus' or 'differential')\nobject <- epigraHMM(object = object,\n                    type = 'differential',\n                    dist = 'zinb', # 'zinb' recommended for consensus; 'nb' also available\n                    control = controlEM())\n```\n\n### 4. Extracting Results\n\nUse `callPeaks` to define genomic regions of enrichment.\n\n```r\n# Viterbi-based peaks (most likely state)\npeaks <- callPeaks(object = object)\n\n# FDR-controlled peaks (window-level control)\npeaks_fdr <- callPeaks(object = object, method = 0.05)\n```\n\nFor differential analyses, use `callPatterns` to see which specific conditions are enriched in a differential region:\n```r\n# Get most likely enrichment pattern (e.g., \"ConditionA\", \"ConditionB\", or \"ConditionA-ConditionB\")\npatterns <- callPatterns(object = object, peaks = peaks, type = 'max')\n```\n\n## Visualization\n\nepigraHMM provides built-in functions to visualize tracks and posterior probabilities.\n\n```r\n# Plot read counts, peaks, and posterior probabilities\nplotCounts(object = object,\n           ranges = GRanges('chr1', IRanges(start, end)),\n           peaks = peaks,\n           annotation = annotation_granges)\n\n# Plot heatmap of combinatorial enrichment patterns for a specific peak\nplotPatterns(object = object,\n             ranges = peaks[1],\n             peaks = peaks)\n```\n\n## Advanced Tuning\n\n- **Control Experiments**: To include Input/Control BAMs, pass a named list to `bamFiles` with a `controls` element. epigraHMM will automatically include them as covariates.\n- **Pruning Patterns**: In complex differential designs with many conditions, use `controlEM(pruningThreshold = 0.05)` to remove rare combinatorial patterns and simplify results.\n- **Distribution Choice**: Use `dist = 'zinb'` (Zero-Inflated Negative Binomial) for consensus peak calling to better model background noise.\n\n## Reference documentation\n\n- [Consensus and differential peak calling with epigraHMM](./references/epigraHMM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-epigrahmm",
+    "description": "epigraHMM performs consensus and differential peak calling in epigenomic sequencing data using Hidden Markov Models. Use when user asks to call peaks, identify differential enrichment across conditions, normalize epigenomic count data, or analyze ChIP-seq and ATAC-seq experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/epigraHMM.html"
+  }
+}

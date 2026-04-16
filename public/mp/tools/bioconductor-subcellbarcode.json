@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-subcellbarcode",
+  "category": "bioconductor",
+  "name": "bioconductor-subcellbarcode",
+  "description": "This tool maps protein subcellular localization and identifies differential relocalization using mass spectrometry-based fractionation data. Use when user asks to classify protein compartments, perform marker protein quality control, visualize spatial distributions via t-SNE, or analyze protein relocalization between experimental conditions.",
+  "overview": "SubCellBarCode is an R package designed for the high-resolution mapping of the human proteome into subcellular compartments. It uses a robust classification workflow based on Support Vector Machines (SVM) and a standardized set of marker proteins. The package supports both gene-centric and transcript/exon-centric analysis, allowing for the detection of localization changes driven by alternative splicing or post-translational modifications.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SubCellBarCode.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SubCellBarCode"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SubCellBarCode.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-subcellbarcode\n\nname: bioconductor-subcellbarcode\ndescription: Proteome-wide mapping and differential localization analysis of proteins using the SubCellBarCode R package. Use this skill to classify protein subcellular localization from mass spectrometry-based fractionation data, perform quality control on marker proteins, visualize spatial distributions via t-SNE, and identify protein relocalization between experimental conditions.\n\n# bioconductor-subcellbarcode\n\n## Overview\n\nSubCellBarCode is an R package designed for the high-resolution mapping of the human proteome into subcellular compartments. It uses a robust classification workflow based on Support Vector Machines (SVM) and a standardized set of marker proteins. The package supports both gene-centric and transcript/exon-centric analysis, allowing for the detection of localization changes driven by alternative splicing or post-translational modifications.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a `data.frame` with protein identifiers (Gene Symbols) as rownames and columns representing fractions. Replicates must follow the naming convention `.A.` and `.B.`.\n\n```r\nlibrary(SubCellBarCode)\n\n# Load and log2 transform data\ndf <- loadData(protein.data = hcc827Ctrl)\n\n# Optional: Convert identifiers if not using Gene Symbols\n# df <- convert2symbol(df = df, id = \"UNIPROT\")\n```\n\n### 2. Marker Protein Quality Control\nThe package relies on 3365 predefined marker proteins. You must assess their coverage and quality within your specific dataset.\n\n```r\n# Calculate coverage (recommend >20% per compartment)\nc.prots <- calculateCoveredProtein(proteinIDs = rownames(df), \n                                   markerproteins = markerProteins[,1])\n\n# Filter markers based on replicate correlation (>0.8) and profile similarity\nr.markers <- markerQualityControl(coveredProteins = c.prots, protein.data = df)\n```\n\n### 3. Visualization and Model Building\nVisualize the separation of marker proteins using t-SNE before training the SVM classifier.\n\n```r\n# t-SNE Visualization (3D recommended)\ntsne.map <- tsneVisualization(protein.data = df, markerProteins = r.markers, dims = 3)\n\n# Train SVM and classify\nset.seed(4)\ncls <- svmClassification(markerProteins = r.markers, \n                         protein.data = df, \n                         markerprot.df = markerProteins)\n```\n\n### 4. Thresholding and Merging\nApply probability thresholds to distinguish high-confidence classifications from \"Unclassified\" proteins at both the compartment and neighborhood levels.\n\n```r\n# Estimate and apply thresholds for compartments\nt.c.df <- computeThresholdCompartment(test.repA = cls[[1]]$svm.test.prob.out, \n                                       test.repB = cls[[2]]$svm.test.prob.out)\nc.cls.df <- applyThresholdCompartment(all.repA = cls[[1]]$all.prot.pred, \n                                       all.repB = cls[[2]]$all.prot.pred, \n                                       threshold.df = t.c.df)\n\n# Estimate and apply thresholds for neighborhoods\nt.n.df <- computeThresholdNeighborhood(test.repA = cls[[1]]$svm.test.prob.out, \n                                        test.repB = cls[[2]]$svm.test.prob.out)\nn.cls.df <- applyThresholdNeighborhood(all.repA = cls[[1]]$all.prot.pred, \n                                        all.repB = cls[[2]]$all.prot.pred, \n                                        threshold.df = t.n.df)\n\n# Merge results\nfinal.cls <- mergeCls(compartmentCls = c.cls.df, neighborhoodCls = n.cls.df)\n```\n\n## Differential Localization Analysis\n\nTo compare two conditions (e.g., Control vs. Treated), use Sankey plots and candidate filtering to identify proteins that change their \"Neighborhood\" or \"Compartment\".\n\n```r\n# Visualize global shifts\nsankeyPlot(sampleCls1 = final.cls, sampleCls2 = treatedClass)\n\n# Filter for high-confidence relocalization candidates\n# Requires PSM counts and quantification data for both conditions\ncandidates <- candidateRelocatedProteins(sampleCls1 = final.cls, \n                                         s1PSM = ctrlPSM, \n                                         s1Quant = hcc827Ctrl,\n                                         sampleCls2 = treatedClass, \n                                         s2PSM = treatedPSM, \n                                         s2Quant = hcc827Treated,\n                                         min.psm = 3, \n                                         pearson.cor = 0.8)\n```\n\n## Visualization Tools\n\n*   **plotBarcode**: Visualizes the fractionation profile and classification probability for a single protein.\n*   **plotMultipleProtein**: Compares the localization distribution of a list of proteins (e.g., members of a protein complex).\n\n## Reference documentation\n\n- [SubCellBarCode](./references/SubCellBarCode.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-subcellbarcode",
+    "description": "This tool maps protein subcellular localization and identifies differential relocalization using mass spectrometry-based fractionation data. Use when user asks to classify protein compartments, perform marker protein quality control, visualize spatial distributions via t-SNE, or analyze protein relocalization between experimental conditions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SubCellBarCode.html"
+  }
+}

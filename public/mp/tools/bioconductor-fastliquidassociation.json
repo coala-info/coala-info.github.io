@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fastliquidassociation",
+  "category": "bioconductor",
+  "name": "bioconductor-fastliquidassociation",
+  "description": "This tool performs genome-wide liquid association analysis to identify gene triplets where the co-expression of two genes is mediated by a third gene. Use when user asks to identify mediated co-expression dynamics, pre-screen gene triplets with fastMLA, perform significance testing using conditional normal models, or run robust bootstrapping for liquid association values.",
+  "overview": "The `fastLiquidAssociation` package provides efficient tools for genome-wide liquid association (LA) analysis. It identifies triplets of genes (X1, X2, X3) where the co-expression of X1 and X2 changes based on the expression level of X3. The package optimizes the computationally expensive process of testing all possible triplets by using a pre-screening method ($\\rho_{diff}$) to identify candidates likely to have high Modified Liquid Association (MLA) values.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/fastLiquidAssociation.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fastliquidassociation/overview",
+  "github": "N/A",
+  "conda_downloads": "25.5K",
+  "conda_downloads_num": 25500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fastLiquidAssociation"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fastLiquidAssociation.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fastliquidassociation/overview",
+    "github": "N/A",
+    "conda_downloads": "25.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fastliquidassociation\n\nname: bioconductor-fastliquidassociation\ndescription: Expert guidance for using the fastLiquidAssociation R package to perform genome-wide liquid association (LA) analysis. Use this skill when analyzing co-expression dynamics where the correlation between two genes (X1, X2) is mediated by a third gene (X3). It includes workflows for pre-screening triplets with fastMLA, significance testing with Conditional Normal Models (mass.CNM), and robust bootstrapping (fastboots.GLA).\n\n## Overview\n\nThe `fastLiquidAssociation` package provides efficient tools for genome-wide liquid association (LA) analysis. It identifies triplets of genes (X1, X2, X3) where the co-expression of X1 and X2 changes based on the expression level of X3. The package optimizes the computationally expensive process of testing all possible triplets by using a pre-screening method ($\\rho_{diff}$) to identify candidates likely to have high Modified Liquid Association (MLA) values.\n\n## Core Workflow\n\n### 1. Data Preparation\nData should be a numerical matrix with genes as columns and samples as rows. It is recommended to remove genes with high percentages of missing values (e.g., >30% NA).\n\n```r\nlibrary(fastLiquidAssociation)\n# data: matrix with samples as rows, genes as columns\n# Example: data <- t(exprs(yeast_data))\n```\n\n### 2. Pre-screening with fastMLA\nUse `fastMLA` to identify candidate triplets. This function uses matrix algebra to approximate MLA values, significantly reducing the search space.\n\n```r\n# topn: number of results to return\n# nvec: column indices of genes to test as X1/X2\n# rvalue: rho-diff cutoff (default 0.5; max 2.0)\n# cut: bins + 1 (usually 4 for ~70 samples, aiming for 15-30 observations per bin)\nresults <- fastMLA(data = data, topn = 50, nvec = 1:100, rvalue = 0.5, cut = 4, threads = detectCores())\n```\n\n### 3. Significance Testing (mass.CNM)\nTest the candidates from `fastMLA` using the Conditional Normal Model (CNM). This function attempts to fit a full model first, then falls back to a simple model if the full one fails to converge.\n\n```r\n# GLA.mat: output from fastMLA\n# nback: number of top significant triplets to return\ncnm_results <- mass.CNM(data = data, GLA.mat = results, nback = 10)\n\n# Access results\nsignificant_triplets <- cnm_results$`top p-values`\nfailed_triplets <- cnm_results$`bootstrap triplets`\n```\n\n### 4. Robust Estimation (fastboots.GLA)\nFor triplets that do not return sensible values in `mass.CNM` (e.g., SE > 10 or p-value = 0), use the parallelized bootstrapping method.\n\n```r\nlibrary(parallel)\nlibrary(doParallel)\n\n# Setup parallel backend\nclust <- makeCluster(detectCores())\nregisterDoParallel(clust)\n\n# Run bootstrapping on failed triplets\nboot_results <- fastboots.GLA(tripmat = failed_triplets, \n                              data = data, \n                              clust = clust, \n                              boots = 30, \n                              perm = 500, \n                              cut = 4)\n\nstopCluster(clust)\n```\n\n## Key Parameters and Interpretation\n\n- **MLA value**: Represents the change in correlation between X1 and X2 mediated by X3.\n- **rho-diff ($\\rho_{diff}$)**: The difference in correlation ($\\rho_{high} - \\rho_{low}$) used for fast screening.\n- **cut**: Critical for binning. Ensure `(number of samples / (cut - 1))` is between 15 and 30 for optimal specificity.\n- **Model 'F' vs 'S'**: In `mass.CNM` output, 'F' indicates the Full CNM model was used, while 'S' indicates the Simple model.\n\n## Reference documentation\n\n- [The fastLiquidAssociation Package](./references/fastLiquidAssociation.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fastliquidassociation",
+    "description": "This tool performs genome-wide liquid association analysis to identify gene triplets where the co-expression of two genes is mediated by a third gene. Use when user asks to identify mediated co-expression dynamics, pre-screen gene triplets with fastMLA, perform significance testing using conditional normal models, or run robust bootstrapping for liquid association values.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fastLiquidAssociation.html"
+  }
+}

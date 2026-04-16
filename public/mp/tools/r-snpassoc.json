@@ -1,0 +1,41 @@
+{
+  "id": "r-snpassoc",
+  "category": "R",
+  "name": "r-snpassoc",
+  "description": "The SNPassoc R package provides tools for performing genetic association studies, including data preparation, quality control, and statistical modeling of SNP data. Use when user asks to prepare SNP data for analysis, test for Hardy-Weinberg Equilibrium, perform single-SNP or whole-genome association studies, or analyze gene-environment and gene-gene interactions.",
+  "overview": "The `SNPassoc` package is designed for the analysis of genome-wide association studies (GWAS) and candidate gene studies. It provides tools for data manipulation, exploratory analysis, and assessing genetic association using various inheritance models (codominant, dominant, recessive, overdominant, and additive). It also supports haplotype analysis and interaction testing.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-snpassoc\n\nname: r-snpassoc\ndescription: Expert guidance for using the SNPassoc R package to perform whole genome association studies (GWAS). Use this skill when analyzing SNP data, including data preparation (setupSNP), descriptive statistics, Hardy-Weinberg Equilibrium (HWE) testing, single SNP association analysis (GLMs for quantitative or binary traits), gene-environment/gene-gene interactions, and haplotype analysis.\n\n## Overview\n\nThe `SNPassoc` package is designed for the analysis of genome-wide association studies (GWAS) and candidate gene studies. It provides tools for data manipulation, exploratory analysis, and assessing genetic association using various inheritance models (codominant, dominant, recessive, overdominant, and additive). It also supports haplotype analysis and interaction testing.\n\n## Installation\n\n```R\ninstall.packages(\"SNPassoc\")\n# For the development version with scanWGassociation:\n# devtools::install_github(\"isglobal-brge/SNPassoc\")\n```\n\n## Core Workflow\n\n### 1. Data Preparation\n\nUse `setupSNP` to transform raw data into a format compatible with the package. This assigns the `snp` class to specified columns.\n\n```R\nlibrary(SNPassoc)\ndata(asthma)\n\n# colSNPs: indices of columns containing SNP data\n# sep: character separating alleles (e.g., \"\" for \"AG\", \"/\" for \"A/G\")\nasthma.s <- setupSNP(data = asthma, colSNPs = 7:ncol(asthma), sep = \"\")\n```\n\n### 2. Descriptive Analysis and Quality Control\n\nCheck genotype frequencies, missingness, and Hardy-Weinberg Equilibrium (HWE).\n\n```R\n# Summary of a single SNP\nsummary(asthma.s$rs1422993)\nplot(asthma.s$rs1422993)\n\n# Summary of all SNPs\nsummary(asthma.s)\n\n# Visualize missing data patterns\nplotMissing(asthma.s)\n\n# HWE testing (usually performed on controls only)\nhwe <- tableHWE(asthma.s, casecontrol) \n# Filter SNPs with HWE p-value < 0.001\nsnps.ok <- rownames(hwe)[hwe[, \"Controls\"] >= 0.001]\n```\n\n### 3. Single SNP Association\n\nThe `association` function fits generalized linear models for a single SNP across multiple inheritance models.\n\n```R\n# Binary trait (Case-Control)\nassociation(casecontrol ~ rs1422993, data = asthma.s)\n\n# Quantitative trait\nassociation(bmi ~ rs1422993, data = asthma.s)\n\n# Adjusted for covariates\nassociation(casecontrol ~ rs1422993 + age + gender, data = asthma.s)\n\n# Max-statistic for the best inheritance model\nmaxstat(asthma.s$casecontrol, asthma.s$rs1422993)\n```\n\n### 4. Whole Genome (Massive Univariate) Association\n\nUse `WGassociation` to run association tests across all SNPs in the dataset.\n\n```R\nans <- WGassociation(casecontrol ~ 1, data = asthma.s)\n\n# Manhattan plot\nplot(ans)\n\n# Get detailed table for specific SNPs\ninfo <- WGstats(ans)\ninfo$rs1422993\n```\n\n### 5. Interactions (GxE and GxG)\n\n```R\n# Gene-Environment Interaction\nassociation(casecontrol ~ dominant(rs1422993) * factor(smoke), data = asthma.s)\n\n# Gene-Gene Interaction (Epistasis)\n# model.interaction specifies the model for the second SNP\nassociation(casecontrol ~ rs1422993 * factor(rs184448), \n            data = asthma.s, model.interaction = \"dominant\")\n\n# Screen for all pairwise interactions in a subset\nans.int <- interactionPval(casecontrol ~ 1, data = asthma.s2)\nplot(ans.int)\n```\n\n### 6. Haplotype Analysis\n\nRequires the `haplo.stats` package.\n\n```R\nlibrary(haplo.stats)\n\n# 1. Format genotypes for haplo.stats\nsnpsH <- c(\"rs714588\", \"rs1023555\", \"rs898070\")\ngenoH <- make.geno(asthma.s, snpsH)\n\n# 2. Estimate haplotype frequencies (EM algorithm)\nem <- haplo.em(genoH, locus.label = snpsH)\n\n# 3. Haplotype association (GLM)\nmod <- haplo.glm(casecontrol ~ genoH, family = \"binomial\", \n                 locus.label = snpsH,\n                 allele.lev = attributes(genoH)$unique.alleles,\n                 control = haplo.glm.control(haplo.freq.min = 0.05))\nintervals(mod)\n```\n\n## Tips and Best Practices\n\n- **Reference Allele**: `setupSNP` automatically labels the most common genotype as the reference.\n- **Model Selection**: Use the AIC column in the `association` output to determine the best-fitting inheritance model (lower is better).\n- **Parallelization**: For large datasets, use the `mc.cores` argument in `setupSNP` and `WGassociation` to speed up computation on multi-core systems.\n- **Sliding Windows**: For haplotype discovery without prior block knowledge, use `haplo.score.slide` to identify regions of interest.\n\n## Reference documentation\n\n- [SNPassoc: an R package to perform whole genome association studies](./references/SNPassoc.Rmd)",
+  "skill_front_matter": {
+    "name": "r-snpassoc",
+    "description": "The SNPassoc R package provides tools for performing genetic association studies, including data preparation, quality control, and statistical modeling of SNP data. Use when user asks to prepare SNP data for analysis, test for Hardy-Weinberg Equilibrium, perform single-SNP or whole-genome association studies, or analyze gene-environment and gene-gene interactions.",
+    "homepage": "https://cloud.r-project.org/web/packages/SNPassoc/index.html"
+  }
+}

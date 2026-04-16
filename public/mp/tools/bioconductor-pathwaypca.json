@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pathwaypca",
+  "category": "bioconductor",
+  "name": "bioconductor-pathwaypca",
+  "description": "This tool performs integrative pathway analysis using Principal Component Analysis approaches to test associations between gene sets and various phenotypes. Use when user asks to test pathway associations with binary, continuous, or survival phenotypes, extract genes driving pathway significance, or compute subject-specific pathway activity scores for multi-omics integration.",
+  "overview": "The `pathwayPCA` package implements advanced PCA-based methodologies for gene set enrichment and pathway analysis. It is particularly powerful for analyzing multi-omics data and complex experimental designs (e.g., interaction effects). The package supports two primary methods:\n1. **AES-PCA (Adaptive, Elastic-net, Sparse PCA):** An unsupervised approach for extracting pathway-specific latent variables, followed by association testing.\n2. **Supervised PCA (SuperPCA):** A supervised approach that s",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/pathwayPCA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/gabrielodom/pathwayPCA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pathwayPCA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pathwayPCA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/gabrielodom/pathwayPCA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pathwaypca\n\nname: bioconductor-pathwaypca\ndescription: Perform integrative pathway analysis using Principal Component Analysis (PCA) based approaches (AES-PCA and Supervised PCA). Use this skill to test pathway associations with binary, continuous, or survival phenotypes, extract relevant genes driving pathway significance, and compute subject-specific pathway activity scores (PCs) for multi-omics integration.\n\n# bioconductor-pathwaypca\n\n## Overview\n\nThe `pathwayPCA` package implements advanced PCA-based methodologies for gene set enrichment and pathway analysis. It is particularly powerful for analyzing multi-omics data and complex experimental designs (e.g., interaction effects). The package supports two primary methods:\n1. **AES-PCA (Adaptive, Elastic-net, Sparse PCA):** An unsupervised approach for extracting pathway-specific latent variables, followed by association testing.\n2. **Supervised PCA (SuperPCA):** A supervised approach that selects a subset of genes most associated with the phenotype before estimating the latent variables.\n\n## Typical Workflow\n\n### 1. Data Preparation\nData must be organized into three components: assay data (features in columns, samples in rows), phenotype/response data, and a pathway collection (typically from a `.gmt` file).\n\n```r\nlibrary(pathwayPCA)\nlibrary(tidyverse)\n\n# 1. Load Assay Data (Samples in rows, Genes in columns)\n# If your data has genes in rows, use TransposeAssay()\nassay_df <- read_csv(\"your_data.csv\")\nassayT_df <- TransposeAssay(assay_df)\n\n# 2. Load Pathway Collection\n# Supports MSigDB or WikiPathways .gmt files\ngmt_path <- system.file(\"extdata\", \"wikipathways_human_symbol.gmt\", package = \"pathwayPCA\")\npathways_ls <- read_gmt(gmt_path, description = TRUE)\n\n# 3. Load Phenotype Data\npheno_df <- read_csv(\"phenotype.csv\")\n```\n\n### 2. Create Omics Data Objects\nThe `CreateOmics` function acts as a container for the three data components. Specify the `respType` based on your study design.\n\n```r\n# For Survival Analysis\nmy_omics <- CreateOmics(\n  assayData_df = assayT_df,\n  pathwayCollection_ls = pathways_ls,\n  response = pheno_df,\n  respType = \"survival\", # Options: \"survival\", \"regression\", \"categorical\"\n  minPathSize = 5\n)\n```\n\n### 3. Test Pathway Significance\nUse `AESPCA_pVals` or `SuperPCA_pVals`. AES-PCA is generally recommended for its computational efficiency and ability to handle sparse data.\n\n```r\n# Perform AES-PCA\nresults <- AESPCA_pVals(\n  object = my_omics,\n  numPCs = 1,\n  parallel = TRUE,\n  numCores = 2,\n  numReps = 0,        # 0 for parametric p-values; >0 for permutation\n  adjustment = \"BH\"   # FDR control\n)\n\n# View top pathways\ngetPathpVals(results, numPaths = 10)\n```\n\n### 4. Extract and Visualize Results\nYou can extract subject-specific scores (PCs) and gene-specific loadings to understand what drives the pathway significance.\n\n```r\n# Extract PCs and Loadings for a specific pathway (e.g., \"WP195\")\npath_data <- getPathPCLs(results, \"WP195\")\n\n# Extract raw data for a pathway for custom plotting (e.g., Heatmaps)\npathway_raw <- SubsetPathwayData(my_omics, \"WP195\")\n\n# Plotting pathway scores (Negative LN p-values)\nscore_df <- getPathpVals(results, score = TRUE)\nggplot(score_df) + aes(x = reorder(terms, score), y = score) + geom_col() + coord_flip()\n```\n\n## Advanced Usage: Interaction Effects\nTo test if pathway associations differ between groups (e.g., Sex), extract the first PC and fit a model with an interaction term.\n\n```r\n# Extract PC1 for a pathway\npc1 <- getPathPCLs(results, \"WP1559\")$PCs %>% select(PC1 = V1)\ndata_int <- bind_cols(pheno_df, pc1)\n\n# Fit Cox model with interaction\nfit <- coxph(Surv(time, status) ~ PC1 * group_var, data = data_int)\nsummary(fit)\n```\n\n## Tips for Success\n- **Gene Symbols:** Ensure the gene identifiers in your assay data match the identifiers in your `.gmt` file (e.g., both use HGNC Symbols or both use Entrez IDs).\n- **Data Cleaning:** Use `TransposeAssay()` if your input file has genes as rows. `pathwayPCA` expects samples as rows for the `Omics` object.\n- **Parallelization:** For large datasets (especially CNV or RNA-seq), always set `parallel = TRUE` in the testing functions to reduce computation time.\n- **S4 Accessors:** Use `getAssay()`, `getPathwayCollection()`, and `getEventTime()` to inspect `Omics` objects rather than accessing slots directly.\n\n## Reference documentation\n- [Integrative Pathway Analysis with pathwayPCA](./references/Introduction_to_pathwayPCA.md)\n- [Quickstart Guide for New R Users](./references/Supplement1-Quickstart_Guide.md)\n- [Importing and Tidying Data](./references/Supplement2-Importing_Data.md)\n- [Creating Omics Data Objects](./references/Supplement3-Create_Omics_Objects.md)\n- [Test Pathway Significance Walkthrough](./references/Supplement4-Methods_Walkthrough.md)\n- [Visualizing and Analyzing Results](./references/Supplement5-Analyse_Results.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pathwaypca",
+    "description": "This tool performs integrative pathway analysis using Principal Component Analysis approaches to test associations between gene sets and various phenotypes. Use when user asks to test pathway associations with binary, continuous, or survival phenotypes, extract genes driving pathway significance, or compute subject-specific pathway activity scores for multi-omics integration.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pathwayPCA.html"
+  }
+}

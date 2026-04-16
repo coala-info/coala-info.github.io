@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-differentialregulation",
+  "category": "bioconductor",
+  "name": "bioconductor-differentialregulation",
+  "description": "This Bioconductor package identifies genes or transcripts displaying differential regulation between conditions by analyzing the balance between spliced and unspliced mRNA. Use when user asks to detect differential regulation in single-cell or bulk RNA-seq data, account for mapping uncertainty using equivalence classes, or compare the proportions of unspliced and spliced transcripts across experimental groups.",
+  "overview": "`DifferentialRegulation` is a Bioconductor package that identifies genes or transcripts displaying differential regulation between conditions. Unlike standard differential expression, which looks at total abundance, this method targets the balance between spliced (S) and unspliced (U) mRNA. A higher proportion of unspliced mRNA in one condition suggests active up-regulation compared to another. The package uses a Bayesian hierarchical model to account for sample-to-sample variability and mapping",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DifferentialRegulation.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-differentialregulation/overview",
+  "github": "https://github.com/SimoneTiberi/DifferentialRegulation",
+  "conda_downloads": "5.7K",
+  "conda_downloads_num": 5700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DifferentialRegulation"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DifferentialRegulation.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-differentialregulation/overview",
+    "github": "https://github.com/SimoneTiberi/DifferentialRegulation",
+    "conda_downloads": "5.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-differentialregulation\n\n## Overview\n\n`DifferentialRegulation` is a Bioconductor package that identifies genes or transcripts displaying differential regulation between conditions. Unlike standard differential expression, which looks at total abundance, this method targets the balance between spliced (S) and unspliced (U) mRNA. A higher proportion of unspliced mRNA in one condition suggests active up-regulation compared to another. The package uses a Bayesian hierarchical model to account for sample-to-sample variability and mapping uncertainty (ambiguous and multi-mapping reads).\n\n## Single-Cell RNA-seq Workflow\n\n### 1. Load Data\nThe package expects scRNA-seq data quantified via `alevin-fry` with the USA (Unspliced-Spliced-Ambiguous) mode.\n\n```r\nlibrary(DifferentialRegulation)\n\n# Load USA counts into a SingleCellExperiment\nsce <- load_USA(path_to_counts, path_to_cell_id, path_to_gene_id, sample_ids)\n\n# Load Equivalence Classes (EC) to account for mapping uncertainty\nEC_list <- load_EC(path_to_EC_counts, path_to_EC, path_to_cell_id, path_to_gene_id, sample_ids)\n```\n\n### 2. Pre-processing\nAssign cell types to the `sce` object. Filtering should be performed on the `sce` object; `compute_PB_counts` will automatically synchronize the EC list.\n\n```r\n# Example: sce$cell_type <- my_labels\ndesign <- data.frame(sample = sample_ids, group = c(\"Ctrl\", \"Ctrl\", \"Trt\", \"Trt\"))\n\n# Compute Pseudo-Bulk (PB) counts\nPB_counts <- compute_PB_counts(sce = sce, \n                               EC_list = EC_list, \n                               design = design, \n                               sample_col_name = \"sample\", \n                               group_col_name = \"group\", \n                               sce_cluster_name = \"cell_type\")\n```\n\n### 3. Differential Testing\nRun the main MCMC-based inference.\n\n```r\nset.seed(123)\nresults <- DifferentialRegulation(PB_counts, n_cores = 2, traceplot = TRUE)\n```\n\n## Bulk RNA-seq Workflow\n\n### 1. Load Data\nRequires an expanded reference (spliced + unspliced transcripts) quantified via `salmon` (with `--dumpEq`) or `kallisto`.\n\n```r\n# Load US counts\nSE <- load_bulk_US(quant_files, sample_ids)\n\n# Load Equivalence Classes\nEC_list <- load_bulk_EC(path_to_eq_classes = equiv_classes_files, n_cores = 2)\n```\n\n### 2. Differential Testing\n```r\ndesign <- data.frame(sample = sample_ids, group = c(\"A\", \"A\", \"B\", \"B\"))\n\nresults <- DifferentialRegulation_bulk(SE = SE, \n                                       EC_list = EC_list, \n                                       design = design, \n                                       n_cores = 2, \n                                       traceplot = TRUE)\n```\n\n## Interpreting Results\n\nThe results object contains several data frames:\n- `Differential_results`: Main test statistics.\n    - `p_val`: Raw p-value.\n    - `p_adj.glb`: Globally adjusted p-value (across all clusters).\n    - `Prob-group-UP`: Posterior probability that the gene is up-regulated in the specified group. Values near 1 indicate up-regulation; values near 0 indicate down-regulation.\n- `US_results` / `USA_results`: Estimated proportions ($\\pi$) and standard deviations for S, U, and A components.\n- `Convergence_results`: Check if MCMC chains converged.\n\n### Visualization\n```r\n# Plot proportions for a specific gene/cluster (scRNA-seq)\nplot_pi(results, type = \"US\", gene_id = \"ENSG...\", cluster_id = \"Neurons\")\n\n# Plot proportions for bulk data\nplot_bulk_pi(results, transcript_id = \"ENST...\")\n\n# Check MCMC traceplots\nplot_traceplot(results, gene_id = \"ENSG...\", cluster_id = \"Neurons\")\n```\n\n## Key Tips\n- **Memory Management**: The `EC_list` object can be very large. Remove it (`rm(EC_list)`) after running `compute_PB_counts` or `DifferentialRegulation_bulk` to free up RAM.\n- **Ambiguous Reads**: In scRNA-seq, `load_USA` defines default counts as `Spliced + 0.5 * Ambiguous`. However, the model treats Ambiguous reads as a separate category in the `USA` results to better reflect mapping uncertainty.\n- **Filtering**: Ensure you have a sufficient number of cells per cluster (typically >100) for reliable single-cell results.\n\n## Reference documentation\n- [DifferentialRegulation: a method to identify genes displaying differential regulation between groups of samples](./references/DifferentialRegulation.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-differentialregulation",
+    "description": "This Bioconductor package identifies genes or transcripts displaying differential regulation between conditions by analyzing the balance between spliced and unspliced mRNA. Use when user asks to detect differential regulation in single-cell or bulk RNA-seq data, account for mapping uncertainty using equivalence classes, or compare the proportions of unspliced and spliced transcripts across experimental groups.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DifferentialRegulation.html"
+  }
+}

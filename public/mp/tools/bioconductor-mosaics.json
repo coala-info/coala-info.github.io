@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mosaics",
+  "category": "bioconductor",
+  "name": "bioconductor-mosaics",
+  "description": "The bioconductor-mosaics package implements a model-based framework for detecting both punctuated and broad enriched regions in ChIP-seq data while accounting for genomic biases. Use when user asks to call peaks, identify transcription factor binding sites, detect histone modifications using HMMs, or account for mappability and GC content in ChIP-seq analysis.",
+  "overview": "The `mosaics` package implements the MOSAiCS (MOdel-based one and two Sample Analysis and Inference for ChIP-Seq) framework. It is designed to detect enriched regions (peaks) in ChIP-seq data while accounting for common biases such as mappability and GC content. The package supports two main workflows:\n1.  **MOSAiCS**: Optimized for punctuated peaks (e.g., transcription factor binding).\n2.  **MOSAiCS-HMM**: Uses a Hidden Markov Model to identify broad peaks (e.g., histone modifications).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mosaics.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mosaics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mosaics.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mosaics\n\n## Overview\n\nThe `mosaics` package implements the MOSAiCS (MOdel-based one and two Sample Analysis and Inference for ChIP-Seq) framework. It is designed to detect enriched regions (peaks) in ChIP-seq data while accounting for common biases such as mappability and GC content. The package supports two main workflows:\n1.  **MOSAiCS**: Optimized for punctuated peaks (e.g., transcription factor binding).\n2.  **MOSAiCS-HMM**: Uses a Hidden Markov Model to identify broad peaks (e.g., histone modifications).\n\n## Core Workflow\n\n### 1. Data Preparation\nConvert aligned read files (BAM, SAM, BED, etc.) into bin-level files.\n\n```R\nlibrary(mosaics)\n\n# Construct bins for ChIP and Control\nconstructBins(infile = \"chip.bam\", fileFormat = \"bam\", outfileLoc = \"./\", \n               PET = FALSE, fragLen = 200, binSize = 200)\nconstructBins(infile = \"input.bam\", fileFormat = \"bam\", outfileLoc = \"./\", \n               PET = FALSE, fragLen = 200, binSize = 200)\n\n# Load bin-level data into R\nbinData <- readBins(type = c(\"chip\", \"input\"), \n                    fileName = c(\"chip_bin200.txt\", \"input_bin200.txt\"))\n```\n\n### 2. Model Fitting\nFit the MOSAiCS model to estimate the background distribution.\n\n```R\n# IO = Input Only (two-sample analysis)\n# bgEst: \"rMOM\" for high depth, \"matchLow\" for low depth\nfit <- mosaicsFit(binData, analysisType = \"IO\", bgEst = \"rMOM\")\n\n# Check model fit\nplot(fit)\n```\n\n### 3. Peak Calling\nIdentify peaks based on the fitted model and desired False Discovery Rate (FDR).\n\n```R\n# signalModel: \"1S\" (one-signal) or \"2S\" (two-signal)\npeaks <- mosaicsPeak(fit, signalModel = \"2S\", FDR = 0.05, \n                     maxgap = 200, minsize = 50, thres = 10)\n\n# View and export results\npeakList <- print(peaks)\nexport(peaks, type = \"bed\", filename = \"peaks.bed\")\n```\n\n## Broad Peak Analysis (MOSAiCS-HMM)\n\nFor histone modifications, use the HMM extension to account for spatial dependence.\n\n```R\n# Fit HMM using a standard MOSAiCS fit as input\nhmmFit <- mosaicsFitHMM(fit, signalModel = \"2S\", init = \"mosaics\")\n\n# Call peaks using posterior decoding\npeaksHMM <- mosaicsPeakHMM(hmmFit, FDR = 0.05, decoding = \"posterior\")\n```\n\n## Post-Processing\n\nRefine peak calls by incorporating read-level information.\n\n```R\n# 1. Extract reads for the identified peak regions\npeaksHMM <- extractReads(peaksHMM, \n                         chipFile = \"chip.bam\", chipFileFormat = \"bam\",\n                         controlFile = \"input.bam\", controlFileFormat = \"bam\")\n\n# 2. Find peak summits\npeaksHMM <- findSummit(peaksHMM)\n\n# 3. Adjust boundaries and filter false positives\npeaksHMM <- adjustBoundary(peaksHMM)\npeaksHMM <- filterPeak(peaksHMM)\n```\n\n## Advanced Features\n\n- **Mappability and GC Content**: If sequencing depth is low, include genomic features in `readBins(type = c(\"chip\", \"input\", \"M\", \"GC\", \"N\"))` and set `analysisType = \"TS\"` in `mosaicsFit`.\n- **One-Sample Analysis**: If no control is available, use `analysisType = \"OS\"` (requires M and GC files).\n- **Visualization**: Use `generateWig()` to create wiggle files for genome browsers or `plot(peaks, peakNum = 1)` to visualize specific peak profiles in R.\n- **Convenience Function**: `mosaicsRunAll()` can wrap the entire two-sample workflow into a single call.\n\n## Reference documentation\n\n- [Analysis of ChIP-seq Data with mosaics Package](./references/mosaics-example.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mosaics",
+    "description": "The bioconductor-mosaics package implements a model-based framework for detecting both punctuated and broad enriched regions in ChIP-seq data while accounting for genomic biases. Use when user asks to call peaks, identify transcription factor binding sites, detect histone modifications using HMMs, or account for mappability and GC content in ChIP-seq analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mosaics.html"
+  }
+}

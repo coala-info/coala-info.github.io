@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-alpsnmr",
+  "category": "bioconductor",
+  "name": "bioconductor-alpsnmr",
+  "description": "\"AlpsNMR provides an automated pipeline for the high-throughput processing and analysis of 1D NMR spectra. Use when user asks to load NMR data, perform preprocessing and quality control, detect and align peaks, or generate a peak table for statistical analysis.\"",
+  "overview": "AlpsNMR (Automated Spectra Processing System for NMR) is a Bioconductor package designed for the high-throughput analysis of 1D NMR spectra. It provides a complete pipeline from raw data (Bruker or JDX formats) to a final peak table. Most functions are prefixed with `nmr_` to avoid namespace conflicts and facilitate autocompletion.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AlpsNMR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alpsnmr/overview",
+  "github": "https://github.com/sipss/AlpsNMR",
+  "conda_downloads": "10.7K",
+  "conda_downloads_num": 10700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AlpsNMR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AlpsNMR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alpsnmr/overview",
+    "github": "https://github.com/sipss/AlpsNMR",
+    "conda_downloads": "10.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-alpsnmr\n\n## Overview\n\nAlpsNMR (Automated Spectra Processing System for NMR) is a Bioconductor package designed for the high-throughput analysis of 1D NMR spectra. It provides a complete pipeline from raw data (Bruker or JDX formats) to a final peak table. Most functions are prefixed with `nmr_` to avoid namespace conflicts and facilitate autocompletion.\n\n## Workflow\n\n### 1. Initialization and Parallelization\nEnable parallel processing using `BiocParallel` to speed up computationally intensive tasks like peak detection.\n\n```r\nlibrary(AlpsNMR)\nlibrary(BiocParallel)\nregister(SnowParam(workers = 2), default = TRUE)\n```\n\n### 2. Data Loading and Metadata\nLoad samples from directories or zip files. Metadata can be merged from external files (Excel/CSV) using a common key like `NMRExperiment`.\n\n```r\n# Load samples\ndataset <- nmr_read_samples(sample_names = zip_files)\n\n# Add metadata\ndataset <- nmr_meta_add(dataset, metadata = annotations, by = \"NMRExperiment\")\n\n# Retrieve metadata\nmeta <- nmr_meta_get(dataset, groups = \"external\")\n```\n\n### 3. Preprocessing\nStandardize the spectra through interpolation, phasing, and excluding non-informative regions (e.g., water or solvent peaks).\n\n```r\n# Interpolate to a common ppm axis\ndataset <- nmr_interpolate_1D(dataset, axis = c(min = -0.5, max = 10))\n\n# Exclude specific regions\ndataset <- nmr_exclude_region(dataset, exclude = list(water = c(4.6, 5)))\n\n# Optional: Phasing\n# dataset <- nmr_autophase(dataset, method = \"MPC_DANM\")\n```\n\n### 4. Quality Control and Outlier Detection\nUse robust PCA to identify samples that deviate significantly from the rest of the dataset.\n\n```r\npca_outliers <- nmr_pca_outliers_robust(dataset, ncomp = 3)\nnmr_pca_outliers_plot(dataset, pca_outliers)\n```\n\n### 5. Baseline and Peak Detection\nEstimate the baseline to improve peak detection accuracy. Peak detection uses a continuous wavelet transform (CWT).\n\n```r\n# Baseline estimation\ndataset <- nmr_baseline_estimation(dataset, lambda = 9, p = 0.01)\n\n# Detect peaks\nbaselineThresh <- nmr_baseline_threshold(dataset, range_without_peaks = c(9.5, 10))\npeak_list <- nmr_detect_peaks(dataset, baselineThresh = baselineThresh, SNR.Th = 3)\n```\n\n### 6. Alignment and Normalization\nAlign spectra to a reference sample to correct for chemical shift variations, then normalize (e.g., PQN) to account for dilution effects.\n\n```r\n# Find reference and align\nref_exp <- nmr_align_find_ref(dataset, peak_list)\ndataset_align <- nmr_align(dataset, peak_data = peak_list, NMRExp_ref = ref_exp)\n\n# Normalize\ndataset_norm <- nmr_normalize(dataset_align, method = \"pqn\")\n```\n\n### 7. Peak Grouping and Table Building\nCluster peaks across samples to create a unified peak table for statistical analysis.\n\n```r\n# Re-detect peaks on normalized data if necessary, then cluster\nclustering <- nmr_peak_clustering(peak_list_norm)\npeak_table <- nmr_build_peak_table(clustering$peak_data, dataset_norm)\n\n# Convert to data frame for analysis\ndf_peaks <- as.data.frame(peak_table)\n```\n\n## Key Functions\n\n- `nmr_read_samples()`: Reads Bruker or JDX files.\n- `nmr_interpolate_1D()`: Interpolates spectra to a uniform ppm axis.\n- `nmr_meta_add()`: Merges external metadata into the NMR dataset object.\n- `nmr_exclude_region()`: Removes specific ppm ranges (e.g., water).\n- `nmr_baseline_estimation()`: Estimates and subtracts spectral baseline.\n- `nmr_detect_peaks()`: Identifies peaks using CWT.\n- `nmr_align()`: Aligns spectra to a reference.\n- `nmr_normalize()`: Performs PQN or other normalization methods.\n- `nmr_peak_clustering()`: Groups peaks across the dataset.\n- `nmr_identify_regions_blood()`: Provides metabolite identification for blood samples.\n\n## Reference documentation\n\n- [Introduction to AlpsNMR](./references/Vig01-introduction-to-alpsnmr.md)\n- [Introduction to AlpsNMR (older API)](./references/Vig01b-introduction-to-alpsnmr-old-api.md)\n- [Handling metadata and annotations](./references/Vig02-handling-metadata-and-annotations.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-alpsnmr",
+    "description": "AlpsNMR provides an automated pipeline for the high-throughput processing and analysis of 1D NMR spectra. Use when user asks to load NMR data, perform preprocessing and quality control, detect and align peaks, or generate a peak table for statistical analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AlpsNMR.html"
+  }
+}

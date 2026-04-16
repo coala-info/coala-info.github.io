@@ -1,0 +1,63 @@
+{
+  "id": "kcftools",
+  "category": "CLI",
+  "name": "kcftools",
+  "description": "kcftools identifies genomic variations by analyzing k-mer presence or absence between a reference genome and query samples. Use when user asks to detect variants using k-mers, merge sample data into cohorts, or convert k-mer identity scores into genotype and PLINK formats.",
+  "overview": "kcftools is a Java-based toolset designed to identify genomic variations by analyzing the presence or absence of k-mers between a reference genome and query samples. By leveraging fast k-mer counting databases (KMC3), it calculates identity scores based on k-mer ratios and gap distances (inner and tail distances). This approach is particularly useful for large-scale comparative genomics, population genetics, and identifying regions of high similarity or divergence across cohorts.",
+  "homepage": "https://github.com/sivasubramanics/kcftools",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/kcftools/overview",
+  "github": "https://github.com/sivasubramanics/kcftools",
+  "conda_downloads": "427",
+  "conda_downloads_num": 427,
+  "last_updated": "2025-09-24",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "kcftools_getVariations",
+      "kcftools_cohort",
+      "kcftools_findIBS",
+      "kcftools_splitKCF",
+      "kcftools_getAttributes",
+      "kcftools_kcf2tsv",
+      "kcftools_increaseWindow",
+      "kcftools_kcf2plink",
+      "kcftools_scoreRecalc",
+      "kcftools_kcf2gt"
+    ],
+    "description": "Screen for reference kmers that are not present in the KMC database, and detect variation",
+    "docker_image": "quay.io/biocontainers/kcftools:0.4.0--hdfd78af_0",
+    "homepage": "https://github.com/sivasubramanics/kcftools",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/kcftools/overview",
+    "github": "https://github.com/sivasubramanics/kcftools",
+    "conda_downloads": "427",
+    "last_updated": "2025-09-24",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "kcftools_cohort.cwl",
+    "kcftools_findIBS.cwl",
+    "kcftools_getAttributes.cwl",
+    "kcftools_getVariations.cwl",
+    "kcftools_increaseWindow.cwl",
+    "kcftools_kcf2gt.cwl",
+    "kcftools_kcf2plink.cwl",
+    "kcftools_kcf2tsv.cwl",
+    "kcftools_scoreRecalc.cwl",
+    "kcftools_splitKCF.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# kcftools\n\n## Overview\n\nkcftools is a Java-based toolset designed to identify genomic variations by analyzing the presence or absence of k-mers between a reference genome and query samples. By leveraging fast k-mer counting databases (KMC3), it calculates identity scores based on k-mer ratios and gap distances (inner and tail distances). This approach is particularly useful for large-scale comparative genomics, population genetics, and identifying regions of high similarity or divergence across cohorts.\n\n## Core Workflows and CLI Patterns\n\n### 1. Variant Detection (getVariations)\nThe primary entry point for analyzing a single sample against a reference. It splits the reference into windows (fixed-length or feature-based) and screens them against a KMC database.\n\n```bash\n# Basic usage with fixed windows\nkcftools getVariations -r reference.fasta -i query_kmc_db -w 100 -o sample.kcf\n\n# Using a GTF file for feature-based windows (genes/transcripts)\nkcftools getVariations -r reference.fasta -i query_kmc_db -g features.gtf -o sample_features.kcf\n```\n\n**Expert Tips:**\n* **KMC Compatibility**: Ensure your KMC database was built with KMC version 3.0.0 or higher.\n* **Sliding Windows**: Use the sliding window option added in v0.3.0 for higher resolution analysis of transition boundaries.\n* **Weights**: You can adjust the identity score calculation by tuning weights for k-mer ratio ($W_o$), inner distance ($W_i$), and tail distance ($W_t$).\n\n### 2. Cohort Management\nOnce individual `.kcf` files are generated, they can be merged into a single matrix for population-level analysis.\n\n```bash\n# Merge multiple sample KCF files into a cohort\nkcftools cohort -i sample1.kcf sample2.kcf sample3.kcf -o population.kcf\n```\n\n### 3. Downstream Analysis and Conversion\nkcftools provides several utilities to format data for external tools like Tassel, GAPIT, or PLINK.\n\n* **Genotype Table**: Convert KCF data to a genotype matrix.\n  ```bash\n  kcftools kcf2gt -i population.kcf -o genotype_table.txt\n  ```\n* **PLINK Format**: Export to PED/MAP format for association studies.\n  ```bash\n  kcftools kcf2plink -i population.kcf -o study_prefix\n  ```\n* **TSV Export**: Replicate IBSpy-like output for manual inspection or R/Python analysis.\n  ```bash\n  kcftools kcf2tsv -i sample.kcf -o sample.tsv\n  ```\n\n### 4. Refinement and Statistics\n* **scoreRecalc**: If you decide to change the importance of k-mer counts vs. gap distances after the initial run, use `scoreRecalc` to update the identity scores without re-running the k-mer screening.\n* **getAttributes**: Use this to generate summary statistics and metadata about the KCF files.\n* **increaseWindow**: Compose larger genomic windows from fine-grained KCF data (e.g., moving from 100bp windows to 1kb windows).\n\n## Identity Score Formula\nThe tool calculates similarity using:\n$Identity Score = W_o \\cdot (\\frac{obs}{total}) + W_i \\cdot (1 - \\frac{inner}{eff}) + W_t \\cdot (1 - \\frac{tail}{eff}) \\cdot 100$\n\nWhere:\n* **obs/total**: Ratio of reference k-mers found in the query.\n* **inner dist**: Bases not covered by k-mers between hits.\n* **tail dist**: Uncovered bases at window edges.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| kcftools getVariations | Screen for reference kmers that are not present in the KMC database, and detect variation |\n| kcftools kcf2gt | Convert KCF to Genotype Table |\n| kcftools kcf2plink | Convert KCF windows to PED format |\n| kcftools kcf2tsv | Convert KCF file to TSV file (IBSpy like) |\n| kcftools_cohort | Create a cohort of samples kcf files |\n| kcftools_findIBS | Find IBS windows in a KCF file |\n| kcftools_getAttributes | Extract attributes from KCF files |\n| kcftools_increaseWindow | Increase the window size of a KCF file by merging windows |\n| kcftools_scoreRecalc | Recalculate scores in a KCF file |\n| kcftools_splitKCF | Split KCF file for each chromosome |\n\n## Reference documentation\n- [KCFTOOLS Main README](./references/github_com_sivasubramanics_kcftools_blob_main_README.md)\n- [Changelog and Plugin Updates](./references/github_com_sivasubramanics_kcftools_blob_main_CHANGELOG.md)",
+  "skill_front_matter": {
+    "name": "kcftools",
+    "description": "kcftools identifies genomic variations by analyzing k-mer presence or absence between a reference genome and query samples. Use when user asks to detect variants using k-mers, merge sample data into cohorts, or convert k-mer identity scores into genotype and PLINK formats.",
+    "homepage": "https://github.com/sivasubramanics/kcftools"
+  }
+}

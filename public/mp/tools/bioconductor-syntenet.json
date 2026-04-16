@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-syntenet",
+  "category": "bioconductor",
+  "name": "bioconductor-syntenet",
+  "description": "This tool provides a network-based framework for analyzing synteny and conserved gene order across multiple species. Use when user asks to infer synteny networks, cluster conserved gene groups, perform phylogenomic profiling, identify taxon-specific synteny patterns, or reconstruct species trees from synteny data.",
+  "overview": "The `syntenet` package provides a comprehensive framework for analyzing synteny (conserved gene order) using a network-based approach. Instead of traditional pairwise comparisons, it represents genes as nodes and syntenic relationships as edges. This allows for global analyses across multiple species, including network clustering to find conserved gene groups and phylogenomic profiling to identify taxon-specific synteny patterns.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/syntenet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/almeidasilvaf/syntenet",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "syntenet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/syntenet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/almeidasilvaf/syntenet",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-syntenet\n\n## Overview\n\nThe `syntenet` package provides a comprehensive framework for analyzing synteny (conserved gene order) using a network-based approach. Instead of traditional pairwise comparisons, it represents genes as nodes and syntenic relationships as edges. This allows for global analyses across multiple species, including network clustering to find conserved gene groups and phylogenomic profiling to identify taxon-specific synteny patterns.\n\n## Core Workflow\n\n### 1. Data Preparation and Input\nThe package requires two main inputs: protein sequences and gene annotations.\n\n```r\nlibrary(syntenet)\n\n# Load from directories\n# fasta_dir should contain .fa or .fasta files\n# gff_dir should contain .gff, .gff3, or .gtf files\nseqs <- fasta2AAStringSetlist(fasta_dir)\nannot <- gff2GRangesList(gff_dir)\n\n# Validate and process\nif(check_input(seqs, annot)) {\n    pdata <- process_input(seqs, annot)\n}\n```\n\n**Note on RefSeq data:** If sequence names (protein IDs) don't match annotation IDs (gene IDs), use `collapse_protein_ids()` to map them and keep only the longest isoform per gene.\n\n### 2. Similarity Searching\nSynteny detection requires all-vs-all protein similarity results (BLASTp-like).\n\n```r\n# Requires DIAMOND or LAST to be installed and in PATH\nblast_list <- run_diamond(seq = pdata$seq)\n\n# For specific interspecies comparisons only\ncomp <- make_bidirectional(data.frame(query = \"spA\", db = \"spB\"))\nblast_list_inter <- run_diamond(pdata$seq, compare = comp)\n```\n\n### 3. Synteny Detection\n`syntenet` includes a native Rcpp implementation of the MCScanX algorithm.\n\n```r\n# For network inference (multi-species)\nnet <- infer_syntenet(blast_list, pdata$annotation)\n\n# For simple pairwise or intraspecies detection\n# Returns path to .collinearity file\ncol_file <- intraspecies_synteny(blast_list, pdata$annotation)\n# or\ncol_file <- interspecies_synteny(blast_list, pdata$annotation)\n\n# Parse results\nanchors <- parse_collinearity(col_file, as = \"all\")\n```\n\n### 4. Network Analysis and Profiling\nOnce the network is inferred, you can cluster it and analyze the distribution of clusters across species.\n\n```r\n# Cluster using Infomap (default)\nclusters <- cluster_network(net)\n\n# Generate phylogenomic profiles (presence/count of genes per cluster per species)\nprofiles <- phylogenomic_profile(clusters)\n\n# Find group-specific clusters (e.g., family-specific)\n# species_annotation is a df with 'Species' and 'Group' columns\ngs_clusters <- find_GS_clusters(profiles, species_annotation)\n```\n\n### 5. Visualization\n```r\n# Heatmap of profiles\nplot_profiles(profiles, species_annotation)\n\n# Network visualization (static or interactive)\nplot_network(net, clusters, cluster_id = c(1, 2, 3), interactive = TRUE)\n```\n\n### 6. Phylogeny Reconstruction\nReconstruct species trees based on the presence/absence of syntenic clusters.\n\n```r\n# Binarize profile matrix\nbt_mat <- binarize_and_transpose(profiles)\n\n# Infer tree using IQ-TREE (must be installed)\nphylo_files <- infer_microsynteny_phylogeny(bt_mat, outgroup = \"SpeciesName\")\n```\n\n## Tips and Best Practices\n- **Species IDs:** `process_input` adds 3-5 character prefixes to gene IDs to ensure uniqueness across the network. Use `create_species_id_table()` to map these back to original names.\n- **External Tools:** DIAMOND and IQ-TREE are external dependencies. If they are not in your system PATH, use `Sys.setenv(PATH = ...)` within R to point to their location.\n- **Large Datasets:** For very large genomes, run DIAMOND on a cluster, then import results using `read_diamond()`.\n\n## Reference documentation\n- [Inference and analysis of synteny networks](./references/vignette_01_inference_and_analysis_of_synteny_networks.md)\n- [Synteny detection with syntenet](./references/vignette_02_synteny_detection_with_syntenet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-syntenet",
+    "description": "This tool provides a network-based framework for analyzing synteny and conserved gene order across multiple species. Use when user asks to infer synteny networks, cluster conserved gene groups, perform phylogenomic profiling, identify taxon-specific synteny patterns, or reconstruct species trees from synteny data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/syntenet.html"
+  }
+}

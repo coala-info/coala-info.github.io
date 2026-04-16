@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dominosignal",
+  "category": "bioconductor",
+  "name": "bioconductor-dominosignal",
+  "description": "This tool analyzes intra- and intercellular signaling in single-cell RNA sequencing data by linking transcription factor activation to receptor-ligand interactions. Use when user asks to build domino objects, establish transcription factor-receptor-ligand linkages, or visualize communication networks between cell clusters.",
+  "overview": "`dominoSignal` is an R package designed to infer cell-cell communication by linking transcription factor (TF) activity to receptor expression and ligand availability. Unlike methods that rely solely on transcript levels, `dominoSignal` uses TF activation (often derived from SCENIC) to identify active intracellular signaling pathways and then connects these to extracellular signals.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/dominoSignal.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dominosignal/overview",
+  "github": "https://github.com/FertigLab/dominoSignal",
+  "conda_downloads": "398",
+  "conda_downloads_num": 398,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "dominoSignal"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dominoSignal.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dominosignal/overview",
+    "github": "https://github.com/FertigLab/dominoSignal",
+    "conda_downloads": "398",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dominosignal\n\nname: bioconductor-dominosignal\ndescription: Analysis of intra- and intercellular signaling in single-cell RNA sequencing (scRNAseq) data based on transcription factor (TF) activation. Use this skill to build domino objects, establish TF-receptor-ligand linkages, and visualize communication networks between cell clusters.\n\n# bioconductor-dominosignal\n\n## Overview\n\n`dominoSignal` is an R package designed to infer cell-cell communication by linking transcription factor (TF) activity to receptor expression and ligand availability. Unlike methods that rely solely on transcript levels, `dominoSignal` uses TF activation (often derived from SCENIC) to identify active intracellular signaling pathways and then connects these to extracellular signals.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nThe package requires several inputs, typically derived from a `SingleCellExperiment` or `Seurat` object:\n- **Counts & Z-scores**: Gene expression matrices. Z-scores must be calculated across all genes of interest.\n- **TF Activation Scores**: A matrix (TFs x Cells) of activity scores (e.g., SCENIC AUC).\n- **Regulons**: A list where names are TFs and values are vectors of target genes.\n- **Clusters**: A named factor vector of cell cluster assignments.\n\n```r\n# Example extraction from SingleCellExperiment\ncounts <- assay(sce, \"counts\")\nlogcounts <- assay(sce, \"logcounts\")\nz_scores <- t(scale(t(logcounts[rowSums(logcounts) > 0, ])))\nclusters <- factor(sce$cell_type)\nnames(clusters) <- colnames(sce)\n```\n\n### 2. Loading Reference Databases\n\nYou must create a receptor-ligand map (`rl_map`). The package provides a helper for CellPhoneDB:\n\n```r\nrl_map <- create_rl_map_cellphonedb(genes, proteins, interactions, complexes)\n```\n\n### 3. Building the Domino Object\n\nThe analysis proceeds in two main steps: initialization and network construction.\n\n```r\n# Step 1: Initialize and calculate correlations/DE\ndom <- create_domino(\n  rl_map = rl_map,\n  features = auc_matrix, # TF activity\n  counts = counts,\n  z_scores = z_scores,\n  clusters = clusters,\n  tf_targets = regulon_list,\n  use_clusters = TRUE\n)\n\n# Step 2: Build the network with thresholds\ndom <- build_domino(\n  dom = dom,\n  min_tf_pval = 0.001,\n  rec_tf_cor_threshold = 0.25,\n  min_rec_percentage = 0.1\n)\n```\n\n## Accessing Data\n\nUse the `dom_` prefix functions to interact with the S4 object:\n- `dom_clusters(dom)`: Get cluster names or labels.\n- `dom_linkages(dom, link_type = \"incoming-ligand\", by_cluster = TRUE)`: View ligands targeting a cluster.\n- `dom_signaling(dom)`: Get the global signaling strength matrix.\n- `dom_de(dom)`: Access TF differential expression p-values.\n\n## Visualization\n\n### Heatmaps\n- `feat_heatmap(dom)`: Visualize TF activation across clusters.\n- `cor_heatmap(dom)`: Show correlations between receptors and TFs.\n- `incoming_signaling_heatmap(dom, rec_clust = \"cluster_name\")`: View ligands activating a specific cluster.\n\n### Network Plots\n- `signaling_network(dom)`: Global cluster-to-cluster communication graph.\n- `gene_network(dom, clust = \"target_cluster\")`: Detailed L-R-TF linkages for a specific cluster.\n- `circos_ligand_receptor(dom, receptor = \"CD74\")`: Chord diagram of ligands for a specific receptor.\n\n## Tips and Best Practices\n\n- **Gene Filtering**: Ensure all ligands and receptors of interest are present in your `z_scores` matrix. Many pipelines filter for highly variable genes, which may exclude critical signaling components.\n- **TF Names**: If using SCENIC, clean TF names (e.g., removing \"(+)\" or \"...\") to ensure they match gene names in the expression matrices.\n- **Complexes**: Set `use_complexes = TRUE` in `create_domino` to account for heteromeric receptors, which requires a majority of components to be correlated with the TF.\n- **Thresholding**: If results are too sparse, lower the `rec_tf_cor_threshold` (default 0.25) or `min_rec_percentage`.\n\n## Reference documentation\n\n- [Get Started with dominoSignal](./references/dominoSignal.md)\n- [Interacting with domino Objects](./references/domino_object_vignette.md)\n- [Plotting Functions and Options](./references/plotting_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dominosignal",
+    "description": "This tool analyzes intra- and intercellular signaling in single-cell RNA sequencing data by linking transcription factor activation to receptor-ligand interactions. Use when user asks to build domino objects, establish transcription factor-receptor-ligand linkages, or visualize communication networks between cell clusters.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dominoSignal.html"
+  }
+}

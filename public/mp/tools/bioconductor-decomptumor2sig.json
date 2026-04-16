@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-decomptumor2sig",
+  "category": "bioconductor",
+  "name": "bioconductor-decomptumor2sig",
+  "description": "This tool decomposes tumor genomes into mutational signatures using quadratic programming to estimate signature contributions. Use when user asks to decompose somatic mutation profiles, perform signature refitting, or determine the exposure of Alexandrov and Shiraishi-type signatures in tumor samples.",
+  "overview": "The `decompTumor2Sig` package is designed for \"signature refitting\"—the process of estimating the contribution (exposure) of known mutational signatures to the somatic mutation profile of an individual tumor. It supports both the high-resolution Alexandrov-type (e.g., COSMIC 96-trinucleotide) and the more parsimonious Shiraishi-type signatures. The package uses quadratic programming to find the optimal non-negative weights that explain the observed mutation distribution.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/decompTumor2Sig.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-decomptumor2sig/overview",
+  "github": "https://github.com/rmpiro/decompTumor2Sig",
+  "conda_downloads": "21.9K",
+  "conda_downloads_num": 21900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "decompTumor2Sig"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/decompTumor2Sig.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-decomptumor2sig/overview",
+    "github": "https://github.com/rmpiro/decompTumor2Sig",
+    "conda_downloads": "21.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-decomptumor2sig\n\nname: bioconductor-decomptumor2sig\ndescription: Decompose tumor genomes into mutational signatures (signature refitting) using quadratic programming. Use this skill to analyze somatic single nucleotide variants (SNVs) from VCF, MPF, or VRanges objects, and determine the contribution of Alexandrov (COSMIC) or Shiraishi-type signatures.\n\n# bioconductor-decomptumor2sig\n\n## Overview\nThe `decompTumor2Sig` package is designed for \"signature refitting\"—the process of estimating the contribution (exposure) of known mutational signatures to the somatic mutation profile of an individual tumor. It supports both the high-resolution Alexandrov-type (e.g., COSMIC 96-trinucleotide) and the more parsimonious Shiraishi-type signatures. The package uses quadratic programming to find the optimal non-negative weights that explain the observed mutation distribution.\n\n## Core Workflow\n\n### 1. Load Mutational Signatures\nSignatures can be loaded from COSMIC, local files, or converted between types.\n\n```r\nlibrary(decompTumor2Sig)\n\n# Load COSMIC v2 signatures (Alexandrov-type)\nalex_sigs <- readAlexandrovSignatures()\n\n# Load Shiraishi-type signatures from flat files\nsig_files <- system.file(\"extdata\", \n                         paste0(\"Nik-Zainal_PMID_22608084-pmsignature-sig\", 1:4, \".tsv\"), \n                         package=\"decompTumor2Sig\")\nshi_sigs <- readShiraishiSignatures(files=sig_files)\n\n# Convert Alexandrov to Shiraishi (note: information loss occurs)\nconverted_sigs <- convertAlexandrov2Shiraishi(alex_sigs)\n```\n\n### 2. Prepare Tumor Genome Data\nMutation data must be preprocessed into frequency distributions matching the signature format (e.g., same number of flanking bases and transcription strand settings).\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\n\nrefGenome <- BSgenome.Hsapiens.UCSC.hg19\ntranscriptAnno <- TxDb.Hsapiens.UCSC.hg19.knownGene\n\n# Read from VCF\nvcf_file <- system.file(\"extdata\", \"Nik-Zainal_PMID_22608084-VCF-convertedfromMPF.vcf.gz\", \n                        package=\"decompTumor2Sig\")\ngenomes <- readGenomesFromVCF(vcf_file, \n                              numBases=5, \n                              type=\"Shiraishi\", \n                              trDir=TRUE, \n                              refGenome=refGenome, \n                              transcriptAnno=transcriptAnno)\n```\n\n### 3. Signature Decomposition (Refitting)\nDetermine the contribution of each signature to the tumor profile.\n\n```r\n# Basic decomposition using all signatures in the set\nexposures <- decomposeTumorGenomes(genomes, shi_sigs)\n\n# Decomposition with a minimum explained variance threshold (greedy search)\nexposures_sub <- decomposeTumorGenomes(genomes, \n                                       shi_sigs, \n                                       minExplainedVariance=0.9, \n                                       greedySearch=TRUE)\n```\n\n### 4. Visualization and Evaluation\nAssess the quality of the fit and visualize the results.\n\n```r\n# Plot the mutation distribution of a signature or genome\nplotMutationDistribution(shi_sigs[[1]])\n\n# Plot the calculated exposures\nplotDecomposedContribution(exposures[[1]])\n\n# Evaluate fit quality (Explained Variance and Pearson Correlation)\nevaluateDecompositionQuality(exposures[[1]], shi_sigs, genomes[[1]], plot=TRUE)\n```\n\n## Advanced Features\n\n### Signature Adjustment\nIf signatures were derived from the whole genome but your data is from Exome sequencing (WES) or a specific panel, adjust the signatures to account for different background nucleotide frequencies.\n\n```r\n# Adjust signatures for a specific target region (e.g., promoters or exome)\nadjusted_sigs <- adjustSignaturesForRegionSet(alex_sigs, \n                                              regionsTarget=my_granges_object, \n                                              refGenome=refGenome)\n```\n\n### Comparing Signature Sets\nMap one set of signatures to another (e.g., mapping de novo signatures to COSMIC).\n\n```r\n# Find the best matches between two signature sets\nmapping <- mapSignatureSets(fromSignatures=set_A, \n                            toSignatures=set_B, \n                            method=\"frobenius\", \n                            unique=TRUE)\n```\n\n## Implementation Tips\n- **Mutation Count**: For reliable results, tumor samples should ideally have 100+ SNVs.\n- **Consistency**: Ensure `numBases`, `type`, and `trDir` parameters are identical when reading both signatures and genomes.\n- **Transcription Strand**: If `trDir=TRUE`, mutations in regions with ambiguous (overlapping/opposing) transcription directions are excluded by default (`enforceUniqueTrDir=TRUE`).\n- **Greedy Search**: Use `greedySearch=TRUE` in `decomposeTumorGenomes` when dealing with large signature sets to improve performance, though it may find a local optimum.\n\n## Reference documentation\n- [A brief introduction to decompTumor2Sig](./references/decompTumor2Sig.Rmd)\n- [decompTumor2Sig Vignette](./references/decompTumor2Sig.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-decomptumor2sig",
+    "description": "This tool decomposes tumor genomes into mutational signatures using quadratic programming to estimate signature contributions. Use when user asks to decompose somatic mutation profiles, perform signature refitting, or determine the exposure of Alexandrov and Shiraishi-type signatures in tumor samples.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/decompTumor2Sig.html"
+  }
+}

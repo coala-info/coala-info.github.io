@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mpac",
+  "category": "bioconductor",
+  "name": "bioconductor-mpac",
+  "description": "bioconductor-mpac integrates multi-omic data with biological pathways to infer pathway entity activities using the PARADIGM algorithm. Use when user asks to integrate CNA and RNA-seq data, infer integrated pathway levels, filter activities against permuted backgrounds, or cluster samples based on pathway sub-networks.",
+  "overview": "MPAC (Multi-omic Pathway Analysis of Cells) is a Bioconductor package designed to integrate Copy Number Alteration (CNA) and RNA-seq data with pre-defined biological pathway networks. It utilizes the PARADIGM algorithm to infer pathway entity activities (IPLs), filters these against permuted background distributions to ensure statistical robustness, and provides tools for sample clustering and visualization of altered sub-pathways.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MPAC.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/pliu55/MPAC",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MPAC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MPAC.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/pliu55/MPAC",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mpac\n\n## Overview\n\nMPAC (Multi-omic Pathway Analysis of Cells) is a Bioconductor package designed to integrate Copy Number Alteration (CNA) and RNA-seq data with pre-defined biological pathway networks. It utilizes the PARADIGM algorithm to infer pathway entity activities (IPLs), filters these against permuted background distributions to ensure statistical robustness, and provides tools for sample clustering and visualization of altered sub-pathways.\n\n## Core Workflow\n\n### 1. Input Preparation\nMPAC requires tumor CNA data and RNA-seq data (both tumor and normal).\n\n```r\nlibrary(MPAC)\nlibrary(SummarizedExperiment)\n\n# Prepare CNA states (1: activated, 0: normal, -1: repressed)\ncn_se <- ppCnInp(cn_tumor_matrix)\n\n# Prepare RNA states (requires normal samples for baseline)\nrna_se <- ppRnaInp(rna_tumor_matrix, rna_normal_matrix, threads = 2)\n\n# Combined input for PARADIGM\nreal_se <- ppRealInp(cn_tumor_matrix, rna_tumor_matrix, rna_normal_matrix)\n```\n\n### 2. Permutation for Background Distribution\nTo filter out noise, generate permuted datasets to establish a background distribution of IPLs.\n\n```r\n# Generate permuted inputs (e.g., 100 permutations recommended for production)\nperm_list <- ppPermInp(real_se, n_perms = 100)\n```\n\n### 3. Running PARADIGM\nMPAC acts as a wrapper for the PARADIGM binary. You must provide the path to the local PARADIGM executable.\n\n```r\nparadigm_bin <- \"/path/to/PARADIGM\"\nout_dir <- \"paradigm_results\"\n\n# Run on real data\nrunPrd(real_se, pathway_file, out_dir, paradigm_bin)\n\n# Run on permuted data\nrunPermPrd(perm_list, pathway_file, out_dir, paradigm_bin)\n```\n\n### 4. Collecting and Filtering IPLs\nCollect the results from the output directory and filter real IPLs against the permuted background.\n\n```r\n# Collect\nreal_ipl <- colRealIPL(file.path(out_dir, \"real\"))\nperm_ipl <- colPermIPL(file.path(out_dir, \"perm\"), n_perms = 100)\n\n# Filter: Entities observed by chance are set to NA\nfiltered_mat <- fltByPerm(real_ipl, perm_ipl)\n```\n\n### 5. Network Analysis and Clustering\nIdentify the largest active sub-pathways and cluster samples based on GO term over-representation.\n\n```r\n# Find largest sub-pathway per sample\nsub_networks <- subNtw(filtered_mat, pathway_file, gmt_file)\n\n# Gene set over-representation\novr_mat <- ovrGMT(sub_networks, gmt_file, omic_genes)\n\n# Cluster samples (run multiple times to ensure stability)\nclusters <- clSamp(ovr_mat, n_random_runs = 10)\n```\n\n## Visualization and Diagnostics\n\n*   **pltOvrHm**: Heatmap of samples clustered by over-represented GO terms.\n*   **pltConMtf**: Visualize consensus pathway submodules shared within a cluster.\n*   **pltMtfPrtIPL**: Heatmap of IPLs for specific proteins across clusters.\n*   **pltSttKM**: Kaplan-Meier survival analysis stratified by pathway states (e.g., `strat_func = \">0\"` for activated).\n*   **pltNeiStt**: Diagnostic heatmap showing a protein's omic state alongside its pathway neighbors to identify upstream determinants.\n\n## Tips for Success\n*   **PARADIGM Binary**: Ensure the PARADIGM binary is compatible with your OS (Linux/MacOS).\n*   **Pathway Files**: The `pathway_file` should be in the format expected by PARADIGM (typically a tab-delimited interaction file).\n*   **Memory Management**: For large cohorts, `runPermPrd` can be computationally intensive; utilize the `threads` argument where available.\n\n## Reference documentation\n- [MPAC: Multi-omic Pathway Analysis of Cells](./references/MPAC.md)\n- [MPAC Vignette Source](./references/MPAC.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-mpac",
+    "description": "bioconductor-mpac integrates multi-omic data with biological pathways to infer pathway entity activities using the PARADIGM algorithm. Use when user asks to integrate CNA and RNA-seq data, infer integrated pathway levels, filter activities against permuted backgrounds, or cluster samples based on pathway sub-networks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MPAC.html"
+  }
+}

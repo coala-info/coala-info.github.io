@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-descan2",
+  "category": "bioconductor",
+  "name": "bioconductor-descan2",
+  "description": "DEScan2 provides an integrated framework for identifying differentially enriched regions in epigenomic data using an adaptive window scan. Use when user asks to call peaks in individual samples, align peaks into consensus regions, or count reads for differential enrichment analysis.",
+  "overview": "DEScan2 provides an integrated framework for identifying differentially enriched regions in epigenomic data. Unlike fixed-window peak callers, it uses an adaptive window scan to identify peaks of varying widths. The workflow typically involves three main stages: individual sample peak calling, consensus region alignment across replicates, and read counting for downstream statistical testing (e.g., with edgeR or DESeq2).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DEScan2.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-descan2/overview",
+  "github": "N/A",
+  "conda_downloads": "35.2K",
+  "conda_downloads_num": 35200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DEScan2"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEScan2.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-descan2/overview",
+    "github": "N/A",
+    "conda_downloads": "35.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-descan2\n\n## Overview\n\nDEScan2 provides an integrated framework for identifying differentially enriched regions in epigenomic data. Unlike fixed-window peak callers, it uses an adaptive window scan to identify peaks of varying widths. The workflow typically involves three main stages: individual sample peak calling, consensus region alignment across replicates, and read counting for downstream statistical testing (e.g., with edgeR or DESeq2).\n\n## Typical Workflow\n\n### 1. Peak Calling (findPeaks)\nUse `findPeaks` to identify enriched regions in individual BAM or BED files. It calculates Z-scores for windows relative to local and chromosomal backgrounds.\n\n```r\nlibrary(DEScan2)\n\n# Call peaks for one or more files\npeaksGRL <- findPeaks(\n  files = c(\"sample1.bam\", \"sample2.bam\"),\n  filetype = \"bam\",\n  genomeName = \"mm9\",      # Highly recommended for accuracy\n  binSize = 50,            # Minimum scanning window step\n  minWin = 50,             # Minimum window size\n  maxWin = 1000,           # Maximum window size (in units of binSize)\n  zthresh = 10,            # Z-score cutoff\n  save = TRUE,             # Saves sorted BED files to outputFolder\n  outputFolder = \"Peaks\"\n)\n```\n\n### 2. Aligning Peaks into Regions (finalRegions)\nAfter calling peaks for all samples, use `finalRegions` to merge overlapping peaks into a consensus set of genomic regions.\n\n```r\n# peaksGRL is a GRangesList from findPeaks or loaded from RDS\nregionsGR <- finalRegions(\n  peakSamplesGRangesList = peaksGRL,\n  zThreshold = 20,         # Can be higher than findPeaks threshold\n  minCarriers = 3,         # Min replicates required to keep a region\n  saveFlag = FALSE\n)\n```\n\n### 3. Counting Reads (countFinalRegions)\nGenerate a count matrix by quantifying reads from the original alignment files within the consensus regions. This function wraps `summarizeOverlaps`.\n\n```r\n# Returns a SummarizedExperiment object\nse <- countFinalRegions(\n  regionsGRanges = regionsGR,\n  readsFilePath = \"path/to/bam/folder\",\n  fileType = \"bam\",\n  minCarriers = 1          # Filter by carriers again if needed\n)\n\n# Extract counts and genomic ranges\ncounts <- SummarizedExperiment::assay(se)\nregions <- SummarizedExperiment::rowRanges(se)\n```\n\n## Normalization and Differential Testing\n\nBecause epigenetic data often contains \"unwanted variation\" (batch effects, library prep differences), total library size normalization is often insufficient.\n\n1.  **Normalization**: Use `RUVSeq` (specifically `RUVs`) to remove unwanted variation based on replicate groups.\n2.  **Differential Enrichment**: Use `edgeR` with a design matrix that includes the RUV-calculated factors (`W`).\n\n```r\n# Example edgeR snippet\ndesign <- model.matrix(~0 + condition + s$W)\ny <- edgeR::DGEList(counts = counts, group = condition)\ny <- edgeR::estimateDisp(y, design)\nfit <- edgeR::glmQLFit(y, design, robust = TRUE)\n# ... proceed with testing contrasts\n```\n\n## Performance Tips\n\n*   **Parallelization**: DEScan2 uses `BiocParallel`. Register a backend or pass `BPPARAM` to `findPeaks` and `finalRegions`.\n    *   `BiocParallel::register(BiocParallel::MulticoreParam(workers = 4))`\n    *   On macOS, `DoparParam()` is often more stable than `MulticoreParam()`.\n*   **Genome Names**: Always provide a `genomeName` (e.g., \"mm10\", \"hg38\") to ensure correct chromosome lengths and standard chromosome filtering.\n\n## Reference documentation\n\n- [DEScan2](./references/DEScan2.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-descan2",
+    "description": "DEScan2 provides an integrated framework for identifying differentially enriched regions in epigenomic data using an adaptive window scan. Use when user asks to call peaks in individual samples, align peaks into consensus regions, or count reads for differential enrichment analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEScan2.html"
+  }
+}

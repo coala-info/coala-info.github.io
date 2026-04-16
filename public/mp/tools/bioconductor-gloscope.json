@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gloscope",
+  "category": "bioconductor",
+  "name": "bioconductor-gloscope",
+  "description": "GloScope calculates statistical distances between scRNA-Seq samples by treating each sample as a distribution of cells in a low-dimensional embedding space. Use when user asks to compare scRNA-Seq samples, calculate a divergence matrix between patient samples, or visualize sample-level differences using MDS and heatmaps.",
+  "overview": "GloScope is a framework for comparing scRNA-Seq samples (e.g., patients or tissue types) by treating each sample as a distribution of cells in a low-dimensional embedding space. It calculates a divergence matrix representing the statistical distance between all pairs of samples, which can then be used for downstream clustering, visualization, and group-level inference.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GloScope.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gloscope/overview",
+  "github": "https://github.com/epurdom/GloScope",
+  "conda_downloads": "968",
+  "conda_downloads_num": 968,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GloScope"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GloScope.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gloscope/overview",
+    "github": "https://github.com/epurdom/GloScope",
+    "conda_downloads": "968",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gloscope\n\n## Overview\n\nGloScope is a framework for comparing scRNA-Seq samples (e.g., patients or tissue types) by treating each sample as a distribution of cells in a low-dimensional embedding space. It calculates a divergence matrix representing the statistical distance between all pairs of samples, which can then be used for downstream clustering, visualization, and group-level inference.\n\n## Core Workflow\n\n### 1. Data Preparation\nGloScope requires a low-dimensional embedding (PCA, scVI, etc.) and sample identifiers.\n\n```r\nlibrary(GloScope)\n# Example using SingleCellExperiment\ndata(\"example_SCE\")\n\n# Extract embeddings (rows = cells, cols = dimensions)\n# Recommendation: Use 10-30 dimensions; too many can destabilize density estimation\nembeddings <- SingleCellExperiment::reducedDim(example_SCE, \"PCA\")[, 1:10]\n\n# Extract sample labels\nsample_ids <- SingleCellExperiment::colData(example_SCE)$sample_id\n```\n\n### 2. Divergence Calculation\nThe `gloscope()` function is the primary entry point. It supports two density estimation methods:\n*   **GMM (Default):** Fits Gaussian Mixture Models. Accurate but slower; uses Monte-Carlo approximation.\n*   **KNN:** Non-parametric k-nearest neighbors. Faster; useful for large datasets.\n\n```r\n# Using KNN for speed\ndist_mat <- gloscope(embeddings, sample_ids, dens = \"KNN\", dist_metric = \"KL\")\n\n# Using GMM (default) with specific components\ndist_mat_gmm <- gloscope(embeddings, sample_ids, \n                         dens = \"GMM\", \n                         num_components = c(5, 10, 15))\n```\n\n### 3. Visualization\nVisualize the divergence matrix using Multidimensional Scaling (MDS) or Heatmaps.\n\n```r\n# Prepare sample-level metadata\nmetadata <- as.data.frame(unique(SingleCellExperiment::colData(example_SCE)[, c(\"sample_id\", \"phenotype\")]))\n\n# MDS Plot\nmds_res <- plotMDS(dist_mat = dist_mat, metadata = metadata, \n                   sample_id = \"sample_id\", color_by = \"phenotype\")\nmds_res$plot\n\n# Heatmap\nplotHeatmap(dist_mat, metadata = metadata, \n            sample_id = \"sample_id\", color_by = \"phenotype\")\n```\n\n### 4. Statistical Inference\nPerform permutation tests or bootstrap confidence intervals to test for differences between groups.\n\n```r\n# Permutation test (anosim, adonis2, or silhouette)\nperm_stats <- getMetrics(dist_mat = dist_mat, metadata = metadata, \n                         sample_id = \"sample_id\", group_vars = \"phenotype\", \n                         permuteTest = TRUE)\n\n# Bootstrap Confidence Intervals\nboot_res <- bootCI(dist_mat = dist_mat, metadata = metadata, \n                   sample_id = \"sample_id\", group_vars = \"phenotype\")\nplotCI(boot_res)\n```\n\n## Technical Tips\n\n*   **Parallelization:** Use the `BPPARAM` argument for speed. You must use the `BiocParallel::` prefix (e.g., `BPPARAM = BiocParallel::MulticoreParam()`).\n*   **Reproducibility:** For GMM (which is stochastic), set the seed inside `BPPARAM`: `BiocParallel::SerialParam(RNGseed = 42)`.\n*   **Distance Metrics:** While KL is the default, Jensen-Shannon (`dist_metric = \"JS\"`) is also available. The square root of JS divergence is a proper distance metric.\n*   **Negative Values:** The KNN method may occasionally produce small negative divergence values for very similar samples; these are typically treated as zero or left as-is for MDS.\n\n## Reference documentation\n\n- [scRNA-Seq Population-level Analysis using GloScope (Rmd)](./references/GloScopeTutorial.Rmd)\n- [scRNA-Seq Population-level Analysis using GloScope (Markdown)](./references/GloScopeTutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gloscope",
+    "description": "GloScope calculates statistical distances between scRNA-Seq samples by treating each sample as a distribution of cells in a low-dimensional embedding space. Use when user asks to compare scRNA-Seq samples, calculate a divergence matrix between patient samples, or visualize sample-level differences using MDS and heatmaps.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GloScope.html"
+  }
+}

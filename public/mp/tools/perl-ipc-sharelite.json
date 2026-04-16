@@ -1,0 +1,43 @@
+{
+  "id": "perl-ipc-sharelite",
+  "category": "perl",
+  "name": "perl-ipc-sharelite",
+  "description": "This tool provides a lightweight interface for Perl processes to exchange data through shared memory segments. Use when user asks to facilitate inter-process communication, store data in shared memory, or implement atomic data operations between multiple scripts.",
+  "overview": "This skill provides guidance on utilizing the `IPC::ShareLite` Perl module to facilitate efficient data exchange between processes via shared memory. Unlike standard pipes or sockets, this tool allows multiple processes to access a common memory segment. It is particularly useful for high-speed applications where serializing large datasets through files or network interfaces is too slow. The module handles the complexities of SysV IPC, including segment management and semaphore-based locking, wh",
+  "homepage": "http://metacpan.org/pod/IPC::ShareLite",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-ipc-sharelite/overview",
+  "github": "N/A",
+  "conda_downloads": "157.2K",
+  "conda_downloads_num": 157200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perl-ipc-sharelite"
+    ],
+    "description": "FAIL to generate CWL: perl-ipc-sharelite not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/perl-ipc-sharelite:0.17--pl5321h9948957_7",
+    "homepage": "http://metacpan.org/pod/IPC::ShareLite",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-ipc-sharelite/overview",
+    "github": "N/A",
+    "conda_downloads": "157.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# perl-ipc-sharelite\n\n## Overview\nThis skill provides guidance on utilizing the `IPC::ShareLite` Perl module to facilitate efficient data exchange between processes via shared memory. Unlike standard pipes or sockets, this tool allows multiple processes to access a common memory segment. It is particularly useful for high-speed applications where serializing large datasets through files or network interfaces is too slow. The module handles the complexities of SysV IPC, including segment management and semaphore-based locking, while allowing for data larger than the standard kernel segment size.\n\n## Implementation Patterns\n\n### Basic Shared Memory Setup\nTo initialize a shared memory segment, use the `new` constructor. Always define a unique key to ensure different processes can attach to the same segment.\n\n```perl\nuse IPC::ShareLite;\n\nmy $share = IPC::ShareLite->new(\n    -key     => 1971,     # Unique integer or 4-char string\n    -create  => 'yes',    # Create if it doesn't exist\n    -destroy => 'no'      # Keep segment after script exits\n) or die \"Could not create shared memory: $!\";\n```\n\n### Atomic Data Operations\nThe `store` and `fetch` methods are internally atomic, meaning they handle locking during the specific operation.\n\n- **Storing Data**: `$share->store(\"data_string\");`\n- **Retrieving Data**: `my $data = $share->fetch();`\n\n### Handling Complex Data Structures\n`IPC::ShareLite` only stores scalars. To share hashes or arrays, you must manually serialize them using `Storable`.\n\n```perl\nuse Storable qw(freeze thaw);\n\n# Writing a hash\nmy $hash = { status => 'active', count => 42 };\n$share->store(freeze($hash));\n\n# Reading a hash\nmy $retrieved_hash = thaw($share->fetch);\n```\n\n### Advisory Locking for Multi-Step Operations\nWhen performing a \"read-modify-write\" cycle, use explicit locking to prevent race conditions.\n\n```perl\nuse IPC::ShareLite qw( :lock );\n\n$share->lock( LOCK_EX ); # Exclusive lock\n\nmy $val = $share->fetch();\n$val++;\n$share->store($val);\n\n$share->unlock(); # Or $share->lock( LOCK_UN );\n```\n\n### Non-blocking Locks\nTo avoid hanging a process if a lock is already held:\n```perl\nif ($share->lock( LOCK_EX | LOCK_NB )) {\n    # Perform task\n    $share->unlock();\n} else {\n    # Handle busy state\n}\n```\n\n## Expert Tips\n- **Key Selection**: Use a consistent integer key across all cooperating scripts. If using a string, ensure it is exactly four characters.\n- **Memory Cleanup**: If `-destroy => 'yes'` is set, the segment is removed when the *last* object pointing to it is destroyed. For persistent caches, set this to 'no'.\n- **Performance**: This module is written in C and is significantly faster than `IPC::Shareable` for raw data throughput.\n- **Kernel Limits**: If `store` fails for very large data, check system-wide limits (`SHMALL` and `SHMMNI`). `IPC::ShareLite` will attempt to span multiple segments automatically if the data exceeds the segment size.\n\n## Reference documentation\n- [IPC::ShareLite - Lightweight interface to shared memory](./references/metacpan_org_pod_IPC__ShareLite.md)",
+  "skill_front_matter": {
+    "name": "perl-ipc-sharelite",
+    "description": "This tool provides a lightweight interface for Perl processes to exchange data through shared memory segments. Use when user asks to facilitate inter-process communication, store data in shared memory, or implement atomic data operations between multiple scripts.",
+    "homepage": "http://metacpan.org/pod/IPC::ShareLite"
+  }
+}

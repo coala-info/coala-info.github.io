@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spicyr",
+  "category": "bioconductor",
+  "name": "bioconductor-spicyr",
+  "description": "This package analyzes spatial relationships between cell types in multiplexed imaging data to identify changes in spatial organization across experimental conditions. Use when user asks to test for changes in cell-type localization, perform mixed-effects modeling of spatial metrics, or correlate spatial interactions with survival outcomes.",
+  "overview": "The `spicyR` package provides a framework for analyzing spatial relationships between cell types in multiplexed imaging data (e.g., MIBI, IMC, CODEX). It uses the L-function (a variance-stabilized K-function) to quantify the degree of co-localization or dispersion between pairs of cell types. These spatial metrics are then used as response variables in weighted linear models or mixed-effects models to identify significant changes in spatial organization across experimental conditions or clinical",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/spicyR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/SydneyBioX/spicyR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spicyR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spicyR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/SydneyBioX/spicyR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spicyr\n\n## Overview\n\nThe `spicyR` package provides a framework for analyzing spatial relationships between cell types in multiplexed imaging data (e.g., MIBI, IMC, CODEX). It uses the L-function (a variance-stabilized K-function) to quantify the degree of co-localization or dispersion between pairs of cell types. These spatial metrics are then used as response variables in weighted linear models or mixed-effects models to identify significant changes in spatial organization across experimental conditions or clinical outcomes.\n\n## Installation and Setup\n\nInstall the package via BiocManager:\n\n```r\nif (!require(\"BiocManager\")) install.packages(\"BiocManager\")\nBiocManager::install(\"spicyR\")\n```\n\n**Important Bug Fix:** There is a known S4 method dispatch issue where `SpatialExperiment` objects may not correctly inherit from `SummarizedExperiment`. Run this fix before loading the library:\n\n```r\nlibrary(SummarizedExperiment)\nmethods::setClassUnion(\"ExpData\", c(\"matrix\", \"dgCMatrix\", \"ExpressionSet\", \"SummarizedExperiment\"))\nlibrary(spicyR)\n```\n\n## Core Workflow\n\n### 1. Basic Pairwise Testing\n\nUse the `spicy()` function to test for changes in localization between conditions. By default, it tests all pairwise combinations.\n\n```r\n# Test all pairs across a condition column\nspicyTest <- spicy(spe_object, condition = \"group_column\")\n\n# View top significant results\ntopPairs(spicyTest)\n\n# Test a specific pair\nspicyTestPair <- spicy(spe_object, \n                       condition = \"group_column\", \n                       from = \"CellType_A\", \n                       to = \"CellType_B\")\n```\n\n### 2. Mixed-Effects Modelling\n\nWhen multiple images are available per subject, specify the `subject` parameter to treat it as a random effect.\n\n```r\nspicyMixed <- spicy(spe_object, \n                    condition = \"condition\", \n                    subject = \"subject_id\")\n```\n\n### 3. Survival Analysis\n\nTo assess if spatial interactions correlate with survival, ensure the `colData` contains a `survival` column (a `Surv` object from the `survival` package).\n\n```r\nlibrary(survival)\nspe$survival <- Surv(spe$time, spe$event)\nspicySurvival <- spicy(spe, condition = \"survival\")\n\n# Access results\nhead(spicySurvival$survivalResults)\n```\n\n## Visualization\n\n### Significance Bubble Plot\nVisualize the coefficients and p-values for all pairwise interactions.\n\n```r\nsignifPlot(spicyTest, \n           breaks = c(-3, 3, 1), \n           marksToPlot = c(\"TypeA\", \"TypeB\", \"TypeC\"))\n```\n\n### Boxplots for Specific Pairs\nExamine the distribution of the localization metric across conditions for a specific interaction.\n\n```r\n# By rank or by specific cell types\nspicyBoxPlot(results = spicyTest, rank = 1)\nspicyBoxPlot(results = spicyTest, from = \"TypeA\", to = \"TypeB\")\n```\n\n## Advanced Features\n\n### Accounting for Tissue Inhomogeneity\nTo avoid false positives caused by dense clusters or irregular tissue architecture, use the `sigma` parameter to account for local intensity.\n\n```r\n# sigma = NULL assumes homogeneity; setting a value (e.g., 20) accounts for inhomogeneity\nspicyInhomo <- spicy(spe, condition = \"group\", sigma = 20)\n```\n\n### Custom Metrics\nYou can use custom distance or abundance metrics (e.g., from `imcRtools`) by passing them to the `alternateResult` parameter.\n\n```r\n# Convert a kNN graph to an abundance matrix\npairAbundances <- convPairs(spe, colPair = \"knn_interaction_graph\")\n\n# Run spicy with custom metrics\nspicyCustom <- spicy(spe, \n                     condition = \"group\", \n                     alternateResult = pairAbundances, \n                     weights = FALSE)\n```\n\n## Tips for Success\n\n- **Condition Levels:** `spicy()` uses the first level of the `condition` factor as the baseline. Relevel your factor if you want a specific comparison.\n- **Image IDs:** Ensure your object has a column named `imageID` in `colData` to distinguish between different images.\n- **Cell Type Column:** By default, `spicy` looks for a column named `cellType`. If your annotations are elsewhere, specify `cellType = \"your_column_name\"`.\n- **Data Extraction:** Use `bind(spicyTest)` to extract the raw L-function metrics for each image into a data frame for custom downstream analysis.\n\n## Reference documentation\n\n- [Spatial Linear and Mixed-Effects Modelling with spicyR](./references/spicyR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spicyr",
+    "description": "This package analyzes spatial relationships between cell types in multiplexed imaging data to identify changes in spatial organization across experimental conditions. Use when user asks to test for changes in cell-type localization, perform mixed-effects modeling of spatial metrics, or correlate spatial interactions with survival outcomes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spicyR.html"
+  }
+}

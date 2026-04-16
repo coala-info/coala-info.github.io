@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-minimumdistance",
+  "category": "bioconductor",
+  "name": "bioconductor-minimumdistance",
+  "description": "This tool detects de novo copy number alterations in case-parent trios using genotyping array data. Use when user asks to identify offspring-specific mutations, calculate the minimum distance statistic, perform circular binary segmentation, or infer trio copy number states via Maximum A Posteriori estimation.",
+  "overview": "The `MinimumDistance` package provides a framework for identifying *de novo* copy number variants in case-parent trios. It defines a \"minimum distance\" statistic—the signed minimum absolute difference of the offspring and parental log2 R ratios—to isolate alterations present in the offspring but not the parents. The workflow integrates Log R Ratios (LRR) and B Allele Frequencies (BAF) to provide high-confidence calls for deletions and duplications.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MinimumDistance.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MinimumDistance"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MinimumDistance.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-minimumdistance\n\nname: bioconductor-minimumdistance\ndescription: Detection of de novo copy number alterations (CNAs) in case-parent trios using genotyping array data (Illumina/Affymetrix). Use this skill to identify offspring-specific mutations by calculating the \"minimum distance\" statistic, performing circular binary segmentation (CBS), and inferring trio copy number states via Maximum A Posteriori (MAP) estimation.\n\n# bioconductor-minimumdistance\n\n## Overview\n\nThe `MinimumDistance` package provides a framework for identifying *de novo* copy number variants in case-parent trios. It defines a \"minimum distance\" statistic—the signed minimum absolute difference of the offspring and parental log2 R ratios—to isolate alterations present in the offspring but not the parents. The workflow integrates Log R Ratios (LRR) and B Allele Frequencies (BAF) to provide high-confidence calls for deletions and duplications.\n\n## Core Workflow\n\n### 1. Data Preparation and Annotation\nThe package requires marker-level annotation (genomic coordinates) and an indicator for polymorphic markers.\n\n```r\nlibrary(MinimumDistance)\nlibrary(VanillaICE)\nlibrary(oligoClasses)\n\n# Create SnpGRanges for marker annotation\nfgr <- SnpGRanges(GRanges(paste0(\"chr\", features$Chr), \n                  IRanges(features$Position, width=1),\n                  isSnp=features[[\"Intensity Only\"]]==0))\nnames(fgr) <- features[[\"Name\"]]\nfgr <- sort(fgr)\n```\n\n### 2. Organizing Raw Data (ArrayViews)\nUse `ArrayViews` to manage paths to raw LRR and BAF files without loading everything into RAM.\n\n```r\nviews <- ArrayViews(rowRanges=fgr, sourcePaths=files, parsedPath=\"ParsedFiles\")\n\n# Define parsing parameters\nscan_params <- CopyNumScanParams(index_genome=match(names(fgr), dat[[\"SNP Name\"]]),\n                                 select=select_columns,\n                                 cnvar=\"Log R Ratio\",\n                                 bafvar=\"B Allele Freq\",\n                                 gtvar=c(\"Allele1 - AB\", \"Allele2 - AB\"))\n\n# Parse files to disk\ninvisible(sapply(views, parseSourceFile, param=scan_params))\n```\n\n### 3. Defining Pedigrees and Experiments\nThe `MinDistExperiment` object binds the pedigree structure to the genomic data.\n\n```r\n# Define the trio\nped <- ParentOffspring(id = \"trio_id\", \n                       father=\"father_sample_id\", \n                       mother=\"mother_sample_id\", \n                       offspring=\"offspring_sample_id\", \n                       parsedPath=\"ParsedFiles\")\n\n# Create the experiment container\nme <- MinDistExperiment(views, pedigree=ped)\n```\n\n### 4. Segmentation and De Novo Calling\nThe analysis involves two main steps: segmenting the minimum distance statistic and assigning trio states.\n\n```r\n# 1. Segmentation using Circular Binary Segmentation (CBS)\nparams <- MinDistParam()\nmdgr <- segment2(me, params)\n\n# 2. MAP Estimation to call trio states (e.g., 221 for de novo hemizygous deletion)\nmd_g <- MAP2(me, mdgr, params)\n```\n\n### 5. Filtering and Visualization\nFilter results based on posterior probability, number of markers, or specific trio states.\n\n```r\n# Filter for de novo hemizygous deletions\ndenovo_calls <- denovoHemizygous(md_g)\n\n# Custom filtering\nfilter_param <- FilterParamMD(state=c(\"221\", \"223\"), min.number.probes=10)\nfiltered_cnvs <- cnvFilter(md_g, filter_param)\n\n# Visualization\nvps <- pedigreeViewports()\np <- plotDenovo(me, filtered_cnvs)\npedigreeGrid(g=filtered_cnvs, vps=vps, figs=p)\n```\n\n## Key Trio States\nThe package uses a 3-digit code (Father-Mother-Offspring) to represent copy numbers:\n- `222`: Normal (Diploid in all)\n- `221`: *De novo* hemizygous deletion in offspring\n- `223`: *De novo* duplication in offspring\n- `220`: *De novo* homozygous deletion in offspring\n\n## Tips for Success\n- **Memory Management**: Use the `ArrayViews` approach for large cohorts to avoid RAM exhaustion.\n- **Parameter Tuning**: Adjust `nMAD(params)` to change the sensitivity of the segmentation. Smaller values increase the number of segments called.\n- **Breakpoint Editing**: `segment2` automatically edits minimum distance breakpoints if they conflict with offspring-specific segmentation boundaries, providing more precise coordinates.\n\n## Reference documentation\n- [MinimumDistance](./references/MinimumDistance.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-minimumdistance",
+    "description": "This tool detects de novo copy number alterations in case-parent trios using genotyping array data. Use when user asks to identify offspring-specific mutations, calculate the minimum distance statistic, perform circular binary segmentation, or infer trio copy number states via Maximum A Posteriori estimation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MinimumDistance.html"
+  }
+}

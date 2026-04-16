@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-buscorrect",
+  "category": "bioconductor",
+  "name": "bioconductor-buscorrect",
+  "description": "This tool performs batch effect correction and identifies biological subtypes in high-throughput genomic data using Bayesian hierarchical models. Use when user asks to correct batch effects with unknown subtypes, cluster samples into biological groups, identify intrinsic genes, or obtain adjusted expression values for downstream analysis.",
+  "overview": "The `BUScorrect` package implements the Batch-effects-correction-with-Unknown-Subtypes (BUS) model. Unlike standard correction methods that require predefined groups (e.g., \"case\" vs \"control\"), BUS is designed for discovery phases where subtype information is unknown. It performs four tasks simultaneously:\n1. Corrects batch effects (location and scale).\n2. Clusters samples into biological subtypes.\n3. Identifies \"intrinsic genes\" that differentiate these subtypes.\n4. Provides adjusted expressio",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BUScorrect.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-buscorrect/overview",
+  "github": "N/A",
+  "conda_downloads": "33.0K",
+  "conda_downloads_num": 33000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BUScorrect"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BUScorrect.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-buscorrect/overview",
+    "github": "N/A",
+    "conda_downloads": "33.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-buscorrect\n\nname: bioconductor-buscorrect\ndescription: Batch effects correction with unknown subtypes using the BUScorrect R package. Use this skill to fit Bayesian hierarchical models that simultaneously correct technical artifacts (batch effects) and identify biological heterogeneity (subtypes) in high-throughput genomic data.\n\n## Overview\n\nThe `BUScorrect` package implements the Batch-effects-correction-with-Unknown-Subtypes (BUS) model. Unlike standard correction methods that require predefined groups (e.g., \"case\" vs \"control\"), BUS is designed for discovery phases where subtype information is unknown. It performs four tasks simultaneously:\n1. Corrects batch effects (location and scale).\n2. Clusters samples into biological subtypes.\n3. Identifies \"intrinsic genes\" that differentiate these subtypes.\n4. Provides adjusted expression values for downstream analysis.\n\n## Data Preparation\n\nThe package accepts two primary input formats:\n\n### 1. R List Format\nA list where each element is a matrix (genes in rows, samples in columns) representing a specific batch.\n```r\n# Example: 3 batches\nData <- list(batch1_matrix, batch2_matrix, batch3_matrix)\n```\n\n### 2. SummarizedExperiment Format\nA single object where `assays(Data)$GE_matr` contains the expression matrix and `colData(Data)$Batch` contains the batch indicators.\n```r\nlibrary(SummarizedExperiment)\n# GE_matr: rows=genes, cols=samples\n# Batch: vector indicating batch ID for each sample\nBUSdata_SumExp <- SummarizedExperiment(assays=list(GE_matr=GE_matr), colData=DataFrame(Batch=Batch))\n```\n\n## Core Workflow\n\n### 1. Model Fitting\nUse `BUSgibbs` to run the Gibbs sampler. You must specify the number of subtypes (`n.subtypes`).\n```r\nlibrary(BUScorrect)\nset.seed(123) # Highly recommended for reproducibility\nBUSfits <- BUSgibbs(Data = Data, \n                    n.subtypes = 3, \n                    n.iterations = 300, \n                    showIteration = FALSE)\nsummary(BUSfits)\n```\n\n### 2. Extracting Results\nExtract estimated parameters using dedicated accessor functions:\n* **Subtypes**: `Subtypes(BUSfits)` returns a list of subtype assignments per batch.\n* **Batch Effects**: `location_batch_effects(BUSfits)` and `scale_batch_effects(BUSfits)`.\n* **Subtype Effects**: `subtype_effects(BUSfits)` (relative to the first subtype).\n\n### 3. Identifying Intrinsic Genes\nIdentify genes that drive the differences between subtypes by controlling the False Discovery Rate (FDR).\n```r\n# 1. Find posterior probability threshold for a specific FDR (e.g., 0.01)\nthr0 <- postprob_DE_thr_fun(BUSfits, fdr_threshold = 0.01)\n\n# 2. Estimate Intrinsic Gene (IG) indicators\nest_L <- estimate_IG_indicators(BUSfits, postprob_DE_threshold = thr0)\n\n# 3. Get indices of intrinsic genes\nintrinsic_gene_indices <- IG_index(est_L)\n```\n\n### 4. Data Adjustment and Visualization\nObtain the batch-corrected matrix and visualize the results.\n```r\n# Get adjusted values\nadjusted_data <- adjusted_values(BUSfits, Data)\n\n# Visualize original vs adjusted (e.g., first 100 genes)\nvisualize_data(Data, title_name = \"Original\", gene_ind_set = 1:100)\nvisualize_data(adjusted_data, title_name = \"Adjusted\", gene_ind_set = 1:100)\n```\n\n## Model Selection (Determining K)\n\nIf the number of subtypes is unknown, fit the model across a range of values and select the one with the minimum Bayesian Information Criterion (BIC).\n\n```r\nBIC_values <- sapply(2:5, function(k) {\n  fit <- BUSgibbs(Data = Data, n.subtypes = k, n.iterations = 300, showIteration = FALSE)\n  return(BIC_BUS(fit))\n})\n# The optimal K is which.min(BIC_values) + 1 (if starting at 2)\n```\n\n## Tips and Best Practices\n* **Reference Batch**: The first batch in your list (or the first level of your Batch factor) is treated as the reference batch (location effect = 0, scale effect = 1).\n* **Reference Subtype**: The first subtype is treated as the baseline for calculating subtype effects.\n* **Iterations**: For publication-quality results, increase `n.iterations` (e.g., 1000-2000). The first half is automatically discarded as burn-in.\n* **Scaling**: BUScorrect handles both location (mean) and scale (variance) batch effects.\n\n## Reference documentation\n- [BUScorrect User's Guide](./references/BUScorrect_user_guide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-buscorrect",
+    "description": "This tool performs batch effect correction and identifies biological subtypes in high-throughput genomic data using Bayesian hierarchical models. Use when user asks to correct batch effects with unknown subtypes, cluster samples into biological groups, identify intrinsic genes, or obtain adjusted expression values for downstream analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BUScorrect.html"
+  }
+}

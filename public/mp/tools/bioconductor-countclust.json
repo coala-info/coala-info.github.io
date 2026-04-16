@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-countclust",
+  "category": "bioconductor",
+  "name": "bioconductor-countclust",
+  "description": "This package applies Grade of Membership models to biological count data to estimate membership proportions across multiple clusters. Use when user asks to fit topic models to RNA-seq data, visualize sample compositions with structure plots, or identify top driving features for clusters.",
+  "overview": "The `CountClust` package applies Grade of Membership (GoM) models—also known as Latent Dirichlet Allocation (LDA) or admixture models—to biological count data, such as RNA-seq. Unlike traditional clustering where a sample belongs to one group, GoM allows each sample to have a membership proportion across multiple clusters. This is particularly useful for identifying cell types in single-cell data or tissue compositions in bulk RNA-seq.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CountClust.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kkdey/CountClust",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CountClust"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CountClust.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kkdey/CountClust",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-countclust\n\n## Overview\n\nThe `CountClust` package applies Grade of Membership (GoM) models—also known as Latent Dirichlet Allocation (LDA) or admixture models—to biological count data, such as RNA-seq. Unlike traditional clustering where a sample belongs to one group, GoM allows each sample to have a membership proportion across multiple clusters. This is particularly useful for identifying cell types in single-cell data or tissue compositions in bulk RNA-seq.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a counts matrix where rows are samples and columns are features (genes). Note that many `CountClust` functions require the transpose of standard Bioconductor `ExpressionSet` objects.\n\n```r\nlibrary(CountClust)\n# Assuming counts is a matrix with genes as rows and samples as columns\ndata_input <- t(counts) \n```\n\n### 2. Fitting the Model\nUse `FitGoM` to fit the topic model. You can provide a single value or a vector for `K` (number of clusters).\n\n```r\n# Fit for a specific K\nfit <- FitGoM(data_input, K = 4, tol = 1)\n\n# Fit for a range of K\nfit_range <- FitGoM(data_input, K = 2:7, tol = 0.1)\n```\n\n### 3. Visualization with Structure Plots\nThe `StructureGGplot` function creates a \"Structure plot\" where each bar represents a sample and colors represent cluster membership proportions.\n\n```r\n# Extract omega (membership proportions)\nomega <- fit$omega\n\n# Create annotation dataframe\nannot <- data.frame(\n  sample_id = rownames(omega),\n  tissue_label = factor(metadata$group)\n)\n\n# Generate plot\nStructureGGplot(omega = omega,\n                annotation = annot,\n                palette = RColorBrewer::brewer.pal(8, \"Accent\"),\n                yaxis_label = \"Group\",\n                order_sample = TRUE)\n```\n\n### 4. Dimensionality Reduction Overlay\nYou can visualize GoM memberships as pie charts on PCA or t-SNE coordinates using `StructurePie`.\n\n```r\nStructurePie(data_input, \n             input_type = \"apply_tsne\", \n             omega = omega, \n             use_voom = TRUE, \n             main = \"GoM K=4 on t-SNE\")\n```\n\n### 5. Identifying Cluster Features\nTo interpret what each cluster represents biologically, extract the top driving features (genes) using `ExtractTopFeatures`.\n\n```r\n# theta contains the probability of each gene belonging to a cluster\ntheta_mat <- fit$theta\n\ntop_features <- ExtractTopFeatures(theta_mat, \n                                   top_features = 100, \n                                   method = \"poisson\", \n                                   options = \"min\")\n\n# Get gene names for the top indices\ngene_list <- apply(top_features$indices, 1, function(x) rownames(counts)[x])\n```\n\n### 6. Batch Correction\nIf technical effects (like amplification batches) are driving the clustering, use `BatchCorrectedCounts` to remove these effects before re-fitting the model.\n\n```r\nbatch_corrected <- BatchCorrectedCounts(data_input, \n                                        batch_vector = metadata$batch, \n                                        use_parallel = FALSE)\n```\n\n## Tips and Best Practices\n- **Tolerance**: The `tol` parameter in `FitGoM` controls convergence. Use a higher tolerance (e.g., 1) for quick exploratory runs and a lower one (e.g., 0.1) for final results.\n- **Normalization**: `StructurePie` includes a `use_voom` argument; setting this to `TRUE` applies log-CPM transformation, which is generally recommended for PCA/t-SNE.\n- **Sample Ordering**: In `StructureGGplot`, `order_sample = TRUE` sorts samples within each group by their dominant cluster membership, making the plot much easier to read.\n\n## Reference documentation\n- [Visualizing the structure of RNA-seq expression data using Grade of Membership Models](./references/count-clust.Rmd)\n- [Visualizing the structure of RNA-seq expression data using Grade of Membership Models (Markdown)](./references/count-clust.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-countclust",
+    "description": "This package applies Grade of Membership models to biological count data to estimate membership proportions across multiple clusters. Use when user asks to fit topic models to RNA-seq data, visualize sample compositions with structure plots, or identify top driving features for clusters.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CountClust.html"
+  }
+}

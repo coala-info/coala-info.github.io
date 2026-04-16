@@ -1,0 +1,49 @@
+{
+  "id": "comparative-annotation-toolkit",
+  "category": "CLI",
+  "name": "comparative-annotation-toolkit",
+  "description": "The Comparative Annotation Toolkit produces high-quality gene annotations across multiple genomes using a reference annotation and a whole-genome alignment. Use when user asks to project annotations from a reference genome to target genomes, perform comparative gene prediction with Augustus, or generate a UCSC Assembly Hub for comparative genomics.",
+  "overview": "The Comparative Annotation Toolkit (CAT) is a specialized workflow engine designed for large-scale comparative genomics. It takes a multiple genome alignment (HAL format) and an existing annotation (GFF3) on a reference genome to produce consistent, high-quality annotations for all other genomes in the alignment. CAT is unique in its ability to combine \"transMap\" (projection via alignment) with ab initio gene prediction (Augustus) and RNA-seq evidence to resolve orthology and improve annotation ",
+  "homepage": "https://github.com/ComparativeGenomicsToolkit/Comparative-Annotation-Toolkit",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/comparative-annotation-toolkit/overview",
+  "github": "https://github.com/ComparativeGenomicsToolkit/Comparative-Annotation-Toolkit",
+  "conda_downloads": "6.1K",
+  "conda_downloads_num": 6100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "comparative-annotation-toolkit_faToTwoBit",
+      "comparative-annotation-toolkit_gff3ToGenePred",
+      "comparative-annotation-toolkit_pslMap"
+    ],
+    "description": "Convert DNA from fasta to 2bit format",
+    "docker_image": "quay.io/biocontainers/comparative-annotation-toolkit:0.1--pyh2407274_1",
+    "homepage": "https://github.com/ComparativeGenomicsToolkit/Comparative-Annotation-Toolkit",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/comparative-annotation-toolkit/overview",
+    "github": "https://github.com/ComparativeGenomicsToolkit/Comparative-Annotation-Toolkit",
+    "conda_downloads": "6.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "comparative-annotation-toolkit_faToTwoBit.cwl",
+    "comparative-annotation-toolkit_gff3ToGenePred.cwl",
+    "comparative-annotation-toolkit_pslMap.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# comparative-annotation-toolkit\n\n## Overview\n\nThe Comparative Annotation Toolkit (CAT) is a specialized workflow engine designed for large-scale comparative genomics. It takes a multiple genome alignment (HAL format) and an existing annotation (GFF3) on a reference genome to produce consistent, high-quality annotations for all other genomes in the alignment. CAT is unique in its ability to combine \"transMap\" (projection via alignment) with ab initio gene prediction (Augustus) and RNA-seq evidence to resolve orthology and improve annotation accuracy in divergent regions.\n\n## Core CLI Usage\n\nCAT is executed as a `luigi` task. The primary module is `cat.RunCat`.\n\n### Basic Command Structure\n\n```bash\nluigi --module cat RunCat \\\n    --hal=/path/to/alignment.hal \\\n    --ref-genome=ReferenceName \\\n    --target-genomes='(\"Target1\", \"Target2\")' \\\n    --out-dir=./output \\\n    --work-dir=./temp \\\n    --local-scheduler\n```\n\n### Common Parameters\n\n- `--hal`: Path to the HAL alignment file containing all genomes.\n- `--ref-genome`: The name of the genome in the HAL file that has the source annotations.\n- `--target-genomes`: A Python-style tuple string listing the genomes to be annotated.\n- `--annotation-gff3`: Path to the source GFF3 file on the reference genome.\n- `--augustus`: Enables the standard Augustus species-specific gene prediction.\n- `--augustus-cgp`: Enables Augustus Comparative Gene Prediction (CGP) for simultaneous prediction across all genomes.\n- `--augustus-pb`: Enables Augustus Protein-Coding (PB) mode using RNA-seq/protein hints.\n- `--assembly-hub`: Automatically generates a UCSC Assembly Hub for visualizing results.\n- `--workers`: Number of parallel luigi workers (tasks) to run.\n\n## Expert Tips and Best Practices\n\n### Environment and Dependencies\nCAT has a complex dependency tree including the Kent toolset, HAL tools, and Augustus. \n- **Path Management**: Ensure `hal2fasta`, `halLiftover`, `wigToBigWig`, and `augustus` are in your `$PATH`.\n- **Docker/Singularity**: Due to the heavy dependency load, running CAT via the official Docker image (`quay.io/ucsc_cgl/cat`) is highly recommended for stability.\n\n### Resource Management\n- **Work Directory**: CAT generates many intermediate files. Ensure `--work-dir` is on a filesystem with high IOPS and significant free space.\n- **Toil Integration**: For large-scale runs (e.g., 50+ genomes), CAT can use the Toil engine to distribute jobs across a cluster. This requires configuring a `toil` leader node.\n\n### Input Validation\n- **GFF3 Format**: CAT is strict about GFF3 formatting. Ensure your reference GFF3 is validated (e.g., using `gff3ToGenePred`) before starting the pipeline.\n- **HAL Names**: The names provided in `--ref-genome` and `--target-genomes` must exactly match the sequence names inside the HAL alignment. Use `halStats --tree <file.hal>` to verify names.\n\n### Troubleshooting\n- **Luigi Scheduler**: If running on a single machine, always include `--local-scheduler`. If the pipeline crashes, you can resume by pointing to the same `--work-dir`; CAT will skip successfully completed tasks.\n- **Logging**: Use `--log-level DEBUG` to diagnose failures in specific sub-tools like `transMap` or `Augustus`.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| faToTwoBit | Convert DNA from fasta to 2bit format |\n| gff3ToGenePred | convert a GFF3 file to a genePred file |\n| pslMap | map PSLs alignments to new targets using alignments of the old target to the new target. Given inPsl and mapPsl, where the target of inPsl is the query of mapPsl, create a new PSL with the query of inPsl aligned to all the targets of mapPsl. If inPsl is a protein to nucleotide alignment and mapPsl is a nucleotide to nucleotide alignment, the resulting alignment is nucleotide to nucleotide alignment of a hypothetical mRNA that would code for the protein. This is useful as it gives base alignments of spliced codons. A chain file may be used instead mapPsl. |\n\n## Reference documentation\n- [Comparative-Annotation-Toolkit README](./references/github_com_ComparativeGenomicsToolkit_Comparative-Annotation-Toolkit_blob_master_README.md)\n- [CAT Complete Dockerfile (Dependency List)](./references/github_com_ComparativeGenomicsToolkit_Comparative-Annotation-Toolkit_blob_master_Dockerfile.complete.md)\n- [Travis CI Test Patterns](./references/github_com_ComparativeGenomicsToolkit_Comparative-Annotation-Toolkit_blob_master_.travis.yml.md)",
+  "skill_front_matter": {
+    "name": "comparative-annotation-toolkit",
+    "description": "The Comparative Annotation Toolkit produces high-quality gene annotations across multiple genomes using a reference annotation and a whole-genome alignment. Use when user asks to project annotations from a reference genome to target genomes, perform comparative gene prediction with Augustus, or generate a UCSC Assembly Hub for comparative genomics.",
+    "homepage": "https://github.com/ComparativeGenomicsToolkit/Comparative-Annotation-Toolkit"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "mtglink",
+  "category": "CLI",
+  "name": "mtglink",
+  "description": "MTG-Link is a local assembly tool that uses barcode information from linked-read sequencing data to reconstruct sequences at specific genomic loci. Use when user asks to perform local assembly of gaps, reconstruct target sequences using linked-reads, or subsample reads based on barcode sharing for specific genomic regions.",
+  "overview": "MTG-Link is a local assembly tool specifically engineered for linked-read sequencing data. It utilizes the barcode information inherent in linked-reads to subsample relevant sequences for a specific locus, significantly reducing the computational complexity of the assembly. By focusing on reads that share barcodes with the flanking regions of a target \"gap\" or \"target sequence,\" it can reconstruct unknown sequences even in related species or complex genomic regions.",
+  "homepage": "https://github.com/anne-gcd/MTG-Link",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/mtglink/overview",
+  "github": "https://github.com/anne-gcd/MTG-Link",
+  "conda_downloads": "36.3K",
+  "conda_downloads_num": 36300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mtglink_bed2gfa.py",
+      "mtglink_LRez",
+      "mtglink_mtglink.py"
+    ],
+    "description": "Convert a BED file containing the 'N's coordinates for each scaffold (or locus coordinates) to a GFA file (GFA 2.0) ('N's regions are treated as gaps). We can filter the 'N's regions by their size (e.g. gap lengths) and by the contigs' sizes on both sides (long enough for ex to get enough barcodes)",
+    "docker_image": "quay.io/biocontainers/mtglink:2.4.1--hdfd78af_0",
+    "homepage": "https://github.com/anne-gcd/MTG-Link",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/mtglink/overview",
+    "github": "https://github.com/anne-gcd/MTG-Link",
+    "conda_downloads": "36.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "mtglink_LRez.cwl",
+    "mtglink_bed2gfa.py.cwl",
+    "mtglink_mtglink.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# mtglink\n\n## Overview\n\nMTG-Link is a local assembly tool specifically engineered for linked-read sequencing data. It utilizes the barcode information inherent in linked-reads to subsample relevant sequences for a specific locus, significantly reducing the computational complexity of the assembly. By focusing on reads that share barcodes with the flanking regions of a target \"gap\" or \"target sequence,\" it can reconstruct unknown sequences even in related species or complex genomic regions.\n\n## Core Workflow\n\n### 1. Prepare the Input GFA\nMTG-Link requires a GFA file defining the target loci. If you only have coordinates in a BED file, use the provided utility script:\n\n```bash\npython3 ./utils/bed2gfa.py -bed targets.bed -fa reference.fasta -out targets.gfa\n```\n\n### 2. Build the Barcode Index\nBefore running the assembly, you must create an LRez barcode index for your gzipped FASTQ files. The barcodes must be present in the read headers (typically using the `BX:Z` tag).\n\n```bash\nLRez index fastq -f reads.fastq.gz -o barcodes.bci -g\n```\n\n### 3. Execute Local Assembly\nRun the main assembly pipeline using the De Bruijn Graph (DBG) approach. Ensure your BAM file is indexed (`.bai` file must exist).\n\n```bash\nmtglink.py DBG -gfa targets.gfa -bam mapped_reads.bam -fastq reads.fastq.gz -index barcodes.bci -out ./results\n```\n\n## Command Options and Best Practices\n\n### Resource Management\n- **Threads**: Use `-t` to specify threads for the read subsampling step (e.g., `-t 8`).\n- **Memory**: Local assembly is generally memory-efficient due to read subsampling, but ensure the environment has sufficient RAM for the `MindTheGap` component.\n\n### Assembly Tuning\n- **K-mer Sizes**: MTG-Link tests multiple k-mer values. The default is `51, 41, 31, 21`. You can override this with `-k`:\n  ```bash\n  mtglink.py DBG ... -k 61 51 41\n  ```\n- **Flanking Size**: The default flanking region used to identify relevant barcodes is 10,000 bp. Adjust with `-flank` if working with very short scaffolds or specific structural variants.\n- **Abundance Threshold**: Control the minimal abundance for solid k-mers using `-a` (default: `3, 2`).\n\n### Handling Large Targets\n- **Max Length**: If the gap or insertion is expected to be large, increase the `-l` parameter (default: 10,000 bp).\n- **Max Nodes**: For complex regions that create massive assembly graphs, use `-max-nodes` to prevent the search from running indefinitely.\n\n## Troubleshooting and Requirements\n- **Barcode Format**: The tool strictly expects barcodes in the `BX:Z` tag format within the BAM and FASTQ headers.\n- **GFA Format**: The input GFA must identify flanking sequences as \"segments\" (S lines) and targets as \"gaps\" (G lines).\n- **Dependencies**: Ensure `MindTheGap`, `LRez`, and `Mummer` are in your PATH.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| LRez | LRez allows to work with barcoded Linked-Reads, and offers various barcode management functionalities. |\n| bed2gfa.py | Convert a BED file containing the 'N's coordinates for each scaffold (or locus coordinates) to a GFA file (GFA 2.0) ('N's regions are treated as gaps). We can filter the 'N's regions by their size (e.g. gap lengths) and by the contigs' sizes on both sides (long enough for ex to get enough barcodes) |\n| mtglink_mtglink.py | Local assembly with linked read data, using either a De Bruijn Graph (DBG) algorithm or an Iterative Read Overlap (IRO) algorithm |\n\n## Reference documentation\n- [MTG-Link README](./references/github_com_anne-gcd_MTG-Link_blob_master_README.md)\n- [Utility Scripts Documentation](./references/github_com_anne-gcd_MTG-Link_tree_master_utils.md)",
+  "skill_front_matter": {
+    "name": "mtglink",
+    "description": "MTG-Link is a local assembly tool that uses barcode information from linked-read sequencing data to reconstruct sequences at specific genomic loci. Use when user asks to perform local assembly of gaps, reconstruct target sequences using linked-reads, or subsample reads based on barcode sharing for specific genomic regions.",
+    "homepage": "https://github.com/anne-gcd/MTG-Link"
+  }
+}

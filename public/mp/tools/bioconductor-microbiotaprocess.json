@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-microbiotaprocess",
+  "category": "bioconductor",
+  "name": "bioconductor-microbiotaprocess",
+  "description": "\"MicrobiotaProcess is a Bioconductor package for tidy microbiome data analysis, integration, and visualization. Use when user asks to import data from QIIME2 or DADA2, calculate alpha and beta diversity, perform taxonomic abundance analysis, or conduct biomarker discovery.\"",
+  "overview": "MicrobiotaProcess is a Bioconductor package designed for tidy microbiome data analysis. It introduces the `MPSE` (Microbiome Process SummarizedExperiment) class, which integrates abundance matrices, sample metadata, taxonomic hierarchies, and phylogenetic trees into a single object. The package bridges upstream bioinformatics tools with the `tidyverse` and `ggtree` ecosystem, providing a unified grammar for ecological analysis and high-quality visualization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MicrobiotaProcess.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/YuLab-SMU/MicrobiotaProcess",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MicrobiotaProcess"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MicrobiotaProcess.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/YuLab-SMU/MicrobiotaProcess",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-microbiotaprocess\n\n## Overview\n\nMicrobiotaProcess is a Bioconductor package designed for tidy microbiome data analysis. It introduces the `MPSE` (Microbiome Process SummarizedExperiment) class, which integrates abundance matrices, sample metadata, taxonomic hierarchies, and phylogenetic trees into a single object. The package bridges upstream bioinformatics tools with the `tidyverse` and `ggtree` ecosystem, providing a unified grammar for ecological analysis and high-quality visualization.\n\n## Core Workflow\n\n### 1. Data Import and Conversion\nMicrobiotaProcess can import results from major upstream pipelines or convert existing R objects.\n\n```r\nlibrary(MicrobiotaProcess)\n\n# Import from DADA2\nmpse <- mp_import_dada2(seqtab = seqtab, taxatab = taxa, sampleda = metadata)\n\n# Import from QIIME2\nmpse <- mp_import_qiime2(otuqza = \"table.qza\", taxaqza = \"taxa.qza\", mapfilename = \"metadata.txt\")\n\n# Import from MetaPhlAn\nmpse <- mp_import_metaphlan(profile = \"metaphlan_table.txt\", mapfilename = \"metadata.txt\")\n\n# Convert from phyloseq\nmpse <- as.MPSE(phyloseq_obj)\n```\n\n### 2. Alpha Diversity and Rarefaction\nCalculate richness and evenness indices and generate rarefaction curves.\n\n```r\n# Rarefaction and curve calculation\nmpse %<>% mp_rrarefy() %>%\n         mp_cal_rarecurve(.abundance = RareAbundance, chunks = 400)\n\n# Plot rarefaction\nmp_plot_rarecurve(mpse, .rare = RareAbundanceRarecurve, .alpha = Observe, .group = GroupVar)\n\n# Calculate alpha indices (Observe, Chao1, Shannon, etc.)\nmpse %<>% mp_cal_alpha(.abundance = RareAbundance)\n\n# Visualize alpha diversity\nmp_plot_alpha(mpse, .group = GroupVar, .alpha = c(Observe, Shannon))\n```\n\n### 3. Taxonomic Abundance Analysis\nCalculate and visualize community composition at different taxonomic levels.\n\n```r\n# Calculate abundance for samples and groups\nmpse %<>% mp_cal_abundance(.abundance = RareAbundance) %>%\n         mp_cal_abundance(.abundance = RareAbundance, .group = GroupVar)\n\n# Stacked bar plot\nmp_plot_abundance(mpse, .abundance = RareAbundance, .group = GroupVar, taxa.class = Phylum, topn = 10)\n\n# Heatmap visualization\nmp_plot_abundance(mpse, .abundance = RareAbundance, .group = GroupVar, taxa.class = Genus, geom = 'heatmap')\n```\n\n### 4. Beta Diversity and Ordination\nPerform distance-based analysis and statistical testing.\n\n```r\n# Normalization (e.g., Hellinger)\nmpse %<>% mp_decostand(.abundance = Abundance)\n\n# Calculate distance (Bray-Curtis, Unifrac, etc.)\nmpse %<>% mp_cal_dist(.abundance = hellinger, distmethod = \"bray\")\n\n# PCoA Ordination\nmpse %<>% mp_cal_pcoa(.abundance = hellinger, distmethod = \"bray\")\nmp_plot_ord(mpse, .ord = pcoa, .group = GroupVar, .color = GroupVar, ellipse = TRUE)\n\n# Statistical testing (Adonis/PERMANOVA)\nmpse %<>% mp_adonis(.abundance = hellinger, .formula = ~GroupVar, distmethod = \"bray\")\n```\n\n### 5. Biomarker Discovery (Differential Analysis)\nIdentify significant taxa using a multi-step approach (Kruskal-Wallis, Wilcoxon, and LDA/Random Forest).\n\n```r\n# Perform differential analysis\nmpse %<>% mp_diff_analysis(\n    .abundance = RelRareAbundanceBySample, \n    .group = GroupVar, \n    first.test.alpha = 0.05\n)\n\n# Visualize results: Cladogram\nmp_plot_diff_cladogram(mpse)\n\n# Visualize results: LDA Barplot/Boxplot\nmp_plot_diff_res(mpse)\nmp_plot_diff_boxplot(mpse, .group = GroupVar)\n```\n\n## Key Tips\n- **The %<>% Operator**: MicrobiotaProcess heavily uses the compound assignment pipe from `magrittr` to update the `MPSE` object in place.\n- **Extraction**: Use `mp_extract_sample()`, `mp_extract_abundance()`, or `mp_extract_tree()` to pull specific data frames or tree objects for custom `ggplot2` or `ggtree` plotting.\n- **Tidy Compatibility**: Most `mp_` functions return an object that behaves like a tibble, allowing the use of `dplyr` verbs like `filter`, `select`, and `mutate` directly on the `MPSE` object.\n\n## Reference documentation\n- [Introduction to MicrobiotaProcess](./references/MicrobiotaProcess.md)\n- [MicrobiotaProcess Vignette](./references/MicrobiotaProcess.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-microbiotaprocess",
+    "description": "MicrobiotaProcess is a Bioconductor package for tidy microbiome data analysis, integration, and visualization. Use when user asks to import data from QIIME2 or DADA2, calculate alpha and beta diversity, perform taxonomic abundance analysis, or conduct biomarker discovery.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MicrobiotaProcess.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genomicfiles",
+  "category": "bioconductor",
+  "name": "bioconductor-genomicfiles",
+  "description": "The GenomicFiles package provides a framework for parallel Map-Reduce operations and distributed computing across multiple genomic files and ranges. Use when user asks to perform parallel data extraction across BAM or BigWig files, compute pileups or coverage across large datasets, or stream data from files that exceed memory capacity.",
+  "overview": "The `GenomicFiles` package provides a framework for parallel \"Map-Reduce\" operations over genomic files. It allows you to distribute tasks across workers by either splitting the problem by **Range** (comparing the same genomic region across multiple files) or by **File** (processing multiple regions within a single file). It integrates with `BiocParallel` for backend management and `SummarizedExperiment` for structured data output.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicFiles.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genomicfiles/overview",
+  "github": "https://github.com/Bioconductor/GenomicFiles",
+  "conda_downloads": "41.4K",
+  "conda_downloads_num": 41400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GenomicFiles"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicFiles.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genomicfiles/overview",
+    "github": "https://github.com/Bioconductor/GenomicFiles",
+    "conda_downloads": "41.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genomicfiles\n\nname: bioconductor-genomicfiles\ndescription: Expert guidance for using the Bioconductor package GenomicFiles for distributed computing across genomic files. Use this skill when you need to perform parallel data extraction, manipulation, and reduction across multiple files (BAM, BigWig, etc.) or genomic ranges. It is ideal for tasks like computing pileups, coverage, or junction counts across large datasets where memory management and parallel processing are required.\n\n# bioconductor-genomicfiles\n\n## Overview\n\nThe `GenomicFiles` package provides a framework for parallel \"Map-Reduce\" operations over genomic files. It allows you to distribute tasks across workers by either splitting the problem by **Range** (comparing the same genomic region across multiple files) or by **File** (processing multiple regions within a single file). It integrates with `BiocParallel` for backend management and `SummarizedExperiment` for structured data output.\n\n## Core Workflows\n\n### 1. The GenomicFiles Class\nThe `GenomicFiles` object acts as a matrix where rows are `GRanges` and columns are files (e.g., `BamFile`, `BigWigFile`).\n\n```r\nlibrary(GenomicFiles)\ngf <- GenomicFiles(rowRanges = my_granges, files = my_files)\n# Subset like a matrix: gf[1:5, 1:2]\n```\n\n### 2. Queries Across Files (reduceByRange)\nUse this when you want to compare or combine data from the same range across multiple files.\n\n*   **MAP**: Function with arguments `range` and `file`.\n*   **REDUCE**: Function to combine results from different files for a single range.\n*   **Workflow**:\n    ```r\n    MAP <- function(range, file, ...) {\n        # Extract data (e.g., pileup or coverage)\n        Rsamtools::pileup(file, scanBamParam=ScanBamParam(which=range))\n    }\n    REDUCE <- function(mapped, ...) {\n        # Combine list of results from MAP\n        do.call(rbind, mapped)\n    }\n    results <- reduceByRange(gr, fls, MAP, REDUCE, iterate = FALSE)\n    ```\n\n### 3. Queries Within Files (reduceByFile)\nUse this when you want to process multiple ranges within a single file, often to keep memory usage low.\n\n*   **Workflow**:\n    ```r\n    # summarize=TRUE returns a RangedSummarizedExperiment\n    se <- reduceByFile(gf, MAP = my_map_fun, summarize = TRUE)\n    ```\n\n### 4. Streaming Large Files (reduceByYield)\nFor files too large to fit in memory, use `reduceByYield` to iterate through records in chunks.\n\n*   **YIELD**: Function that returns the next chunk of data (e.g., `readGAlignments`).\n*   **DONE**: Function that returns `TRUE` when the file is exhausted.\n    ```r\n    bf <- BamFile(file_path, yieldSize=100000)\n    res <- reduceByYield(bf, YIELD = readGAlignments, MAP = my_map, REDUCE = `+`, DONE = function(x) length(x) == 0)\n    ```\n\n## Key Functions\n\n| Function | Primary Split | Use Case |\n| :--- | :--- | :--- |\n| `reduceByRange` | By Range | Comparing specific loci across many samples. |\n| `reduceRanges` | By Range | Similar to `reduceByRange` but applies REDUCE to all MAP calls. |\n| `reduceByFile` | By File | Processing one sample at a time across many ranges. |\n| `reduceFiles` | By File | Treating ranges as a group for a single file operation. |\n| `reduceByYield` | By Record | Streaming through a single file in chunks. |\n\n## Best Practices\n\n*   **Namespace Safety**: Inside MAP functions, use `requireNamespace(\"pkg\")` or `pkg::function()` because the code runs on isolated workers.\n*   **Memory Management**: Use `iterate = TRUE` in `reduceByFile` to apply the REDUCE step after each MAP, preventing the accumulation of large intermediate objects on workers.\n*   **Chunking**: If you have thousands of small ranges, group them into a `GRangesList` before passing to `reduceByFile` or `reduceByRange` to reduce parallelization overhead.\n*   **Summarization**: Set `summarize = TRUE` in `reduceByFile` to automatically wrap results into a `SummarizedExperiment`, provided no REDUCE step collapses the dimensions.\n\n## Reference documentation\n\n- [Introduction to GenomicFiles](./references/GenomicFiles.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genomicfiles",
+    "description": "The GenomicFiles package provides a framework for parallel Map-Reduce operations and distributed computing across multiple genomic files and ranges. Use when user asks to perform parallel data extraction across BAM or BigWig files, compute pileups or coverage across large datasets, or stream data from files that exceed memory capacity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GenomicFiles.html"
+  }
+}

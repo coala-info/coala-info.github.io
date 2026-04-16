@@ -1,0 +1,51 @@
+{
+  "id": "kegalign-full",
+  "category": "CLI",
+  "name": "kegalign-full",
+  "description": "KegAlign is a GPU-accelerated genome alignment tool that identifies highly sensitive pairs to generate optimized LASTZ alignment commands. Use when user asks to perform high-performance sequence alignment, convert FASTA files to 2bit format, or parallelize genomic seed-and-extend processes using GPU hardware.",
+  "overview": "KegAlign is a high-performance genome alignment tool designed to accelerate the seed-and-extend alignment process by leveraging GPU hardware. It serves as a modern, optimized fork of SegAlign, specifically enhanced for better GPU utilization and integration into bioinformatics pipelines like Galaxy. The tool functions by identifying Highly Sensitive Pairs (HSPs) on the GPU and then generating commands for LASTZ to perform the final gapped alignment. Use this skill to navigate the multi-step proc",
+  "homepage": "https://github.com/galaxyproject/KegAlign",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/kegalign-full/overview",
+  "github": "https://github.com/galaxyproject/KegAlign",
+  "conda_downloads": "905",
+  "conda_downloads_num": 905,
+  "last_updated": "2025-10-06",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "kegalign-full_faToTwoBit",
+      "kegalign-full_runner.py",
+      "kegalign-full_kegalign",
+      "kegalign-full_diagonal_partition.py"
+    ],
+    "description": "Convert DNA from fasta to 2bit format",
+    "docker_image": "quay.io/biocontainers/kegalign-full:0.1.2.8--hdfd78af_0",
+    "homepage": "https://github.com/galaxyproject/KegAlign",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/kegalign-full/overview",
+    "github": "https://github.com/galaxyproject/KegAlign",
+    "conda_downloads": "905",
+    "last_updated": "2025-10-06",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "kegalign-full_diagonal_partition.py.cwl",
+    "kegalign-full_faToTwoBit.cwl",
+    "kegalign-full_kegalign.cwl",
+    "kegalign-full_runner.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# kegalign-full\n\n## Overview\nKegAlign is a high-performance genome alignment tool designed to accelerate the seed-and-extend alignment process by leveraging GPU hardware. It serves as a modern, optimized fork of SegAlign, specifically enhanced for better GPU utilization and integration into bioinformatics pipelines like Galaxy. The tool functions by identifying Highly Sensitive Pairs (HSPs) on the GPU and then generating commands for LASTZ to perform the final gapped alignment. Use this skill to navigate the multi-step process of sequence conversion, seed filtering, and parallelized alignment execution.\n\n## CLI Usage and Best Practices\n\n### 1. Sequence Preparation\nBefore alignment, input FASTA files must be converted to the `.2bit` format for random access.\n```bash\n# Convert target and query sequences\nfaToTwoBit reference.fasta ref.2bit\nfaToTwoBit query.fasta query.2bit\n```\n\n### 2. Generating Alignment Commands\nKegAlign does not produce the final alignment file directly; it generates a list of optimized `lastz` commands.\n```bash\n# Basic command generation\nkegalign reference.fasta query.fasta work_dir/ --num_gpu 1 --num_threads 16 > lastz-commands.txt\n```\n*   **Expert Tip**: Use `--segment_size` to limit the maximum number of HSPs per segment file. This helps balance the CPU load during the subsequent LASTZ phase.\n\n### 3. Diagonal Partitioning\nTo improve efficiency, apply diagonal partitioning to the generated commands. This prevents redundant computations in large genomic blocks.\n```bash\nxargs -d \"\\n\" -n 1 python ./scripts/diagonal_partition.py -1 < lastz-commands.txt > partitioned-commands.txt\n```\n\n### 4. Executing the Alignment\nRun the partitioned commands in parallel to maximize throughput.\n```bash\n# Using GNU Parallel for high-efficiency execution\nparallel --max-procs 16 < partitioned-commands.txt\n\n# Combine outputs into a single MAF file\n(echo \"##maf version=1\"; cat *.maf-) > final_alignment.maf\n```\n\n### 5. GPU Optimization (MIG/MPS)\nFor users with high-end NVIDIA GPUs (e.g., A100, H100), KegAlign supports Multi-Instance GPU (MIG) and Multi-Process Service (MPS).\n*   **Split Inputs**: Use `split_input.py` to break large genomes into chunks (e.g., 200Mbp for human genomes) to run multiple KegAlign instances on a single GPU.\n*   **Memory Management**: Each KegAlign instance typically requires 12-16 GiB of GPU memory. Ensure your MIG partition or MPS limit accounts for this.\n\n## Scoring and Customization\nKegAlign supports custom substitution matrices via the `--scoring` option, compatible with LASTZ scoring files.\n```bash\nkegalign ref.fasta query.fasta out/ --scoring=HOXD70.scoring\n```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| diagonal_partition.py | Partitions a large alignment file into smaller chunks based on diagonal blocks. |\n| faToTwoBit | Convert DNA from fasta to 2bit format |\n| run_kegalign | You must specify a target file and a query file |\n| runner.py | Runner script for kegalign-full |\n\n## Reference documentation\n- [KegAlign README](./references/github_com_galaxyproject_KegAlign_blob_main_README.md)\n- [KegAlign Overview](./references/anaconda_org_channels_bioconda_packages_kegalign-full_overview.md)",
+  "skill_front_matter": {
+    "name": "kegalign-full",
+    "description": "KegAlign is a GPU-accelerated genome alignment tool that identifies highly sensitive pairs to generate optimized LASTZ alignment commands. Use when user asks to perform high-performance sequence alignment, convert FASTA files to 2bit format, or parallelize genomic seed-and-extend processes using GPU hardware.",
+    "homepage": "https://github.com/galaxyproject/KegAlign"
+  }
+}

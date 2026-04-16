@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hicbricks",
+  "category": "bioconductor",
+  "name": "bioconductor-hicbricks",
+  "description": "HiCBricks provides an HDF5-based framework for the efficient storage, management, and analysis of large-scale Hi-C contact matrices. Use when user asks to initialize a BrickContainer, load Hi-C data from text or mcool files, retrieve sub-matrices by genomic coordinates, or call Topologically Associated Domains using the LSD algorithm.",
+  "overview": "HiCBricks is a Bioconductor package designed for efficient handling of large-scale Hi-C data. It uses an HDF5-based data structure called a **Brick** to store contact matrices, bin tables, and annotations. This allows for fast data access without loading entire matrices into memory. The primary interface is the **BrickContainer**, which manages multiple resolutions and chromosomes within a project.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCBricks.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hicbricks/overview",
+  "github": "N/A",
+  "conda_downloads": "24.3K",
+  "conda_downloads_num": 24300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HiCBricks"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCBricks.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hicbricks/overview",
+    "github": "N/A",
+    "conda_downloads": "24.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hicbricks\n\n## Overview\nHiCBricks is a Bioconductor package designed for efficient handling of large-scale Hi-C data. It uses an HDF5-based data structure called a **Brick** to store contact matrices, bin tables, and annotations. This allows for fast data access without loading entire matrices into memory. The primary interface is the **BrickContainer**, which manages multiple resolutions and chromosomes within a project.\n\n## Core Workflow\n\n### 1. Initializing a BrickContainer\nTo start a project, you must create a directory and initialize the Brick structure using a bin table (genomic intervals).\n\n```r\nlibrary(HiCBricks)\n\n# Define output directory and bin table path\nout_dir <- \"my_hic_project\"\nbintable_path <- \"path/to/bintable.txt\"\n\n# Create the project structure\nCreate_many_Bricks(\n    BinTable = bintable_path,\n    bin_delim = \" \",\n    output_directory = out_dir,\n    file_prefix = \"my_experiment\",\n    experiment_name = \"Hi-C Analysis\",\n    resolution = 100000,\n    remove_existing = TRUE\n)\n\n# Load the container for use\nMy_BrickContainer <- load_BrickContainer(project_dir = out_dir)\n```\n\n### 2. Loading Contact Data\nHiCBricks supports several input formats.\n\n**From 2D Text Matrices:**\n```r\nBrick_load_matrix(\n    Brick = My_BrickContainer,\n    chr1 = \"chr1\", chr2 = \"chr1\",\n    resolution = 100000,\n    matrix_file = \"matrix.txt.gz\",\n    delim = \" \",\n    remove_prior = TRUE\n)\n```\n\n**From .mcool Files:**\n```r\n# List available resolutions/normalizations\nBrick_list_mcool_resolutions(\"data.mcool\")\n\n# Create Bricks from mcool metadata\nCreate_many_Bricks_from_mcool(\n    output_directory = out_dir,\n    mcool = \"data.mcool\",\n    resolution = 10000\n)\n\n# Load the actual data\nBrick_load_data_from_mcool(\n    Brick = My_BrickContainer,\n    mcool = \"data.mcool\",\n    resolution = 10000,\n    norm_factor = \"Iterative-Correction\"\n)\n```\n\n### 3. Accessing Data\nData can be retrieved by genomic coordinates, distance from diagonal, or specific indices.\n\n```r\n# Get the bin table as GRanges\nbins <- Brick_get_bintable(My_BrickContainer, resolution = 100000)\n\n# Fetch a sub-matrix using human-readable coordinates\nsub_mat <- Brick_get_matrix_within_coords(\n    Brick = My_BrickContainer,\n    x_coords = \"chr1:1:5000000\",\n    y_coords = \"chr1:1:5000000\",\n    resolution = 100000\n)\n\n# Get values at a specific diagonal distance (in bins)\ndiag_vals <- Brick_get_values_by_distance(\n    Brick = My_BrickContainer,\n    chr = \"chr1\",\n    distance = 5,\n    resolution = 100000\n)\n```\n\n### 4. TAD Calling (LSD Algorithm)\nHiCBricks includes the Local Score Differentiator (LSD) for calling Topologically Associated Domains.\n\n```r\nTAD_ranges <- Brick_local_score_differentiator(\n    Brick = My_BrickContainer,\n    chrs = c(\"chr1\", \"chr2\"),\n    resolution = 100000,\n    di_window = 10,\n    lookup_window = 30,\n    fill_gaps = TRUE\n)\n\n# Save TADs back into the Brick for future use\nBrick_add_ranges(\n    Brick = My_BrickContainer,\n    ranges = TAD_ranges,\n    rangekey = \"LSD_TADs\",\n    resolution = 100000\n)\n```\n\n### 5. Visualization\nThe `Brick_vizart_plot_heatmap` function is highly flexible, supporting rotations and bipartite (two-sample) comparisons.\n\n```r\n# Custom log10 function for better contrast\nFailsafe_log10 <- function(x) {\n    x[is.na(x) | is.nan(x) | is.infinite(x)] <- 0\n    return(log10(x + 1))\n}\n\nBrick_vizart_plot_heatmap(\n    File = \"heatmap.pdf\",\n    Bricks = list(My_BrickContainer),\n    x_coords = \"chr1:1:10000000\",\n    y_coords = \"chr1:1:10000000\",\n    resolution = 100000,\n    FUN = Failsafe_log10,\n    palette = \"Reds\",\n    rotate = TRUE,\n    distance = 50 # Limit distance from diagonal\n)\n```\n\n## Tips and Best Practices\n- **Coordinate Format:** Always use the `chr:start:end` format with colons as delimiters for coordinate strings.\n- **Memory Management:** Use `Brick_get_values_by_distance` or `Brick_fetch_row_vector` to process large matrices in chunks rather than loading the full matrix.\n- **Overwriting:** Functions like `Create_many_Bricks` and `Brick_load_matrix` require `remove_existing = TRUE` or `remove_prior = TRUE` to overwrite existing HDF5 data.\n- **Metadata:** Use `Brick_get_matrix_mcols` to retrieve pre-computed statistics like row sums or bin coverage.\n\n## Reference documentation\n- [Introduction To HiCBricks](./references/IntroductionToHiCBricks.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hicbricks",
+    "description": "HiCBricks provides an HDF5-based framework for the efficient storage, management, and analysis of large-scale Hi-C contact matrices. Use when user asks to initialize a BrickContainer, load Hi-C data from text or mcool files, retrieve sub-matrices by genomic coordinates, or call Topologically Associated Domains using the LSD algorithm.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HiCBricks.html"
+  }
+}

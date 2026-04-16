@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fella",
+  "category": "bioconductor",
+  "name": "bioconductor-fella",
+  "description": "bioconductor-fella performs network-based enrichment analysis for metabolomics data by propagating signal through a hierarchical KEGG graph. Use when user asks to perform pathway enrichment, identify intermediate biological entities like enzymes or reactions, and visualize metabolite-pathway relationships as a sub-network.",
+  "overview": "FELLA is a Bioconductor package designed for the secondary analysis of metabolomics data. Unlike standard Over-Representation Analysis (ORA) which treats pathways as disjoint sets, FELLA uses a hierarchical network representation of the KEGG database. By applying diffusion algorithms or PageRank, it propagates \"flow\" from a list of input metabolites to identify the most relevant pathways and the intermediate reactions, enzymes, and modules that connect them.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/FELLA.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fella/overview",
+  "github": "N/A",
+  "conda_downloads": "25.9K",
+  "conda_downloads_num": 25900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "FELLA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/FELLA.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fella/overview",
+    "github": "N/A",
+    "conda_downloads": "25.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fella\n\nname: bioconductor-fella\ndescription: Network-based enrichment analysis for metabolomics data using the FELLA R package. Use this skill to perform pathway enrichment by propagating signal from a list of affected metabolites through a hierarchical KEGG graph (metabolites, reactions, enzymes, modules, and pathways). It is particularly useful for identifying intermediate biological entities (enzymes/reactions) that explain the connection between metabolites and pathways, and for visualizing these relationships as a sub-network.\n\n# bioconductor-fella\n\n## Overview\n\nFELLA is a Bioconductor package designed for the secondary analysis of metabolomics data. Unlike standard Over-Representation Analysis (ORA) which treats pathways as disjoint sets, FELLA uses a hierarchical network representation of the KEGG database. By applying diffusion algorithms or PageRank, it propagates \"flow\" from a list of input metabolites to identify the most relevant pathways and the intermediate reactions, enzymes, and modules that connect them.\n\n## Typical Workflow\n\n### 1. Database Building\nFELLA requires a local database built from a specific KEGG organism. This is a one-time setup per organism.\n\n```r\nlibrary(FELLA)\n# 1. Build the graph from KEGG (requires internet)\ngraph <- buildGraphFromKEGGREST(organism = \"hsa\")\n\n# 2. Build the data object (saves matrices for diffusion/pagerank)\nbuildDataFromGraph(\n  keggdata.graph = graph,\n  databaseDir = \"my_fella_db\",\n  internalDir = FALSE,\n  matrices = \"diffusion\",\n  normality = \"diffusion\"\n)\n\n# 3. Load the database\nfella.data <- loadKEGGdata(databaseDir = \"my_fella_db\", internalDir = FALSE)\n```\n\n### 2. Defining Input Metabolites\nInput should be a character vector of KEGG compound IDs.\n\n```r\n# Map compounds to the internal graph\ncompounds.input <- c(\"C00025\", \"C00043\", \"C00064\")\nanalysis.obj <- defineCompounds(compounds = compounds.input, data = fella.data)\n\n# Check for excluded compounds (those not in the graph)\ngetExcluded(analysis.obj)\n```\n\n### 3. Running Enrichment\nFELLA supports three main methods: `hypergeom`, `diffusion`, and `pagerank`. Diffusion is generally preferred for network-based insights.\n\n```r\n# Using the wrapper function for convenience\nanalysis.obj <- enrich(\n  compounds = compounds.input,\n  data = fella.data,\n  methods = \"diffusion\",\n  approx = \"normality\" # Fast z-score approximation\n)\n\n# Or calling specific methods\nanalysis.obj <- runDiffusion(analysis.obj, data = fella.data, approx = \"normality\")\n```\n\n### 4. Exporting and Visualizing Results\nResults can be exported as tables or visualized as a sub-network.\n\n```r\n# Generate a results table\nresults.tab <- generateResultsTable(\n  method = \"diffusion\",\n  nlimit = 100,\n  object = analysis.obj,\n  data = fella.data\n)\n\n# Plot the top-scoring sub-network\nplot(\n  analysis.obj,\n  method = \"diffusion\",\n  data = fella.data,\n  nlimit = 50\n)\n\n# Export as an igraph object for custom visualization\ng <- generateResultsGraph(\n  object = analysis.obj,\n  method = \"diffusion\",\n  nlimit = 50,\n  data = fella.data\n)\n```\n\n## Key Functions and Parameters\n\n- `buildGraphFromKEGGREST`: Downloads KEGG data. Use `filter.path` to exclude broad \"overview\" pathways (e.g., \"01100\").\n- `enrich`: A wrapper that combines `defineCompounds` and the `run...` methods.\n- `approx`: Determines the statistical significance calculation.\n    - `\"normality\"`: Fast, uses analytical z-scores.\n    - `\"simulation\"`: Slower, uses permutation testing (requires `niter`).\n    - `\"gamma\"` or `\"t\"`: Parametric alternatives to the normal distribution.\n- `generateEnzymesTable`: Specifically extracts enzymes from the results, including associated genes.\n\n## Tips for Success\n\n1. **ID Mapping**: Ensure metabolites are converted to KEGG IDs (e.g., \"C00001\") before starting.\n2. **Memory Management**: The diffusion matrices can be large (~1GB). If memory is limited, load only the necessary matrices using `loadMatrix` in `loadKEGGdata`.\n3. **Organism Codes**: Use standard KEGG 3-letter codes (e.g., \"hsa\" for human, \"mmu\" for mouse).\n4. **Connected Components**: When generating graphs, use `thresholdConnectedComponent` to filter out small, potentially noisy clusters in the visualization.\n\n## Reference documentation\n\n- [FELLA: an R package to enrich metabolomics data](./references/FELLA.md)\n- [A fatty liver study on Mus musculus](./references/musmusculus.md)\n- [An overview of FELLA: data enrichment for metabolomics summary data](./references/quickstart.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fella",
+    "description": "bioconductor-fella performs network-based enrichment analysis for metabolomics data by propagating signal through a hierarchical KEGG graph. Use when user asks to perform pathway enrichment, identify intermediate biological entities like enzymes or reactions, and visualize metabolite-pathway relationships as a sub-network.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/FELLA.html"
+  }
+}

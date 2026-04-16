@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hpip",
+  "category": "bioconductor",
+  "name": "bioconductor-hpip",
+  "description": "The HPiP package provides a pipeline for predicting host-pathogen protein-protein interactions by transforming amino acid sequences into numerical descriptors and applying ensemble machine learning. Use when user asks to extract sequence-based features, train interaction classifiers, predict novel host-pathogen protein pairs, or visualize predicted interaction networks.",
+  "overview": "The `HPiP` package provides a comprehensive pipeline for predicting interactions between host and pathogen proteins. It transforms amino acid sequences into numerical feature vectors using diverse descriptors and employs ensemble machine learning (via the `caret` package) to classify potential interactions. The workflow typically involves data preparation, feature extraction, feature selection, model training/prediction, and downstream network analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HPiP.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/mrbakhsh/HPiP",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HPiP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HPiP.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/mrbakhsh/HPiP",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hpip\n\n## Overview\nThe `HPiP` package provides a comprehensive pipeline for predicting interactions between host and pathogen proteins. It transforms amino acid sequences into numerical feature vectors using diverse descriptors and employs ensemble machine learning (via the `caret` package) to classify potential interactions. The workflow typically involves data preparation, feature extraction, feature selection, model training/prediction, and downstream network analysis.\n\n## Core Workflow\n\n### 1. Data Preparation\nConstruct positive and negative interaction sets for training.\n\n```r\nlibrary(HPiP)\nlibrary(dplyr)\n\n# Get positive PPIs from BioGRID (requires access key)\n# TP <- get_positivePPI(organism.taxID = 2697049, access.key = 'XXXX')\n\n# Generate negative PPIs via negative sampling\n# prot1: pathogen proteins, prot2: host proteins, TPset: known positive pairs\n# TN <- get_negativePPI(prot1, prot2, TPset)\n\n# Load example gold standard (1000 pairs)\ndata(Gold_ReferenceSet)\n```\n\n### 2. Sequence Retrieval and Feature Extraction\nRetrieve FASTA sequences and convert them into numerical descriptors.\n\n```r\n# Retrieve FASTA from UniProt\nids <- unique(Gold_ReferenceSet$Pathogen_Protein)\nfasta_list <- getFASTA(ids)\nfasta_df <- data.frame(UniprotID = names(fasta_list), sequence = as.character(unlist(fasta_list)))\n\n# Calculate Descriptors (Examples)\naac <- calculateAAC(fasta_df)      # Amino Acid Composition (20D)\ndc  <- calculateDC(fasta_df)       # Dipeptide Composition (400D)\nctdc <- calculateCTDC(fasta_df)    # CTD - Composition (21D)\nksaap <- calculateKSAAP(fasta_df)  # k-Spaced Amino Acid Pairs (400D)\n```\n\n### 3. Combining and Processing Features\nMerge host and pathogen features into a single interaction vector.\n\n```r\n# Combine viral and host features (x1_viral and x1_host are matrices of descriptors)\nx <- getHPI(x1_viral, x1_host, type = \"combine\")\n\n# Feature Selection (Correlation-based and Recursive Feature Elimination)\n# xx is a dataframe with 'class' label and features\nx_FS <- FSmethod(xx, type = \"both\", cor.cutoff = 0.8, resampling.method = \"cv\", iter = 5)\n\n# Visualize feature importance\nvar_imp(x_FS$rf.result$rfProfile)\n```\n\n### 4. Prediction with Ensemble Learning\nTrain multiple classifiers and aggregate results.\n\n```r\n# Predict using ensemble of SVM, GLM, and Random Forest\nppi_results <- pred_ensembel(ind_data, gd_labels,\n                             classifier = c(\"svmRadial\", \"glm\", \"ranger\"),\n                             resampling.method = \"cv\", ncross = 5)\n\n# Filter high-confidence interactions\npredictions <- ppi_results$predicted_interactions %>% filter(ensemble >= 0.7)\n```\n\n### 5. Network Visualization and Analysis\nVisualize the predicted interactome and perform functional enrichment.\n\n```r\n# Plot interaction network for a specific protein\nplotPPI(predictions, edge.name = \"ensemble\", node.color = \"red\")\n\n# Frequency of interactors (degree distribution)\nFreqInteractors(predictions)\n\n# GO Enrichment of host partners\n# enrich_res <- enrichfindP(predictions, org = \"hsapiens\")\n\n# Community detection (Complex prediction)\nclusters <- run_clustering(predictions, method = \"FC\") # Fast-greedy\n```\n\n## Key Functions Summary\n- `get_positivePPI` / `get_negativePPI`: Build training sets.\n- `calculate[Descriptor]`: Functions like `calculateAAC`, `calculateDC`, `calculateCTriad`, `calculateCTDC/T/D`.\n- `getHPI`: Merges host and pathogen feature vectors.\n- `FSmethod`: Hybrid filter-wrapper feature selection.\n- `pred_ensembel`: Main prediction engine using ensemble averaging.\n- `run_clustering`: Detects protein complexes/modules in the predicted network.\n\n## Reference documentation\n- [Introduction to HPiP](./references/HPiP_tutorial.md)\n- [HPiP RMarkdown Source](./references/HPiP_tutorial.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-hpip",
+    "description": "The HPiP package provides a pipeline for predicting host-pathogen protein-protein interactions by transforming amino acid sequences into numerical descriptors and applying ensemble machine learning. Use when user asks to extract sequence-based features, train interaction classifiers, predict novel host-pathogen protein pairs, or visualize predicted interaction networks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HPiP.html"
+  }
+}

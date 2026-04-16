@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ippd",
+  "category": "bioconductor",
+  "name": "bioconductor-ippd",
+  "description": "This tool extracts isotopic patterns from raw protein mass spectrometry data by decomposing complex spectra into monoisotopic peaks. Use when user asks to extract isotopic patterns, estimate peak shape parameters, perform peak deconvolution, or process LC-MS runs to identify monoisotopic peaks.",
+  "overview": "The `IPPD` package automates the extraction of isotopic patterns from raw protein mass spectrometry data. It decomposes complex spectra—including overlapping patterns and multiple charge states—into a list of monoisotopic peaks. The package uses a template-based approach where basis functions (averagine model) are fitted to the data using non-negative least squares (L2) or least absolute deviation (L1) fitting.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/IPPD.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ippd/overview",
+  "github": "N/A",
+  "conda_downloads": "28.6K",
+  "conda_downloads_num": 28600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IPPD"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/IPPD.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ippd/overview",
+    "github": "N/A",
+    "conda_downloads": "28.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ippd\n\n## Overview\n\nThe `IPPD` package automates the extraction of isotopic patterns from raw protein mass spectrometry data. It decomposes complex spectra—including overlapping patterns and multiple charge states—into a list of monoisotopic peaks. The package uses a template-based approach where basis functions (averagine model) are fitted to the data using non-negative least squares (L2) or least absolute deviation (L1) fitting.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad mass spectrometry data consisting of m/z channels and intensities.\n\n```r\nlibrary(IPPD)\ndata(myo500)\nx <- myo500[,\"mz\"]\ny <- myo500[,\"intensities\"]\n```\n\n### 2. Peak Shape Parameter Estimation\nBefore deconvolution, estimate the peak shape parameters (width $\\sigma$, skewness $\\alpha$, and shift $\\mu$) as a function of m/z.\n\n*   **Gaussian Model:** Best for symmetric peaks.\n*   **EMG (Exponentially Modified Gaussian) Model:** Best for peaks with right-side tails.\n\n```r\n# Fit EMG model parameters as a linear function of m/z\nfitEMG <- fitModelParameters(mz = x, intensities = y, \n                             model = \"EMG\", \n                             fitting = \"model\",\n                             formula.alpha = formula(~mz),\n                             formula.sigma = formula(~mz),\n                             formula.mu = formula(~1),\n                             control = list(window = 6, threshold = 200))\n\n# Visualize the fit\nvisualize(fitEMG, type = \"peak\")\nvisualize(fitEMG, type = \"model\", modelfit = TRUE, parameters = c(\"sigma\", \"alpha\"))\n```\n\n### 3. Peak Deconvolution (Template Fitting)\nUse `getPeaklist` to perform the actual deconvolution. This function identifies template locations and estimates their abundances.\n\n```r\n# Generate peak list using the fitted EMG model\nEMGlist <- getPeaklist(mz = x, intensities = y, \n                       model = \"EMG\",\n                       model.parameters = fitEMG,\n                       loss = \"L2\", \n                       control.basis = list(charges = c(1, 2)),\n                       control.postprocessing = list(ppm = 200))\n\n# Apply signal-to-noise thresholding\nfinal_peaks <- threshold(EMGlist, threshold = 3, refit = TRUE)\nshow(final_peaks)\n```\n\n### 4. Visualization of Results\nInspect specific m/z regions to validate the deconvolution, especially in cases of overlapping peaks.\n\n```r\nvisualize(EMGlist, x, y, lower = 963, upper = 973,\n          fit = FALSE, \n          fittedfunction = TRUE, \n          localnoise = TRUE,\n          cutoff.functions = 3)\n```\n\n## Processing LC-MS Runs\n\nFor Liquid Chromatography-Mass Spectrometry (LC-MS) data, `IPPD` provides a sweep-line algorithm to aggregate peaks across multiple retention time scans.\n\n```r\n# Read mzXML data\ndata_lcms <- read.mzXML(\"path/to/file.mzXML\")\n\n# Analyze the full run\nresult_lcms <- analyzeLCMS(data_lcms,\n                           arglist.getPeaklist = list(control.basis = list(charges = c(1,2,3))),\n                           arglist.threshold = list(threshold = 10),\n                           arglist.sweepline = list(minboxlength = 20))\n\n# Access aggregated peak boxes\nboxes <- result_lcms$boxes\n```\n\n## Key Parameters and Tips\n\n*   **Loss Function:** Use `loss = \"L2\"` for standard least squares. Use `loss = \"L1\"` (Least Absolute Deviation) if the data contains many outliers or significant model misfit, as it is more robust.\n*   **Local Noise Level (LNL):** Templates are only placed where intensities exceed the LNL by a `factor.place` (default is often 2-4).\n*   **Postprocessing:** The `ppm` parameter in `control.postprocessing` is critical for merging \"split peaks\" where multiple templates might fit a single broad peak.\n*   **Averagine Model:** The package automatically calculates relative isotope abundances based on the averagine model; ensure your m/z range is appropriate for protein/peptide data.\n\n## Reference documentation\n\n- [IPPD](./references/IPPD.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ippd",
+    "description": "This tool extracts isotopic patterns from raw protein mass spectrometry data by decomposing complex spectra into monoisotopic peaks. Use when user asks to extract isotopic patterns, estimate peak shape parameters, perform peak deconvolution, or process LC-MS runs to identify monoisotopic peaks.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/IPPD.html"
+  }
+}

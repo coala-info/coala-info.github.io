@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnvgsa",
+  "category": "bioconductor",
+  "name": "bioconductor-cnvgsa",
+  "description": "This package performs gene-set enrichment analysis for rare copy number variants using a logistic regression approach with global burden correction. Use when user asks to test for enrichment of rare CNVs in specific gene-sets, perform burden analysis with covariate adjustment, or identify novel CNV signals by filtering known risk loci.",
+  "overview": "The `cnvGSA` package is designed for testing the enrichment of rare CNVs (typically <1% frequency) within specific gene-sets. Unlike \"competitive\" tests (like Fisher's Exact Test or GSEA), `cnvGSA` uses a \"self-contained\" logistic regression approach. It treats subjects as sampling units and implements critical global burden correction. This ensures that results are not driven by a few subjects with very large or numerous CNVs, which is common in disorders like autism or schizophrenia.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cnvGSA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cnvGSA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cnvGSA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnvgsa\n\n## Overview\n\nThe `cnvGSA` package is designed for testing the enrichment of rare CNVs (typically <1% frequency) within specific gene-sets. Unlike \"competitive\" tests (like Fisher's Exact Test or GSEA), `cnvGSA` uses a \"self-contained\" logistic regression approach. It treats subjects as sampling units and implements critical global burden correction. This ensures that results are not driven by a few subjects with very large or numerous CNVs, which is common in disorders like autism or schizophrenia.\n\n## Core Workflow\n\n### 1. Data Preparation and Import\n\nThe package uses a central `CnvGSAInput` object. While you can build slots manually, the `cnvGSAIn()` function is the standard way to load data via a configuration file.\n\n```r\nlibrary(cnvGSA)\n\n# Initialize input object\ncnvGSA.in <- CnvGSAInput()\n\n# Load data using a config file (tab-delimited text file defining paths)\n# See references/cnvGSAUsersGuide.md for config file structure\ncnvGSA.in <- cnvGSAIn(\"path/to/configFile.txt\", cnvGSA.in)\n```\n\n**Required Input Components:**\n*   **CNV Data:** SID, Chr, BP1, BP2, TYPE, and geneID (delimited string of genes overlapped).\n*   **Phenotype/Covariate Data:** SID, Condition (1 for case, 0 for control), and covariates (e.g., Sex, Batch).\n*   **Gene Sets:** A list of gene-sets (usually loaded from an `.RData` file or GMT).\n*   **Known Loci/Genes:** (Optional) Used to filter out subjects with CNVs in well-known disease regions to find \"novel\" signals.\n\n### 2. Statistical Analysis\n\nThe primary function is `cnvGSAlogRegTest`. It fits two models:\n*   **Model A:** Covariates + Global Burden (e.g., total CNV length or total genes overlapped).\n*   **Model B:** Model A + Number of genes in the specific gene-set overlapped by CNVs.\n\nThe models are compared using a deviance chi-square test.\n\n```r\ncnvGSA.out <- CnvGSAOutput()\ncnvGSA.out <- cnvGSAlogRegTest(cnvGSA.in, cnvGSA.out)\n```\n\n**Key Parameters (defined in config or params.ls):**\n*   `corrections`: Methods for global burden (e.g., `uni_gc` for universe gene count, `tot_l` for total length, `cnvn_ml` for count/mean length).\n*   `Kl`: Set to \"ALL\", \"YES\", or \"NO\" to include/exclude subjects with CNVs in known risk loci.\n*   `cnvType`: Filter analysis to specific types (e.g., \"1\" for losses, \"3\" for gains).\n\n### 3. Reviewing Results\n\nResults are stored in the `res.ls` slot of the output object.\n\n```r\n# Access the results data frame\nresults_df <- res.ls(cnvGSA.out)[[1]]\n\n# Key columns:\n# GsID: Gene set ID\n# Coeff_U: Regression coefficient (log odds) with universe correction\n# Pvalue_U_dev: Deviance p-value with universe correction\n# FDR_BH_U: Benjamini-Hochberg adjusted p-value\n```\n\nTo see exactly which CNVs and genes contributed to a specific gene-set's signal:\n```r\n# Generate detailed tables\ncnvGSA.out <- cnvGSAgsTables(cnvGSA.in, cnvGSA.out)\ngs_tables <- gsTables.ls(cnvGSA.out)\n# View table for the first gene set\nhead(gs_tables[[1]])\n```\n\n### 4. Visualization and Export\n\nThe package provides built-in plotting and export for Cytoscape's Enrichment Map.\n\n```r\n# Create significance and support plots\nf.makeViz(cnvGSA.in, cnvGSA.out)\n\n# Export files for Cytoscape Enrichment Map\nf.enrFiles(cnvGSA.in, cnvGSA.out)\n```\n\n## Best Practices\n\n*   **Rare Variants Only:** Ensure input data is filtered for rare CNVs (<1% frequency). Burden tests are inappropriate for common variants.\n*   **Global Burden:** Always use at least one correction model (e.g., `uni_gc`). Uncorrected results in CNV studies are often confounded by global genomic instability.\n*   **Gene ID Consistency:** Ensure the `geneID` column in your CNV file uses the same system (e.g., Entrez IDs) as your Gene Set file.\n*   **Parallelization:** On Windows, if `cnvGSAlogRegTest` fails, set `parallel` to \"NO\" in the parameters, as R parallelization can be unstable on that OS.\n\n## Reference documentation\n\n- [cnvGSA Package Introduction](./references/cnvGSA-vignette.md)\n- [cnvGSA: Gene-Set Analysis of (Rare) Copy Number Variants](./references/cnvGSAUsersGuide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnvgsa",
+    "description": "This package performs gene-set enrichment analysis for rare copy number variants using a logistic regression approach with global burden correction. Use when user asks to test for enrichment of rare CNVs in specific gene-sets, perform burden analysis with covariate adjustment, or identify novel CNV signals by filtering known risk loci.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cnvGSA.html"
+  }
+}

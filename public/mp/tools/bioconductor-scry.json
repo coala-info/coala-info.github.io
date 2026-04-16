@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scry",
+  "category": "bioconductor",
+  "name": "bioconductor-scry",
+  "description": "The scry package provides methods for feature selection and dimension reduction of single-cell RNA-seq data using multinomial and Poisson null models. Use when user asks to rank genes by biological variation using deviance, perform dimension reduction with GLM-PCA, or compute null residuals for large-scale count data analysis.",
+  "overview": "The `scry` package provides methods for single-cell RNA-seq analysis based on multinomial and Poisson null models. It is particularly effective for UMI counts where traditional log-normalization can introduce artifacts. The core workflow involves:\n1. **Feature Selection**: Using binomial deviance to rank genes by biological variation.\n2. **Dimension Reduction**: Using GLM-PCA (Generalized Linear Model Principal Component Analysis) or PCA on null residuals (deviance or Pearson) to visualize and c",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scry.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kstreet13/scry",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scry"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scry.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kstreet13/scry",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scry\n\n## Overview\n\nThe `scry` package provides methods for single-cell RNA-seq analysis based on multinomial and Poisson null models. It is particularly effective for UMI counts where traditional log-normalization can introduce artifacts. The core workflow involves:\n1. **Feature Selection**: Using binomial deviance to rank genes by biological variation.\n2. **Dimension Reduction**: Using GLM-PCA (Generalized Linear Model Principal Component Analysis) or PCA on null residuals (deviance or Pearson) to visualize and cluster cells.\n\n## Core Functions and Workflows\n\n### Feature Selection with Deviance\nInstead of using highly variable genes (HVGs) based on mean-variance relationships, `scry` uses deviance to identify genes that deviate from a constant expression null model.\n\n```r\nlibrary(scry)\nlibrary(SingleCellExperiment)\n\n# Apply to a SingleCellExperiment object\n# assay=\"counts\" is the default; sorted=TRUE ranks genes by deviance\nsce <- devianceFeatureSelection(sce, assay=\"counts\", sorted=TRUE)\n\n# Results are stored in rowData\ndev_stats <- rowData(sce)$binomial_deviance\n\n# Filter for top 2000 informative genes\nsce_sub <- sce[1:2000, ]\n```\n\n### Dimension Reduction with GLM-PCA\nGLM-PCA performs dimensionality reduction directly on count data, accounting for the non-normal distribution of the data.\n\n```r\n# L is the number of latent dimensions (e.g., 2 for visualization)\nsce <- GLMPCA(sce, L=2, assay=\"counts\")\n\n# Access factors (cell embeddings) from metadata\nfactors <- metadata(sce)$glmpca$factors\n```\n\n### Fast Approximation with Null Residuals\nFor very large datasets where GLM-PCA is computationally expensive, you can compute null residuals and then apply standard PCA.\n\n```r\n# Compute residuals (type can be \"deviance\" or \"pearson\")\nsce <- nullResiduals(sce, assay=\"counts\", type=\"deviance\")\n\n# The residuals are stored as a new assay\n# You can then run standard PCA on these residuals\n# Note: prcomp requires transposing the matrix (cells as rows)\nres <- prcomp(t(assay(sce, \"binomial_deviance_residuals\")), rank.=2)\n```\n\n## Working with Large Datasets\n`scry` supports `DelayedArray` and `HDF5Array` objects, allowing analysis of datasets that do not fit in memory.\n\n- **Memory Efficiency**: Using `HDF5Array` saves memory but is slower than in-memory matrices.\n- **Sparsity**: If the data fits in memory, converting to a sparse `Matrix` (e.g., `dgCMatrix`) provides the fastest computation times for `devianceFeatureSelection`.\n\n```r\n# Example with sparse matrix for speed\nsparse_counts <- Matrix::Matrix(counts(sce), sparse=TRUE)\ndevs <- devianceFeatureSelection(sparse_counts)\n```\n\n## Tips for Success\n- **Input Data**: Always use raw UMI counts. Do not use log-normalized or scaled data as input for `devianceFeatureSelection` or `GLMPCA`.\n- **Gene Ranking**: The deviance curve often shows a \"knee.\" Plotting `rowData(sce)$binomial_deviance` can help determine a threshold for how many genes to keep for downstream analysis.\n- **Latent Factors**: While 2 factors are good for visualization, using 10-20 factors is often better for capturing subtle biological clusters before performing clustering.\n\n## Reference documentation\n- [Scry Methods For Larger Datasets](./references/bigdata.md)\n- [Overview of Scry Methods](./references/scry.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scry",
+    "description": "The scry package provides methods for feature selection and dimension reduction of single-cell RNA-seq data using multinomial and Poisson null models. Use when user asks to rank genes by biological variation using deviance, perform dimension reduction with GLM-PCA, or compute null residuals for large-scale count data analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scry.html"
+  }
+}

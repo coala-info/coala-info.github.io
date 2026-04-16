@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mirsynergy",
+  "category": "bioconductor",
+  "name": "bioconductor-mirsynergy",
+  "description": "Mirsynergy is a deterministic clustering algorithm that identifies miRNA regulatory modules by maximizing synergy scores between miRNAs, mRNAs, and gene-gene interactions. Use when user asks to identify miRNA regulatory modules, perform overlapping clustering of miRNA-mRNA interactions, or analyze synergistic gene regulation.",
+  "overview": "Mirsynergy is a deterministic overlapping clustering algorithm designed to identify miRNA regulatory modules (MiRMs). Unlike stochastic methods or those requiring a fixed number of clusters, Mirsynergy uses a two-stage approach:\n1.  **Initial Module Formation**: Groups miRNAs based on co-occurrence.\n2.  **Greedy Expansion**: Expands modules by adding or excluding mRNAs to maximize a \"synergy score,\" which accounts for miRNA-mRNA targets and gene-gene interactions (PPI/TFBS).",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/Mirsynergy.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Mirsynergy"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/Mirsynergy.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mirsynergy\n\n## Overview\n\nMirsynergy is a deterministic overlapping clustering algorithm designed to identify miRNA regulatory modules (MiRMs). Unlike stochastic methods or those requiring a fixed number of clusters, Mirsynergy uses a two-stage approach:\n1.  **Initial Module Formation**: Groups miRNAs based on co-occurrence.\n2.  **Greedy Expansion**: Expands modules by adding or excluding mRNAs to maximize a \"synergy score,\" which accounts for miRNA-mRNA targets and gene-gene interactions (PPI/TFBS).\n\n## Core Workflow\n\n### 1. Data Preparation\nMirsynergy requires three primary inputs:\n*   **W**: A miRNA-mRNA interaction matrix (e.g., target site predictions or LASSO-derived scores).\n*   **H**: A gene-gene interaction (GGI) matrix (e.g., Protein-Protein Interactions or Transcription Factor Binding Sites).\n*   **Expression Data (Optional)**: Used to refine the interaction matrix `W` using regression techniques like LASSO.\n\n### 2. Constructing the Interaction Matrix (W)\nIf you only have expression data, you should first estimate the interaction strengths. A common approach is using LASSO regression where mRNA expression is the response and miRNA expression is the predictor, often constrained by sequence-based predictions.\n\n```r\nlibrary(Mirsynergy)\nlibrary(glmnet)\n\n# Example: Estimating W using LASSO (simplified logic)\n# Z: miRNA expression, X: mRNA expression, C: binary target prediction matrix\nW <- lapply(1:nrow(X), function(i) {\n  # Filter miRNAs that target mRNA i based on prior knowledge C\n  target_idx <- which(C[i, ] > 0)\n  if(length(target_idx) >= 2) {\n    fit <- cv.glmnet(t(Z[target_idx, ]), X[i, ], nfolds=3)\n    coefs <- as.numeric(coef(fit, s=\"lambda.min\")[-1])\n    # Mirsynergy typically uses absolute values or specific weights\n    return(abs(coefs))\n  }\n})\n```\n\n### 3. Running Mirsynergy\nThe main function `mirsynergy` performs the clustering.\n\n```r\n# W: miRNA-mRNA matrix, H: mRNA-mRNA matrix\nV <- mirsynergy(W, H, verbose = FALSE)\n```\n\n### 4. Summarizing and Visualizing Results\nThe package provides several tools to interpret the identified modules.\n\n*   **Text Summary**: `summary_modules(V)` provides counts of miRNAs/mRNAs and synergy scores.\n*   **Detailed Print**: `print_modules2(V)` lists the specific genes and miRNAs in each module.\n*   **Visual Summary**: `plot_module_summary(V)` shows distributions of module sizes and synergy scores.\n*   **Network Plot**: `plot_modules(V, W, H)` visualizes the assignments for specific examples.\n\n```r\n# Get summary statistics\nstats <- summary_modules(V)\nprint(stats$moduleSummaryInfo)\n\n# Plot distributions\nplot_module_summary(V)\n```\n\n### 5. Exporting Data\nTo use results in external tools like Cytoscape:\n```r\n# Export to a tabular format\ntab_data <- tabular_module(V)\n# This typically returns node and edge lists for network analysis\n```\n\n## Tips for Success\n*   **Input Scaling**: Ensure your interaction matrices `W` and `H` are appropriately scaled. Mirsynergy is sensitive to the relative weights of these interactions.\n*   **Sparsity**: The algorithm performs best when the input matrices are sparse (i.e., using high-confidence PPIs or validated miRNA targets).\n*   **Synergy Score**: A higher synergy score indicates a more robust regulatory unit where the combined effect of miRNAs on a set of targets is reinforced by the internal interactions of those targets.\n\n## Reference documentation\n- [Mirsynergy](./references/Mirsynergy.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mirsynergy",
+    "description": "Mirsynergy is a deterministic clustering algorithm that identifies miRNA regulatory modules by maximizing synergy scores between miRNAs, mRNAs, and gene-gene interactions. Use when user asks to identify miRNA regulatory modules, perform overlapping clustering of miRNA-mRNA interactions, or analyze synergistic gene regulation.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/Mirsynergy.html"
+  }
+}

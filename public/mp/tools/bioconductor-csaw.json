@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-csaw",
+  "category": "bioconductor",
+  "name": "bioconductor-csaw",
+  "description": "This tool detects differentially bound regions in ChIP-seq data using a sliding window approach. Use when user asks to perform de novo peak calling, analyze genomic coverage changes, or conduct differential binding analysis between biological replicates.",
+  "overview": "The `csaw` package implements a sliding window strategy for ChIP-seq analysis, moving away from traditional \"peak calling\" by counting reads in overlapping windows across the genome. This approach provides better statistical control and higher sensitivity for detecting differential binding (DB). It integrates closely with `edgeR` for statistical testing and `SummarizedExperiment` for data handling.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/csaw.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "csaw"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/csaw.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-csaw\n\nname: bioconductor-csaw\ndescription: Detect differentially bound regions in ChIP-seq data using a sliding window approach. Use this skill when performing de novo peak calling, analyzing genomic coverage changes, or conducting differential binding analysis between biological replicates using the csaw R package.\n\n# bioconductor-csaw\n\n## Overview\n\nThe `csaw` package implements a sliding window strategy for ChIP-seq analysis, moving away from traditional \"peak calling\" by counting reads in overlapping windows across the genome. This approach provides better statistical control and higher sensitivity for detecting differential binding (DB). It integrates closely with `edgeR` for statistical testing and `SummarizedExperiment` for data handling.\n\n## Core Workflow\n\n### 1. Data Loading and Window Counting\nThe primary entry point is counting reads from BAM files into windows.\n\n```R\nlibrary(csaw)\nlibrary(Rsamtools)\n\n# Define files and parameters\nbam.files <- c(\"sample1.bam\", \"sample2.bam\", \"control1.bam\", \"control2.bam\")\nparam <- readParam(minq=20, pe=\"none\") # Adjust for paired-end if needed\n\n# Count reads in sliding windows (default 50bp)\ndata <- windowCounts(bam.files, spacing=50, width=50, param=param)\n```\n\n### 2. Normalization\n`csaw` provides methods to handle composition bias and efficiency differences.\n\n*   **Trended normalization:** For data with non-linear biases.\n*   **TMM normalization:** Using large bins (e.g., 10kb) to estimate normalization factors for background levels.\n\n```R\n# Binned counts for TMM normalization\nbinned <- windowCounts(bam.files, bin=TRUE, width=10000, param=param)\ndata <- normFactors(binned, se.out=data)\n```\n\n### 3. Filtering\nFilter out uninteresting windows (those with low counts) to increase statistical power.\n\n```R\n# Filter by abundance relative to a global background\nbin.stats <- binCounts(bam.files, bin=TRUE, width=10000, param=param)\nfilter.stat <- filterWindowsGlobal(data, bin.stats)\nkeep <- filter.stat$filter > log2(3) # Example threshold\ndata.filt <- data[keep,]\n```\n\n### 4. Statistical Testing (edgeR integration)\nConvert the object to a `DGEList` and perform standard `edgeR` workflows.\n\n```R\nlibrary(edgeR)\ny <- asDGEList(data.filt)\ndesign <- model.matrix(~condition)\ny <- estimateDisp(y, design)\nfit <- glmQLFit(y, design)\nresults <- glmQLFTest(fit, coef=2)\n```\n\n### 5. Multiple Testing Correction across Windows\nSince windows are overlapping, p-values must be merged into regions.\n\n```R\n# Merge adjacent windows into regions (e.g., within 100bp)\nmerged <- mergeWindows(rowRanges(data.filt), tol=100)\n\n# Combine p-values for each merged region\ntab.combined <- combineTests(merged$id, results$table)\n```\n\n## Key Functions\n\n- `windowCounts()`: Counts reads in sliding windows.\n- `readParam()`: Specifies parameters for BAM file processing (mapping quality, fragments, etc.).\n- `mergeWindows()`: Clusters overlapping or adjacent windows into larger genomic regions.\n- `combineTests()`: Aggregates window-level p-values into region-level statistics using Simes' method.\n- `calculateCPM()`: Computes counts-per-million for windows.\n- `checkBimodality()`: Assesses the strand-specific shift in ChIP-seq data.\n\n## Tips and Best Practices\n\n- **Window Size:** For transcription factors, use small windows (e.g., 10-50bp). For histone marks, larger windows (e.g., 150-500bp) are more appropriate.\n- **Fragment Length:** Use `maximizeCcf()` to estimate the average fragment length from the data to properly shift reads.\n- **Blacklists:** Always filter out known problematic genomic regions (blacklists) using the `restrict` argument in `readParam()`.\n- **Controls:** If using Input controls, use `filterWindowsControl()` to identify windows with significantly higher enrichment in the ChIP sample compared to the control.\n\n## Reference documentation\n\n- [Introducing the csaw package](./references/csaw.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-csaw",
+    "description": "This tool detects differentially bound regions in ChIP-seq data using a sliding window approach. Use when user asks to perform de novo peak calling, analyze genomic coverage changes, or conduct differential binding analysis between biological replicates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/csaw.html"
+  }
+}

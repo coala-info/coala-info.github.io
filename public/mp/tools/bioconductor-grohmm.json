@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-grohmm",
+  "category": "bioconductor",
+  "name": "bioconductor-grohmm",
+  "description": "This tool analyzes GRO-seq data using Hidden Markov Models to identify transcribed regions and characterize nascent RNA. Use when user asks to perform de novo transcript calling, generate wiggle files for visualization, evaluate transcript predictions against annotations, or conduct differential expression analysis on nascent RNA-seq data.",
+  "overview": "The `groHMM` package is designed for the analysis of GRO-seq data, which maps the position and orientation of active RNA polymerases. Its primary feature is a two-state Hidden Markov Model (HMM) that identifies \"transcribed\" and \"non-transcribed\" regions across the genome in a strand-specific manner. This allows for the discovery of non-coding RNAs (miRNAs, lincRNAs, eRNAs) and the measurement of instantaneous transcriptional responses.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/groHMM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-grohmm/overview",
+  "github": "https://github.com/Kraus-Lab/groHMM",
+  "conda_downloads": "33.2K",
+  "conda_downloads_num": 33200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "groHMM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/groHMM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-grohmm/overview",
+    "github": "https://github.com/Kraus-Lab/groHMM",
+    "conda_downloads": "33.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-grohmm\n\nname: bioconductor-grohmm\ndescription: Analysis of GRO-seq (Global Nuclear Run On and Sequencing) data using the groHMM Bioconductor package. Use this skill to perform de novo transcript calling using Hidden Markov Models (HMM), generate wiggle files for visualization, evaluate transcript predictions against annotations, and perform metagene or differential expression analysis on nascent RNA-seq data.\n\n## Overview\n\nThe `groHMM` package is designed for the analysis of GRO-seq data, which maps the position and orientation of active RNA polymerases. Its primary feature is a two-state Hidden Markov Model (HMM) that identifies \"transcribed\" and \"non-transcribed\" regions across the genome in a strand-specific manner. This allows for the discovery of non-coding RNAs (miRNAs, lincRNAs, eRNAs) and the measurement of instantaneous transcriptional responses.\n\n## Core Workflow\n\n### 1. Data Loading and Preparation\n`groHMM` uses `GRanges` objects. Alignments (BAM files) should be loaded using `GenomicAlignments`.\n\n```R\nlibrary(groHMM)\nlibrary(GenomicAlignments)\n\n# Load BAM files as GRanges\nreads <- as(readGAlignments(\"sample.bam\"), \"GRanges\")\n\n# Set parallel processing\noptions(mc.cores = getCores(4))\n```\n\n### 2. Visualization (Wiggle Files)\nGenerate strand-specific wiggle or BigWig files for genome browsers.\n\n```R\n# Create normalized wiggle files\nwriteWiggle(reads = reads, file = \"plus.wig\", strand = \"+\", reverse = FALSE)\nwriteWiggle(reads = reads, file = \"minus.wig\", strand = \"-\", reverse = TRUE)\n```\n\n### 3. De Novo Transcript Calling\nThe HMM identifies transcribed regions. It is often best to combine replicates or time points to increase sensitivity for low-expression transcripts.\n\n```R\n# Combine reads for training\nall_reads <- sort(c(reads_rep1, reads_rep2))\n\n# Detect transcripts\n# LtProbB: log-transition probability from transcribed to non-transcribed\n# UTS: variance of emission probability in non-transcribed state\nhmm_result <- detectTranscripts(all_reads, LtProbB = -200, UTS = 5)\ntranscripts <- hmm_result$transcripts\n```\n\n### 4. Evaluation and Tuning\nCompare HMM predictions against known annotations (e.g., UCSC knownGene) to calculate error rates (merged or dissociated transcripts).\n\n```R\n# Create consensus annotations (collapsing isoforms)\nkgConsensus <- makeConsensusAnnotations(knownGenes, keytype = \"gene_id\")\n\n# Evaluate HMM performance\neval_result <- evaluateHMMInAnnotations(transcripts, kgConsensus)\n# Access error rates: eval_result$eval\n```\n\n### 5. Refining Transcript Calls\nRepair HMM errors by breaking transcripts that merge multiple genes or combining those that dissociate a single gene.\n\n```R\n# Break merged transcripts\nbroken <- breakTranscriptsOnGenes(transcripts, kgConsensus, strand = \"+\")\n# Combine dissociated transcripts\nfinal_tx <- combineTranscripts(broken, kgConsensus)\n```\n\n### 6. Downstream Analysis\n*   **Differential Expression:** Use `edgeR` or `DESeq2`. For nascent RNA, it is common to count reads in a window (e.g., +1kb to +13kb from TSS) to focus on elongation and avoid promoter-proximal pausing peaks.\n*   **Metagene Analysis:** Use `runMetaGene` to visualize average read density around TSSs.\n\n```R\n# Metagene around TSS\nmg <- runMetaGene(features = genes, reads = reads, size = 100)\n# Plotting requires custom logic or the sense/antisense vectors in 'mg'\n```\n\n## Tips for Non-Mammalian Genomes\nFor organisms with high gene density (e.g., *C. elegans*), the default HMM parameters may merge adjacent genes. Increase the `LtProbB` value (e.g., > -50) to make the model more likely to transition to a \"non-transcribed\" state.\n\n## Reference documentation\n- [groHMM Tutorial](./references/groHMM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-grohmm",
+    "description": "This tool analyzes GRO-seq data using Hidden Markov Models to identify transcribed regions and characterize nascent RNA. Use when user asks to perform de novo transcript calling, generate wiggle files for visualization, evaluate transcript predictions against annotations, or conduct differential expression analysis on nascent RNA-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/groHMM.html"
+  }
+}

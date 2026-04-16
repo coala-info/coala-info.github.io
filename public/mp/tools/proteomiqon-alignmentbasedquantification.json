@@ -1,0 +1,45 @@
+{
+  "id": "proteomiqon-alignmentbasedquantification",
+  "category": "CLI",
+  "name": "proteomiqon-alignmentbasedquantification",
+  "description": "This tool quantifies peptides across multiple MS runs by transferring identities from reference runs to target runs using alignment data. Use when user asks to perform alignment-based quantification, address missing values in DDA data, or extract ion chromatograms for peptides without MS/MS identifications.",
+  "overview": "The `proteomiqon-alignmentbasedquantification` tool is a specialized module within the ProteomIQon ecosystem designed to increase the number of quantified peptides across multiple MS runs. It addresses the \"missing value\" problem in Data-Dependent Acquisition (DDA) by transferring peptide identities from a reference run to a target run where a successful MS/MS scan might be absent.",
+  "homepage": "https://csbiology.github.io/ProteomIQon/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/proteomiqon-alignmentbasedquantification/overview",
+  "github": "https://github.com/CSBiology/ProteomIQon",
+  "conda_downloads": "1.9K",
+  "conda_downloads_num": 1900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "proteomiqon-alignmentbasedquantification"
+    ],
+    "description": "Performs alignment-based quantification of proteomic data.",
+    "docker_image": "quay.io/biocontainers/proteomiqon-alignmentbasedquantification:0.0.2--hdfd78af_0",
+    "homepage": "https://csbiology.github.io/ProteomIQon/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/proteomiqon-alignmentbasedquantification/overview",
+    "github": "https://github.com/CSBiology/ProteomIQon",
+    "conda_downloads": "1.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "proteomiqon-alignmentbasedquantification.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# proteomiqon-alignmentbasedquantification\n\n## Overview\n\nThe `proteomiqon-alignmentbasedquantification` tool is a specialized module within the ProteomIQon ecosystem designed to increase the number of quantified peptides across multiple MS runs. It addresses the \"missing value\" problem in Data-Dependent Acquisition (DDA) by transferring peptide identities from a reference run to a target run where a successful MS/MS scan might be absent. \n\nBy using scan time estimates from previous alignment steps, the tool extracts Ion Chromatograms (XICs), refines them using local alignment (Dynamic Time Warping), and performs wavelet-based peak detection and Gaussian peak fitting. This results in high-confidence quantification even for peptides not directly identified by MS/MS in a specific run.\n\n## Prerequisites\n\nThis tool is part of a multi-stage pipeline and requires specific inputs from preceding ProteomIQon tools:\n1. **Peptide Database**: Created via `PeptideDB` (.sqlite).\n2. **Quantified Peptides**: Results from `PSMBasedQuantification` (.quant).\n3. **Alignment Data**: Deduced peptides and metrics from `QuantBasedAlignment` (.align and .alignmetric).\n\n## Command Line Usage\n\n### Basic Execution\nTo process a single run, provide the MS data, alignment files, existing quantification, and the peptide database:\n\n```bash\nproteomiqon-alignmentbasedquantification \\\n  -i \"path/to/run.mzlite\" \\\n  -ii \"path/to/run.align\" \\\n  -iii \"path/to/run.alignmetric\" \\\n  -iv \"path/to/run.quant\" \\\n  -d \"path/to/database.sqlite\" \\\n  -o \"path/to/outDirectory\" \\\n  -p \"path/to/params.json\"\n```\n\n### Parallel Processing\nFor multi-core systems, you can process multiple runs simultaneously by providing lists of files and using the `-c` flag:\n\n```bash\nproteomiqon-alignmentbasedquantification \\\n  -i \"run1.mzlite\" \"run2.mzlite\" \\\n  -ii \"run1.align\" \"run2.align\" \\\n  -iii \"run1.alignmetric\" \"run2.alignmetric\" \\\n  -iv \"run1.quant\" \"run2.quant\" \\\n  -d \"database.sqlite\" \\\n  -o \"output_dir\" \\\n  -p \"params.json\" \\\n  -c 4\n```\n\n### File Matching\nBy default, files are matched by their position in the input lists. Use the `-mf` flag to enable name-based matching, which is safer for large datasets:\n\n```bash\nproteomiqon-alignmentbasedquantification -i [MS_FILES] -ii [ALIGN_FILES] ... -mf\n```\n\n## Parameter Configuration\n\nThe tool requires a `.json` parameter file. Key parameters include:\n\n| Parameter | Default | Description |\n|-----------|---------|-------------|\n| `PerformLabeledQuantification` | `true` | Set to true for metabolic labeling (e.g., 14N/15N). |\n| `PerformLocalWarp` | `true` | Enables Dynamic Time Warping for scan time refinement. |\n| `XicExtraction` | - | Configures `ScanTimeWindow` (default 2.0) and `MzWindow_Da` (default 0.07). |\n| `BaseLineCorrection` | - | Optional. Configures `MaxIterations`, `Lambda`, and `P`. |\n\n### Example Parameter Structure (JSON)\n```json\n{\n  \"PerformLabeledQuantification\": true,\n  \"PerformLocalWarp\": true,\n  \"XicExtraction\": {\n    \"ScanTimeWindow\": 2.0,\n    \"MzWindow_Da\": 0.07,\n    \"XicProcessing\": {\n      \"Case\": \"Wavelet\",\n      \"Fields\": [{ \"MinSNR\": 0.01, \"MaxPeakLength\": 1.5 }]\n    }\n  },\n  \"BaseLineCorrection\": {\n    \"MaxIterations\": 10,\n    \"Lambda\": 6,\n    \"P\": 0.05\n  }\n}\n```\n\n## Expert Tips\n\n- **Local Warping**: Always keep `PerformLocalWarp` enabled unless your chromatography is extremely stable and the initial alignment is perfect; it significantly improves peak picking accuracy.\n- **Memory Management**: When using high core counts (`-c`), ensure the system has enough RAM to hold multiple XICs in memory simultaneously.\n- **Downstream Integration**: After running this tool, use `AddDeducedPeptides` to update your protein inference results, as the quantification file now contains peptides not present in the original identification files.\n\n## Reference documentation\n- [Alignment Based Quantification](./references/csbiology_github_io_ProteomIQon_tools_AlignmentBasedQuantification.html.md)\n- [Quantification Based Alignment](./references/csbiology_github_io_ProteomIQon_tools_QuantBasedAlignment.html.md)\n- [Add Deduced Peptides](./references/csbiology_github_io_ProteomIQon_tools_AddDeducedPeptides.html.md)",
+  "skill_front_matter": {
+    "name": "proteomiqon-alignmentbasedquantification",
+    "description": "This tool quantifies peptides across multiple MS runs by transferring identities from reference runs to target runs using alignment data. Use when user asks to perform alignment-based quantification, address missing values in DDA data, or extract ion chromatograms for peptides without MS/MS identifications.",
+    "homepage": "https://csbiology.github.io/ProteomIQon/"
+  }
+}

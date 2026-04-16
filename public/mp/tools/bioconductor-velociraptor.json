@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-velociraptor",
+  "category": "bioconductor",
+  "name": "bioconductor-velociraptor",
+  "description": "This tool performs RNA velocity analysis on single-cell data by providing a Bioconductor interface to the scVelo Python package. Use when user asks to calculate velocity vectors, estimate latent time, or project velocity onto low-dimensional embeddings from SingleCellExperiment objects.",
+  "overview": "The `velociraptor` package provides a Bioconductor-friendly interface to the Python package `scvelo`. It allows users to perform RNA velocity analysis directly on `SingleCellExperiment` objects, bridging the gap between R-based single-cell workflows and Python-based velocity estimation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/velociraptor.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/kevinrue/velociraptor",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "velociraptor"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/velociraptor.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/kevinrue/velociraptor",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-velociraptor\n\nname: bioconductor-velociraptor\ndescription: RNA velocity analysis for single-cell data using the Bioconductor framework. Use when Claude needs to calculate, embed, or visualize RNA velocity from SingleCellExperiment objects by interfacing with the scVelo Python package.\n\n# bioconductor-velociraptor\n\n## Overview\n\nThe `velociraptor` package provides a Bioconductor-friendly interface to the Python package `scvelo`. It allows users to perform RNA velocity analysis directly on `SingleCellExperiment` objects, bridging the gap between R-based single-cell workflows and Python-based velocity estimation.\n\n## Basic Workflow\n\n### 1. Prepare Data\nEnsure your `SingleCellExperiment` object contains `spliced` and `unspliced` count matrices in its assays.\n\n```r\nlibrary(velociraptor)\nlibrary(scRNAseq)\n\n# Example: Loading spermatogenesis data\nsce <- HermannSpermatogenesisData()\n# assays(sce) should contain \"spliced\" and \"unspliced\"\n```\n\n### 2. Feature Selection\nPerform standard feature selection (e.g., using `scran`) to identify highly variable genes (HVGs) before running velocity calculations.\n\n```r\nlibrary(scran)\nlibrary(scuttle)\n\nsce <- logNormCounts(sce)\ndec <- modelGeneVar(sce)\ntop.hvgs <- getTopHVGs(dec, n=2000)\n```\n\n### 3. Run scVelo\nUse the `scvelo()` function to estimate velocities. By default, it uses the steady-state model.\n\n```r\n# Note: scvelo.params is used to specify neighbor settings to match newer scVelo/Scanpy versions\nvelo.out <- scvelo(\n  sce, \n  subset.row = top.hvgs, \n  assay.X = \"spliced\",\n  scvelo.params = list(neighbors = list(n_neighbors = 30L))\n)\n```\n\nThe output `velo.out` is a `SingleCellExperiment` containing:\n- `velocity` assay: The estimated velocity vectors.\n- `velocity_pseudotime`: Latent time/pseudotime estimates in `colData`.\n- `velocity_graph`: Connectivity matrix in `metadata`.\n\n### 4. Visualization\nProject velocity vectors onto low-dimensional embeddings (t-SNE, UMAP).\n\n```r\n# 1. Calculate embedding (e.g., t-SNE) on the original SCE\nlibrary(scater)\nsce <- runPCA(sce, subset_row = top.hvgs)\nsce <- runTSNE(sce, dimred = \"PCA\")\n\n# 2. Embed velocity vectors into the t-SNE space\nembedded <- embedVelocity(reducedDim(sce, \"TSNE\"), velo.out)\n\n# 3. Summarize vectors into a grid for cleaner plotting\ngrid.df <- gridVectors(sce, embedded, use.dimred = \"TSNE\")\n\n# 4. Plot using ggplot2\nlibrary(ggplot2)\nplotTSNE(sce, colour_by = \"velocity_pseudotime\") +\n    geom_segment(data = grid.df, mapping = aes(x = start.1, y = start.2, \n        xend = end.1, yend = end.2, colour = NULL), \n        arrow = arrow(length = unit(0.05, \"inches\")))\n```\n\n## Advanced Options\n\n### Reusing Existing PCA\nTo ensure consistency and save time, pass existing dimensionality reduction results to `scvelo()`.\n\n```r\nvelo.out <- scvelo(sce, assay.X = \"spliced\", subset.row = top.hvgs, use.dimred = \"PCA\")\n```\n\n### Using scVelo's Internal Pipeline\nTo mimic a pure Python workflow (including scVelo's own normalization and filtering), set `use.theirs = TRUE`. Note that this may reduce consistency with other Bioconductor steps.\n\n```r\nvelo.out <- scvelo(sce, assay.X = 1, use.theirs = TRUE)\n```\n\n### Customizing scVelo Parameters\nPass specific arguments to underlying Python functions (e.g., `filter_and_normalize`, `moments`, `recover_dynamics`, `velocity`, `velocity_graph`) via the `scvelo.params` list.\n\n```r\n# Example: Changing the number of iterations for dynamical model recovery\nvelo.out <- scvelo(\n    sce, \n    mode = \"dynamical\",\n    scvelo.params = list(recover_dynamics = list(max_iter = 20))\n)\n```\n\n## Tips and Best Practices\n- **Assay Selection**: If a dedicated exonic count matrix is unavailable, the `\"spliced\"` assay is typically a suitable proxy for `assay.X`.\n- **Memory**: RNA velocity calculations can be memory-intensive. For large datasets, consider subsetting cells or genes if resources are limited.\n- **Python Environment**: `velociraptor` uses `basilisk` to manage the Python environment automatically. The first run may take time as it installs `scvelo` and dependencies.\n- **Neighbor Calculation**: Since `scvelo` v0.4.0, neighbor calculation is handled via Scanpy. Use `scvelo.params = list(neighbors = list(n_neighbors = 30L))` to maintain consistency with older workflows that defaulted to 30 neighbors.\n\n## Reference documentation\n- [Computing RNA velocity in a Bioconductor framework](./references/velociraptor.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-velociraptor",
+    "description": "This tool performs RNA velocity analysis on single-cell data by providing a Bioconductor interface to the scVelo Python package. Use when user asks to calculate velocity vectors, estimate latent time, or project velocity onto low-dimensional embeddings from SingleCellExperiment objects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/velociraptor.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-altcdfenvs",
+  "category": "bioconductor",
+  "name": "bioconductor-altcdfenvs",
+  "description": "This tool creates and manages alternative Chip Definition File (CDF) environments for re-mapping Affymetrix GeneChip probes to updated genomic information. Use when user asks to re-map probes to new gene targets using FASTA sequences, create subset CDFs for multi-genome chips, or build custom CdfEnvAffy objects for use with AffyBatch data.",
+  "overview": "The `altcdfenvs` package allows users to redefine the grouping of probes on Affymetrix GeneChip arrays. This is essential for mitigating the \"Dorian Gray\" effect, where static chip designs become outdated as genomic knowledge evolves. The package provides tools to read FASTA files, match probe sequences to new targets, and build custom `CdfEnvAffy` objects that can be integrated into standard `affy` workflows.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/altcdfenvs.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-altcdfenvs/overview",
+  "github": "N/A",
+  "conda_downloads": "34.0K",
+  "conda_downloads_num": 34000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "altcdfenvs"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/altcdfenvs.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-altcdfenvs/overview",
+    "github": "N/A",
+    "conda_downloads": "34.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-altcdfenvs\n\nname: bioconductor-altcdfenvs\ndescription: Specialized workflows for creating and using alternative Chip Definition File (CDF) environments for Affymetrix GeneChip arrays. Use this skill when you need to re-map probes to genes based on updated sequence information, create subset CDFs for multi-genome chips (e.g., Plasmodium/Anopheles), or match FASTA sequences to AffyBatch probes using Biostrings.\n\n# bioconductor-altcdfenvs\n\n## Overview\nThe `altcdfenvs` package allows users to redefine the grouping of probes on Affymetrix GeneChip arrays. This is essential for mitigating the \"Dorian Gray\" effect, where static chip designs become outdated as genomic knowledge evolves. The package provides tools to read FASTA files, match probe sequences to new targets, and build custom `CdfEnvAffy` objects that can be integrated into standard `affy` workflows.\n\n## Core Workflows\n\n### 1. Creating a CdfEnvAffy from FASTA Sequences\nThis is the primary workflow for re-mapping probes to updated transcript information.\n\n```r\nlibrary(altcdfenvs)\nlibrary(hgu133aprobe) # Replace with your specific probe package\n\n# 1. Read FASTA entries\nfasta.filename <- \"path/to/sequences.fasta\"\ncon <- file(fasta.filename, open=\"r\")\n# Use countskip.FASTA.entries and read.n.FASTA.entries.split for large files\nn <- countskip.FASTA.entries(con)\nclose(con)\ncon <- file(fasta.filename, open=\"r\")\nmy.entries <- read.n.FASTA.entries.split(con, n)\nclose(con)\n\n# 2. Match probes to targets\ntargets <- my.entries$sequences\nnames(targets) <- my.entries$headers # Clean headers as needed\nm <- matchAffyProbes(hgu133aprobe, targets, \"HG-U133A\")\n\n# 3. Build the alternative CDF environment\n# Note: You must provide the chip dimensions (nrow/ncol)\nalt.cdf <- buildCdfEnv.biostrings(m, nrow.chip = 712, ncol.chip = 712)\n```\n\n### 2. Subsetting Existing CDFs (Multi-genome Chips)\nUseful for chips containing probes for multiple organisms where you want to isolate one.\n\n```r\nlibrary(plasmodiumanophelescdf)\n\n# Wrap the existing environment\nplanocdf <- wrapCdfEnvAffy(plasmodiumanophelescdf, 712, 712, \"plasmodiumanophelescdf\")\n\n# Identify probe sets for a specific organism (e.g., Plasmodium 'Pf')\nids <- geneNames(planocdf)\nids.pf <- ids[grep(\"^Pf\", ids)]\n\n# Create the subset\nplcdf <- planocdf[ids.pf]\n```\n\n### 3. Applying the Alternative CDF to an AffyBatch\nTo use the new mapping for normalization (like RMA), you must assign it to your `AffyBatch` object.\n\n```r\n# Extract the environment from the CdfEnvAffy object\nalt.cdfenv <- alt.cdf@envir # or as(plcdf, \"environment\")\n\n# Assign to AffyBatch\n# Note: The string assigned to cdfName must match the variable name in the global environment\nmy_alt_env <- alt.cdfenv\nabatch@cdfName <- \"my_alt_env\"\n\n# Verify and proceed with analysis\nvalidAffyBatch(abatch, alt.cdf)\neset <- rma(abatch)\n```\n\n## Key Functions\n- `read.FASTA.entry(con)`: Reads a single entry from a FASTA connection.\n- `matchAffyProbes(probe_pkg, targets, chip_type)`: Matches probe sequences to target sequences.\n- `buildCdfEnv.biostrings(match_obj, nrow, ncol)`: Creates the alternative CDF object.\n- `wrapCdfEnvAffy(env, nrow, ncol, name)`: Converts a standard CDF environment into a `CdfEnvAffy` class object.\n- `toHypergraph(match_obj)` / `toGraphNEL(hg)`: Visualizes probe-to-target relationships.\n\n## Tips and Validation\n- **Chip Dimensions**: If you don't know the `nrow` and `ncol` for a chip, call `print(abatch)` on an `AffyBatch` loaded with the default CDF; it will display the dimensions.\n- **Validation**: Always use `validCdfEnvAffy(alt.cdf)` and `validAffyBatch(abatch, alt.cdf)` to ensure the new mapping is compatible with your data.\n- **Parallelization**: For very large FASTA files, the matching process can be parallelized by splitting the FASTA file and distributing the `matchAffyProbes` task.\n\n## Reference documentation\n- [Alternative CDF environments](./references/altcdfenvs.md)\n- [Modifying existing CDF environments](./references/modify.md)\n- [Alternative CDF environments for 2-genomes chips](./references/ngenomeschips.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-altcdfenvs",
+    "description": "This tool creates and manages alternative Chip Definition File (CDF) environments for re-mapping Affymetrix GeneChip probes to updated genomic information. Use when user asks to re-map probes to new gene targets using FASTA sequences, create subset CDFs for multi-genome chips, or build custom CdfEnvAffy objects for use with AffyBatch data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/altcdfenvs.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-baalchip",
+  "category": "bioconductor",
+  "name": "bioconductor-baalchip",
+  "description": "BaalChIP performs Bayesian analysis to identify allele-specific transcription factor binding sites while correcting for copy number variations and mapping biases. Use when user asks to detect allele-specific binding events, process ChIP-seq BAM files for allelic imbalances, or correct for reference mapping and relative allele frequency biases in cancer genomes.",
+  "overview": "BaalChIP (Bayesian Analysis of Allelic imbalances from ChIP-seq data) is an R package designed to identify allele-specific binding (ASB) of transcription factors. It is particularly robust for cancer research because it accounts for copy number variations (CNV) that alter the background frequency of alleles. The workflow involves computing allelic counts at heterozygous SNPs, applying rigorous quality control filters to remove mapping artifacts, and using a beta-binomial Bayesian model to identi",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BaalChIP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-baalchip/overview",
+  "github": "N/A",
+  "conda_downloads": "37.9K",
+  "conda_downloads_num": 37900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BaalChIP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BaalChIP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-baalchip/overview",
+    "github": "N/A",
+    "conda_downloads": "37.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-baalchip\n\nname: bioconductor-baalchip\ndescription: Bayesian analysis of allele-specific transcription factor binding in cancer genomes. Use this skill to process ChIP-seq BAM files, detect allele-specific binding (ASB) events, and correct for biases including reference mapping (RM) and relative allele frequency (RAF) caused by copy number alterations.\n\n# bioconductor-baalchip\n\n## Overview\n\nBaalChIP (Bayesian Analysis of Allelic imbalances from ChIP-seq data) is an R package designed to identify allele-specific binding (ASB) of transcription factors. It is particularly robust for cancer research because it accounts for copy number variations (CNV) that alter the background frequency of alleles. The workflow involves computing allelic counts at heterozygous SNPs, applying rigorous quality control filters to remove mapping artifacts, and using a beta-binomial Bayesian model to identify statistically significant allelic imbalances.\n\n## Standard Workflow\n\n### 1. Initialization and Data Input\nThe workflow begins by creating a `BaalChIP` object. You need a sample sheet (TSV), a named vector of heterozygous SNP files, and optionally, gDNA BAM files for RAF calculation.\n\n```r\nlibrary(BaalChIP)\n\n# Define paths\nsamplesheet <- \"path/to/samplesheet.tsv\"\nhets <- c(\"Group1\" = \"Group1_hets.txt\", \"Group2\" = \"Group2_hets.txt\")\n\n# Optional: gDNA for RAF calculation\ngDNA <- list(\"Group1\" = c(\"gDNA_rep1.bam\", \"gDNA_rep2.bam\"))\n\n# Construct object\nres <- BaalChIP(samplesheet = samplesheet, hets = hets, CorrectWithgDNA = gDNA)\n```\n\n### 2. Allele Counting\nCompute the number of reads carrying the reference (REF) and alternative (ALT) alleles at heterozygous sites within peak regions.\n\n```r\nres <- alleleCounts(res, min_base_quality = 10, min_mapq = 15)\n```\n\n### 3. Quality Control Filtering\nApply filters to remove SNPs in problematic regions (blacklists, high-coverage repeats, or low mappability).\n\n```r\n# Load hg19 reference data provided by the package\ndata(blacklist_hg19)\ndata(pickrell2011cov1_hg19)\ndata(UniqueMappability50bp_hg19)\n\nres <- QCfilter(res,\n                RegionsToFilter = list(\"bl\" = blacklist_hg19, \"hc\" = pickrell2011cov1_hg19),\n                RegionsToKeep = list(\"map\" = UniqueMappability50bp_hg19))\n```\n\n### 4. Post-Filter Processing\nMerge counts across replicates and remove sites that appear homozygous in the ChIP-seq data.\n\n```r\nres <- mergePerGroup(res)\nres <- filter1allele(res)\n```\n\n### 5. Identifying ASB Events\nRun the Bayesian model. Set `RAFcorrection = TRUE` to account for copy number bias and `RMcorrection = TRUE` for reference mapping bias.\n\n```r\nres <- getASB(res, Iter = 5000, conf_level = 0.95, cores = 4, \n              RMcorrection = TRUE, RAFcorrection = TRUE)\n```\n\n## Summarizing and Exporting Results\n\n### Reporting\nGenerate a data frame containing the final ASB calls and corrected allelic ratios.\n\n```r\nresults <- BaalChIP.report(res)\n# Access results for a specific group\nmcf7_results <- results[[\"MCF7\"]]\nasb_only <- mcf7_results[mcf7_results$isASB == TRUE, ]\n```\n\n### Visualization and Statistics\n*   **QC Summary:** Use `summaryQC(res)` to see how many variants were removed by each filter.\n*   **QC Plots:** `plotQC(res, what = \"overall_pie\")` or `plotQC(res, what = \"barplot_per_group\")`.\n*   **ASB Summary:** `summaryASB(res)` provides counts of Ref-biased vs Alt-biased SNPs.\n*   **Adjustment Plot:** `adjustmentBaalPlot(res)` shows the distribution of allelic ratios before and after bias correction.\n\n## Key Functions\n- `BaalChIP()`: Constructor for the BaalChIP object.\n- `BaalChIP.run()`: Wrapper function to run the entire pipeline with default settings.\n- `alleleCounts()`: Extracts allelic read counts from BAM files.\n- `QCfilter()`: Filters SNPs based on genomic regions.\n- `filterIntbias()`: Optional simulation-based filter for intrinsic mapping bias.\n- `getASB()`: Core Bayesian inference engine for detecting allelic imbalance.\n- `BaalChIP.get()`: Utility to retrieve internal slots (e.g., \"samples\", \"assayedVar\", \"biasTable\").\n\n## Reference documentation\n- [BaalChIP](./references/BaalChIP.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-baalchip",
+    "description": "BaalChIP performs Bayesian analysis to identify allele-specific transcription factor binding sites while correcting for copy number variations and mapping biases. Use when user asks to detect allele-specific binding events, process ChIP-seq BAM files for allelic imbalances, or correct for reference mapping and relative allele frequency biases in cancer genomes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BaalChIP.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chic",
+  "category": "bioconductor",
+  "name": "bioconductor-chic",
+  "description": "This tool performs comprehensive quality control analysis for ChIP-seq data by calculating ENCODE, global, and local enrichment metrics. Use when user asks to evaluate ChIP-seq sample quality, calculate cross-correlation metrics, generate fingerprint plots, or compare datasets against reference compendia using machine learning models.",
+  "overview": "The ChIC (ChIP-seq quality Control) package provides a comprehensive suite of tools to evaluate the quality of ChIP-seq datasets. It categorizes quality control into three main areas: ENCODE metrics (cross-correlation and peak calling), Global enrichment (read distribution/fingerprint plots), and Local enrichment (signal around TSS, TES, and gene bodies). A key feature is its built-in compendium of reference values from ENCODE and Roadmap, allowing for automated quality scoring via Random Forest",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/ChIC.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chic/overview",
+  "github": "N/A",
+  "conda_downloads": "23.4K",
+  "conda_downloads_num": 23400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChIC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/ChIC.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chic/overview",
+    "github": "N/A",
+    "conda_downloads": "23.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chic\n\nname: bioconductor-chic\ndescription: Quality control analysis for ChIP-seq data using the ChIC package. Use this skill to calculate ENCODE metrics (EM), global enrichment metrics (GM), and local enrichment metrics (LM). It supports cross-correlation analysis, fingerprint plots, metagene profiles, and comparison against a precomputed compendium of reference values to assess sample quality using machine learning models.\n\n# bioconductor-chic\n\n## Overview\nThe ChIC (ChIP-seq quality Control) package provides a comprehensive suite of tools to evaluate the quality of ChIP-seq datasets. It categorizes quality control into three main areas: ENCODE metrics (cross-correlation and peak calling), Global enrichment (read distribution/fingerprint plots), and Local enrichment (signal around TSS, TES, and gene bodies). A key feature is its built-in compendium of reference values from ENCODE and Roadmap, allowing for automated quality scoring via Random Forest models.\n\n## Core Workflow\n\n### 1. Data Preparation\nChIC requires ChIP and Input BAM files. For initial processing, use `readBamFile()`.\n```r\nlibrary(ChIC)\nchipBam <- readBamFile(\"path/to/chip.bam\")\ninputBam <- readBamFile(\"path/to/input.bam\")\n```\n\n### 2. ENCODE Metrics (EM)\nThe wrapper `qualityScores_EM()` performs cross-correlation, removes local anomalies, and calculates peak-calling scores.\n```r\n# mc: number of cores for parallelization\n# annotationID: \"hg19\" or \"mm9\"\nCC_Result <- qualityScores_EM(chipName=\"chip_id\", \n                             inputName=\"input_id\", \n                             annotationID=\"hg19\", \n                             read_length=36, \n                             mc=4)\n\n# Extract tag shift for subsequent steps\nfinalTagShift <- CC_Result$QCscores_ChIP$tag.shift\n```\n\n### 3. Global Enrichment Metrics (GM)\nCalculates metrics based on the global read distribution (Fingerprint plot). Requires smoothed density profiles.\n```r\n# Smoothing profiles\nsmoothedChip <- tagDensity(chipBamSelected, annotationID=\"hg19\", tag.shift=finalTagShift)\nsmoothedInput <- tagDensity(inputBamSelected, annotationID=\"hg19\", tag.shift=finalTagShift)\n\n# Calculate GM scores\nGM_Results <- qualityScores_GM(densityChip=smoothedChip, \n                               densityInput=smoothedInput, \n                               savePlotPath=\"fingerprint.pdf\")\n```\n\n### 4. Local Enrichment Metrics (LM)\nAnalyzes signal enrichment around specific genomic features (TSS, TES, Gene Body).\n```r\n# Create metagene profiles\nMeta_Result <- createMetageneProfile(smoothed.densityChip=smoothedChip,\n                                     smoothed.densityInput=smoothedInput,\n                                     annotationID=\"hg19\",\n                                     tag.shift=finalTagShift)\n\n# Extract specific scores\nTSS_Scores <- qualityScores_LM(data=Meta_Result$TSS, tag=\"TSS\")\nTES_Scores <- qualityScores_LM(data=Meta_Result$TES, tag=\"TES\")\ngeneBody_Scores <- qualityScores_LMgenebody(Meta_Result$geneBody)\n```\n\n### 5. Quality Assessment and Machine Learning\nCompare your sample against the ChIC compendium or generate a single quality score.\n```r\n# List available reference marks\nlistAvailableElements(target=\"H3K4me3\")\n\n# Compare metagene profile to compendium\nmetagenePlotsForComparison(data=Meta_Result$geneBody, \n                           target=\"H3K4me3\", \n                           tag=\"geneBody\")\n\n# Generate a single quality score (0 to 1)\nqc_score <- predictionScore(target=\"H3K4me3\",\n                            features_cc=CC_Result,\n                            features_global=GM_Results,\n                            features_TSS=TSS_Scores,\n                            features_TES=TES_Scores,\n                            features_scaled=geneBody_Scores)\n```\n\n## Key Metrics Definitions\n- **NSC (Normalized Strand Cross-correlation):** Ratio of maximal cross-correlation to background.\n- **RSC (Relative Strand Cross-correlation):** Ratio of fragment-length peak to read-length peak.\n- **PBC (PCR Bottleneck Coefficient):** Measure of library complexity.\n- **FRiP:** Fraction of Reads in Peaks.\n\n## Reference documentation\n- [ChIC-Vignette](./references/ChIC-Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chic",
+    "description": "This tool performs comprehensive quality control analysis for ChIP-seq data by calculating ENCODE, global, and local enrichment metrics. Use when user asks to evaluate ChIP-seq sample quality, calculate cross-correlation metrics, generate fingerprint plots, or compare datasets against reference compendia using machine learning models.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/ChIC.html"
+  }
+}

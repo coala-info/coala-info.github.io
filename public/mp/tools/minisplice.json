@@ -1,0 +1,49 @@
+{
+  "id": "minisplice",
+  "category": "CLI",
+  "name": "minisplice",
+  "description": "minisplice evaluates the probability of potential splice sites using a convolutional neural network to improve the accuracy of genomic alignments. Use when user asks to predict splice site scores, train custom splice signal models, or calibrate models for specific organisms.",
+  "overview": "minisplice is a specialized genomic utility designed to enhance the accuracy of protein-to-genome and RNA-to-genome alignments. By employing a 1D convolutional neural network (1D-CNN), it evaluates the probability of potential splice sites being biologically active. The tool outputs 2log2-scaled odds ratios, which represent the likelihood of a site being a real donor or acceptor relative to a null model. These scores are particularly valuable when working with distant homologs where standard spl",
+  "homepage": "https://github.com/lh3/minisplice",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/minisplice/overview",
+  "github": "https://github.com/lh3/minisplice",
+  "conda_downloads": "299",
+  "conda_downloads_num": 299,
+  "last_updated": "2025-07-17",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "minisplice_gentrain",
+      "minisplice_train",
+      "minisplice_predict"
+    ],
+    "description": "Generate training data for minisplice",
+    "docker_image": "quay.io/biocontainers/minisplice:0.4--h577a1d6_0",
+    "homepage": "https://github.com/lh3/minisplice",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/minisplice/overview",
+    "github": "https://github.com/lh3/minisplice",
+    "conda_downloads": "299",
+    "last_updated": "2025-07-17",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "minisplice_gentrain.cwl",
+    "minisplice_predict.cwl",
+    "minisplice_train.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# minisplice\n\n## Overview\n\nminisplice is a specialized genomic utility designed to enhance the accuracy of protein-to-genome and RNA-to-genome alignments. By employing a 1D convolutional neural network (1D-CNN), it evaluates the probability of potential splice sites being biologically active. The tool outputs 2log2-scaled odds ratios, which represent the likelihood of a site being a real donor or acceptor relative to a null model. These scores are particularly valuable when working with distant homologs where standard splice signal models lose predictive power.\n\n## Core Workflows\n\n### Predicting Splice Scores\nTo generate splice scores for a target genome using a pre-trained model (e.g., for vertebrates or insects):\n\n```bash\n./minisplice predict -t 16 -c model.kan.cali model.kan genome.fa.gz > scores.tsv\n```\n\n*   **-t**: Number of threads.\n*   **-c**: Path to the calibration file (translates raw model output to empirical probability).\n*   **Output**: A TSV containing contig, offset, strand, type (D/A), and the score.\n\n### Training a Custom Model\nIf pre-trained models are unsuitable for your target organism, follow this sequence:\n\n1.  **Prepare Training Data**: Convert GTF/GFF3 to BED12 (using `minigff.js`) and generate training sequences.\n    ```bash\n    ./minisplice gentrain anno-long.bed.gz genome-odd.fa.gz | gzip > train.txt.gz\n    ```\n2.  **Train the CNN**:\n    ```bash\n    ./minisplice train -t 16 -o model.kan train.txt.gz\n    ```\n3.  **Calibrate the Model**: Use a separate set of chromosomes (e.g., even) to compute empirical odds-ratio scores.\n    ```bash\n    ./minisplice predict -t 16 -b anno-all.bed.gz model.kan genome-even.fa.gz > model.cali\n    ```\n\n### Integration with Aligners\nThe generated `scores.tsv` can be passed directly to compatible aligners to resolve ambiguous junctions:\n\n*   **miniprot**: `miniprot --spsc=scores.tsv genome.fa proteins.faa > align.gff`\n*   **minimap2**: `minimap2 -cxsplice:hq --spsc=scores.tsv genome.fa rna-seq.fq > align.paf`\n\n## Expert Tips and Best Practices\n\n*   **Model/Cali Pairing**: Ensure the `.kan` (model) and `.cali` (calibration) files match. Recent versions of minisplice attempt to load the `.cali` file automatically if it shares the same base name as the model file.\n*   **Data Partitioning**: For robust training, always train on one set of chromosomes (e.g., odd) and calibrate on another (e.g., even) to avoid over-fitting the splice scores.\n*   **Score Filtering**: minisplice (v0.4+) suppresses scores of -6 or lower by default. This significantly reduces file size (approx. 30%) without impacting the accuracy of downstream tools like miniprot.\n*   **Multi-Species Training**: You can combine training data from multiple distantly related species by concatenating `gentrain` outputs before running the `train` command. Use `script/merge-cali.js` to combine the resulting calibration files.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| minisplice gentrain | Generate training data for minisplice |\n| minisplice predict | Predict splice sites |\n| minisplice_train | Train a model for minisplice |\n\n## Reference documentation\n- [minisplice README](./references/github_com_lh3_minisplice_blob_master_README.md)\n- [minisplice NEWS](./references/github_com_lh3_minisplice_blob_master_NEWS.md)",
+  "skill_front_matter": {
+    "name": "minisplice",
+    "description": "minisplice evaluates the probability of potential splice sites using a convolutional neural network to improve the accuracy of genomic alignments. Use when user asks to predict splice site scores, train custom splice signal models, or calibrate models for specific organisms.",
+    "homepage": "https://github.com/lh3/minisplice"
+  }
+}

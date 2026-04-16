@@ -1,0 +1,47 @@
+{
+  "id": "forwardgenomics",
+  "category": "CLI",
+  "name": "forwardgenomics",
+  "description": "Forward Genomics identifies genomic regions associated with the loss of specific traits by comparing divergence patterns across a phylogenetic tree. Use when user asks to link phenotypic trait loss to genomic changes, prepare phylogenetic input files, or execute the Perfect Match, GLS, and Branch analysis methods.",
+  "overview": "Forward Genomics is a computational framework designed to link the repeated loss of a specific trait across different species to the underlying genomic changes. It operates on the principle that when a trait is no longer under selection (trait loss), the genetic information required for that trait will accumulate mutations and diverge over time. By comparing trait-loss lineages with trait-preserving lineages across a phylogenetic tree, the tool identifies genomic regions that show a signature of",
+  "homepage": "https://github.com/hillerlab/ForwardGenomics",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/forwardgenomics/overview",
+  "github": "https://github.com/hillerlab/ForwardGenomics",
+  "conda_downloads": "1.5K",
+  "conda_downloads_num": 1500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "forwardgenomics_forwardGenomics.R",
+      "forwardgenomics_tree_doctor"
+    ],
+    "description": "Forward Genomics: bold [0m",
+    "docker_image": "quay.io/biocontainers/forwardgenomics:1.0--hdfd78af_0",
+    "homepage": "https://github.com/hillerlab/ForwardGenomics",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/forwardgenomics/overview",
+    "github": "https://github.com/hillerlab/ForwardGenomics",
+    "conda_downloads": "1.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "forwardgenomics_forwardGenomics.R.cwl",
+    "forwardgenomics_tree_doctor.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# forwardgenomics\n\n## Overview\n\nForward Genomics is a computational framework designed to link the repeated loss of a specific trait across different species to the underlying genomic changes. It operates on the principle that when a trait is no longer under selection (trait loss), the genetic information required for that trait will accumulate mutations and diverge over time. By comparing trait-loss lineages with trait-preserving lineages across a phylogenetic tree, the tool identifies genomic regions that show a signature of conservation in preserving species and divergence in loss species.\n\nThis skill provides guidance on preparing the necessary phylogenetic and genomic input files and executing the three primary analysis methods: Perfect Match, Generalized Least Squares (GLS), and the Branch Method.\n\n## Input File Requirements\n\nBefore running the analysis, ensure the following four inputs are formatted correctly:\n\n1.  **Phylogenetic Tree**: A Newick format file with branch lengths. All ancestral nodes must be named.\n    *   *Tip*: Use `tree_doctor -a` from the PHAST package to automatically name internal nodes if they are missing.\n2.  **Element Identifiers**: A simple text file listing the IDs of genomic regions (e.g., genes or enhancers) to be processed, one per line.\n3.  **Phenotype List**: A space-separated file with a header `species pheno`.\n    *   `1`: Trait present.\n    *   `0`: Trait lost.\n    *   *Note*: Only include species present in the tree.\n4.  **Divergence Data (%id)**:\n    *   **Global %id**: For GLS/Perfect Match. A table with `species` as the first header, followed by species names. Rows start with the element ID.\n    *   **Local %id**: For the Branch Method. A table with header `branch id pid` listing per-branch divergence.\n\n## Command Line Usage\n\nThe primary interface is the `forwardGenomics.R` script.\n\n### Basic Execution\nTo run all three methods (Perfect Match, GLS, and Branch) simultaneously:\n\n```bash\nforwardGenomics.R --tree=path/to/tree.nh \\\n                  --elementIDs=path/to/IDlist.txt \\\n                  --listPheno=path/to/phenotype.txt \\\n                  --globalPid=path/to/globalPid.txt \\\n                  --localPid=path/to/localPid.txt \\\n                  --outFile=results.txt\n```\n\n### Method Selection\nUse the `--method` flag to limit the analysis type, which can save significant computation time if you only have specific data types:\n\n*   **Branch Method only**: Requires `--localPid`.\n    ```bash\n    forwardGenomics.R [paths] --method='branch'\n    ```\n*   **GLS/Perfect Match only**: Requires `--globalPid`.\n    ```bash\n    forwardGenomics.R [paths] --method='GLS'\n    ```\n\n### Analyzing Non-Coding Regions (CNEs)\nBy default, the Branch Method assumes coding sequences (CDS). If analyzing non-coding regions, you must point to the appropriate lookup data:\n\n```bash\nforwardGenomics.R [paths] \\\n                  --weights=lookUpData/branchWeights_CNE.txt \\\n                  --expectedPerIDs=lookUpData/expPercentID_CNE.txt\n```\n\n## Expert Tips and Best Practices\n\n*   **Phylogenetic Control**: Prefer the **Branch Method** or **GLS** over \"Perfect Match\" for publication-quality results. Perfect Match is highly restrictive and does not account for phylogenetic relatedness or varying evolutionary rates, whereas the other two methods do.\n*   **Data Normalization**: By default, the GLS method normalizes %id values to control for differences in neutral evolutionary rates across the tree.\n*   **Handling Missing Data**: The tool automatically handles genome gaps. If a genomic element is missing in some species, it will prune the tree for that specific element. However, it requires at least 2 trait-loss and 2 trait-preserving species to remain after pruning to process the element.\n*   **Ancestral Naming**: The most common cause of execution failure is unnamed internal nodes in the Newick tree. Always verify your tree with `tree_doctor -p` before starting.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| forwardGenomics.R | Forward Genomics: bold [0m |\n| tree_doctor | Scale, prune, merge, and otherwise tweak phylogenetic trees. Expects input to be a tree model (.mod) file unless filename ends with '.nh' or -n option is used, in which case it will be expected to be a tree file in Newick format. |\n\n## Reference documentation\n- [Forward Genomics README](./references/github_com_hillerlab_ForwardGenomics_blob_master_README.md)\n- [Forward Genomics Main Script](./references/github_com_hillerlab_ForwardGenomics_blob_master_forwardGenomics.R.md)\n- [Full Analysis Logic](./references/github_com_hillerlab_ForwardGenomics_blob_master_forwardGenomics_fullAnalysis.R.md)",
+  "skill_front_matter": {
+    "name": "forwardgenomics",
+    "description": "Forward Genomics identifies genomic regions associated with the loss of specific traits by comparing divergence patterns across a phylogenetic tree. Use when user asks to link phenotypic trait loss to genomic changes, prepare phylogenetic input files, or execute the Perfect Match, GLS, and Branch analysis methods.",
+    "homepage": "https://github.com/hillerlab/ForwardGenomics"
+  }
+}

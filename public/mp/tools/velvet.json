@@ -1,0 +1,47 @@
+{
+  "id": "velvet",
+  "category": "CLI",
+  "name": "velvet",
+  "description": "Velvet is a genomic de novo assembler optimized for short-read sequencing data using de Bruijn graphs. Use when user asks to hash reads into k-mers, construct contigs from short-read datasets, or perform de novo genome assembly.",
+  "overview": "Velvet is a specialized suite of tools for genomic de novo assembly, specifically optimized for short-read data. The workflow is split into two primary stages: `velveth`, which prepares the dataset by hashing reads into k-mers, and `velvetg`, which constructs, simplifies, and resolves the de Bruijn graph to produce contigs. It is highly effective for high-coverage datasets and supports multiple library types, including paired-end and long reads (Sanger/454), to assist in scaffolding and repeat r",
+  "homepage": "https://github.com/dzerbino/velvet",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/velvet/overview",
+  "github": "https://github.com/dzerbino/velvet",
+  "conda_downloads": "63.0K",
+  "conda_downloads_num": 63000,
+  "last_updated": "2025-09-09",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "velvet_velveth",
+      "velvet_velvetg"
+    ],
+    "description": "simple hashing program",
+    "docker_image": "quay.io/biocontainers/velvet:1.2.10--h577a1d6_9",
+    "homepage": "https://github.com/dzerbino/velvet",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/velvet/overview",
+    "github": "https://github.com/dzerbino/velvet",
+    "conda_downloads": "63.0K",
+    "last_updated": "2025-09-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "velvet_velvetg.cwl",
+    "velvet_velveth.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# velvet\n\n## Overview\n\nVelvet is a specialized suite of tools for genomic de novo assembly, specifically optimized for short-read data. The workflow is split into two primary stages: `velveth`, which prepares the dataset by hashing reads into k-mers, and `velvetg`, which constructs, simplifies, and resolves the de Bruijn graph to produce contigs. It is highly effective for high-coverage datasets and supports multiple library types, including paired-end and long reads (Sanger/454), to assist in scaffolding and repeat resolution.\n\n## Core Workflow\n\n### 1. Data Preparation (velveth)\nThe `velveth` command creates a dataset directory containing the hashtable required for assembly.\n\n**Syntax:**\n`velveth output_directory kmer_length [-file_format] [-read_type] filename`\n\n*   **kmer_length**: Must be an odd integer. A good starting point is often between 1/2 and 2/3 of the read length.\n*   **File Formats**: `fasta` (default), `fastq`, `fasta.gz`, `fastq.gz`, `eland`, `gerald`.\n*   **Read Types**:\n    *   `short`: Single-end short reads (default).\n    *   `shortPaired`: Paired-end short reads.\n    *   `long`: Long reads (Sanger, 454, or reference sequences).\n    *   `short2` / `shortPaired2`: Additional libraries with different insert sizes.\n\n**Example:**\n```bash\nvelveth asm_dir 31 -fastq -shortPaired reads_1.fq reads_2.fq -long sanger.fa\n```\n\n### 2. Graph Construction and Assembly (velvetg)\nThe `velvetg` command performs the actual assembly, error correction, and scaffolding.\n\n**Syntax:**\n`velvetg output_directory [options]`\n\n**Key Options:**\n*   `-cov_cutoff <float|auto>`: Removes low-coverage nodes (likely sequencing errors). Use `auto` for Velvet to decide.\n*   `-exp_cov <float>`: The expected k-mer coverage of unique regions. Required for repeat resolution and scaffolding.\n*   `-ins_length <integer>`: The average insert length of the paired-end library.\n*   `-min_contig_lgth <integer>`: Minimum length of contigs exported to `contigs.fa` (default 2*k).\n*   `-read_trkg <yes|no>`: Tracks the position of reads in the graph (required for AMOS output).\n*   `-amos_file <yes|no>`: Generates an AMOS assembly file (`velvet_asm.afg`).\n\n**Example:**\n```bash\nvelvetg asm_dir -exp_cov 25 -ins_length 300 -cov_cutoff 5.0\n```\n\n## Optimization with VelvetOptimiser\n\nFor automated parameter sweeping, use the `VelvetOptimiser.pl` wrapper. It searches for the optimal k-mer length and coverage cutoff based on N50 or total base pairs.\n\n**Common Pattern:**\n```bash\nVelvetOptimiser.pl -s 19 -e 31 -f '-fastq -shortPaired reads_1.fq reads_2.fq' -t 4\n```\n*   `-s` / `-e`: Start and end k-mer range.\n*   `-f`: The file section of the `velveth` command.\n*   `-t`: Number of threads (simultaneous Velvet instances).\n\n## Expert Tips & Best Practices\n\n*   **K-mer Selection**: If the assembly is too fragmented, try increasing the k-mer length (reduces false overlaps but requires higher coverage). If coverage is low, decrease the k-mer length.\n*   **Memory Management**: Velvet is memory-intensive. Memory usage scales with the number of k-mers and the `MAXKMERLENGTH` set at compilation. For large genomes, ensure you are using a 64-bit environment with at least 12GB+ RAM.\n*   **Scaffolding**: Velvet automatically performs scaffolding if `shortPaired` reads are provided and `-exp_cov` and `-ins_length` are set. Scaffolds are represented in `contigs.fa` with 'N's representing estimated gap sizes.\n*   **Handling 'N's**: Velvet only supports A, C, G, T. Any 'N's in input reads are converted to 'A'. Clean your data before assembly if this is undesirable.\n*   **Stats Analysis**: Always check `stats.txt` in the output directory. It provides node-by-node coverage and length data, which is essential for manually determining the `-exp_cov` and `-cov_cutoff`.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| velvetg | de Bruijn graph construction, error removal and repeat resolution |\n| velveth | simple hashing program |\n\n## Reference documentation\n- [Velvet Manual](./references/github_com_dzerbino_velvet_wiki_Manual.md)\n- [Velvet FAQ](./references/github_com_dzerbino_velvet_wiki_Velvet-FAQ.md)\n- [VelvetOptimiser Guide](./references/github_com_dzerbino_velvet_wiki_Velvet-Optimiser-README.md)",
+  "skill_front_matter": {
+    "name": "velvet",
+    "description": "Velvet is a genomic de novo assembler optimized for short-read sequencing data using de Bruijn graphs. Use when user asks to hash reads into k-mers, construct contigs from short-read datasets, or perform de novo genome assembly.",
+    "homepage": "https://github.com/dzerbino/velvet"
+  }
+}

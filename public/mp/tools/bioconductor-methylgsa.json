@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methylgsa",
+  "category": "bioconductor",
+  "name": "bioconductor-methylgsa",
+  "description": "This tool performs gene set analysis on DNA methylation data while adjusting for the bias of varying CpG density per gene. Use when user asks to identify enriched pathways from 450K or EPIC array data, perform logistic regression for methylation gene sets, or aggregate CpG p-values into gene-level scores.",
+  "overview": "The methylGSA package provides methods for gene set analysis of DNA methylation data that account for the bias introduced by the varying number of CpG sites per gene. Genes with more CpGs are more likely to be identified as differentially methylated by chance; methylGSA corrects this using three primary statistical frameworks: logistic regression (methylglm), robust rank aggregation (methylRRA), and weighted resampling (methylgometh).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/methylGSA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/reese3928/methylGSA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "methylGSA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylGSA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/reese3928/methylGSA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methylgsa\n\nname: bioconductor-methylgsa\ndescription: Perform gene set analysis (GSA) on DNA methylation data using the methylGSA R package. This skill adjusts for the inherent bias caused by varying numbers of CpGs per gene. Use this skill when analyzing 450K or EPIC array data to identify enriched pathways (GO, KEGG, Reactome) or user-defined gene sets while controlling for CpG density.\n\n# bioconductor-methylgsa\n\n## Overview\nThe methylGSA package provides methods for gene set analysis of DNA methylation data that account for the bias introduced by the varying number of CpG sites per gene. Genes with more CpGs are more likely to be identified as differentially methylated by chance; methylGSA corrects this using three primary statistical frameworks: logistic regression (methylglm), robust rank aggregation (methylRRA), and weighted resampling (methylgometh).\n\n## Installation and Setup\nInstall the package via BiocManager and load the required annotation for your array type:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"methylGSA\")\n\nlibrary(methylGSA)\n\n# For 450K arrays\nlibrary(IlluminaHumanMethylation450kanno.ilmn12.hg19)\n\n# For EPIC arrays\nlibrary(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)\n```\n\n## Data Preparation\nThe primary input for all methylGSA functions is a named numeric vector of p-values from a differential methylation analysis. The names must be CpG IDs (e.g., cg00050873).\n\n```r\n# Example input structure\n# cpg.pval <- c(cg00050873 = 0.2876, cg00212031 = 0.7883, ...)\n```\n\n## Core Analysis Methods\n\n### 1. Logistic Regression (methylglm)\nAdjusts for CpG density by incorporating the number of CpGs as a covariate in a logistic regression model.\n\n```r\nres_glm = methylglm(cpg.pval = cpg.pval, \n                    minsize = 100, \n                    maxsize = 500, \n                    GS.type = \"KEGG\")\nhead(res_glm)\n```\n\n### 2. Robust Rank Aggregation (methylRRA)\nAggregates CpG-level p-values into gene-level scores. Supports Over-Representation Analysis (ORA) and Gene Set Enrichment Analysis (GSEA).\n\n```r\n# ORA approach (default)\nres_ora = methylRRA(cpg.pval = cpg.pval, method = \"ORA\", GS.type = \"GO\")\n\n# GSEA approach\nres_gsea = methylRRA(cpg.pval = cpg.pval, method = \"GSEA\", GS.type = \"Reactome\")\n```\n\n### 3. Weighted Resampling (methylgometh)\nInterfaces with the missMethyl package to use Wallenius non-central hypergeometric approximation.\n\n```r\nres_gometh = methylgometh(cpg.pval = cpg.pval, \n                          sig.cut = 0.001, \n                          GS.type = \"KEGG\")\n```\n\n## Customization and Advanced Options\n\n### User-Supplied Gene Sets\nProvide a list where names are gene set IDs and elements are vectors of gene symbols.\n\n```r\nres_custom = methylglm(cpg.pval = cpg.pval, \n                       GS.list = my_gene_sets, \n                       GS.idtype = \"SYMBOL\")\n```\n\n### Custom CpG-to-Gene Mapping\nIf using non-standard arrays or custom annotations, use `prepareAnnot`.\n\n```r\n# mapping: 1st col CpG ID, 2nd col Gene Name\nmy_annot = prepareAnnot(mapping_dataframe)\nres_custom_map = methylRRA(cpg.pval = cpg.pval, FullAnnot = my_annot)\n```\n\n### Filtering by Genomic Region\nUse the `group` argument to restrict analysis to specific gene regions:\n- \"all\": All CpGs (default).\n- \"body\": CpGs in the gene body or 1st exon.\n- \"promoter1\": TSS1500 or TSS200.\n- \"promoter2\": TSS1500, TSS200, 1stExon, or 5'UTR.\n\n## Visualization\nVisualize results using the built-in barplot function, which is compatible with outputs from all three main analysis functions.\n\n```r\nbarplot(res_glm, num = 10, colorby = \"padj\", xaxis = \"Size\")\n```\n\n## Interpreting Results\nThe output is a data frame containing:\n- **ID**: Gene set identifier.\n- **Description**: Description of the pathway.\n- **Size**: Total genes in the set.\n- **Count/Overlap**: (ORA only) Number of significant genes.\n- **pvalue**: Raw p-value for the gene set.\n- **padj**: Adjusted p-value (FDR).\n\n## Reference documentation\n- [methylGSA: Gene Set Analysis for DNA Methylation Datasets](./references/methylGSA-vignette.md)\n- [methylGSA Source Vignette](./references/methylGSA-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-methylgsa",
+    "description": "This tool performs gene set analysis on DNA methylation data while adjusting for the bias of varying CpG density per gene. Use when user asks to identify enriched pathways from 450K or EPIC array data, perform logistic regression for methylation gene sets, or aggregate CpG p-values into gene-level scores.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylGSA.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-knowyourcg",
+  "category": "bioconductor",
+  "name": "bioconductor-knowyourcg",
+  "description": "This tool performs functional interpretation of DNA methylation data by testing CpG sets for enrichment against curated knowledgebases. Use when user asks to analyze CpG sets for enrichment, perform set enrichment analysis on methylation data, link CpGs to genes, or test for genomic proximity and co-regulation.",
+  "overview": "knowYourCG (KYCG) is a CpG-centered framework for the functional interpretation of DNA methylation. Unlike gene-centric tools, it directly tests CpG dinucleotides against curated knowledgebases. It supports Fisher's Exact Test for categorical data and Set Enrichment Analysis (SEA) for continuous data (like beta values).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/knowYourCG.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-knowyourcg/overview",
+  "github": "https://github.com/zhou-lab/knowYourCG",
+  "conda_downloads": "459",
+  "conda_downloads_num": 459,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "knowYourCG"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/knowYourCG.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-knowyourcg/overview",
+    "github": "https://github.com/zhou-lab/knowYourCG",
+    "conda_downloads": "459",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-knowyourcg\n\nname: bioconductor-knowyourcg\ndescription: Functional interpretation of DNA methylation data using the knowYourCG Bioconductor package. Use this skill when analyzing CpG sets (queries) for enrichment against curated knowledgebases including chromatin states, transcription factor binding sites (TFBS), histone modifications, and tissue-specific signatures. It supports Infinium arrays (HM450, EPIC, EPICv2, MM285) and sequencing data.\n\n# bioconductor-knowyourcg\n\n## Overview\nknowYourCG (KYCG) is a CpG-centered framework for the functional interpretation of DNA methylation. Unlike gene-centric tools, it directly tests CpG dinucleotides against curated knowledgebases. It supports Fisher's Exact Test for categorical data and Set Enrichment Analysis (SEA) for continuous data (like beta values).\n\n## Setup and Data Preparation\nThe package relies on `sesameData` for knowledgebase sets. Caching is required for first-time use.\n\n```r\nlibrary(knowYourCG)\nlibrary(sesameData)\n# Cache required data (only needs to be done once)\nsesameDataCache() \n```\n\n## Knowledgebase Management\nKnowledgebases are organized into groups (e.g., \"TFBS\", \"chromHMM\", \"tissueSignature\").\n\n- **List available groups**: `listDBGroups(\"MM285\")` (replace with \"EPIC\" or \"HM450\" as needed).\n- **Retrieve specific databases**: `dbs <- getDBs(\"MM285.chromHMM\")`.\n- **Search databases**: The package supports substring matching (e.g., \"TFBS\" matches \"KYCG.MM285.TFBSconsensus...\").\n\n## Enrichment Testing\n\n### Categorical Query (Fisher's Exact Test)\nUse when you have a list of CpG IDs (e.g., from differential methylation analysis).\n\n```r\n# query: character vector of probe IDs\nresults <- testEnrichment(query, databases = \"TFBS\", platform = \"MM285\")\n# results include: estimate (fold enrichment), p-value, FDR, overlap\n```\n\n### Continuous Query (Set Enrichment Analysis)\nUse when you have a named numeric vector (e.g., beta values or correlation coefficients).\n\n```r\n# query: named numeric vector (names are probe IDs)\nresults <- testEnrichmentSEA(query, databases = \"MM285.chromHMM\")\n# estimate here represents the enrichment score\n```\n\n## Gene and Pathway Analysis\nKYCG can link CpGs to proximal genes and perform Gene Ontology (GO) enrichment.\n\n- **Gene-centric enrichment**: \n  ```r\n  gene_dbs <- buildGeneDBs(query, max_distance = 100000, platform = \"MM285\")\n  results <- testEnrichment(query, gene_dbs, platform = \"MM285\")\n  ```\n- **GO Analysis**:\n  ```r\n  # Uses gprofiler2 internally\n  go_results <- testGO(query, platform = \"MM285\", organism = \"mmusculus\")\n  ```\n\n## Genomic Proximity\nTest if a set of probes are physically clustered in the genome, suggesting co-regulation.\n\n```r\nprox_res <- testProbeProximity(probeIDs = query)\n# Returns Poisson statistics (lambda, p.val) and cluster coordinates\n```\n\n## Visualization\nKYCG provides several plotting functions to interpret enrichment results:\n\n- **Overview**: `KYCG_plotEnrichAll(results)` - Plots -log10(FDR) across all tested database groups.\n- **Dot Plot**: `KYCG_plotDot(results)` - Standard enrichment dot plot.\n- **Volcano Plot**: `KYCG_plotVolcano(results)` - Useful for two-tailed tests.\n- **Waterfall/Bar**: `KYCG_plotWaterfall(results)` or `KYCG_plotBar(results)`.\n- **Manhattan Plot**: `KYCG_plotManhattan(named_vector, platform = \"HM450\")` - Visualizes chromosomal distribution of significance.\n- **Metagene Plot**: `KYCG_plotMeta(beta_values)` - Aggregates methylation signal over gene bodies/features.\n\n## Tips for Success\n1. **Universe Selection**: By default, the universe is inferred from the query. For more accurate results, explicitly provide the `platform` (e.g., \"EPIC\", \"MM285\") or a `universeSet`.\n2. **Database Caching**: Always run `sesameDataCache()` if you encounter errors regarding missing database sets.\n3. **Feature Aggregation**: Use `dbStats(betas, 'MM285.chromHMM')` to calculate summary statistics (like mean beta) for specific chromatin states across samples, which is useful for downstream machine learning.\n\n## Reference documentation\n- [Array Data Analysis](./references/Array.md)\n- [Continuous Data Analysis](./references/Continuous.md)\n- [Main KYCG Vignette](./references/KYCG.Rmd)\n- [Sequencing Data Analysis](./references/Sequencing.md)\n- [Visualization Guide](./references/visualization.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-knowyourcg",
+    "description": "This tool performs functional interpretation of DNA methylation data by testing CpG sets for enrichment against curated knowledgebases. Use when user asks to analyze CpG sets for enrichment, perform set enrichment analysis on methylation data, link CpGs to genes, or test for genomic proximity and co-regulation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/knowYourCG.html"
+  }
+}

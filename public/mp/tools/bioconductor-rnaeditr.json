@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rnaeditr",
+  "category": "bioconductor",
+  "name": "bioconductor-rnaeditr",
+  "description": "Bioconductor-rnaeditr identifies differentially edited RNA genomic sites and regions in RNA-seq datasets. Use when user asks to analyze associations between RNA editing levels and phenotypes, identify co-edited genomic sub-regions, or perform site-specific and region-based statistical testing.",
+  "overview": "`rnaEditr` is a Bioconductor package designed to identify genomic sites and regions that are differentially edited in RNA-seq datasets. It supports complex study designs including multiple covariates and interaction effects. The package is unique in its ability to identify \"co-edited\" regions—clusters of sites where editing levels are correlated—before testing for associations with phenotypes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/rnaEditr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/TransBioInfoLab/rnaEditr",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rnaEditr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rnaEditr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/TransBioInfoLab/rnaEditr",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rnaeditr\n\nname: bioconductor-rnaeditr\ndescription: Identify differentially edited RNA genomic sites and regions in RNA-seq data. Use this skill to analyze associations between RNA editing levels and continuous, binary, or survival phenotypes, including identifying co-edited sub-regions and performing site-specific or region-based statistical testing.\n\n## Overview\n`rnaEditr` is a Bioconductor package designed to identify genomic sites and regions that are differentially edited in RNA-seq datasets. It supports complex study designs including multiple covariates and interaction effects. The package is unique in its ability to identify \"co-edited\" regions—clusters of sites where editing levels are correlated—before testing for associations with phenotypes.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires two primary inputs:\n- **RNA Editing Matrix**: Rows are sites (e.g., \"chr1:28661572\"), columns are samples. Values range from 0 to 1.\n- **Phenotype Data**: A data frame with a `sample` column matching the column names of the editing matrix.\n\n```r\nlibrary(rnaEditr)\ndata(rnaedit_df) # Example editing matrix\n\n# Convert to the required rnaEdit_df class\nrnaedit_table <- CreateEditingTable(rnaEditMatrix = rnaedit_df)\n```\n\n### 2. Site-Specific Analysis\nUse this to test every individual editing site against a phenotype.\n\n```r\nresults_site <- TestAssociations(\n  rnaEdit_df = rnaedit_table,\n  pheno_df = pheno_df,\n  responses_char = \"sample_type\", # Phenotype column\n  respType = \"binary\",            # \"binary\", \"continuous\", or \"survival\"\n  orderByPval = TRUE\n)\n\n# Annotate with gene symbols\nannotated_site <- AnnotateResults(\n  results_df = results_site,\n  genome = \"hg19\",\n  analysis = \"site-specific\"\n)\n```\n\n### 3. Region-Based Analysis\nThis multi-step process identifies clusters of sites that behave similarly.\n\n1.  **Define Input Regions**: Create a GRanges object of genes or genomic ranges.\n    ```r\n    input_gr <- TransformToGR(genes_char = c(\"PHACTR4\", \"CCR5\"), type = \"symbol\", genome = \"hg19\")\n    ```\n2.  **Find Close-by Regions**: Identify sub-regions with clusters of sites (default: $\\ge 3$ sites within 50bp).\n    ```r\n    closeby_gr <- AllCloseByRegions(regions_gr = input_gr, rnaEditMatrix = rnaedit_df)\n    ```\n3.  **Identify Co-edited Regions**: Filter for regions where editing levels are correlated.\n    ```r\n    coedited_gr <- AllCoeditedRegions(regions_gr = closeby_gr, rnaEditMatrix = rnaedit_df)\n    ```\n4.  **Summarize and Test**: Calculate a single value (e.g., median) for the region and test association.\n    ```r\n    summarized_df <- SummarizeAllRegions(regions_gr = coedited_gr, rnaEditMatrix = rnaedit_df, selectMethod = MedianSites)\n    \n    results_region <- TestAssociations(\n      rnaEdit_df = summarized_df,\n      pheno_df = pheno_df,\n      responses_char = \"sample_type\",\n      respType = \"binary\"\n    )\n    ```\n\n## Key Functions and Parameters\n\n- `TestAssociations()`: The main engine for statistical testing.\n    - `respType`: Set to \"binary\" (uses logistic regression), \"continuous\" (linear regression), or \"survival\" (Cox proportional hazards).\n    - `covariates_char`: Character vector of column names in `pheno_df` to adjust for.\n- `AllCoeditedRegions()`: Uses `rDropThresh_num` (default 0.4) to ensure each site correlates with the mean of others in the cluster.\n- `AnnotateResults()`: Maps genomic coordinates to gene symbols using internal hg19 or hg38 references.\n\n## Tips for Success\n- **Sample Matching**: Ensure `identical(pheno_df$sample, colnames(rnaedit_df))` is TRUE before starting.\n- **Binary Outcomes**: If a group has $< 10$ samples, the package automatically applies Firth corrected logistic regression to handle separation issues.\n- **Survival Data**: For `respType = \"survival\"`, `responses_char` must be a vector of length 2: `c(\"time_column\", \"status_column\")`.\n- **Visualization**: Use `PlotEditingCorrelations(region_gr, rnaEditMatrix)` to visualize the correlation structure of a specific co-edited region.\n\n## Reference documentation\n- [Introduction to rnaEditr](./references/introduction_to_rnaEditr.md)\n- [Introduction to rnaEditr (Rmd)](./references/introduction_to_rnaEditr.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-rnaeditr",
+    "description": "Bioconductor-rnaeditr identifies differentially edited RNA genomic sites and regions in RNA-seq datasets. Use when user asks to analyze associations between RNA editing levels and phenotypes, identify co-edited genomic sub-regions, or perform site-specific and region-based statistical testing.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rnaEditr.html"
+  }
+}

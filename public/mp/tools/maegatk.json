@@ -1,0 +1,47 @@
+{
+  "id": "maegatk",
+  "category": "CLI",
+  "name": "maegatk",
+  "description": "maegatk extracts high-quality mitochondrial genotypes from sequencing data by using UMIs to collapse PCR duplicates and create consensus base calls. Use when user asks to call mitochondrial variants, generate genotype matrices from single-cell data, or identify mitochondrial heteroplasmy and indels.",
+  "overview": "maegatk is a specialized toolkit designed to extract high-quality mitochondrial genotypes from sequencing data. Its primary strength lies in its ability to collapse PCR duplicates using Unique Molecular Identifiers (UMIs) and insert positions to create a consensus base call. This error-correction mechanism is essential for distinguishing true low-frequency heteroplasmy from sequencing artifacts. The tool is optimized for single-cell workflows, allowing researchers to reconstruct cellular lineage",
+  "homepage": "https://github.com/caleblareau/maegatk",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/maegatk/overview",
+  "github": "https://github.com/caleblareau/maegatk",
+  "conda_downloads": "1.4K",
+  "conda_downloads_num": 1400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maegatk_bcall",
+      "maegatk_support"
+    ],
+    "description": "a Maester genome toolkit.",
+    "docker_image": "quay.io/biocontainers/maegatk:0.2.0--pyhdfd78af_2",
+    "homepage": "https://github.com/caleblareau/maegatk",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/maegatk/overview",
+    "github": "https://github.com/caleblareau/maegatk",
+    "conda_downloads": "1.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "maegatk_bcall.cwl",
+    "maegatk_support.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# maegatk\n\n## Overview\n\nmaegatk is a specialized toolkit designed to extract high-quality mitochondrial genotypes from sequencing data. Its primary strength lies in its ability to collapse PCR duplicates using Unique Molecular Identifiers (UMIs) and insert positions to create a consensus base call. This error-correction mechanism is essential for distinguishing true low-frequency heteroplasmy from sequencing artifacts. The tool is optimized for single-cell workflows, allowing researchers to reconstruct cellular lineages or track clones using mitochondrial mutations as natural barcodes.\n\n## Core Workflows\n\n### Mitochondrial Base Calling (bcall)\n\nThe `bcall` mode is the primary entry point for generating genotype matrices.\n\n```bash\nmaegatk bcall -i <input.bam> -o <output_directory> -b <barcodes.txt> -g rCRS -c <cores>\n```\n\n**Key Parameters:**\n- `-i, --input`: A singular, indexed BAM file containing mitochondrial reads.\n- `-b, --barcodes`: A text file containing the cell barcodes to be processed.\n- `-bt, --barcode-tag`: The BAM tag representing the cell barcode (e.g., `CB` or `CR`).\n- `-ub, --umi-barcode`: The BAM tag representing the UMI (e.g., `UB` or `OX`).\n- `-g, --mito-genome`: The reference genome. Use `rCRS` for the built-in human mitochondrial reference or provide a path to a BWA-indexed FASTA.\n- `-mr, --min-reads`: Minimum number of supporting reads required to call a consensus UMI (default is 1). Increase this for higher stringency.\n\n### Indel Calling\n\nIndel calling is a multi-step process that requires a successful `bcall` run first.\n\n1. **Run bcall with quality control flags**: Ensure you retain the per-cell BAM files.\n2. **Execute maegatk-indel**:\n   ```bash\n   maegatk-indel -i <bcall_output_dir>/temp/ready_bam -o <indel_output_dir> -m 5\n   ```\n   - The `-m` flag sets the minimum number of reads in a cell required to support an indel (default is 5).\n\n## Expert Tips and Best Practices\n\n### Resource Management\n- **Java Memory**: If the duplicate removal step (fgbio) fails, increase the allocated memory using `-jm` (e.g., `-jm 8000m`).\n- **Parallelization**: Use the `-c` flag to specify the number of cores. maegatk uses Snakemake internally to parallelize processing across cell barcodes.\n- **Temporary Files**: Use the `-z` flag to keep intermediate files. This is critical for troubleshooting and is required if you plan to run `maegatk-indel` later.\n\n### Input Preparation\n- **BAM Tags**: Ensure your BAM file is properly tagged with Cell Barcodes and UMIs. If these tags are missing or non-standard, the tool will not be able to collapse reads or separate cells.\n- **NH/NM Flags**: maegatk filters reads based on the `NH` (number of alignments) and `NM` (edit distance) tags. You can adjust these thresholds using `--NHmax` and `--NMmax`.\n\n### Output Interpretation\n- **RDS Files**: By default, maegatk produces a `.rds` file in the `final/` directory. This is a `SingleCellExperiment` object ready for analysis in R.\n- **Plain Text**: If you do not have R installed or prefer text output, use the `--skip-R` flag to generate compressed `.txt.gz` files containing the sparse matrices of counts.\n- **Variant Selection**: When analyzing results, focus on variants with high strand correlation and sufficient coverage to avoid false positives.\n\n### Troubleshooting\n- **Generic R Errors**: These often stem from failures in the Snakemake pipeline. Check the `logs/` directory for specific error messages from individual cell processing steps.\n- **Fgbio Tmp Directory**: For large datasets, the default system tmp directory may overflow. You may need to manually edit the `oneSample_maegatk.py` script in your installation to point `-Djava.io.tmpdir` to a larger partition.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| maegatk | a Maester genome toolkit. |\n| maegatk | a Maester genome toolkit. |\n\n## Reference documentation\n- [Main README and CLI Reference](./references/github_com_caleblareau_maegatk.md)\n- [Frequently Asked Questions](./references/github_com_caleblareau_maegatk_wiki_FAQ.md)\n- [Indel Calling Workflow](./references/github_com_caleblareau_maegatk_wiki_Indel-calling.md)\n- [Functional Annotation of Variants](./references/github_com_caleblareau_maegatk_wiki_Functional-annotation.md)",
+  "skill_front_matter": {
+    "name": "maegatk",
+    "description": "maegatk extracts high-quality mitochondrial genotypes from sequencing data by using UMIs to collapse PCR duplicates and create consensus base calls. Use when user asks to call mitochondrial variants, generate genotype matrices from single-cell data, or identify mitochondrial heteroplasmy and indels.",
+    "homepage": "https://github.com/caleblareau/maegatk"
+  }
+}

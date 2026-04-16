@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-geneaccord",
+  "category": "bioconductor",
+  "name": "bioconductor-geneaccord",
+  "description": "This tool identifies clonally exclusive gene or pathway pairs in cancer cohorts using phylogenetic tree inference data. Use when user asks to detect mutations occurring in different branches of a tumor phylogeny, identify potential synergies between co-existing clones, or perform statistical tests for clonal exclusivity across patient cohorts.",
+  "overview": "GeneAccord identifies pairs of genes or pathways that are mutated in the same tumor but in different clones (clonally exclusive). It uses a likelihood ratio test to compare observed clonal exclusivity frequencies against a background null distribution. The package is designed to handle uncertainty in phylogenetic tree reconstruction by allowing multiple gene-to-clone assignments per patient.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneAccord.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geneaccord/overview",
+  "github": "https://github.com/cbg-ethz/GeneAccord",
+  "conda_downloads": "21.5K",
+  "conda_downloads_num": 21500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GeneAccord"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneAccord.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geneaccord/overview",
+    "github": "https://github.com/cbg-ethz/GeneAccord",
+    "conda_downloads": "21.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-geneaccord\n\nname: bioconductor-geneaccord\ndescription: Statistical framework for detecting clonally exclusive gene or pathway pairs in cancer cohorts using phylogenetic tree inference data. Use when analyzing tumor subclonal mutation profiles to identify potential synergies between co-existing clones by finding mutations that occur in different branches of the tumor phylogeny more often than expected by chance.\n\n## Overview\n\nGeneAccord identifies pairs of genes or pathways that are mutated in the same tumor but in different clones (clonally exclusive). It uses a likelihood ratio test to compare observed clonal exclusivity frequencies against a background null distribution. The package is designed to handle uncertainty in phylogenetic tree reconstruction by allowing multiple gene-to-clone assignments per patient.\n\n## Workflow and Functions\n\n### 1. Prepare Patient Data\n\nConvert mutation-to-clone assignment files (CSV format) into the required tibble format.\n\n```r\n# Create a collection of tree inferences for a patient\n# input_files is a vector of paths to CSV files\nclone_tbl <- create_tbl_tree_collection(input_files, max_num_clones = 7)\n\n# Compute clonal exclusivity rates for the patient across all trees\nrates <- compute_rates_clon_excl(clone_tbl)\navg_rate <- mean(rates)\n\n# Generate histograms of pair occurrences and exclusivity\nhist_data <- get_hist_clon_excl(clone_tbl)\n```\n\n### 2. Generate Null Distribution\n\nBefore testing, generate the empirical cumulative distribution function (ECDF) of the test statistic under the null hypothesis (independence).\n\n```r\n# Determine the maximum number of patients a pair is mutated in\nnum_pat_pair_max <- pairs_in_patients_hist(clone_tbl_all_pats_all_trees)\n\n# Generate ECDF (use high num_pairs_sim for production, e.g., 100000)\necdf_list <- generate_ecdf_test_stat(avg_rates_m, \n                                     list_of_num_trees_all_pats, \n                                     list_of_clon_excl_all_pats, \n                                     num_pat_pair_max = 15, \n                                     num_pairs_sim = 1000)\n```\n\n### 3. Perform Clonal Exclusivity Test\n\nRun the main statistical test to identify significant pairs.\n\n```r\n# Standard one-sided test for clonal exclusivity\nres_pairs <- GeneAccord(clone_tbl_all_pats_all_trees, avg_rates_m, ecdf_list)\n\n# Two-sided test for specific genes of interest\nres_pairs_ts <- GeneAccord(clone_tbl_all_pats_all_trees, \n                           avg_rates_m, \n                           ecdf_list, \n                           alternative = \"two.sided\", \n                           genes_of_interest = c(\"ENSG1\", \"ENSG2\"), \n                           AND_OR = \"AND\")\n```\n\n### 4. Process and Visualize Results\n\nMap Ensembl IDs to HGNC symbols and visualize the clonal structures.\n\n```r\n# Map to HGNC symbols\nall_genes_tbl <- create_ensembl_gene_tbl_hg()\nsig_pairs <- map_pairs_to_hgnc_symbols(res_pairs, all_genes_tbl)\n\n# Identify specific patients where pairs are exclusive\nsig_pairs <- take_pairs_and_get_patients(clone_tbl_all_pats_all_trees, sig_pairs)\n\n# Visualizations\nplot_ecdf_test_stat(ecdf_list)\nplot_rates_clon_excl(avg_rates_m, clone_tbl_all_pats_all_trees)\nheatmap_clones_gene_pat(sig_pairs, clone_tbl_subset, all_genes_tbl)\n```\n\n### 5. Pathway Level Analysis\n\nTo perform analysis at the pathway level, map gene-to-clone assignments to pathways using Reactome.\n\n```r\ndata(\"ensg_reactome_path_map\")\nclone_tbl_pw <- convert_ensembl_to_reactome_pw_tbl(clone_tbl_gene, ensg_reactome_path_map)\n```\n\n## Tips and Best Practices\n\n- **Tree Uncertainty:** Always use multiple tree inference runs (e.g., different seeds or posterior samples) to populate the `tree_id` column. This allows GeneAccord to account for phylogenetic ambiguity.\n- **Simulation Depth:** For publication-quality results, set `num_pairs_sim` in `generate_ecdf_test_stat` to at least 100,000. This is computationally intensive and should be run in parallel or on a cluster if possible.\n- **Input Format:** Ensure input CSVs have a first column for the `mutated_entity` followed by binary columns (`0` or `1`) for each clone.\n- **Filtering:** GeneAccord only tests pairs that occur in more than one patient. Use `pairs_in_patients_hist` to inspect the cohort frequency of gene pairs before running the full test.\n\n## Reference documentation\n\n- [GeneAccord](./references/GeneAccord.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-geneaccord",
+    "description": "This tool identifies clonally exclusive gene or pathway pairs in cancer cohorts using phylogenetic tree inference data. Use when user asks to detect mutations occurring in different branches of a tumor phylogeny, identify potential synergies between co-existing clones, or perform statistical tests for clonal exclusivity across patient cohorts.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneAccord.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-voyager",
+  "category": "bioconductor",
+  "name": "bioconductor-voyager",
+  "description": "The Voyager package provides a framework for exploratory spatial data analysis of transcriptomics data using spatial statistics and geometries. Use when user asks to quantify spatial autocorrelation, identify hotspots or coldspots, perform spatially-informed dimension reduction, or calculate bivariate spatial correlations.",
+  "overview": "The `Voyager` package provides a comprehensive framework for Exploratory Spatial Data Analysis (ESDA) within the Bioconductor ecosystem. It extends the `SpatialFeatureExperiment` (SFE) data structure—which itself inherits from `SpatialExperiment` and `SingleCellExperiment`—to provide spatial analogs to the `scater` package. `Voyager` allows users to quantify spatial autocorrelation, identify hotspots/coldspots, and perform spatially-informed dimension reduction, moving beyond simple centroid-bas",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Voyager.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/pachterlab/voyager",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Voyager"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Voyager.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/pachterlab/voyager",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-voyager\n\n## Overview\nThe `Voyager` package provides a comprehensive framework for Exploratory Spatial Data Analysis (ESDA) within the Bioconductor ecosystem. It extends the `SpatialFeatureExperiment` (SFE) data structure—which itself inherits from `SpatialExperiment` and `SingleCellExperiment`—to provide spatial analogs to the `scater` package. `Voyager` allows users to quantify spatial autocorrelation, identify hotspots/coldspots, and perform spatially-informed dimension reduction, moving beyond simple centroid-based analysis by supporting actual tissue geometries and images.\n\n## Core Workflow\n\n### 1. Data Preparation\n`Voyager` operates on `SpatialFeatureExperiment` objects. Ensure your data is formatted correctly and includes spatial coordinates or geometries.\n\n```r\nlibrary(Voyager)\nlibrary(SpatialFeatureExperiment)\nlibrary(SFEData)\nlibrary(scater)\n\n# Load example data or your own SFE object\nsfe <- McKellarMuscleData()\n\n# Pre-processing (standard scRNA-seq workflow)\nsfe <- sfe[, colData(sfe)$in_tissue]\nsfe <- logNormCounts(sfe)\n```\n\n### 2. Spatial Neighborhood Graphs\nA spatial graph is required for most spatial statistics. `Voyager` provides wrappers to build these based on the technology (e.g., Visium) or geometry.\n\n```r\n# For Visium data\ncolGraph(sfe, \"visium\") <- findVisiumGraph(sfe)\n\n# For other data, use general graph construction\n# colGraph(sfe, \"knn\") <- findSpatialNeighbors(sfe, method = \"knn\", k = 6)\n```\n\n### 3. Univariate Spatial Statistics\nUse `runUnivariate` or specific wrappers like `runMoransI` to calculate global and local statistics.\n\n*   **Global Statistics:** Moran's I (autocorrelation), Geary's C, Correlograms.\n*   **Local Statistics:** Local Moran's I, Getis-Ord Gi* (hotspot detection).\n\n```r\nfeatures_use <- c(\"Myh1\", \"Myh2\")\n\n# Compute Moran's I (Global)\nsfe <- runUnivariate(sfe, type = \"moran\", features = features_use, \n                     colGraphName = \"visium\", swap_rownames = \"symbol\")\n\n# Compute Getis-Ord Gi* (Local)\nsfe <- runUnivariate(sfe, type = \"localG\", features = features_use,\n                     colGraphName = \"visium\", include_self = TRUE, \n                     swap_rownames = \"symbol\")\n\n# Access results\n# Global: rowData(sfe)\n# Local: localResults(sfe, name = \"localG\")\n```\n\n### 4. Multivariate and Bivariate Analysis\n*   **MULTISPATI PCA:** Spatially-informed PCA that maximizes both variance and spatial autocorrelation.\n*   **Lee's L:** Measures spatial bivariate correlation between two features.\n\n```r\n# Spatially informed PCA\nsfe <- runMultivariate(sfe, \"multispati\", colGraphName = \"visium\", \n                       subset_row = hvgs, nfposi = 10, nfnega = 10)\n\n# Bivariate correlation (Lee's L)\nlee_matrix <- calculateBivariate(sfe, \"lee\", features = hvgs)\n```\n\n### 5. Visualization\n`Voyager` provides specialized plotting functions that handle geometries and images.\n\n```r\n# Plot gene expression with annotation geometries\nplotSpatialFeature(sfe, features = \"Myh1\", colGeometryName = \"spotPoly\", \n                   annotGeometryName = \"myofiber_simplified\", aes_use = \"color\")\n\n# Plot local results (e.g., Gi* hotspots) over a tissue image\nplotLocalResult(sfe, \"localG\", features = \"Myh1\", \n                colGeometryName = \"spotPoly\", image_id = \"lowres\",\n                divergent = TRUE, diverge_center = 0)\n\n# Plot spatially informed reduced dimensions\nspatialReducedDim(sfe, \"multispati\", ncomponents = 2, image_id = \"lowres\")\n```\n\n## Tips for Success\n*   **Feature Naming:** Use `swap_rownames = \"symbol\"` in functions if your SFE object uses Ensembl IDs as primary rownames but you prefer gene symbols for analysis and plotting.\n*   **Local Results:** Local statistics are stored in the `localResults` slot of the SFE object, not `colData`. Use `localResult(sfe, \"type\", \"feature\")` to retrieve them.\n*   **Negative Autocorrelation:** In `MULTISPATI`, pay attention to negative eigenvalues (controlled by `nfnega`), which represent \"checkerboard\" patterns of spatial expression.\n*   **Image Alignment:** If plotting on an image, ensure the image is correctly oriented using `mirrorImg()` or `rotateImg()` if it doesn't align with the spot geometries.\n\n## Reference documentation\n- [Overview of Voyager](./references/overview.md)\n- [Overview of Voyager (Rmd)](./references/overview.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-voyager",
+    "description": "The Voyager package provides a framework for exploratory spatial data analysis of transcriptomics data using spatial statistics and geometries. Use when user asks to quantify spatial autocorrelation, identify hotspots or coldspots, perform spatially-informed dimension reduction, or calculate bivariate spatial correlations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Voyager.html"
+  }
+}

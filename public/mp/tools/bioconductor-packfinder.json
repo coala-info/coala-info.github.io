@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-packfinder",
+  "category": "bioconductor",
+  "name": "bioconductor-packfinder",
+  "description": "The packFinder package performs de novo prediction of Pack-TYPE transposable elements by identifying terminal inverted repeats flanked by target site duplications. Use when user asks to search for transposable elements in a genome, cluster predicted elements by sequence identity, or export identified sequences for downstream BLAST analysis.",
+  "overview": "The `packFinder` package provides a specialized workflow for the de novo prediction of Pack-TYPE transposable elements. It identifies potential elements by searching for Terminal Inverted Repeats (TIRs) that are flanked by identical Terminal Site Duplications (TSDs) within a user-defined length range. While sensitive for detection, it does not automatically distinguish between autonomous (transposase-containing) and non-autonomous (Pack-TYPE) elements; therefore, it includes tools for clustering",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/packFinder.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/jackgisby/packFinder",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "packFinder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/packFinder.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/jackgisby/packFinder",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-packfinder\n\n## Overview\n\nThe `packFinder` package provides a specialized workflow for the de novo prediction of Pack-TYPE transposable elements. It identifies potential elements by searching for Terminal Inverted Repeats (TIRs) that are flanked by identical Terminal Site Duplications (TSDs) within a user-defined length range. While sensitive for detection, it does not automatically distinguish between autonomous (transposase-containing) and non-autonomous (Pack-TYPE) elements; therefore, it includes tools for clustering and alignment to facilitate downstream identification (e.g., via BLAST).\n\n## Core Workflow\n\n### 1. Data Preparation\nInput sequences must be in `Biostrings` formats. The genome/scaffold should be a `DNAStringSet`, and the TIR query should be a `DNAString`.\n\n```r\nlibrary(packFinder)\nlibrary(Biostrings)\n\n# Load genome data\ngenome <- readDNAStringSet(\"path/to/genome.fasta\")\n\n# Define the TIR search query (e.g., first 8-10 bp of a known TIR)\ntir_query <- DNAString(\"CACTACAA\")\n```\n\n### 2. Searching for Elements\nThe primary function is `packSearch`. It requires the TIR sequence, the genome, the expected range of the transposon length, and the TSD length.\n\n```r\npackMatches <- packSearch(\n    tir_query,\n    genome,\n    elementLength = c(300, 3500), # Min and max length\n    tsdLength = 3,                # Length of TSD\n    mismatch = 0                  # Allowed mismatches in TIR search\n)\n```\n\n### 3. Clustering and Analysis\nTo group related elements (which may share sequence origin), use `packClust`. Note: This requires the `VSEARCH` command-line tool to be accessible.\n\n```r\n# Cluster elements based on sequence identity (default 60%)\npackMatches <- packClust(\n    packMatches,\n    genome,\n    saveFolder = \"output_dir\"\n)\n\n# Analyze TIR similarities specifically\nconsensusSeqs <- tirClust(\n    packMatches,\n    genome,\n    tirLength = 25\n)\n```\n\n### 4. Exporting Results\n`packFinder` uses a dataframe format compatible with `GRanges`. You can convert or export results easily.\n\n```r\n# Convert to GRanges for use with GenomicRanges package\ngr <- packsToGRanges(packMatches)\n\n# Export to FASTA for BLAST analysis\npacksToFasta(packMatches, \"predicted_elements.fasta\", genome)\n\n# Save metadata to CSV\npacksToCsv(packMatches, \"results.csv\")\n```\n\n## Step-wise Control\nIf `packSearch` is too restrictive, you can run the pipeline manually:\n1. `identifyTirMatches()`: Find all instances of the TIR and its reverse complement.\n2. `getTsds()`: Extract the flanking sequences for each match.\n3. `identifyPotentialPackElements()`: Pair forward and reverse TIRs that have matching TSDs and valid distances.\n4. `getPackSeqs()`: Extract the full DNA sequences of the predicted elements.\n\n## Tips for Success\n- **TIR Selection**: Use the most conserved part of the TIR (usually the first 8-12 bp).\n- **TSD Length**: This is family-specific (e.g., 3 bp for CACTA, 8 bp for MULE).\n- **Strand Orientation**: `packClust` assigns a \"+\" strand to the cluster representative; other members are assigned relative to that representative.\n- **Filtering**: Use `GenomicRanges` after conversion to remove overlapping predictions that are biologically impossible.\n\n## Reference documentation\n- [packFinder Vignette (Rmd)](./references/packFinder.Rmd)\n- [packFinder Vignette (Markdown)](./references/packFinder.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-packfinder",
+    "description": "The packFinder package performs de novo prediction of Pack-TYPE transposable elements by identifying terminal inverted repeats flanked by target site duplications. Use when user asks to search for transposable elements in a genome, cluster predicted elements by sequence identity, or export identified sequences for downstream BLAST analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/packFinder.html"
+  }
+}

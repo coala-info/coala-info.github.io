@@ -1,0 +1,57 @@
+{
+  "id": "trycycler",
+  "category": "CLI",
+  "name": "trycycler",
+  "description": "Trycycler is a consensus long-read meta-assembler that reconciles multiple independent bacterial genome assemblies into a single structurally accurate consensus. Use when user asks to generate a consensus assembly from multiple inputs, reconcile circular replicons, or cluster and partition long reads for bacterial genome finishing.",
+  "overview": "Trycycler is a consensus long-read assembler specifically designed for bacterial genomes. Rather than attempting to be a standalone assembler, it acts as a \"meta-assembler\" that reconciles multiple independent assembly inputs (from different tools or read subsets) into a single, structurally accurate consensus. It is particularly effective at handling the \"start-end\" overlap problems common in circular replicons and ensuring that every plasmid and chromosome is correctly represented.",
+  "homepage": "https://github.com/rrwick/Trycycler",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/trycycler/overview",
+  "github": "https://github.com/rrwick/Trycycler",
+  "conda_downloads": "26.1K",
+  "conda_downloads_num": 26100,
+  "last_updated": "2025-09-30",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "trycycler_subsample",
+      "trycycler_cluster",
+      "trycycler_dotplot",
+      "trycycler_reconcile",
+      "trycycler_msa",
+      "trycycler_partition",
+      "trycycler_consensus"
+    ],
+    "description": "subsample a long-read set",
+    "docker_image": "quay.io/biocontainers/trycycler:0.5.6--pyhdfd78af_0",
+    "homepage": "https://github.com/rrwick/Trycycler",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/trycycler/overview",
+    "github": "https://github.com/rrwick/Trycycler",
+    "conda_downloads": "26.1K",
+    "last_updated": "2025-09-30",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "trycycler_cluster.cwl",
+    "trycycler_consensus.cwl",
+    "trycycler_dotplot.cwl",
+    "trycycler_msa.cwl",
+    "trycycler_partition.cwl",
+    "trycycler_reconcile.cwl",
+    "trycycler_subsample.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# trycycler\n\n## Overview\nTrycycler is a consensus long-read assembler specifically designed for bacterial genomes. Rather than attempting to be a standalone assembler, it acts as a \"meta-assembler\" that reconciles multiple independent assembly inputs (from different tools or read subsets) into a single, structurally accurate consensus. It is particularly effective at handling the \"start-end\" overlap problems common in circular replicons and ensuring that every plasmid and chromosome is correctly represented.\n\n## Core Workflow and CLI Patterns\n\nThe Trycycler pipeline follows a specific sequence of commands. You must complete each step before moving to the next.\n\n### 1. Clustering\nGroup contigs from all input assemblies into clusters representing individual replicons.\n```bash\ntrycycler cluster --reads reads.fastq.gz --assemblies assemblies/*.fasta --out_dir trycycler_out\n```\n*   **Expert Tip**: Inspect the generated `cluster.txt` and the phylogenetic tree. If the tree is messy or clusters are fragmented, your input assemblies may be of poor quality.\n\n### 2. Reconciling\nStandardize the contigs within a cluster (orientation, starting position, and circularization).\n```bash\ntrycycler reconcile --reads reads.fastq.gz --cluster_dir trycycler_out/cluster_001\n```\n*   **Note**: This step fixes the common issue where different assemblers start a circular contig at different positions or leave redundant overlaps at the ends.\n\n### 3. Multiple Sequence Alignment (MSA)\nPerform alignment of the reconciled sequences to identify variants.\n```bash\ntrycycler msa --cluster_dir trycycler_out/cluster_001\n```\n\n### 4. Partitioning\nAssign the original long reads to the specific clusters they belong to.\n```bash\ntrycycler partition --reads reads.fastq.gz --cluster_dirs trycycler_out/cluster_*\n```\n\n### 5. Consensus Generation\nGenerate the final consensus sequence for the replicon.\n```bash\ntrycycler consensus --cluster_dir trycycler_out/cluster_001\n```\n\n## Best Practices for High-Quality Assemblies\n\n### Input Diversity\nTo get the most out of Trycycler, provide diverse inputs. A common \"Great Dataset\" strategy involves:\n*   Generating ~12 assemblies total.\n*   Using multiple assemblers (e.g., Flye, Raven, and Miniasm/Minipolish).\n*   Using different random subsamples of reads (e.g., 80-90% of the data) for each assembly run.\n\n### Read Depth Requirements\n*   **Minimum**: 10-25x depth is required for a complete assembly, but accuracy will be low.\n*   **Recommended**: 50x depth is the \"sweet spot\" for reliable structural assembly.\n*   **Maximum Benefit**: Up to 250x depth is beneficial if you plan to perform Medaka polishing after Trycycler.\n\n### Post-Trycycler Polishing\nTrycycler is designed to fix structural and medium-scale errors. It does not fix systematic small-scale errors (like homopolymer indels). Always follow Trycycler with:\n1.  **Long-read polishing**: Use Medaka on the Trycycler consensus.\n2.  **Short-read polishing**: Use Polypolish or Pilon if Illumina data is available.\n\n### Handling \"Bad\" Clusters\nIf `trycycler cluster` produces dozens of small clusters or a \"hideous\" tree, do not proceed. This usually indicates:\n*   Insufficient read length (reads shorter than the longest repeat).\n*   Poor basecalling quality.\n*   Contamination in the sample.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| trycycler cluster | cluster contigs by similarity |\n| trycycler dotplot | draw pairwise dotplots for a cluster |\n| trycycler msa | multiple sequence alignment |\n| trycycler partition | partition reads by cluster |\n| trycycler reconcile | reconcile contig sequences |\n| trycycler subsample | subsample a long-read set |\n| trycycler_consensus | derive a consensus sequence |\n\n## Reference documentation\n- [Trycycler Wiki Home](./references/github_com_rrwick_Trycycler_wiki.md)\n- [How to run Trycycler](./references/github_com_rrwick_Trycycler_wiki_How-to-run-Trycycler.md)\n- [Accuracy vs Depth Study](./references/github_com_rrwick_Trycycler_wiki_Accuracy-vs-depth.md)\n- [Clustering Contigs Guide](./references/github_com_rrwick_Trycycler_wiki_Clustering-contigs.md)\n- [Polishing after Trycycler](./references/github_com_rrwick_Trycycler_wiki_Polishing-after-Trycycler.md)",
+  "skill_front_matter": {
+    "name": "trycycler",
+    "description": "Trycycler is a consensus long-read meta-assembler that reconciles multiple independent bacterial genome assemblies into a single structurally accurate consensus. Use when user asks to generate a consensus assembly from multiple inputs, reconcile circular replicons, or cluster and partition long reads for bacterial genome finishing.",
+    "homepage": "https://github.com/rrwick/Trycycler"
+  }
+}

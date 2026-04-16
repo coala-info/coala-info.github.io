@@ -1,0 +1,49 @@
+{
+  "id": "lightstringgraph",
+  "category": "CLI",
+  "name": "lightstringgraph",
+  "description": "LightStringGraph constructs memory-efficient string graphs from sequencing data using the Burrows-Wheeler Transform. Use when user asks to prepare BWT indices, identify read overlaps, perform transitive reduction, or convert string graphs to ASQG format.",
+  "overview": "LightStringGraph is a specialized suite for constructing string graphs from sequencing data with a low memory footprint. It leverages the Burrows-Wheeler Transform (BWT) to identify overlaps between reads without explicitly storing all overlaps in memory. This skill provides the procedural steps to prepare input data, generate the necessary BWT indices using BEETL, and execute the core LightStringGraph components (`lsg`, `redbuild`, and `graph2asqg`) to produce an assembly-ready graph.",
+  "homepage": "http://lsg.algolab.eu",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/lightstringgraph/overview",
+  "github": "N/A",
+  "conda_downloads": "5.6K",
+  "conda_downloads_num": 5600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lightstringgraph_lsg",
+      "lightstringgraph_redbuild",
+      "lightstringgraph_graph2asqg"
+    ],
+    "description": "Light String Graph tool",
+    "docker_image": "quay.io/biocontainers/lightstringgraph:0.4.0--h9948957_7",
+    "homepage": "http://lsg.algolab.eu",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/lightstringgraph/overview",
+    "github": "N/A",
+    "conda_downloads": "5.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "lightstringgraph_graph2asqg.cwl",
+    "lightstringgraph_lsg.cwl",
+    "lightstringgraph_redbuild.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# lightstringgraph\n\n## Overview\nLightStringGraph is a specialized suite for constructing string graphs from sequencing data with a low memory footprint. It leverages the Burrows-Wheeler Transform (BWT) to identify overlaps between reads without explicitly storing all overlaps in memory. This skill provides the procedural steps to prepare input data, generate the necessary BWT indices using BEETL, and execute the core LightStringGraph components (`lsg`, `redbuild`, and `graph2asqg`) to produce an assembly-ready graph.\n\n## Workflow and CLI Usage\n\n### 1. Input Preparation\nThe tool requires a FASTA file containing both the original reads and their reverse complements.\n- **Requirement**: If `reads.fa` has $n$ reads, the input file must have $2n$ reads where indices $n+1$ to $2n$ are the reverse complements of $1$ to $n$.\n\n### 2. BWT Indexing (External Dependency)\nBefore running LightStringGraph, you must generate a BWT index using the AlgoLab fork of BEETL.\n```bash\nbeetl-bwt -i combined_reads.fa -o BWT_PREFIX --output-format=ASCII --generate-lcp --generate-end-pos-file\n```\n\n### 3. Overlap Graph Construction (`lsg`)\nIdentifies overlaps based on a minimum threshold ($\\tau$).\n```bash\nlsg -B BWT_PREFIX -T <Tau> -C <CycNum>\n```\n- `-T <Tau>`: Minimum overlap length.\n- `-C <CycNum>`: Maximum number of BWT cycles. Usually set to `read_length - Tau`.\n- **Troubleshooting**: If `lsg` fails with a logic error, increase the system open file descriptor limit (`ulimit -n 2048`) and delete any `*.tmplsg.*` temporary files.\n\n### 4. Transitive Reduction (`redbuild`)\nRemoves redundant edges to simplify the graph.\n```bash\nredbuild -b BWT_PREFIX -r combined_reads.fa -m <CycNum+1>\n```\n\n### 5. Conversion to ASQG (`graph2asqg`)\nConverts the internal format to the standard Assembly String Graph (ASQG) format used by assemblers like SGA.\n```bash\ngraph2asqg -b BWT_PREFIX -r combined_reads.fa -l <readLength> > output.asqg\n```\n\n## Best Practices\n- **Memory Management**: LightStringGraph is designed for efficiency, but the BWT generation step (BEETL) is the primary bottleneck. Ensure sufficient disk space for the ASCII BWT and LCP files.\n- **Parameter Tuning**: Setting $\\tau$ (Tau) too low will significantly increase the number of edges and computation time. A common starting point is 50-70% of the read length.\n- **File Cleanup**: The tool generates several intermediate `.tmplsg` files. Always clear these between different runs on the same prefix to avoid data corruption.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| graph2asqg | Converts a string graph to ASQG format. |\n| lsg | Light String Graph tool |\n| redbuild | Builds a light string graph. |\n\n## Reference documentation\n- [LightStringGraph Overview](./references/lsg_algolab_eu_index.md)",
+  "skill_front_matter": {
+    "name": "lightstringgraph",
+    "description": "LightStringGraph constructs memory-efficient string graphs from sequencing data using the Burrows-Wheeler Transform. Use when user asks to prepare BWT indices, identify read overlaps, perform transitive reduction, or convert string graphs to ASQG format.",
+    "homepage": "http://lsg.algolab.eu"
+  }
+}

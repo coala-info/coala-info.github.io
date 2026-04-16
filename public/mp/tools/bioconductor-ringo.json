@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ringo",
+  "category": "bioconductor",
+  "name": "bioconductor-ringo",
+  "description": "bioconductor-ringo provides a modular framework for the primary analysis of two-color ChIP-chip data from platforms like NimbleGen and Agilent. Use when user asks to read raw intensity files, perform variance-stabilizing normalization, smooth probe intensities, or identify ChIP-enriched regions.",
+  "overview": "Ringo is designed for the primary analysis of ChIP-chip data. It provides a modular framework to handle raw intensity files, map probes to genomic coordinates, and identify regions of enrichment. It integrates closely with the `limma` package (using `RGList` objects) and `Biobase` (using `ExpressionSet` objects).",
+  "homepage": "https://bioconductor.org/packages/3.18/bioc/html/Ringo.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Ringo"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.18/bioc/html/Ringo.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ringo\n\nname: bioconductor-ringo\ndescription: Analysis of ChIP-chip data using the Ringo package. Use this skill for processing two-color oligonucleotide microarrays (specifically NimbleGen and Agilent), including data read-in, quality assessment, normalization (VSN), smoothing, and identifying ChIP-enriched regions (chers).\n\n## Overview\nRingo is designed for the primary analysis of ChIP-chip data. It provides a modular framework to handle raw intensity files, map probes to genomic coordinates, and identify regions of enrichment. It integrates closely with the `limma` package (using `RGList` objects) and `Biobase` (using `ExpressionSet` objects).\n\n## Typical Workflow\n\n### 1. Data Loading\nRingo can read NimbleGen \"pair\" files or general two-color data via `limma`.\n\n```R\nlibrary(Ringo)\n\n# For NimbleGen data\n# Requires a targets file and a spottypes file\nexRG <- readNimblegen(\"targets.txt\", \"spottypes.txt\", path=\"data_dir\")\n\n# For Agilent or other platforms (using limma)\nRG <- read.maimages(arrayfiles, source=\"agilent\", path=agiDir)\n```\n\n### 2. Probe Annotation\nMapping reporters to genomic coordinates is handled by `probeAnno` objects.\n\n```R\n# Create probeAnno from a POS file or data.frame\n# pos-information should contain: chromosome, start, end, and probe ID\npA <- posToProbeAnno(posData, genome=\"hg18\", microarray=\"platform_name\")\n\n# For Agilent, can often extract from systematic names\npA <- extractProbeAnno(RG, \"agilent\", genome=\"mouse\")\n```\n\n### 3. Quality Assessment\nVisualize spatial distributions and probe correlations.\n\n```R\n# Spatial plot of intensities\nimage(exRG, 1, channel=\"green\")\n\n# Autocorrelation to check fragment size/probe spacing impact\nexAc <- autocor(exRG, probeAnno=pA, chrom=\"9\", lag.max=1000)\nplot(exAc)\n```\n\n### 4. Preprocessing and Normalization\nThe default is variance-stabilizing normalization (VSN).\n\n```R\n# Returns an ExpressionSet\nexampleX <- preprocess(exRG, method=\"vsn\")\n\n# Alternative: NimbleGen-style Tukey-biweight scaling\nexampleX.NG <- preprocess(exRG, method=\"nimblegen\")\n```\n\n### 5. Smoothing and Visualization\nSmoothing reduces noise from individual probe response variability.\n\n```R\n# Compute running medians\nsmoothX <- computeRunningMedians(exampleX, probeAnno=pA, winHalfSize=400)\n\n# Visualize intensities along a chromosome\nplot(exampleX, pA, chrom=\"9\", xlim=c(start, end), gff=exGFF)\n```\n\n### 6. Finding Enriched Regions (Chers)\nIdentify \"ChIP-enriched regions\" based on smoothed thresholds.\n\n```R\n# 1. Determine threshold (non-parametric symmetric null approach)\ny0 <- apply(exprs(smoothX), 2, upperBoundNull)\n\n# 2. Find regions\nchersX <- findChersOnSmoothed(smoothX, probeAnno=pA, thresholds=y0, distCutOff=600)\n\n# 3. Relate to genes (requires a GFF-style data.frame)\nchersX <- relateChers(chersX, exGFF)\n\n# 4. Convert to data.frame for export\nchersXD <- as.data.frame(chersX)\n```\n\n## Key Functions\n- `readNimblegen`: Specialized reader for NimbleGen pair files.\n- `posToProbeAnno` / `extractProbeAnno`: Create the mapping between probes and the genome.\n- `preprocess`: Normalizes raw intensities into log-ratios.\n- `computeRunningMedians`: Slides a window to smooth probe intensities.\n- `upperBoundNull`: Estimates a threshold for enrichment from the data distribution.\n- `findChersOnSmoothed`: The main peak-calling (region-calling) algorithm.\n- `chipAlongChrom`: (or `plot`) Visualizes data and genomic features.\n\n## Tips\n- **Memory**: `probeAnno` objects are more memory-efficient than large data.frames for genomic lookups.\n- **Thresholding**: If the non-parametric `upperBoundNull` fails due to sparse data, try `twoGaussiansNull`.\n- **GFF**: Providing a GFF data.frame to `plot` or `relateChers` allows you to see gene models alongside ChIP signal.\n\n## Reference documentation\n- [Ringo - R Investigation of NimbleGen Oligoarrays](./references/Ringo.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ringo",
+    "description": "bioconductor-ringo provides a modular framework for the primary analysis of two-color ChIP-chip data from platforms like NimbleGen and Agilent. Use when user asks to read raw intensity files, perform variance-stabilizing normalization, smooth probe intensities, or identify ChIP-enriched regions.",
+    "homepage": "https://bioconductor.org/packages/3.18/bioc/html/Ringo.html"
+  }
+}

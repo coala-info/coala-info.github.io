@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-doubletrouble",
+  "category": "bioconductor",
+  "name": "bioconductor-doubletrouble",
+  "description": "This tool identifies and classifies duplicated genes from whole-genome protein sequences into various duplication modes. Use when user asks to classify gene pairs into duplication modes, calculate substitution rates, identify Ks peaks for whole-genome duplication events, or visualize duplication frequencies and age distributions.",
+  "overview": "The `doubletrouble` package provides a comprehensive pipeline for analyzing gene duplication events. It allows users to distinguish between whole-genome duplications (WGD) and various types of small-scale duplications (SSD). The package integrates with the `syntenet` package for synteny detection and `MSA2dist` for calculating substitution rates.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/doubletrouble.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-doubletrouble/overview",
+  "github": "https://github.com/almeidasilvaf/doubletrouble",
+  "conda_downloads": "2.9K",
+  "conda_downloads_num": 2900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "doubletrouble"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/doubletrouble.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-doubletrouble/overview",
+    "github": "https://github.com/almeidasilvaf/doubletrouble",
+    "conda_downloads": "2.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-doubletrouble\n\nname: bioconductor-doubletrouble\ndescription: Identification and classification of duplicated genes from whole-genome protein sequences. Use this skill to classify gene pairs into duplication modes (segmental, tandem, proximal, transposed, dispersed), calculate substitution rates (Ka, Ks), identify Ks peaks for WGD events, and visualize duplication frequencies and age distributions.\n\n# bioconductor-doubletrouble\n\n## Overview\n\nThe `doubletrouble` package provides a comprehensive pipeline for analyzing gene duplication events. It allows users to distinguish between whole-genome duplications (WGD) and various types of small-scale duplications (SSD). The package integrates with the `syntenet` package for synteny detection and `MSA2dist` for calculating substitution rates.\n\n## Typical Workflow\n\n### 1. Data Preparation\nInput requires protein sequences (`AAStringSet`), gene annotations (`GRanges`), and optionally CDS sequences (`DNAStringSet`).\n\n```r\nlibrary(doubletrouble)\nlibrary(syntenet)\n\n# Process input into standardized format\npdata <- process_input(proteome_list, annotation_list)\n\n# Perform intraspecies similarity search (requires DIAMOND)\ndiamond_intra <- run_diamond(\n    seq = pdata$seq,\n    compare = \"intraspecies\",\n    outdir = tempdir()\n)\n```\n\n### 2. Classifying Duplicated Gene Pairs\nUse `classify_gene_pairs()` with one of four schemes:\n\n*   **binary**: Segmental (SD) vs Small-scale (SSD).\n*   **standard**: SD, Tandem (TD), Proximal (PD), and Dispersed (DD).\n*   **extended**: Adds Transposon-derived (TRD). Requires an outgroup in `blast_inter`.\n*   **full**: Adds Retrotransposon-derived (rTRD) and DNA-transposon-derived (dTRD). Requires `intron_counts`.\n\n```r\n# Standard classification\ngene_pairs <- classify_gene_pairs(\n    annotation = pdata$annotation,\n    blast_list = diamond_intra,\n    scheme = \"standard\"\n)\n\n# Assign each gene to a unique mode (hierarchical priority)\nunique_genes <- classify_genes(gene_pairs)\n```\n\n### 3. Substitution Rates and Ks Peaks\nCalculate $K_a$ and $K_s$ to estimate duplication timing and selection pressure.\n\n```r\n# Calculate Ka/Ks (requires CDS list)\nkaks_rates <- pairs2kaks(gene_pairs, cds_list)\n\n# Find peaks in Ks distribution (GMM fitting)\n# npeaks can be a vector to test multiple models; BIC is used for selection\npeaks <- find_ks_peaks(kaks_rates$Scerevisiae$Ks, npeaks = c(2, 3))\n\n# Classify pairs by age group based on peaks\nage_groups <- split_pairs_by_peak(kaks_rates$Scerevisiae, peaks)\n```\n\n### 4. Visualization\nThe package provides several `ggplot2`-based functions for data exploration.\n\n```r\n# Frequency of duplicates\ncounts <- duplicates2counts(unique_genes)\nplot_duplicate_freqs(counts, plot_type = \"stack_percent\")\n\n# Ks distributions\nplot_ks_distro(kaks_rates$Scerevisiae, bytype = TRUE, plot_type = \"violin\")\n\n# Ks peaks\nplot_ks_peaks(peaks)\n```\n\n## Key Functions\n\n*   `classify_gene_pairs()`: Core function for identifying duplication modes.\n*   `classify_genes()`: Resolves genes appearing in multiple pairs into a single duplication category.\n*   `get_intron_counts()`: Helper to count introns from a `TxDb` object (required for \"full\" scheme).\n*   `pairs2kaks()`: Interface for $K_a/K_s$ calculation.\n*   `find_ks_peaks()`: Fits Gaussian Mixture Models to $K_s$ data.\n*   `duplicates2counts()`: Prepares classification data for plotting.\n\n## Tips for Success\n\n*   **Consistency**: Ensure species names are identical across the protein, annotation, and CDS lists.\n*   **Outgroups**: For TRD identification (extended/full schemes), use `make_bidirectional()` and `collapse_bidirectional_hits()` from `syntenet` to prepare the interspecies BLAST/DIAMOND data.\n*   **Ks Saturation**: $K_s$ values > 2.0 are often saturated and unreliable for peak calling. Use the `max_ks` parameter in `find_ks_peaks()` to filter them.\n*   **Prior Knowledge**: If you know the number of WGD events, specify `npeaks` as a single integer to avoid overclustering.\n\n## Reference documentation\n\n- [Identification and classification of duplicated genes](./references/doubletrouble_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-doubletrouble",
+    "description": "This tool identifies and classifies duplicated genes from whole-genome protein sequences into various duplication modes. Use when user asks to classify gene pairs into duplication modes, calculate substitution rates, identify Ks peaks for whole-genome duplication events, or visualize duplication frequencies and age distributions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/doubletrouble.html"
+  }
+}

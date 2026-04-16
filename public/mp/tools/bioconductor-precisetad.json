@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-precisetad",
+  "category": "bioconductor",
+  "name": "bioconductor-precisetad",
+  "description": "This machine learning framework predicts 3D chromatin domain boundaries at base-level resolution using genomic annotations. Use when user asks to build predictive models for TAD boundaries, perform feature selection for chromatin drivers, or predict precise boundary points and regions.",
+  "overview": "`preciseTAD` transforms the identification of Topologically Associating Domain (TAD) boundaries into a supervised machine learning problem. It uses \"shifted binning\" to create a binary response vector from Hi-C data and leverages genomic features (e.g., CTCF, RAD21 binding sites) to train Random Forest models. The unique advantage of this package is its ability to predict boundaries at base-pair resolution (PTBP) using density-based clustering (DBSCAN), even in cell types where high-resolution H",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/preciseTAD.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/dozmorovlab/preciseTAD",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "preciseTAD"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/preciseTAD.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/dozmorovlab/preciseTAD",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-precisetad\n\nname: bioconductor-precisetad\ndescription: Machine learning framework for predicting 3D chromatin domain boundaries (TADs and loops) at base-level resolution using genomic annotations like ChIP-seq data. Use this skill when you need to build predictive models for TAD boundaries, perform feature selection (RFE) for chromatin drivers, or predict precise boundary points (PTBP) and regions (PTBR) in specific cell types.\n\n## Overview\n`preciseTAD` transforms the identification of Topologically Associating Domain (TAD) boundaries into a supervised machine learning problem. It uses \"shifted binning\" to create a binary response vector from Hi-C data and leverages genomic features (e.g., CTCF, RAD21 binding sites) to train Random Forest models. The unique advantage of this package is its ability to predict boundaries at base-pair resolution (PTBP) using density-based clustering (DBSCAN), even in cell types where high-resolution Hi-C data is unavailable.\n\n## Core Workflow\n\n### 1. Data Preparation\nPrepare \"ground-truth\" boundaries from Hi-C callers (like Arrowhead) and genomic features from BED files.\n\n```r\nlibrary(preciseTAD)\n\n# 1. Extract unique boundaries from domain coordinates\n# domains.mat should be a 3-column data frame (CHR, start, end)\nbounds <- extractBoundaries(domains.mat = arrowhead_gm12878_5kb, \n                            filter = FALSE, \n                            CHR = c(\"CHR1\", \"CHR22\"), \n                            resolution = 5000)\n\n# 2. Load genomic annotations (TFBS) as a GRangesList\n# Use bedToGRangesList for local BED files\ndata(\"tfbsList\") \n\n# 3. Create the training/testing data matrix\n# featureType can be \"distance\", \"overlap\", \"count\", or \"percent\"\nset.seed(123)\ntadData <- createTADdata(bounds.GR = bounds,\n                         resolution = 5000,\n                         genomicElements.GR = tfbsList,\n                         featureType = \"distance\",\n                         resampling = \"rus\",\n                         trainCHR = \"CHR1\",\n                         predictCHR = \"CHR22\")\n```\n\n### 2. Model Building and Feature Selection\nIdentify the most predictive transcription factors and train a Random Forest model.\n\n```r\n# Recursive Feature Elimination (RFE) to find optimal feature subset\nrfe_res <- TADrfe(trainData = tadData[[1]],\n                  tuneParams = list(ntree = 500, nodesize = 1),\n                  cvFolds = 5,\n                  cvMetric = \"Accuracy\")\n\n# Train the final Random Forest model\ntadModel <- TADrandomForest(trainData  = tadData[[1]],\n                            testData   = tadData[[2]],\n                            tuneParams = list(mtry = 2, ntree = 500, nodesize = 1),\n                            cvFolds    = 3,\n                            model      = TRUE,\n                            importances = TRUE,\n                            performances = TRUE)\n```\n\n### 3. Precise Boundary Prediction (Base-level)\nApply the trained model to specific genomic regions to find exact boundary points.\n\n```r\n# Predict base-level boundaries (PTBPs)\npt <- preciseTAD(genomicElements.GR = tfbsList_filt,\n                 featureType         = \"distance\",\n                 CHR                 = \"CHR22\",\n                 chromCoords         = list(17000000, 18000000),\n                 tadModel            = tadModel[[1]],\n                 threshold           = 1,\n                 DBSCAN_params       = list(eps = 30000, MinPts = 100),\n                 genome              = \"hg19\",\n                 BaseProbs           = TRUE)\n\n# Access results\nptbr <- pt$PTBR # Precise TAD Boundary Regions\nptbp <- pt$PTBP # Precise TAD Boundary Points (medoids)\n```\n\n### 4. Cross-Cell-Type Prediction\nUse a model trained on one cell type (e.g., GM12878) to predict boundaries in another (e.g., Hela) using only ChIP-seq data.\n\n```r\n# 1. Load pre-trained model\n# 2. Prepare new cell-type GRangesList (e.g., hela.GR)\n# 3. Run preciseTAD() using the new GRangesList and the pre-trained model\n```\n\n## Key Functions\n- `extractBoundaries()`: Converts domain lists into unique GRanges boundaries.\n- `createTADdata()`: Generates the feature matrix using shifted binning.\n- `TADrfe()`: Performs feature selection to identify key chromatin drivers.\n- `TADrandomForest()`: Wrapper for training and evaluating the predictive model.\n- `preciseTAD()`: The main engine for base-level boundary prediction using DBSCAN and PAM clustering.\n- `juicer_func()`: Formats PTBPs for visualization in Juicebox.\n\n## Tips for Success\n- **Feature Selection**: The loop-extrusion components (CTCF, RAD21, SMC3, ZNF143) are typically the most predictive features.\n- **Resolution**: Ensure the `resolution` parameter in `createTADdata` matches the resolution of the Hi-C data used to define the ground-truth boundaries.\n- **Memory Management**: Setting `BaseProbs = TRUE` in `preciseTAD()` can consume significant memory if the genomic region is large. Use it only for specific regions of interest.\n- **Thresholding**: The `threshold` (t) and `eps` parameters in `preciseTAD()` control the stringency of boundary calling. Higher thresholds result in more precise but fewer calls.\n\n## Reference documentation\n- [preciseTAD Vignette](./references/preciseTAD.Rmd)\n- [preciseTAD Vignette](./references/preciseTAD.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-precisetad",
+    "description": "This machine learning framework predicts 3D chromatin domain boundaries at base-level resolution using genomic annotations. Use when user asks to build predictive models for TAD boundaries, perform feature selection for chromatin drivers, or predict precise boundary points and regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/preciseTAD.html"
+  }
+}

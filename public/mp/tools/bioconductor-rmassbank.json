@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rmassbank",
+  "category": "bioconductor",
+  "name": "bioconductor-rmassbank",
+  "description": "This tool processes high-resolution MS/MS spectra to create standardized MassBank records. Use when user asks to extract and recalibrate LC-MS/MS data, annotate fragments with molecular formulas, or generate records for mass spectrometry database submission.",
+  "overview": "`RMassBank` is a workflow for processing high-resolution mass spectrometry (MS/MS) data. It transforms raw LC-MS files into high-quality, recalibrated, and denoised spectra, which are then compiled into MassBank records. The workflow is divided into two main phases: the **MSMS Workflow** (data processing) and the **MassBank Record Workflow** (annotation and export).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RMassBank.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RMassBank"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RMassBank.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rmassbank\n\nname: bioconductor-rmassbank\ndescription: Processing high-resolution MS/MS spectra for MassBank record creation. Use when you need to extract, recalibrate, and clean LC-MS/MS data, annotate fragments with molecular formulas, and generate standardized MassBank records for database submission.\n\n# bioconductor-rmassbank\n\n## Overview\n\n`RMassBank` is a workflow for processing high-resolution mass spectrometry (MS/MS) data. It transforms raw LC-MS files into high-quality, recalibrated, and denoised spectra, which are then compiled into MassBank records. The workflow is divided into two main phases: the **MSMS Workflow** (data processing) and the **MassBank Record Workflow** (annotation and export).\n\n## MSMS Workflow (Steps 1-8)\n\nThe MSMS workflow processes raw data (mzML) into cleaned spectra.\n\n### 1. Setup and Configuration\nLoad the library and initialize settings. Settings are typically managed via a YAML/INI file.\n\n```r\nlibrary(RMassBank)\nloadRmbSettings(\"mysettings.ini\") # Load your custom settings\nw <- newMsmsWorkspace()\nw@files <- list.files(\"path/to/mzML\", full.names = TRUE)\nloadList(\"compound_list.csv\") # CSV with ID, Name, SMILES, RT, CAS\n```\n\n### 2. Running the Workflow\nThe workflow consists of 8 steps that can be run together or in blocks.\n\n```r\n# Run steps 1-4: Extraction and Recalibration\nw <- msmsWorkflow(w, mode=\"pH\", steps=1:4, archivename = \"my_project\")\n\n# Inspect recalibration\nplotRecalibration(w)\n\n# Run steps 5-8: Re-analysis, Noise Cleaning, and Multiplicity Filtering\nw <- msmsWorkflow(w, mode=\"pH\", steps=5:8, archivename = \"my_project\")\n```\n\n**Workflow Steps:**\n1. `findMsMsHR`: Extract spectra based on compound list.\n2. `analyzeMsMs`: Initial formula assignment.\n3. `aggregateSpectra`: Combine peaks across files.\n4. `recalibrateSpectra`: Calculate and apply mass recalibration.\n5. `analyzeMsMs`: Re-analyze recalibrated spectra.\n6. `aggregateSpectra` & `cleanElnoise`: Aggregate and remove electronic noise.\n7. `reanalyzeFailpeaks`: Attempt to assign formulas to previously unmatched peaks.\n8. `filterMultiplicity`: Remove peaks appearing only once (spurious peaks).\n\n## MassBank Record Workflow\n\nOnce spectra are processed, use the `mbWorkflow` to generate database records.\n\n### 1. Annotation Retrieval\nRetrieve compound metadata (InChI, SMILES, etc.) from services like CTS.\n\n```r\nmb <- newMbWorkspace(w)\nmb <- resetInfolists(mb)\n# Load existing info or fetch new data\nmb <- mbWorkflow(mb, infolist_path=\"./my_infolist.csv\")\n```\n\n### 2. Record Compilation and Export\nAfter manually verifying the generated CSV infolist, compile the final records.\n\n```r\n# Reload corrected infolist\nmb <- loadInfolists(mb, \"path/to/corrected_infolists\")\n# Finalize records and export to files\nmb <- mbWorkflow(mb) \n```\n\n## Advanced Usage\n\n### Skipping Recalibration\nIf data is insufficient for a loess fit, use the identity function:\n```r\nrmbo <- getOption(\"RMassBank\")\nrmbo$recalibrator <- list(\"MS1\" = \"recalibrate.identity\", \"MS2\" = \"recalibrate.identity\")\noptions(\"RMassBank\" = rmbo)\n```\n\n### Combining Multiplicities\nTo prevent losing peaks that only appear in specific collision energies, combine multiple workspace runs (e.g., primary and confirmation scans):\n```r\nwTotal <- combineMultiplicities(c(w1, w2))\nwTotal <- msmsWorkflow(wTotal, steps=8, mode=\"pH\")\n```\n\n## Tips for Success\n- **File Naming**: Ensure mzML files follow the `xxxxxxxx_ID_xxx.mzML` pattern where ID matches the compound list.\n- **OpenBabel**: Install OpenBabel and set `babeldir` in settings for high-quality structure generation.\n- **Modes**: Common modes include `pH` ([M+H]+), `pNa` ([M+Na]+), `mH` ([M-H]-), and `mFA` ([M+FA]-).\n- **Failpeaks**: Check the generated `_Failpeaks.csv` after step 8. Mark valid peaks with `OK = 1` to include them in the final record via `addPeaks()`.\n\n## Reference documentation\n- [RMassBank: The workflow by example](./references/RMassBank.md)\n- [RMassBank: Non-standard usage](./references/RMassBankNonstandard.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rmassbank",
+    "description": "This tool processes high-resolution MS/MS spectra to create standardized MassBank records. Use when user asks to extract and recalibrate LC-MS/MS data, annotate fragments with molecular formulas, or generate records for mass spectrometry database submission.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RMassBank.html"
+  }
+}

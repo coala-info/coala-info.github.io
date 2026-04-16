@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mitoclone2",
+  "category": "bioconductor",
+  "name": "bioconductor-mitoclone2",
+  "description": "This tool identifies clonal populations and reconstructs phylogenetic trees from mitochondrial variants in single-cell sequencing data. Use when user asks to count mitochondrial alleles from BAM files, filter variants using exclusion lists or cohorts, cluster mutations into clones, and infer phylogenetic relationships between cells.",
+  "overview": "The `mitoClone2` package is designed to leverage the high mutation rate and heteroplasmy of mitochondrial DNA to track clonal lineages in single-cell datasets. It provides a complete workflow from raw BAM files to phylogenetic tree reconstruction and cell-to-clone assignment. It is particularly effective when comparing multiple samples (cohorts) to filter out technical noise and RNA editing sites.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mitoClone2.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/benstory/mitoClone2",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mitoClone2"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mitoClone2.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/benstory/mitoClone2",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mitoclone2\n\nname: bioconductor-mitoclone2\ndescription: Clonal population identification and phylogenetic tree reconstruction using mitochondrial (and nuclear) variants from single-cell sequencing data (RNA-seq, ATAC-seq, or DNA-seq). Use this skill to process BAM files into nucleotide counts, filter for somatic variants using exclusion lists or cohort-based comparisons, cluster mutations into clones, and infer phylogenetic relationships.\n\n# bioconductor-mitoclone2\n\n## Overview\nThe `mitoClone2` package is designed to leverage the high mutation rate and heteroplasmy of mitochondrial DNA to track clonal lineages in single-cell datasets. It provides a complete workflow from raw BAM files to phylogenetic tree reconstruction and cell-to-clone assignment. It is particularly effective when comparing multiple samples (cohorts) to filter out technical noise and RNA editing sites.\n\n## Core Workflow\n\n### 1. Data Input and Nucleotide Counting\nThe package starts by counting alleles at specific genomic sites from BAM files.\n\n```r\nlibrary(mitoClone2)\n\n# Option A: From a list of individual BAM files (one per cell)\nbam_list <- list.files(\"path/to/bams\", pattern = \".bam$\", full.names = TRUE)\nbaseCounts <- baseCountsFromBamList(bamfiles = bam_list, sites = \"chrM:1-16569\", ncores = 4)\n\n# Option B: From a multiplexed 10x Genomics BAM file (using CB tag)\nbaseCounts <- bam2R_10x(file = \"possorted_genome_bam.bam\", sites = \"chrM:1-16569\")\n```\n\n### 2. Variant Calling and Filtering\nYou can identify variants using two primary strategies:\n\n**Strategy 1: Exclusion List (Single Sample)**\nRemoves known artifacts, homopolymers, and RNA editing sites.\n```r\n# Works best for hg38; requires manual liftOver for other genomes\nmutCalls <- mutationCallsFromExclusionlist(baseCounts, \n                                           min.af = 0.2, \n                                           min.num.samples = 5,\n                                           lim.cov = 20)\n```\n\n**Strategy 2: Cohort Filtering (Multiple Samples)**\nThe most powerful method; it identifies variants unique to a patient by comparing against others in the cohort to eliminate shared technical noise.\n```r\n# 'patient_vector' labels each cell in baseCounts with a patient ID\nmutCallsCohort <- mutationCallsFromCohort(baseCounts, \n                                          patient = patient_vector,\n                                          MINFRAC = 0.1, \n                                          MINCELLS.PATIENT = 10)\n```\n\n### 3. Phylogenetic Tree Reconstruction\nUse `varCluster` to compute the most likely tree. This requires external tools like SCITE (standard) or PhISCS (requires Gurobi).\n\n```r\n# SCITE is the default method\ntmp_dir <- tempdir()\nmutCalls <- varCluster(mutCalls, tempfolder = tmp_dir, method = 'SCITE')\n```\n\n### 4. Clonal Clustering and Assignment\nGroup mutations into \"metaclones\" based on tree likelihoods and assign cells to these clones.\n\n```r\n# Cluster mutations into clones\nmutCalls <- clusterMetaclones(mutCalls, min.lik = 1)\n\n# Visualize the results\nplotClones(mutCalls)\n\n# Access cell-to-clone assignments\nassignments <- mutCalls@cell2clone\n```\n\n## Advanced Usage and Tips\n\n### Manual Refinement\nIf the automated clustering merges clones that should be distinct (e.g., for differential expression), you can manually overwrite the assignments:\n```r\n# Get current mutation-to-clone mapping\nm2c <- mitoClone2:::getMut2Clone(mutCalls)\n\n# Manually assign specific mutations to a new clone ID\nm2c[c(\"X2537GA\", \"X14462GA\")] <- as.integer(6)\n\n# Update the object\nmutCalls_new <- mitoClone2:::overwriteMetaclones(mutCalls, m2c)\n```\n\n### Genome Considerations\n- **hg38/hg19/mm10**: Built-in support.\n- **Mitochondrial Lengths**: UCSC hg38 (16569 bp), UCSC hg19 (16571 bp), UCSC mm10 (16299 bp).\n- **Reference Consistency**: Ensure the `sites` parameter and the `genome` argument match the reference used for BAM alignment.\n\n## Reference documentation\n- [Computation of phylogenetic trees and clustering of mutations](./references/clustering.md)\n- [Variant Calling Overview and Filtering](./references/overview.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mitoclone2",
+    "description": "This tool identifies clonal populations and reconstructs phylogenetic trees from mitochondrial variants in single-cell sequencing data. Use when user asks to count mitochondrial alleles from BAM files, filter variants using exclusion lists or cohorts, cluster mutations into clones, and infer phylogenetic relationships between cells.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mitoClone2.html"
+  }
+}

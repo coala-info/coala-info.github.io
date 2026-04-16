@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scde",
+  "category": "bioconductor",
+  "name": "bioconductor-scde",
+  "description": "The scde package provides statistical methods for analyzing single-cell RNA-seq data by modeling technical noise and drop-out events. Use when user asks to fit individual error models, perform differential expression analysis between cell groups, or run the PAGODA framework for pathway and gene set overdispersion analysis.",
+  "overview": "The `scde` package provides statistical methods for analyzing single-cell RNA-seq data, specifically addressing the high noise levels and \"drop-out\" events (where a gene is expressed but not detected) characteristic of single-cell protocols. It models read counts using a mixture of Negative Binomial (for detected signal) and Poisson (for background/drop-out) distributions. The package also includes the `pagoda` framework for characterizing transcriptional heterogeneity through pathway and gene s",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scde.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/hms-dbmi/scde",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scde"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scde.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/hms-dbmi/scde",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scde\n\nname: bioconductor-scde\ndescription: Single-cell RNA-seq analysis using the scde package. Use this skill for fitting individual error models to single-cell data, performing differential expression analysis between cell groups, and running the PAGODA framework for pathway and gene set overdispersion analysis to identify cell subpopulations.\n\n# bioconductor-scde\n\n## Overview\nThe `scde` package provides statistical methods for analyzing single-cell RNA-seq data, specifically addressing the high noise levels and \"drop-out\" events (where a gene is expressed but not detected) characteristic of single-cell protocols. It models read counts using a mixture of Negative Binomial (for detected signal) and Poisson (for background/drop-out) distributions. The package also includes the `pagoda` framework for characterizing transcriptional heterogeneity through pathway and gene set overdispersion analysis.\n\n## Core Workflow: Differential Expression\n\n### 1. Data Preparation\nClean the count matrix to remove poor quality cells and lowly expressed genes.\n```r\nlibrary(scde)\n# cd is a count matrix: rows=genes, cols=cells\ncd <- clean.counts(counts, min.lib.size=1000, min.reads=1, min.detected=1)\n\n# Define groups for comparison\nsg <- factor(gsub(\"(MEF|ESC).*\", \"\\\\1\", colnames(cd)), levels = c(\"ESC\", \"MEF\"))\nnames(sg) <- colnames(cd)\n```\n\n### 2. Fitting Error Models\nFit cell-specific error models. This step is computationally intensive; use `n.cores` for parallelization.\n```r\no.ifm <- scde.error.models(counts = cd, groups = sg, n.cores = 4, threshold.segmentation = TRUE)\n\n# Filter out cells with poor fits (negative correlation)\nvalid.cells <- o.ifm$corr.a > 0\no.ifm <- o.ifm[valid.cells, ]\n```\n\n### 3. Expression Prior and Testing\nEstimate the gene expression prior and test for differential expression.\n```r\n# Estimate prior\no.prior <- scde.expression.prior(models = o.ifm, counts = cd, length.out = 400)\n\n# Run differential expression\nediff <- scde.expression.difference(o.ifm, cd, o.prior, groups = sg, n.randomizations = 100, n.cores = 4)\n\n# Top upregulated genes\nhead(ediff[order(ediff$Z, decreasing = TRUE), ])\n```\n\n## Core Workflow: PAGODA (Pathway Analysis)\n\nPAGODA identifies pathways or gene sets showing significant excess of coordinated variability.\n\n### 1. Variance Normalization\n```r\n# Fit KNN error models for heterogeneous populations\nknn <- knn.error.models(cd, k = ncol(cd)/4, n.cores = 4, min.count.threshold = 2)\n\n# Normalize variance\nvarinfo <- pagoda.varnorm(knn, counts = cd, trim = 3/ncol(cd), max.adj.var = 5, n.cores = 4)\n\n# Optional: control for sequencing depth\nvarinfo <- pagoda.subtract.aspect(varinfo, colSums(cd[, rownames(knn)]>0))\n```\n\n### 2. Evaluate Gene Sets\nTest pre-defined (e.g., GO terms) or de novo gene sets.\n```r\n# Assuming go.env is an environment of gene sets\npwpca <- pagoda.pathway.wPCA(varinfo, go.env, n.components = 1, n.cores = 4)\n\n# Evaluate significance\ndf <- pagoda.top.aspects(pwpca, return.table = TRUE, z.score = 1.96)\n```\n\n### 3. Visualization and App\n```r\n# Reduce redundancy and cluster cells\ntam <- pagoda.top.aspects(pwpca, n.cells = NULL, z.score = qnorm(0.01/2, lower.tail = FALSE))\nhc <- pagoda.cluster.cells(tam, varinfo)\ntamr <- pagoda.reduce.loading.redundancy(tam, pwpca)\ntamr2 <- pagoda.reduce.redundancy(tamr, distance.threshold = 0.9)\n\n# View static heatmap\npagoda.view.aspects(tamr2, cell.clustering = hc)\n\n# Create interactive browser app\napp <- make.pagoda.app(tamr2, tam, varinfo, go.env, pwpca, cell.clustering = hc, title = \"MyAnalysis\")\nshow.app(app, \"my_app\", browse = TRUE, port = 1468)\n```\n\n## Key Functions\n- `clean.counts()`: Filters the count matrix based on library size and detection limits.\n- `scde.error.models()`: Fits the Poisson-NB mixture models to individual cells.\n- `scde.expression.difference()`: Calculates Bayesian differential expression scores (Z-scores).\n- `pagoda.varnorm()`: Normalizes gene expression variance relative to transcriptome-wide expectations.\n- `pagoda.pathway.wPCA()`: Performs weighted PCA on gene sets to find overdispersed pathways.\n- `scde.test.gene.expression.difference()`: Visualizes the posterior distribution for a specific gene.\n\n## Reference documentation\n- [Getting Started with scde](./references/diffexp.Rmd)\n- [Pathway and Gene Set Overdispersion Analysis (PAGODA)](./references/pagoda.Rmd)\n- [scde Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scde",
+    "description": "The scde package provides statistical methods for analyzing single-cell RNA-seq data by modeling technical noise and drop-out events. Use when user asks to fit individual error models, perform differential expression analysis between cell groups, or run the PAGODA framework for pathway and gene set overdispersion analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scde.html"
+  }
+}

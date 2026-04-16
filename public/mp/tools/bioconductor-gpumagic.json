@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gpumagic",
+  "category": "bioconductor",
+  "name": "bioconductor-gpumagic",
+  "description": "This package compiles R functions into OpenCL code for execution on GPUs or multi-core CPUs to accelerate computations. Use when user asks to parallelize R functions with gpuSapply, write custom OpenCL kernels, or offload matrix operations to hardware acceleration.",
+  "overview": "The `gpuMagic` package enables high-performance computing in R by compiling user-defined R functions into OpenCL kernels. It allows for significant speedups in parallelizable tasks by offloading computation to GPUs or multi-core CPUs. The package provides a high-level interface (`gpuSapply`) that mimics standard R behavior and a low-level interface (`.kernel`) for direct OpenCL programming.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/gpuMagic.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Jiefei-Wang/gpuMagic",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gpuMagic"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gpuMagic.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Jiefei-Wang/gpuMagic",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gpumagic\n\nname: bioconductor-gpumagic\ndescription: Use the gpuMagic package to compile R functions into OpenCL code for execution on GPUs or CPUs. Trigger this skill when the user needs to accelerate R computations (like matrix operations or sapply-style loops) using hardware acceleration, or when they want to write custom OpenCL kernels directly within R.\n\n# bioconductor-gpumagic\n\n## Overview\nThe `gpuMagic` package enables high-performance computing in R by compiling user-defined R functions into OpenCL kernels. It allows for significant speedups in parallelizable tasks by offloading computation to GPUs or multi-core CPUs. The package provides a high-level interface (`gpuSapply`) that mimics standard R behavior and a low-level interface (`.kernel`) for direct OpenCL programming.\n\n## Device Management\nBefore running computations, identify and initialize the target hardware.\n- `getDeviceList()`: List available OpenCL devices.\n- `getDeviceInfo(id)`: Get detailed specs for a specific device.\n- `setDevice(id)`: Set the active device for subsequent operations.\n- `gpuMagic.getMemUsage()`: Monitor GPU memory consumption.\n\n## High-Level Workflow: gpuSapply\nThe easiest way to use `gpuMagic` is via `gpuSapply`, which parallelizes an R function across a set of indices.\n\n### Basic Usage\n```r\n# Define a function compatible with sapply\nmyFunc <- function(ind, A, B) {\n  res = A %*% B[, ind]\n  return(res)\n}\n\n# Execute on GPU\nresult <- gpuSapply(1:ncol(B), myFunc, A, B)\n```\n\n### Handling Dynamic Sizes\nOpenCL requires fixed memory allocation. If your function uses variables whose sizes depend on input values:\n1. **Macros**: Use `.macroParms` to pass variables that should be treated as constants during compilation.\n   ```r\n   gpuSapply(1:k, myFunc, A, n, .macroParms = \"n\")\n   ```\n2. **Reference Functions**: Use `subRef(matrix, rows, cols)` to create a \"view\" of a matrix without copying, allowing for dynamic-like subsetting.\n\n## Low-Level Workflow: Custom OpenCL Kernels\nFor advanced users, `.kernel()` allows execution of raw OpenCL C code.\n\n### Workflow\n1. **Prepare Data**: Convert R objects to `gpuMatrix` objects to move them to the device.\n   ```r\n   A_dev <- gpuMatrix(A, type = \"float\")\n   res_dev <- gpuEmptMatrix(row = n, col = 1, type = \"float\")\n   ```\n2. **Write Kernel**: Use `gAuto` macros in the kernel signature to automatically match R data types.\n   ```r\n   src <- \"kernel void vecAdd(gAuto1* A, gAuto2* B, gAuto3* res){\n     uint id = get_global_id(0);\n     res[id] = A[id] + B[id];\n   }\"\n3. **Execute**: Call `.kernel()`. This is non-blocking.\n   ```r\n   .kernel(src = src, kernel = \"vecAdd\", parms = list(A_dev, B_dev, res_dev), .globalThreadNum = n)\n   ```\n4. **Retrieve**: Use `download(res_dev)` to bring data back to R.\n\n## Important Constraints\n- **Data Types**: Supports `bool`, `int`, `float`, `double`, etc. `NA` and `NULL` are not supported.\n- **Memory**: Avoid allocating variables inside loops or if-statements.\n- **Assignments**: Self-assignments like `A[1:2] = A[2:1]` fail because OpenCL executes assignments in sequence without implicit temporary buffers.\n- **Functions**: Only a subset of R functions are supported (e.g., `matrix`, `abs`, `sum`, `%*%`, `sweep`). User-defined R functions cannot be called inside the function being compiled.\n\n## Performance Tips\n- **No-Copy Operations**: Use `t_nocpy()` for transposes and `return_nocpy()` to avoid unnecessary memory allocation.\n- **Precision**: Using `type = \"float\"` instead of `\"double\"` can significantly increase speed on consumer GPUs.\n- **TDR Settings**: On Windows/NVIDIA, increase the \"Timeout Detection and Recovery\" limit if kernels take longer than 2 seconds.\n\n## Reference documentation\n- [Customized opencl code](./references/Customized-openCL-code.Rmd)\n- [gpuMagic quick start guide](./references/Quick_start_guide.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-gpumagic",
+    "description": "This package compiles R functions into OpenCL code for execution on GPUs or multi-core CPUs to accelerate computations. Use when user asks to parallelize R functions with gpuSapply, write custom OpenCL kernels, or offload matrix operations to hardware acceleration.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gpuMagic.html"
+  }
+}

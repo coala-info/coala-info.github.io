@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-r3cpet",
+  "category": "bioconductor",
+  "name": "bioconductor-r3cpet",
+  "description": "R3CPET is an R package that uses a non-parametric Bayesian model to infer protein networks that maintain 3D chromatin interactions from ChIA-PET and ChIP-Seq data. Use when user asks to identify chromatin maintainer networks, build interaction-specific protein networks, or cluster DNA loops based on protein enrichment.",
+  "overview": "R3CPET (3D Chromatin Protein Enrichment Tool) is an R package designed to infer the set of proteins most likely to maintain chromatin interactions. It uses a non-parametric Bayesian model (Hierarchical Dirichlet Process - HLDA) to identify enriched protein networks (Chromatin Maintainer Networks or CMNs) from a \"corpus\" of interaction-specific networks. The workflow involves loading ChIA-PET and ChIP-Seq data, mapping these to a background PPI, building individual networks for each loop, and the",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/R3CPET.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/sirusb/R3CPET",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "R3CPET"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/R3CPET.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/sirusb/R3CPET",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-r3cpet\n\n## Overview\n\nR3CPET (3D Chromatin Protein Enrichment Tool) is an R package designed to infer the set of proteins most likely to maintain chromatin interactions. It uses a non-parametric Bayesian model (Hierarchical Dirichlet Process - HLDA) to identify enriched protein networks (Chromatin Maintainer Networks or CMNs) from a \"corpus\" of interaction-specific networks. The workflow involves loading ChIA-PET and ChIP-Seq data, mapping these to a background PPI, building individual networks for each loop, and then clustering these to find common regulatory modules.\n\n## Core Workflow\n\n### 1. Data Loading and Initialization\nThe central object is a `ChiapetExperimentData` container. You must provide ChIA-PET interactions, Transcription Factor Binding Sites (TFBS), and a PPI network.\n\n```r\nlibrary(R3CPET)\n\n# 1. Initialize the object\n# pet: path to file or GRanges\n# tfbs: path to file or GRanges\n# ppiType: \"HPRD\" or \"Biogrid\" (built-in)\nx <- ChiapetExperimentData(pet = petFile, tfbs = tfbsFile, IsBed = FALSE, ppiType = \"HPRD\", filter = TRUE)\n\n# 2. Load/Filter PPI (optional custom filtering)\n# Keeps only proteins in the nucleus by default (GO:0005634)\nx <- loadPPI(x, type = \"HPRD\", filter = TRUE)\n\n# 3. Create internal indexes\nx <- createIndexes(x)\n```\n\n### 2. Building Interaction Networks\nFor each DNA-DNA interaction, R3CPET builds a network of proteins that could bridge the two genomic regions based on the PPI.\n\n```r\n# minFreq/maxFreq: filter edges appearing too rarely or too often (noise reduction)\nnets <- buildNetworks(x, minFreq = 0.1, maxFreq = 0.9)\n```\n\n### 3. Inferring Maintainer Networks (HLDA)\nThe `InferNetworks` function applies the HLDA model to find the most enriched protein complexes.\n\n```r\n# thr: threshold to select top edges in each network\nhlda <- InferNetworks(nets, thr = 0.5, max_iter = 500)\n\n# Convert results to igraph objects for analysis\nhlda <- GenerateNetworks(hlda)\n```\n\n### 4. Clustering and Analysis\nYou can cluster the original DNA interactions based on which maintainer networks they are enriched for.\n\n```r\n# Cluster interactions into groups (e.g., 6 clusters)\nhlda <- clusterInteractions(hlda, method = \"sota\", nbClus = 6)\n\n# Access results\ntop_nodes <- topNodes(hlda)   # Top proteins per CMN\ntop_edges <- topEdges(hlda)   # Top PPI interactions per CMN\nall_nets <- networks(hlda)    # List of igraph objects\n```\n\n## Visualization\n\nR3CPET provides several plotting methods via `plot3CPETRes`:\n\n*   **Heatmaps**: `plot3CPETRes(hlda, type = \"heatmap\")` shows interaction-network enrichment.\n*   **Networks**: `plot3CPETRes(hlda, type = \"networks\")` generates a list of ggplot objects for the inferred CMNs.\n*   **Circos**: `visualizeCircos(hlda, x, cluster = 1)` visualizes the physical DNA loops for a specific cluster.\n*   **Similarity**: `plot3CPETRes(hlda, type = \"netSim\")` shows how much the inferred networks overlap.\n\n## Tips for Success\n\n*   **Data Formats**: ChIA-PET data can be a 6-column file (chrom1, start1, end1, chrom2, start2, end2) or a 4-column BED file with specific naming (`PET#1.1` for left, `PET#1.2` for right).\n*   **Parallelization**: `buildNetworks` uses the `parallel` package. Ensure your environment allows for multiple R instances if processing large datasets.\n*   **Expression Filtering**: Use `annotateExpression(hlda, RPKM_df)` to add cell-specific expression data to the network nodes, which helps in identifying biologically relevant maintainers.\n*   **Hyperparameters**: If the number of inferred networks is too high or low, adjust the `gamma` parameter in `InferNetworks`. Smaller `gamma` leads to fewer clusters.\n\n## Reference documentation\n- [R3CPET User Manual](./references/R3CPET.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-r3cpet",
+    "description": "R3CPET is an R package that uses a non-parametric Bayesian model to infer protein networks that maintain 3D chromatin interactions from ChIA-PET and ChIP-Seq data. Use when user asks to identify chromatin maintainer networks, build interaction-specific protein networks, or cluster DNA loops based on protein enrichment.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/R3CPET.html"
+  }
+}

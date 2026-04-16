@@ -1,0 +1,47 @@
+{
+  "id": "graph2pro-var",
+  "category": "CLI",
+  "name": "graph2pro-var",
+  "description": "graph2pro-var is a meta-proteogenomic pipeline that identifies proteins and peptides by integrating assembly graphs and raw sequencing reads with mass spectrometry data. Use when user asks to identify peptides from assembly graphs, capture protein variants from unassembled reads, or perform meta-proteogenomic database searching.",
+  "overview": "graph2pro-var is a meta-proteogenomic pipeline designed to improve protein and peptide identification by leveraging the information stored in assembly graphs and raw sequencing reads. Traditional methods often rely on assembled contigs, which can lose significant biological variation. This tool uses two primary algorithms: **graph2pro**, which identifies peptides by traversing the assembly graph, and **var2pep**, which utilizes unassembled reads to capture additional variants. The pipeline autom",
+  "homepage": "https://github.com/COL-IU/graph2pro-var",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/graph2pro-var/overview",
+  "github": "https://github.com/COL-IU/graph2pro-var",
+  "conda_downloads": "4.7K",
+  "conda_downloads_num": 4700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "graph2pro-var_install",
+      "graph2pro-var_DBGraph2Pro"
+    ],
+    "description": "Copy files and set attributes",
+    "docker_image": "quay.io/biocontainers/graph2pro-var:1.0.0--0",
+    "homepage": "https://github.com/COL-IU/graph2pro-var",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/graph2pro-var/overview",
+    "github": "https://github.com/COL-IU/graph2pro-var",
+    "conda_downloads": "4.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "graph2pro-var_DBGraph2Pro.cwl",
+    "graph2pro-var_install.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# graph2pro-var\n\n## Overview\n\ngraph2pro-var is a meta-proteogenomic pipeline designed to improve protein and peptide identification by leveraging the information stored in assembly graphs and raw sequencing reads. Traditional methods often rely on assembled contigs, which can lose significant biological variation. This tool uses two primary algorithms: **graph2pro**, which identifies peptides by traversing the assembly graph, and **var2pep**, which utilizes unassembled reads to capture additional variants. The pipeline automates the process of database generation, MS/MS searching (via MSGF+), and result summarization.\n\n## Core Workflow\n\n### 1. Prepare the Assembly Graph\nThe pipeline requires an assembly graph in `.fastg` format.\n- **Recommended Tool**: Use MegaHit to generate the graph.\n- **Conversion**: Use the `megahit_toolkit` to convert contigs to fastg:\n  `megahit_toolkit contig2fastg [kmer_size] intermediate_contigs/k[kmer_size].contigs.fa > assembly.fastg`\n- **Note**: The k-mer size used for the graph must be recorded for the parameter file.\n\n### 2. Configure the Parameter File (.par)\nCreate a text file (e.g., `project.par`) containing the following key-value pairs. Ensure there are no spaces around the `=` sign.\n\n| Parameter | Requirement | Description |\n| :--- | :--- | :--- |\n| `id` | Required | Prefix for all output files. |\n| `kmer` | Required | K-mer size used for assembly graph generation. |\n| `fastg` | Required | Path to the assembly graph file. |\n| `ms` | Required | Path to the mass spectrometry spectral file (MGF). |\n| `reads` | Optional | Path to sequencing reads (required for var2pep step). |\n| `thread` | Optional | Number of threads (default: 8). |\n| `memory` | Optional | RAM allocation (default: 32g). Increase for large MGF files. |\n| `fdr` | Optional | False Discovery Rate threshold (default: 0.01). |\n| `cascaded` | Optional | Set to `yes` to only search unidentified spectra in the Var2Pep step. |\n\n### 3. Execute the Pipeline\nRun the wrapper script from within a dedicated working directory to manage the large volume of intermediate files.\n\n```bash\n# Standard execution\nsh /path/to/graph2pro-var/graph2pro-var.sh project.par\n\n# Background execution for large datasets\nnohup sh /path/to/graph2pro-var/graph2pro-var.sh project.par > project.log &\n```\n\n### 4. Summarize Results\nAfter the pipeline completes, generate a report of identified spectra and unique peptides across the different approaches (contig-only, graph2pro, and var2pep).\n\n```bash\nsh /path/to/graph2pro-var/summarize.sh project.par\n```\n\n## Expert Tips and Best Practices\n\n- **Working Directory**: Always run the script from a fresh directory. The pipeline generates numerous intermediate files (e.g., `*.mzid`, `*.tsv`, `*.fasta`) in the current folder.\n- **Memory Management**: If the pipeline crashes during the MSGF+ search phase, increase the `memory` parameter in the `.par` file (e.g., `memory=64g`).\n- **Partial Runs**: If you only have assembly graphs and spectra but no raw reads, omit the `reads=` line in the parameter file. The pipeline will automatically stop after the `graph2pro` phase.\n- **Database Extraction**: If you only need to generate a protein database from a FASTG file without running the full MS search, use the standalone `DBGraph2Pro` tool:\n  `./Graph2Pro/DBGraph2Pro -s assembly.fastg -S -k [kmer] -o output.fasta`\n- **FDR Control**: The pipeline produces specific TSV files for different stages (e.g., `*.fgs.tsv.0.01.tsv` for contigs, `*.graph2pro.tsv.0.01.tsv` for the graph). Review these individually to compare the gain in identifications provided by the graph-based approach.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| DBGraph2Pro | DBGraph2Pro version 0.1 |\n| install | Copy files and set attributes |\n\n## Reference documentation\n- [Main README](./references/github_com_COL-IU_graph2pro-var_blob_master_README.md)\n- [Wrapper Script Logic](./references/github_com_COL-IU_graph2pro-var_blob_master_graph2pro-var.sh.md)\n- [Result Summarization](./references/github_com_COL-IU_graph2pro-var_blob_master_summarize.sh.md)",
+  "skill_front_matter": {
+    "name": "graph2pro-var",
+    "description": "graph2pro-var is a meta-proteogenomic pipeline that identifies proteins and peptides by integrating assembly graphs and raw sequencing reads with mass spectrometry data. Use when user asks to identify peptides from assembly graphs, capture protein variants from unassembled reads, or perform meta-proteogenomic database searching.",
+    "homepage": "https://github.com/COL-IU/graph2pro-var"
+  }
+}

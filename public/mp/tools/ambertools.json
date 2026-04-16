@@ -1,0 +1,49 @@
+{
+  "id": "ambertools",
+  "category": "CLI",
+  "name": "ambertools",
+  "description": "AmberTools is a collection of programs for preparing, parameterizing, and analyzing biomolecular simulations. Use when user asks to parameterize small molecules with GAFF, set up protein-ligand complexes using TLEAP, or perform binding free energy calculations like MMGBSA and MMPBSA.",
+  "overview": "AmberTools is a collection of programs for the preparation and analysis of biomolecular simulations. This skill enables the setup of protein-ligand complexes, parameterization of small molecules using the General Amber Force Field (GAFF), and post-simulation analysis including binding energy calculations. It is particularly useful for bridging the gap between raw structural data (PDB) and production-ready simulation inputs for engines like OpenMM or Amber.",
+  "homepage": "https://github.com/quantaosun/Ambertools-OpenMM-MD",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ambertools/overview",
+  "github": "https://github.com/quantaosun/Ambertools-OpenMM-MD",
+  "conda_downloads": "N/A",
+  "conda_downloads_num": 0,
+  "last_updated": "N/A",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ambertools_reduce",
+      "ambertools_ante-MMPBSA.py",
+      "ambertools_MMPBSA.py"
+    ],
+    "description": "Add or remove hydrogens to/from a PDB file, with optimization of hydrogen positions and flips of NQH groups.",
+    "docker_image": "quay.io/biocontainers/ambertools:21.10",
+    "homepage": "https://github.com/quantaosun/Ambertools-OpenMM-MD",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ambertools/overview",
+    "github": "https://github.com/quantaosun/Ambertools-OpenMM-MD",
+    "conda_downloads": "N/A",
+    "last_updated": "N/A",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ambertools_MMPBSA.py.cwl",
+    "ambertools_ante-MMPBSA.py.cwl",
+    "ambertools_reduce.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ambertools\n\n## Overview\nAmberTools is a collection of programs for the preparation and analysis of biomolecular simulations. This skill enables the setup of protein-ligand complexes, parameterization of small molecules using the General Amber Force Field (GAFF), and post-simulation analysis including binding energy calculations. It is particularly useful for bridging the gap between raw structural data (PDB) and production-ready simulation inputs for engines like OpenMM or Amber.\n\n## System Preparation and Parameterization\n\n### Protein Preparation\n1. **Protonation**: Use the H++ web server or the `reduce` tool to add hydrogens.\n2. **Cleaning**: Remove redundant chains or non-standard residues that may interfere with parameterization.\n3. **Missing Atoms**: Use `pdbfixer` or AlphaFold2 predicted structures if experimental structures have significant gaps.\n\n### Ligand Parameterization (GAFF)\nUse `antechamber` to generate parameters for small molecules.\n```bash\n# Generate mol2 file with BCC charges\nantechamber -i ligand.pdb -fi pdb -o ligand.mol2 -fo mol2 -c bcc -s 2\n\n# Generate additional parameters (frcmod)\nparmchk2 -i ligand.mol2 -f mol2 -o ligand.frcmod\n```\n\n### Complex Building (TLEAP)\nCreate a `leap.in` script to combine the protein and ligand:\n```bash\n# Example TLEAP commands\nsource leaprc.protein.ff14SB\nsource leaprc.gaff\nloadamberparams ligand.frcmod\nPROT = loadpdb protein_cleaned.pdb\nLIG = loadmol2 ligand.mol2\nCOMPLEX = combine {PROT LIG}\nsaveamberparm COMPLEX complex.prmtop complex.inpcrd\nquit\n```\n\n## Binding Free Energy Analysis (MMGBSA/PBSA)\n\n### 1. Topology Preparation\nGenerate the required topology files for the complex, receptor, and ligand using `ante-MMPBSA.py`:\n```bash\nante-MMPBSA.py -p complex.prmtop -c com.prmtop -r rec.prmtop -l ligand.prmtop -s :WAT:Na+:Cl-:Mg+:K+ -n :LIG --radii mbondi2\n```\n\n### 2. Energy Calculation\nCreate an input file `mmpbsa.in`:\n```text\n&general\n  endframe=1000, interval=10, strip_mask=:WAT:Na+:Cl-:Mg+:K+,\n/\n&gb\n  igb=2, saltcon=0.15,\n/\n&decomp\n  idecomp=1,\n/\n```\n\nRun the calculation:\n```bash\nMMPBSA.py -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp complex.prmtop -cp com.prmtop -rp rec.prmtop -lp ligand.prmtop -y trajectory.dcd\n```\n\n## Expert Tips and Troubleshooting\n\n- **Hydrogen Addition Errors**: The `reduce` tool and Open Babel may occasionally add an incorrect number of hydrogens to aromatic rings or carbonyl groups, leading to \"odd electron\" errors. Verify ligand structures in PyMOL using `h_add` if parameterization fails.\n- **Missing Residues**: If PDBfixer cannot resolve structural gaps, prioritize using AlphaFold2 models as starting points to ensure topological continuity.\n- **Charge Neutralization**: Always ensure the system is neutralized with counter-ions (Na+ or Cl-) during the TLEAP stage to avoid artifacts in electrostatic calculations.\n- **Analysis**: For high-quality visualization and analysis of trajectories, use the `Bio3D` package in R or specific PyMOL scripts for protein-ligand interactions.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| MMPBSA.py | MMPBSA.py calculates binding free energies using end-state free energy methods like MM-PBSA and MM-GBSA. |\n| ante-MMPBSA.py | A tool to prepare topology files for MMPBSA.py by stripping solvent, ligand, or receptor atoms from a complex topology. |\n| reduce | Add or remove hydrogens to/from a PDB file, with optimization of hydrogen positions and flips of NQH groups. |\n\n## Reference documentation\n- [Ambertools-OpenMM-MD Overview](./references/github_com_quantaosun_Ambertools-OpenMM-MD_blob_main_README.md)\n- [MMGBSA/PBSA Workflow](./references/github_com_quantaosun_Ambertools-OpenMM-MD_blob_main_Ambertools-OpenMM-MD_GBSA.ipynb.md)",
+  "skill_front_matter": {
+    "name": "ambertools",
+    "description": "AmberTools is a collection of programs for preparing, parameterizing, and analyzing biomolecular simulations. Use when user asks to parameterize small molecules with GAFF, set up protein-ligand complexes using TLEAP, or perform binding free energy calculations like MMGBSA and MMPBSA.",
+    "homepage": "https://github.com/quantaosun/Ambertools-OpenMM-MD"
+  }
+}

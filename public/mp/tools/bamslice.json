@@ -1,0 +1,45 @@
+{
+  "id": "bamslice",
+  "category": "CLI",
+  "name": "bamslice",
+  "description": "bamslice extracts genomic data from BAM or CRAM files into interleaved FASTQ format based on specific byte offsets. Use when user asks to slice large genomic files by byte ranges, parallelize BAM processing without index files, or convert specific file chunks to interleaved FASTQ.",
+  "overview": "bamslice is a specialized utility for high-efficiency genomic data processing. It allows you to \"slice\" a large BAM or CRAM file into chunks based on raw byte offsets rather than genomic coordinates. Because it identifies BGZF (Blocked GZIP) boundaries automatically, it can start and stop at arbitrary points in a file while still producing valid, complete sequence records. This makes it a powerful tool for distributed systems where you want to process a single massive file in parallel across man",
+  "homepage": "https://github.com/nebiolabs/bamslice",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bamslice/overview",
+  "github": "https://github.com/nebiolabs/bamslice",
+  "conda_downloads": "5.1K",
+  "conda_downloads_num": 5100,
+  "last_updated": "2026-01-15",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bamslice"
+    ],
+    "description": "Extract byte ranges from BAM files and convert to interleaved FASTQ format for parallel processing",
+    "docker_image": "quay.io/biocontainers/bamslice:0.1.7--h67a98e6_0",
+    "homepage": "https://github.com/nebiolabs/bamslice",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bamslice/overview",
+    "github": "https://github.com/nebiolabs/bamslice",
+    "conda_downloads": "5.1K",
+    "last_updated": "2026-01-15",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bamslice.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bamslice\n\n## Overview\n\nbamslice is a specialized utility for high-efficiency genomic data processing. It allows you to \"slice\" a large BAM or CRAM file into chunks based on raw byte offsets rather than genomic coordinates. Because it identifies BGZF (Blocked GZIP) boundaries automatically, it can start and stop at arbitrary points in a file while still producing valid, complete sequence records. This makes it a powerful tool for distributed systems where you want to process a single massive file in parallel across many workers without the bottleneck of creating or reading index files.\n\n## Installation\n\nInstall via Bioconda or build from source using Cargo:\n\n```bash\n# Bioconda\nconda install bioconda::bamslice\n\n# Cargo (from source)\ncargo build --release\n```\n\n## Command Line Usage\n\nThe tool requires an input file and a defined byte range.\n\n### Basic Syntax\n```bash\nbamslice --input <FILE> --start-offset <BYTES> --end-offset <BYTES> --output <OUT.fastq>\n```\n\n### Arguments\n- `-i, --input`: Path to the input BAM or CRAM file.\n- `-s, --start-offset`: The byte position to begin scanning. bamslice will find the first valid BGZF block at or after this point.\n- `-e, --end-offset`: The byte position to stop. The tool processes all blocks that start before this offset.\n- `-o, --output`: Path to the output interleaved FASTQ. Defaults to stdout if omitted.\n\n## Common Patterns and Best Practices\n\n### Parallelizing a Large BAM File\nTo process a file in parallel, calculate the total file size and divide it into equal byte chunks.\n\n**On Linux:**\n```bash\nFILE_SIZE=$(stat -c%s input.bam)\nCHUNK=$((FILE_SIZE / 4)) # For 4 parallel jobs\n\n# Job 1 (First quarter)\nbamslice -i input.bam -s 0 -e $CHUNK -o chunk_1.fastq\n\n# Job 2 (Second quarter)\nbamslice -i input.bam -s $CHUNK -e $((CHUNK * 2)) -o chunk_2.fastq\n```\n\n### Piping to Downstream Tools\nSince bamslice supports stdout, you can pipe interleaved FASTQ data directly into aligners or QC tools (like `fastp` or `bwa mem -p`) to avoid writing large intermediate files to disk.\n\n```bash\nbamslice -i input.bam -s 0 -e 100000000 | fastp --stdin --interleaved_in -o out.R1.fq -O out.R2.fq\n```\n\n### Ensuring Zero Overlap\nWhen defining ranges for multiple jobs, always ensure the `end-offset` of one job is exactly the `start-offset` of the next. bamslice's block-alignment logic guarantees that each BGZF block is processed exactly once, meaning no reads will be duplicated or skipped across the boundary.\n\n## Expert Tips\n- **Interleaved Format**: The output is interleaved FASTQ, meaning R1 and R2 for a pair follow each other sequentially. Ensure your downstream tools are configured to handle interleaved input (often via a `-p` or `--interleaved` flag).\n- **Approximate Offsets**: You do not need to know the exact start of a BGZF block. bamslice scans for the `0x1f 0x8b 0x08` magic bytes to find the next valid header.\n- **CRAM Support**: While designed for BAM, the tool also supports CRAM files, providing the same byte-range slicing capabilities.\n\n## Reference documentation\n- [bamslice GitHub Repository](./references/github_com_nebiolabs_bamslice.md)\n- [bamslice Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_bamslice_overview.md)",
+  "skill_front_matter": {
+    "name": "bamslice",
+    "description": "bamslice extracts genomic data from BAM or CRAM files into interleaved FASTQ format based on specific byte offsets. Use when user asks to slice large genomic files by byte ranges, parallelize BAM processing without index files, or convert specific file chunks to interleaved FASTQ.",
+    "homepage": "https://github.com/nebiolabs/bamslice"
+  }
+}

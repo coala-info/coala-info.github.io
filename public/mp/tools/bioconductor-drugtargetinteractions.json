@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-drugtargetinteractions",
+  "category": "bioconductor",
+  "name": "bioconductor-drugtargetinteractions",
+  "description": "This tool identifies drug-target interactions and retrieves bioactivity data for small molecules and proteins using the ChEMBL database. Use when user asks to map gene identifiers to UniProt IDs, query drug-target annotations, or retrieve bioassay measurements for specific compounds and biological targets.",
+  "overview": "The `drugTargetInteractions` package facilitates the discovery of relationships between drugs (small molecules) and their biological targets (genes/proteins). It utilizes a local SQLite instance of the ChEMBL database to provide comprehensive, annotated drug-target information. The package supports strict ID matching as well as sequence similarity-based approaches (SSNN) using UniProt UNIREF clusters or BioMart paralogs to identify potential interactions for related proteins.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/drugTargetInteractions.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-drugtargetinteractions/overview",
+  "github": "https://github.com/girke-lab/drugTargetInteractions",
+  "conda_downloads": "10.5K",
+  "conda_downloads_num": 10500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "drugTargetInteractions"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/drugTargetInteractions.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-drugtargetinteractions/overview",
+    "github": "https://github.com/girke-lab/drugTargetInteractions",
+    "conda_downloads": "10.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-drugtargetinteractions\n\nname: bioconductor-drugtargetinteractions\ndescription: Identify drug-target interactions for small molecules and gene/protein identifiers using the ChEMBL database. Use this skill when you need to map Ensembl IDs or Gene Names to UniProt IDs, query drug-target annotations, or retrieve bioassay data for specific compounds or proteins.\n\n## Overview\nThe `drugTargetInteractions` package facilitates the discovery of relationships between drugs (small molecules) and their biological targets (genes/proteins). It utilizes a local SQLite instance of the ChEMBL database to provide comprehensive, annotated drug-target information. The package supports strict ID matching as well as sequence similarity-based approaches (SSNN) using UniProt UNIREF clusters or BioMart paralogs to identify potential interactions for related proteins.\n\n## Environment Setup\nBefore running queries, you must configure the path to the ChEMBL SQLite database.\n\n```r\nlibrary(drugTargetInteractions)\n\n# Define paths to the ChEMBL database and results directory\nchembldb <- \"path/to/chembl_vXX.db\" \nresultsPath <- \"./results\"\nconfig <- genConfig(chemblDbPath=chembldb, resultsPath=resultsPath)\n\n# Initialize UniChem mapping for ID translations (DrugBank, PubChem, ChEBI)\ndownloadUniChem(config=config)\ncmpIdMapping(config=config)\n```\n\n## Core Workflows\n\n### 1. ID Mapping and UniProt Retrieval\nTo query ChEMBL, you often need UniProt IDs. You can map Gene Names or Ensembl IDs to UniProt IDs using strict matching (IDM) or similarity clusters (SSNN).\n\n```r\n# Map Gene Names to Ensembl/UniProt\nidMap <- getSymEnsUp(EnsDb=\"EnsDb.Hsapiens.v86\", ids=c(\"CA7\", \"CFTR\"), idtype=\"GENE_NAME\")\n\n# Get UniProt IDs via UNIREF90 clusters (Sequence Similarity)\nkeys <- c(\"ENSG00000145700\", \"ENSG00000135441\")\nres_list90 <- getUniprotIDs(taxId=9606, kt=\"ENSEMBL\", keys=keys, seq_cluster=\"UNIREF90\")\n\n# Get UniProt IDs via BioMart Paralogs (Faster, wider evolutionary distance)\nqueryBy <- list(molType=\"gene\", idType=\"ensembl_gene_id\", ids=keys)\nres_list_para <- getParalogs(queryBy)\n```\n\n### 2. Querying Drug-Target Annotations\nUse `drugTargetAnnot` for direct SQL-based queries against ChEMBL.\n\n```r\n# Query by Compound IDs (ChEMBL IDs)\nqueryCmp <- list(molType=\"cmp\", idType=\"chembl_id\", ids=c(\"CHEMBL17\", \"CHEMBL19\"))\nannot_cmp <- drugTargetAnnot(queryCmp, config=config)\n\n# Query by Protein IDs (UniProt IDs)\nqueryProt <- list(molType=\"protein\", idType=\"UniProt_ID\", ids=c(\"P43166\", \"P00915\"))\nannot_prot <- drugTargetAnnot(queryProt, config=config)\n```\n\n### 3. Querying Bioassay Data\nRetrieve experimental bioactivity measurements for compounds or targets.\n\n```r\n# Query bioassay data for specific DrugBank IDs\nqueryBA <- list(molType=\"cmp\", idType=\"DrugBank_ID\", ids=c(\"DB00945\", \"DB00316\"))\nbioassay_results <- drugTargetBioactivity(queryBA, config=config)\n```\n\n### 4. Integrated Workflow\nUse `runDrugTarget_Annot_Bioassay` to process a list of UniProt IDs (from `getParalogs` or `getUniprotIDs`) and return both annotations and bioassays in a single list.\n\n```r\n# Run full pipeline\nresults <- runDrugTarget_Annot_Bioassay(\n    res_list = res_list_para, \n    up_col_id = \"ID_up_sp\", \n    ens_gene_id = idMap$ens_gene_id, \n    config = config\n)\n\n# Access results\nannotation_df <- results$Annotation\nbioassay_df <- results$Bioassay\n```\n\n## Tips for Success\n- **Database Version**: Always use a recent version of the ChEMBL SQLite database for production work. The `system.file` sample database is for demonstration only.\n- **ID Types**: Supported compound ID types include `chembl_id`, `PubChem_ID`, and `DrugBank_ID`. Supported protein/gene types include `UniProt_ID`, `ENSEMBL`, and `GENE_NAME`.\n- **SSNN Logic**: When using sequence similarity (SSNN), the results include a `Query_` prefix in the GeneName column to indicate the interaction was found via a similar protein, not necessarily the exact query gene.\n\n## Reference documentation\n- [Drug-Target Interactions](./references/drugTargetInteractions.Rmd)\n- [Drug-Target Interactions](./references/drugTargetInteractions.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-drugtargetinteractions",
+    "description": "This tool identifies drug-target interactions and retrieves bioactivity data for small molecules and proteins using the ChEMBL database. Use when user asks to map gene identifiers to UniProt IDs, query drug-target annotations, or retrieve bioassay measurements for specific compounds and biological targets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/drugTargetInteractions.html"
+  }
+}

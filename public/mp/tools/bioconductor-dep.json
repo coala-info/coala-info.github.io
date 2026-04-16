@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dep",
+  "category": "bioconductor",
+  "name": "bioconductor-dep",
+  "description": "The bioconductor-dep package provides an integrated workflow for the differential enrichment analysis of quantitative proteomics data. Use when user asks to analyze quantitative proteomics datasets, impute missing values in protein data, perform differential expression testing, or generate visualizations like volcano plots and heatmaps for proteomics results.",
+  "overview": "The `DEP` package provides an integrated workflow for analyzing quantitative proteomics data (e.g., from MaxQuant or IsobarQuant). It is designed to handle the high rate of missing values typical in proteomics and uses `limma` for robust statistical testing. The workflow centers around `SummarizedExperiment` objects and provides extensive visualization tools for quality control and result exploration.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DEP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dep/overview",
+  "github": "N/A",
+  "conda_downloads": "26.3K",
+  "conda_downloads_num": 26300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DEP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dep/overview",
+    "github": "N/A",
+    "conda_downloads": "26.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dep\n\n## Overview\nThe `DEP` package provides an integrated workflow for analyzing quantitative proteomics data (e.g., from MaxQuant or IsobarQuant). It is designed to handle the high rate of missing values typical in proteomics and uses `limma` for robust statistical testing. The workflow centers around `SummarizedExperiment` objects and provides extensive visualization tools for quality control and result exploration.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad your tabular data and ensure protein names are unique.\n```r\nlibrary(DEP)\nlibrary(dplyr)\n\n# Load data (e.g., MaxQuant proteinGroups.txt)\ndata <- read.delim(\"proteinGroups.txt\")\n\n# Filter contaminants and reverse hits\ndata <- filter(data, Reverse != \"+\", Potential.contaminant != \"+\")\n\n# Make unique names using Gene names and Protein IDs\ndata_unique <- make_unique(data, \"Gene.names\", \"Protein.IDs\", delim = \";\")\n```\n\n### 2. Creating a SummarizedExperiment\nDefine the experimental design and convert the data frame.\n```r\n# Identify columns containing intensity data (e.g., LFQ)\nlfq_cols <- grep(\"LFQ.intensity.\", colnames(data_unique))\n\n# Option A: Use an experimental design data.frame (columns: label, condition, replicate)\ndata_se <- make_se(data_unique, lfq_cols, experimental_design)\n\n# Option B: Parse conditions from column names\ndata_se <- make_se_parse(data_unique, lfq_cols)\n```\n\n### 3. Filtering and Normalization\nFilter proteins with too many missing values and normalize the variance.\n```r\n# Filter: thr=0 means identified in all replicates of at least one condition\ndata_filt <- filter_missval(data_se, thr = 0)\n\n# Normalize using variance stabilizing transformation (vsn)\ndata_norm <- normalize_vsn(data_filt)\n```\n\n### 4. Imputation\nChoose an imputation method based on the nature of missing values (MAR vs. MNAR).\n```r\n# Visualize missing value patterns to decide method\nplot_missval(data_filt)\nplot_detect(data_filt)\n\n# MNAR: Left-censored imputation (e.g., MinProb)\ndata_imp <- impute(data_norm, fun = \"MinProb\", q = 0.01)\n\n# MAR: k-nearest neighbor\ndata_imp_knn <- impute(data_norm, fun = \"knn\", rowmax = 0.9)\n```\n\n### 5. Differential Analysis\nTest for differences between conditions.\n```r\n# Test every sample vs. a specific control\ndata_diff <- test_diff(data_imp, type = \"control\", control = \"Ctrl\")\n\n# Define significant proteins (alpha = adjusted p-value, lfc = log2 fold change)\ndep <- add_rejections(data_diff, alpha = 0.05, lfc = log2(1.5))\n```\n\n## Visualization and Results\n`DEP` provides several functions to explore the `dep` object:\n- `plot_pca(dep, n = 500)` - PCA plot.\n- `plot_cor(dep)` - Correlation matrix.\n- `plot_heatmap(dep, type = \"centered\")` - Heatmap of significant proteins.\n- `plot_volcano(dep, contrast = \"Ubi6_vs_Ctrl\")` - Volcano plot for a specific contrast.\n- `plot_single(dep, proteins = c(\"ProteinA\", \"ProteinB\"))` - Barplots for specific proteins.\n- `data_results <- get_results(dep)` - Extract results table with p-values and ratios.\n\n## Wrapper Functions\nFor standard workflows, use the high-level wrappers:\n- `LFQ(data, experimental_design, ...)` for Label-Free Quantification.\n- `TMT(data, expdesign, ...)` for Tandem-Mass-Tag data.\n- `report(results_object)` to generate an automated HTML/PDF report.\n\n## Reference documentation\n- [Introduction to DEP](./references/DEP.md)\n- [Missing value handling](./references/MissingValues.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dep",
+    "description": "The bioconductor-dep package provides an integrated workflow for the differential enrichment analysis of quantitative proteomics data. Use when user asks to analyze quantitative proteomics datasets, impute missing values in protein data, perform differential expression testing, or generate visualizations like volcano plots and heatmaps for proteomics results.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEP.html"
+  }
+}

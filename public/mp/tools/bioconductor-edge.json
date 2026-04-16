@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-edge",
+  "category": "bioconductor",
+  "name": "bioconductor-edge",
+  "description": "This tool performs differential gene expression analysis using the Optimal Discovery Procedure and Likelihood Ratio Test. Use when user asks to analyze genome-wide expression studies, perform static group comparisons, or model independent and longitudinal time course data.",
+  "overview": "The `edge` package (Extraction of Differential Gene Expression) is designed for significance analysis of genome-wide expression data. Its primary advantage is the Optimal Discovery Procedure (ODP), which improves power over traditional gene-specific tests (like t-tests or F-tests) by utilizing information across all genes. It also provides specialized frameworks for modeling time-course data using splines.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/edge.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-edge/overview",
+  "github": "https://github.com/jdstorey/edge",
+  "conda_downloads": "33.8K",
+  "conda_downloads_num": 33800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "edge"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/edge.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-edge/overview",
+    "github": "https://github.com/jdstorey/edge",
+    "conda_downloads": "33.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-edge\n\nname: bioconductor-edge\ndescription: Differential gene expression analysis using the Optimal Discovery Procedure (ODP) and Likelihood Ratio Test (LRT). Use this skill for analyzing genome-wide expression studies, specifically for static group comparisons, independent time course experiments, and longitudinal time course studies.\n\n## Overview\n\nThe `edge` package (Extraction of Differential Gene Expression) is designed for significance analysis of genome-wide expression data. Its primary advantage is the Optimal Discovery Procedure (ODP), which improves power over traditional gene-specific tests (like t-tests or F-tests) by utilizing information across all genes. It also provides specialized frameworks for modeling time-course data using splines.\n\n## Core Workflow\n\nThe standard analysis follows these steps:\n1.  **Data Preparation**: Organize expression data into a matrix and metadata into a data frame.\n2.  **Model Building**: Create a `deSet` object containing the data and the null/full hypothesis models.\n3.  **Significance Testing**: Run the ODP or LRT algorithm.\n4.  **Result Extraction**: Extract p-values, q-values, and local False Discovery Rates (lfdr).\n\n### 1. Creating the deSet Object\n\nYou can initialize the analysis using either `build_study` (easier for standard designs) or `build_models` (for custom formulas).\n\n**Using build_study**:\n```r\n# For time-course data\nde_obj <- build_study(data = exp_matrix, adj.var = sex_vector, \n                      tme = age_vector, sampling = \"timecourse\", basis.df = 4)\n\n# For static group comparisons\nde_obj <- build_study(data = exp_matrix, adj.var = batch_vector, \n                      grp = group_vector, sampling = \"static\")\n```\n\n**Using build_models**:\n```r\nlibrary(splines)\ncov_df <- data.frame(sex = sex, age = age)\nnull_mdl <- ~sex\nfull_mdl <- ~sex + ns(age, df = 4)\nde_obj <- build_models(data = exp_matrix, cov = cov_df, \n                       null.model = null_mdl, full.model = full_mdl)\n```\n\n### 2. Significance Testing\n\n**Optimal Discovery Procedure (ODP)**:\nRecommended for maximum power. Use `n.mods` to speed up computation via k-means clustering.\n```r\nde_odp <- odp(de_obj, bs.its = 50, n.mods = 50)\n```\n\n**Likelihood Ratio Test (LRT)**:\nStandard parametric approach.\n```r\nde_lrt <- lrt(de_obj, nullDistn = \"normal\")\n```\n\n### 3. Extracting Results\n\nUse `qvalueObj` to access the statistical results stored in the `deSet` object.\n```r\nsig_res <- qvalueObj(de_odp)\npvals <- sig_res$pvalues\nqvals <- sig_res$qvalues\npi0 <- sig_res$pi0\n\n# Identify significant genes at 5% FDR\nsig_genes <- which(qvals < 0.05)\n```\n\n## Study Design Patterns\n\n### Static Experiments\nUsed to compare distinct biological groups (e.g., Treatment vs. Control).\n*   **Null Model**: Includes only adjustment variables (e.g., `~batch + sex`).\n*   **Full Model**: Includes adjustment variables plus the group variable (e.g., `~batch + sex + group`).\n\n### Time Course Experiments\n*   **Independent**: One group sampled over time. The goal is to find genes changing over time.\n    *   Full model typically uses a natural spline: `~ns(time, df = 4)`.\n*   **Longitudinal**: Multiple groups sampled over time. The goal is to find genes that behave differently over time between groups.\n    *   Full model includes an interaction: `~grp + ns(tme, df=2) + grp:ns(tme, df=2)`.\n\n## Advanced Features\n\n### Surrogate Variable Analysis (SVA)\nUse `apply_sva` to identify and remove hidden batch effects or unwanted variation.\n```r\nde_sva <- apply_sva(de_obj, n.sv = 3)\n# The surrogate variables (SV1, SV2, etc.) are automatically added to the models\nde_odp <- odp(de_sva)\n```\n\n### Model Fitting\nTo inspect the fitted values or residuals without running the full significance test:\n```r\nfit_obj <- fit_models(de_obj, stat.type = \"lrt\")\nfitted_values <- fitFull(fit_obj)\nresiduals <- resFull(fit_obj)\n```\n\n## Tips for Success\n*   **Memory/Speed**: For large datasets, always set `n.mods` (e.g., 50) in `odp()` to avoid long computation times.\n*   **Spline Degrees of Freedom**: For time-course data, `df = 2` to `df = 4` is usually sufficient.\n*   **Object Compatibility**: `deSet` inherits from `ExpressionSet`. You can use `exprs(de_obj)` and `pData(de_obj)` to access data.\n\n## Reference documentation\n- [edge](./references/edge.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-edge",
+    "description": "This tool performs differential gene expression analysis using the Optimal Discovery Procedure and Likelihood Ratio Test. Use when user asks to analyze genome-wide expression studies, perform static group comparisons, or model independent and longitudinal time course data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/edge.html"
+  }
+}

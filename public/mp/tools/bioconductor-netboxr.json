@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-netboxr",
+  "category": "bioconductor",
+  "name": "bioconductor-netboxr",
+  "description": "This tool identifies pathway modules by mapping altered genes onto a human interaction network to find significant linker genes and functional communities. Use when user asks to identify pathway modules, find linker genes in a biological network, or perform statistical validation of network connectivity.",
+  "overview": "The `netboxr` package implements the NetBox algorithm to identify pathway modules in cancer and other biological contexts. It maps a list of altered genes onto a Human Interaction Network (HIN) to find \"linker\" genes that connect disparate alterations into cohesive functional units. It includes robust statistical validation through global and local network null models and supports community detection for module discovery.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/netboxr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "netboxr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/netboxr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-netboxr\n\n## Overview\nThe `netboxr` package implements the NetBox algorithm to identify pathway modules in cancer and other biological contexts. It maps a list of altered genes onto a Human Interaction Network (HIN) to find \"linker\" genes that connect disparate alterations into cohesive functional units. It includes robust statistical validation through global and local network null models and supports community detection for module discovery.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the package and the default 2010 Human Interaction Network (HIN).\n```r\nlibrary(netboxr)\ndata(netbox2010)\n\n# Extract network and gene list\nsifNetwork <- netbox2010$network\ngeneList <- as.character(netbox2010$geneList)\n\n# Simplify network (remove loops and duplicates)\ngraphReduced <- networkSimplify(sifNetwork, directed = FALSE)\n```\n\n### 2. Network Mapping and Module Discovery\nThe `geneConnector` function is the primary interface for mapping genes and identifying modules.\n```r\n# communityMethod: \"ebc\" (edge betweenness) or \"lec\" (leading eigenvector)\nresults <- geneConnector(\n  geneList = geneList, \n  networkGraph = graphReduced, \n  directed = FALSE,\n  pValueAdj = \"BH\", \n  pValueCutoff = 0.05, \n  communityMethod = \"ebc\", \n  keepIsolatedNodes = FALSE\n)\n```\n\n### 3. Statistical Validation\nValidate if the discovered network is more connected or modular than random chance.\n*   **Global Null Model:** Tests if the giant component size is significant.\n*   **Local Null Model:** Tests if the modularity (Z-score) is significant.\n```r\n# Global test (can be time-consuming)\nglobalTest <- globalNullModel(results$netboxGraph, graphReduced, iterations = 100, numOfGenes = length(geneList))\n\n# Local test\nlocalTest <- localNullModel(netboxGraph = results$netboxGraph, iterations = 1000)\n```\n\n### 4. Visualization and Annotation\nAnnotate the graph with colors based on interaction types and plot using `igraph` layouts.\n```r\nlibrary(RColorBrewer)\n# Define colors for interaction types\ninteractionType <- unique(results$netboxOutput[, 2])\nedgeColors <- data.frame(INTERACTION_TYPE = interactionType, \n                         COLOR = brewer.pal(length(interactionType), \"Spectral\"))\n\nnetboxGraphAnnotated <- annotateGraph(netboxResults = results, edgeColors = edgeColors, linker = TRUE)\n\n# Plot\nplot(results$netboxCommunity, netboxGraphAnnotated, layout = layout_with_fr)\n```\n\n## Key Functions\n- `networkSimplify()`: Cleans SIF data for network analysis.\n- `geneConnector()`: Main execution function; returns a list containing the graph, community memberships, and linker gene data.\n- `annotateGraph()`: Prepares the igraph object for plotting with specific aesthetics.\n- `globalNullModel()` / `localNullModel()`: Statistical significance functions.\n\n## Tips for Success\n- **Linker Genes:** These are non-altered genes that significantly connect your input genes. Check `results$neighborData` to see their FDR-adjusted p-values.\n- **Performance:** For large networks, use `communityMethod = \"lec\"` (Leading Eigenvector) instead of \"ebc\" to speed up module detection.\n- **Custom Networks:** You can use your own SIF (Simple Interaction Format) data. Ensure it has three columns: `PARTICIPANT_A`, `INTERACTION_TYPE`, and `PARTICIPANT_B`.\n- **Downstream Analysis:** Use the `results$moduleMembership` data frame to extract gene lists for Gene Ontology (GO) enrichment using packages like `clusterProfiler`.\n\n## Reference documentation\n- [NetBoxR Tutorial](./references/netboxrTutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-netboxr",
+    "description": "This tool identifies pathway modules by mapping altered genes onto a human interaction network to find significant linker genes and functional communities. Use when user asks to identify pathway modules, find linker genes in a biological network, or perform statistical validation of network connectivity.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/netboxr.html"
+  }
+}

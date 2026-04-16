@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mistyr",
+  "category": "bioconductor",
+  "name": "bioconductor-mistyr",
+  "description": "bioconductor-mistyr is a multiview machine learning framework for analyzing spatial omics data to relate marker expressions to their local and tissue-wide spatial contexts. Use when user asks to build spatial modeling workflows, analyze intercellular interactions, or quantify the contribution of different spatial views to marker expression.",
+  "overview": "MISTy (Multiview Intercellular SpaTial modeling framework) is an explainable machine learning framework for extracting biological insights from spatially resolved omics data. It models the expression of a marker as a function of:\n1.  **Intraview**: Other markers within the same cell/spot.\n2.  **Juxtaview**: Markers in the immediate neighborhood.\n3.  **Paraview**: Markers in the broader tissue structure (distance-weighted).\n4.  **Custom Views**: User-defined spatial or functional contexts.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mistyR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/saezlab/mistyR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mistyR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mistyR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/saezlab/mistyR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mistyr\n\nname: bioconductor-mistyr\ndescription: Multiview Intercellular SpaTial modeling framework (MISTy) for analyzing spatial omics data. Use this skill to build workflows that relate marker expressions within a cell (intraview) to different spatial contexts (juxtaview, paraview, or custom views). Ideal for investigating pathway activities, ligand-receptor interactions, and cell-type compositions in spatial transcriptomics (e.g., 10X Visium, IMC).\n\n## Overview\n\nMISTy (Multiview Intercellular SpaTial modeling framework) is an explainable machine learning framework for extracting biological insights from spatially resolved omics data. It models the expression of a marker as a function of:\n1.  **Intraview**: Other markers within the same cell/spot.\n2.  **Juxtaview**: Markers in the immediate neighborhood.\n3.  **Paraview**: Markers in the broader tissue structure (distance-weighted).\n4.  **Custom Views**: User-defined spatial or functional contexts.\n\nThe workflow typically follows: View Composition -> Model Training -> Result Processing -> Visualization.\n\n## Core Workflow\n\n### 1. View Composition\nEvery MISTy analysis starts with an initial view (intraview) and adds spatial contexts.\n\n```r\nlibrary(mistyR)\nlibrary(future)\nplan(multisession) # Highly recommended for parallel processing\n\n# 1. Create initial view (intraview) from expression data\n# expr: rows = spots/cells, cols = markers\nmisty.views <- create_initial_view(expr)\n\n# 2. Add spatial views\n# pos: rows = spots/cells, cols = coordinates (row/col or x/y)\nmisty.views <- misty.views %>%\n  add_juxtaview(pos, neighbor.thr = 1.5) %>% # Local neighborhood\n  add_paraview(pos, l = 10)                  # Broader context (radius l)\n\n# 3. Add custom views (optional)\n# custom_data: same row order as expr\nmisty.views <- misty.views %>%\n  add_views(create_view(\"custom_name\", custom_data, \"abbrev\"))\n```\n\n### 2. Model Training\nTrain models for each marker across all views. By default, MISTy uses Random Forest, but linear models are supported for speed.\n\n```r\n# Standard run (Random Forest)\nmisty.views %>% run_misty(results.folder = \"results\")\n\n# Faster run (Linear Model)\nmisty.views %>% run_misty(model.function = linear_model, results.folder = \"results_linear\")\n```\n\n### 3. Result Processing and Visualization\nCollect results from one or multiple samples to analyze performance gain and interactions.\n\n```r\n# Collect results from one or more folders\nmisty.results <- collect_results(\"results\")\n\n# 1. Improvement: How much does spatial context help explain the data?\nplot_improvement_stats(misty.results, \"gain.R2\")\n\n# 2. Contributions: Which view is most important for each marker?\nplot_view_contributions(misty.results)\n\n# 3. Interactions: Which specific markers drive the relationships?\nplot_interaction_heatmap(misty.results, view = \"paraview.10\", cutoff = 0.5)\n\n# 4. Communities: Group markers with similar interaction patterns\nplot_interaction_communities(misty.results, view = \"intra\")\n```\n\n## Common Use Cases\n\n### Pathway Activity Analysis\nCombine MISTy with `decoupleR` to model spatial relationships between pathway activities (e.g., PROGENy scores) instead of raw gene counts.\n- Use `run_mlm()` from `decoupleR` to estimate activities.\n- Create the intraview from these activity scores.\n\n### Ligand-Receptor Interactions\nInvestigate if the presence of a ligand in the neighborhood (paraview) explains the expression of a receptor in the spot (intraview).\n- Create an intraview of receptors.\n- Create a paraview of ligands.\n- Run MISTy and check the interaction heatmap for the ligand paraview.\n\n### Structural Analysis (Deconvolution)\nAnalyze cell-type colocalization using proportions from tools like `cell2location` or `DOT`.\n- Intraview: Cell type proportions in the spot.\n- Paraview: Cell type proportions in the neighborhood.\n- High `gain.R2` for a cell type indicates its presence is strongly influenced by the surrounding tissue architecture.\n\n## Tips for Success\n- **Coordinates**: Use pixel coordinates (e.g., `imagerow`, `imagecol`) rather than integer grid coordinates for 10X Visium to account for hexagonal packing and shifts.\n- **Normalization**: Always normalize data (e.g., `SCTransform` or `vst`) before running MISTy.\n- **Filtering**: Filter for genes expressed in at least 5% of spots to reduce noise and computation time.\n- **Caching**: MISTy caches views and models by default. Use `clear_cache()` if you change parameters but keep the same variable names.\n- **Signatures**: Use `extract_signature()` to get performance, contribution, or importance vectors for downstream PCA or clustering across multiple samples.\n\n## Reference documentation\n- [Learning functional and structural spatial relationships with MISTy](./references/FunctionalAndStructuralPipeline.Rmd)\n- [Functional analysis with MISTy - pathway activity and ligand expression](./references/FunctionalPipelinePathwayActivityLigands.Rmd)\n- [Functional analysis with MISTy - pathway specific genes](./references/FunctionalPipelinePathwaySpecific.Rmd)\n- [Structural analysis with MISTy - based on cell2location deconvolution](./references/MistyRStructuralAnalysisPipelineC2L.Rmd)\n- [Structural analysis with MISTy - based on DOT deconvolution](./references/MistyRStructuralAnalysisPipelineDOT.Rmd)\n- [MISTy representation based analysis of IMC breast cancer data](./references/ReproduceSignaturePaper.Rmd)\n- [mistyR and data formats](./references/mistyDataFormats.Rmd)\n- [Modeling spatially resolved omics with mistyR](./references/mistyR.Rmd)\n- [Modeling spatially resolved omics with mistyR (Markdown)](./references/mistyR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mistyr",
+    "description": "bioconductor-mistyr is a multiview machine learning framework for analyzing spatial omics data to relate marker expressions to their local and tissue-wide spatial contexts. Use when user asks to build spatial modeling workflows, analyze intercellular interactions, or quantify the contribution of different spatial views to marker expression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mistyR.html"
+  }
+}

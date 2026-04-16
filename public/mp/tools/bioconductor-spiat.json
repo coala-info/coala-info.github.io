@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spiat",
+  "category": "bioconductor",
+  "name": "bioconductor-spiat",
+  "description": "SPIAT provides tools for the processing, quality control, and spatial analysis of single-cell proteomics data. Use when user asks to format spatial image data, define cell types, calculate distances between cells, quantify colocalization, or perform neighborhood analysis.",
+  "overview": "SPIAT (**Sp**atial **I**mage **A**nalysis of **T**issues) is an R package designed for the analysis of single-cell spatial proteomics data. It operates primarily on `SpatialExperiment` objects, integrating cell coordinates, marker intensities, and phenotypes. The package is structured into modules covering data formatting, quality control, distance-based metrics, colocalization, and neighborhood identification.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SPIAT.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/trigosteam/SPIAT",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SPIAT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPIAT.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/trigosteam/SPIAT",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spiat\n\nname: bioconductor-spiat\ndescription: Spatial Image Analysis of Tissues (SPIAT) for processing, quality control, visualization, and analysis of single-cell spatial proteomics data (e.g., OPAL, CODEX, MIBI). Use this skill to perform cell colocalization analysis, neighborhood detection, spatial heterogeneity quantification, and tissue structure characterization from X/Y coordinates and marker intensities.\n\n# bioconductor-spiat\n\n## Overview\nSPIAT (**Sp**atial **I**mage **A**nalysis of **T**issues) is an R package designed for the analysis of single-cell spatial proteomics data. It operates primarily on `SpatialExperiment` objects, integrating cell coordinates, marker intensities, and phenotypes. The package is structured into modules covering data formatting, quality control, distance-based metrics, colocalization, and neighborhood identification.\n\n## Core Workflow\n\n### 1. Data Loading and Formatting\nThe primary entry point is `format_image_to_spe()`. While it supports specific platforms (inForm, HALO, CODEX, cellprofiler), the \"general\" format is recommended for maximum compatibility.\n\n```r\nlibrary(SPIAT)\n\n# General format requires: intensity matrix, phenotypes, and X/Y coordinates\nspe <- format_image_to_spe(format = \"general\", \n                           intensity_matrix = my_intensities, \n                           phenotypes = my_phenotypes, \n                           coord_x = my_x, \n                           coord_y = my_y)\n```\n\n### 2. Defining Cell Types\nUse `define_celltypes` to map complex marker combinations (phenotypes) to human-readable names.\n\n```r\nformatted_image <- define_celltypes(\n    simulated_image, \n    categories = c(\"Tumour_marker\", \"CD3,CD4\", \"OTHER\"), \n    category_colname = \"Phenotype\", \n    names = c(\"Tumour\", \"T_Helper\", \"Others\"),\n    new_colname = \"Cell.Type\")\n```\n\n### 3. Basic Spatial Analysis\nCalculate cell proportions and distances (pairwise or minimum) between cell types.\n\n```r\n# Cell proportions\nproportions <- calculate_cell_proportions(formatted_image, feature_colname = \"Cell.Type\")\n\n# Minimum distances to nearest neighbor of another type\nmin_dists <- calculate_minimum_distances_between_celltypes(\n    spe_object = formatted_image, \n    cell_types_of_interest = c(\"Tumour\", \"T_Helper\"),\n    feature_colname = \"Cell.Type\")\n\n# Summarize and visualize\nsummary_dist <- calculate_summary_distances_between_celltypes(min_dists)\nplot_distance_heatmap(summary_dist, metric = \"mean\")\n```\n\n### 4. Quantifying Colocalization\nSPIAT provides several metrics to determine if cell types are interacting, repelling, or forming specific structures like \"immune rings.\"\n\n*   **Mixing Score:** Ratio of interactions between different types vs. same types.\n*   **Cross K Function:** Compares spatial distribution against a random Poisson process.\n*   **Cells In Neighborhood (CIN):** Percentage of target cells within a specific radius of a reference cell.\n\n```r\n# Cross K Function\ndf_cross <- calculate_cross_functions(formatted_image, \n                                      method = \"Kcross\", \n                                      cell_types_of_interest = c(\"Tumour\", \"T_Helper\"), \n                                      dist = 100)\nauc_score <- AUC_of_cross_function(df_cross) # Positive = mixing, Negative = separation\n```\n\n### 5. Neighborhood Identification\nIdentify clusters of cells (homotypic or heterotypic) using hierarchical clustering or dbscan.\n\n```r\nclusters <- identify_neighborhoods(\n    formatted_image, \n    method = \"hierarchical\", \n    radius = 50, \n    min_neighborhood_size = 100,\n    cell_types_of_interest = c(\"T_Helper\", \"Immune_Other\"),\n    feature_colname = \"Cell.Type\")\n\n# Analyze composition of identified neighborhoods\nneigh_comp <- composition_of_neighborhoods(clusters, feature_colname = \"Cell.Type\")\nplot_composition_heatmap(neigh_comp, feature_colname = \"Cell.Type\")\n```\n\n## Tips for Success\n*   **Phenotype Formatting:** Ensure phenotypes are comma-separated strings (e.g., \"CD3,CD8\") without spaces. The order must match the order in the intensity matrix.\n*   **Radius Selection:** Use `average_minimum_distance()` or `plot_average_intensity()` to help determine appropriate radii for neighborhood and colocalization functions.\n*   **Large Images:** Use `image_splitter()` to divide large tissue sections into manageable chunks for analysis.\n*   **Coordinate Units:** Ensure you know if your coordinates are in pixels or microns, as this affects radius parameters.\n\n## Reference documentation\nFor detailed workflows and examples, refer to the following documentation:\n- [Overview of the SPIAT package](./references/SPIAT.md)\n- [Basic analyses with SPIAT](./references/basic_analysis.md)\n- [Quantifying cell colocalisation with SPIAT](./references/cell-colocalisation.md)\n- [Reading in data and data formatting in SPIAT](./references/data_reading-formatting.md)\n- [Identifying cellular neighborhood with SPIAT](./references/neighborhood.md)\n- [Quality control and visualisation](./references/quality-control_visualisation.md)\n- [Spatial heterogeneity](./references/spatial-heterogeneity.md)\n- [Tissue structure](./references/tissue-structure.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spiat",
+    "description": "SPIAT provides tools for the processing, quality control, and spatial analysis of single-cell proteomics data. Use when user asks to format spatial image data, define cell types, calculate distances between cells, quantify colocalization, or perform neighborhood analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPIAT.html"
+  }
+}

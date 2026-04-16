@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bg2",
+  "category": "bioconductor",
+  "name": "bioconductor-bg2",
+  "description": "This tool performs Bayesian variable selection for Genome-Wide Association Studies involving non-Gaussian phenotypes like Poisson or binary data. Use when user asks to perform GWAS on count or binary traits, account for population structure using kinship matrices, or apply Bayesian two-step procedures to identify causal SNPs while controlling false discovery rates.",
+  "overview": "The `BG2` package implements a novel two-step Bayesian procedure for Genome-Wide Association Studies (GWAS) involving non-Gaussian phenotypes. It is specifically designed for Poisson (count) and Bernoulli (binary) data. Compared to single marker association testing (SMA), BG2 reduces false discovery rates while maintaining high recall of causal SNPs. It utilizes generalized linear mixed models (GLMMs) to account for population structure (kinship) and other random effects.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BG2.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bg2/overview",
+  "github": "N/A",
+  "conda_downloads": "2.1K",
+  "conda_downloads_num": 2100,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BG2"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BG2.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bg2/overview",
+    "github": "N/A",
+    "conda_downloads": "2.1K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bg2\n\nname: bioconductor-bg2\ndescription: Comprehensive Bayesian variable selection for non-Gaussian GWAS data (Poisson and Binary/Bernoulli). Use when performing Genome-Wide Association Studies (GWAS) requiring: (1) Analysis of count data (Poisson) or binary traits (Bernoulli), (2) Control for population structure using kinship matrices, (3) Bayesian two-step procedures to reduce false discoveries while maintaining recall, or (4) Handling overdispersion in count data.\n\n# bioconductor-bg2\n\n## Overview\n\nThe `BG2` package implements a novel two-step Bayesian procedure for Genome-Wide Association Studies (GWAS) involving non-Gaussian phenotypes. It is specifically designed for Poisson (count) and Bernoulli (binary) data. Compared to single marker association testing (SMA), BG2 reduces false discovery rates while maintaining high recall of causal SNPs. It utilizes generalized linear mixed models (GLMMs) to account for population structure (kinship) and other random effects.\n\n## Core Workflow\n\n1.  **Prepare Data**:\n    *   `Y`: Numeric vector or $n \\times 1$ matrix of phenotypes (Poisson counts or 0/1 binary).\n    *   `SNPs`: Numeric matrix where columns are SNPs and rows are observations.\n    *   `kinship`: $n \\times n$ positive semi-definite matrix representing genetic relationships.\n\n2.  **Define Random Effects**:\n    *   Create a list of covariance matrices for the `Covariance` argument.\n    *   For Poisson data, typically include both a kinship matrix and an identity matrix (to account for overdispersion).\n\n3.  **Execute BG2**:\n    *   Call the `BG2()` function with the appropriate `family` (\"poisson\" or \"bernoulli\").\n    *   Specify the dispersion parameter prior `Tau` (\"uniform\" or \"IG\").\n\n4.  **Interpret Results**:\n    *   The function returns a vector of column indices from the `SNPs` matrix identified as causal or perfectly correlated with causal SNPs.\n\n## Main Function: BG2()\n\nThe primary interface is the `BG2()` function:\n\n```r\nBG2(Y, SNPs, Fixed = NULL, Covariance, Z = NULL, family, \n    replicates = NULL, Tau = \"uniform\", FDR_Nominal = 0.05, \n    maxiterations = 4000, runs_til_stop = 400)\n```\n\n### Key Arguments:\n*   `Y`: Phenotype vector.\n*   `SNPs`: Genotype matrix.\n*   `Fixed`: Matrix of fixed covariates (optional).\n*   `Covariance`: List of covariance matrices for random effects.\n*   `Z`: List of design matrices for random effects (defaults to Identity if NULL).\n*   `family`: Either `\"poisson\"` or `\"bernoulli\"`.\n*   `replicates`: Number of replicates per individual (useful for Poisson speedup).\n*   `Tau`: Prior for the nonlocal prior dispersion parameter (`\"uniform\"` or `\"IG\"` for Inverse Gamma).\n*   `FDR_Nominal`: Target False Discovery Rate (default 0.05).\n\n## Usage Examples\n\n### Poisson GWAS with Overdispersion\nUse this pattern for count data where you need to account for both kinship and extra-Poisson variation.\n\n```r\nlibrary(BG2)\ndata(\"Y_poisson\")\ndata(\"SNPs\")\ndata(\"kinship\")\n\n# Define random effects: 1. Kinship, 2. Overdispersion (Identity)\nn <- length(Y_poisson)\ncovariance <- list(kinship, diag(1, n))\n\nset.seed(1330)\nresults <- BG2(Y = Y_poisson, \n               SNPs = SNPs, \n               Covariance = covariance, \n               family = \"poisson\", \n               replicates = 4, \n               Tau = \"uniform\")\n# 'results' contains indices of identified SNPs\n```\n\n### Binary (Bernoulli) GWAS\nUse this pattern for case-control or binary trait studies.\n\n```r\nlibrary(BG2)\ndata(\"Y_binary\")\ndata(\"SNPs\")\ndata(\"kinship\")\n\n# Define random effect: Kinship\ncovariance <- list(kinship)\n\nset.seed(1330)\nresults <- BG2(Y = Y_binary, \n               SNPs = SNPs, \n               Covariance = covariance, \n               family = \"bernoulli\", \n               Tau = \"IG\")\n```\n\n## Implementation Tips\n*   **Computational Speed**: BG2 uses spectral decomposition and population parameters (P3D) to optimize performance.\n*   **Convergence**: If the model selection does not converge, increase `maxiterations` (default 4000) or `runs_til_stop` (default 400).\n*   **Design Matrices**: If your observations have a specific grouping structure (e.g., multiple observations per ecotype), provide the appropriate incidence matrices in the `Z` argument. If `Z` is NULL, an identity matrix is assumed for all random effects.\n\n## Reference documentation\n- [BG2 Vignette](./references/BG2.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bg2",
+    "description": "This tool performs Bayesian variable selection for Genome-Wide Association Studies involving non-Gaussian phenotypes like Poisson or binary data. Use when user asks to perform GWAS on count or binary traits, account for population structure using kinship matrices, or apply Bayesian two-step procedures to identify causal SNPs while controlling false discovery rates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BG2.html"
+  }
+}

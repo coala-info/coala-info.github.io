@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-epigenomix",
+  "category": "bioconductor",
+  "name": "bioconductor-epigenomix",
+  "description": "Bioconductor-epigenomix integrates gene transcription and histone modification data to identify genes with significant regulatory differences across conditions. Use when user asks to map ChIP-seq reads to promoters, normalize expression and epigenetic data, calculate integration scores, or fit mixture models to classify gene regulatory patterns.",
+  "overview": "The `epigenomix` package facilitates the integration of epigenetic data (specifically histone modification ChIP-seq) with gene transcription data. It provides a workflow to map ChIP-seq reads to promoter regions, calculate a standardized correlation score between the two data types, and use Bayesian or Maximum Likelihood mixture models to classify genes based on their regulatory patterns.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/epigenomix.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epigenomix/overview",
+  "github": "N/A",
+  "conda_downloads": "35.9K",
+  "conda_downloads_num": 35900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "epigenomix"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/epigenomix.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-epigenomix/overview",
+    "github": "N/A",
+    "conda_downloads": "35.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-epigenomix\n\nname: bioconductor-epigenomix\ndescription: Integrative analysis of gene transcription (RNA-seq/microarray) and histone modification (ChIP-seq) data. Use this skill to: (1) Preprocess ChIP-seq data and map it to gene promoters, (2) Normalize count data, (3) Calculate integration scores between transcription and epigenetic data, and (4) Fit Bayesian or ML mixture models to identify genes with significant differences in both data types.\n\n# bioconductor-epigenomix\n\n## Overview\nThe `epigenomix` package facilitates the integration of epigenetic data (specifically histone modification ChIP-seq) with gene transcription data. It provides a workflow to map ChIP-seq reads to promoter regions, calculate a standardized correlation score between the two data types, and use Bayesian or Maximum Likelihood mixture models to classify genes based on their regulatory patterns.\n\n## Data Preprocessing and Mapping\nBefore integration, ChIP-seq reads must be summarized into genomic regions corresponding to transcription data (e.g., promoters).\n\n1. **Map Probes to Promoters**: Use `matchProbeToPromoter` to define genomic windows around Transcription Start Sites (TSS).\n   ```r\n   # probeToTrans: list mapping probes to transcript IDs\n   # transToTSS: data.frame with TSS coordinates\n   promoters <- matchProbeToPromoter(probeToTrans, transToTSS, promWidth=4000, mode=\"union\")\n   ```\n\n2. **Summarize Reads**: Count reads within the defined regions to create a `ChIPseqSet`.\n   ```r\n   # reads: GRangesList of aligned reads\n   chipSet <- summarizeReads(reads, promoters, summarize=\"add\")\n   ```\n\n3. **Normalization**: Normalize `ChIPseqSet` or `ExpressionSet` objects.\n   ```r\n   # Methods: \"tmm\", \"quantile\", \"scale\", \"scaleMedianRegion\"\n   normChipSet <- normalize(chipSet, method=\"tmm\")\n   ```\n\n4. **Quality Control**: Use `calculateCrossCorrelation` to estimate fragment size and `getAlignmentQuality` for BAM statistics.\n\n## Data Integration\nThe `integrateData` function calculates a score ($Z$) representing the product of standardized differences between two conditions for both data types.\n\n```r\n# expr: ExpressionSet; chipseq: ChIPseqSet\n# factor: column name in phenoData; reference: the control level\nintData <- integrateData(expr, chipSet, factor=\"condition\", reference=\"WT\")\n# Result is a matrix where the 5th column is the integration score\nz_scores <- intData[, 5]\n```\n\n## Mixture Modeling\nFit mixture models to the integration scores to identify components (e.g., genes with no change, positive correlation, or negative correlation).\n\n### Bayesian Mixture Model (Recommended)\nUses MCMC to estimate posterior distributions. Supports normal, exponential, and gamma components.\n```r\n# Example: 2 null normal components, 1 negative gamma, 1 positive gamma\nmmBayes <- bayesMixModel(z_scores, normNull=1:2, gamNeg=3, gamPos=4,\n                         itb=1000, nmc=5000, thin=10)\n\n# Check convergence (Crucial)\nplotChains(mmBayes, chain=\"pi\")\nplotComponents(mmBayes)\n```\n\n### Maximum Likelihood Model\nUses the EM algorithm for faster but less flexible fitting (Normal and Exponential only).\n```r\nmmML <- mlMixModel(z_scores, normNull=1:2, expNeg=3, expPos=4)\n```\n\n## Results and Classification\nExtract classifications to identify genes belonging to specific mixture components.\n\n```r\n# List available methods (e.g., \"maxDens\", \"median\", \"mode\")\nlistClassificationMethods(mmBayes)\n\n# Get classification results\nres <- as.data.frame(mmBayes)\n# Visualize assignments\nplotClassification(mmBayes)\n```\n\n## Reference documentation\n- [epigenomix Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-epigenomix",
+    "description": "Bioconductor-epigenomix integrates gene transcription and histone modification data to identify genes with significant regulatory differences across conditions. Use when user asks to map ChIP-seq reads to promoters, normalize expression and epigenetic data, calculate integration scores, or fit mixture models to classify gene regulatory patterns.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/epigenomix.html"
+  }
+}

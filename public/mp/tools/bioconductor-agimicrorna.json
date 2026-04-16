@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-agimicrorna",
+  "category": "bioconductor",
+  "name": "bioconductor-agimicrorna",
+  "description": "This tool processes, normalizes, and analyzes Agilent microRNA microarray data exported from Agilent Feature Extraction software. Use when user asks to read AFE files, perform TGS or RMA normalization, generate quality control plots, or conduct differential expression analysis using limma.",
+  "overview": "AgiMicroRna is designed for the analysis of Agilent microRNA microarrays. It reads data exported by Agilent Feature Extraction (AFE) software and provides two primary processing pipelines: Total Gene Signal (TGS) and Robust Multiarray Average (RMA). The package integrates seamlessly with `limma` for differential expression analysis, utilizing standard Bioconductor objects like `uRNAList` and `ExpressionSet`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AgiMicroRna.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-agimicrorna/overview",
+  "github": "N/A",
+  "conda_downloads": "24.5K",
+  "conda_downloads_num": 24500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AgiMicroRna"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AgiMicroRna.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-agimicrorna/overview",
+    "github": "N/A",
+    "conda_downloads": "24.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-agimicrorna\n\nname: bioconductor-agimicrorna\ndescription: Processing, quality assessment, and differential expression analysis of Agilent microRNA array data. Use this skill when analyzing Agilent microRNA scanned data (AFE files) to perform normalization (TGS or RMA), quality control (boxplots, RLE, CV), and statistical inference using limma-based linear models.\n\n## Overview\n\nAgiMicroRna is designed for the analysis of Agilent microRNA microarrays. It reads data exported by Agilent Feature Extraction (AFE) software and provides two primary processing pipelines: Total Gene Signal (TGS) and Robust Multiarray Average (RMA). The package integrates seamlessly with `limma` for differential expression analysis, utilizing standard Bioconductor objects like `uRNAList` and `ExpressionSet`.\n\n## Typical Workflow\n\n### 1. Data Loading and Targets\nA targets file (tab-delimited) is required with mandatory columns: `FileName`, `Treatment`, and `GErep` (numeric treatment code).\n\n```r\nlibrary(AgiMicroRna)\n# Read targets file\ntargets.micro <- readTargets(infile=\"targets.txt\", verbose=TRUE)\n\n# Read AFE data into a uRNAList object\ndd.micro <- readMicroRnaAFE(targets.micro, verbose=TRUE)\n```\n\n### 2. Quality Control\nUse `qcPlots` as a wrapper for comprehensive quality assessment, or call individual plotting functions.\n\n```r\n# Comprehensive QC (Boxplots, Density, MA, RLE, Hierarchical Clustering)\nqcPlots(dd.micro, targets.micro, MeanSignal=TRUE)\n\n# Check array reproducibility (Coefficient of Variation)\ncvArray(dd.micro, \"MeanSignal\", targets.micro)\n```\n\n### 3. Normalization\nChoose between the AFE Total Gene Signal (TGS) or the RMA algorithm.\n\n**Option A: TGS Normalization**\n```r\n# Extract TGS and handle negative values\nddTGS <- tgsMicroRna(dd.micro, half=TRUE)\n\n# Normalize (quantile, scale, or none)\nddNORM <- tgsNormalization(ddTGS, \"quantile\", targets.micro)\n```\n\n**Option B: RMA Normalization**\n```r\n# Background correction, quantile normalization, and median polish summarization\nddTGS.rma <- rmaMicroRna(dd.micro, normalize=TRUE, background=TRUE)\n```\n\n### 4. Filtering and ExpressionSet Creation\nFilter out control probes and non-detected genes before statistical analysis.\n\n```r\n# Filter based on IsGeneDetected flag (e.g., must be detected in 75% of samples in at least one condition)\nddPROC <- filterMicroRna(ddNORM, dd.micro, control=TRUE, IsGeneDetected=TRUE, limIsGeneDetected=75, targets.micro=targets.micro)\n\n# Convert to ExpressionSet for limma\nesetPROC <- esetMicroRna(ddPROC, targets.micro)\n```\n\n### 5. Differential Expression (limma)\nDefine the design and contrast matrices to fit linear models.\n\n```r\n# Define Design (e.g., Treatment + Subject for paired design)\ntreatment <- factor(targets.micro$Treatment)\nsubject <- factor(targets.micro$Subject)\ndesign <- model.matrix(~ -1 + treatment + subject)\n\n# Define Contrasts\nCM <- cbind(AvsB = c(1, -1, 0, 0), AvsC = c(1, 0, -1, 0))\n\n# Fit model and compute moderated statistics\nfit2 <- basicLimma(esetPROC, design, CM)\n\n# Select significant microRNAs\nDE <- getDecideTests(fit2, DEmethod=\"separate\", MTestmethod=\"BH\", PVcut=0.05)\n\n# Generate summary tables and HTML reports with miRBase links\nsignificantMicroRna(esetPROC, ddPROC, targets.micro, fit2, CM, DE, PVcut=0.05)\n```\n\n## Key Functions and Objects\n\n- `uRNAList`: The primary data container (slots: `TGS`, `TPS`, `meanS`, `procS`, `targets`, `genes`, `other`).\n- `readMicroRnaAFE()`: Reads Agilent FE files. Requires specific columns (gTotalGeneSignal, gMeanSignal, etc.).\n- `tgsMicroRna()` / `rmaMicroRna()`: Core signal processing functions.\n- `filterMicroRna()`: Removes low-quality features based on AFE flags.\n- `significantMicroRna()`: The main output function for results and miRBase-linked HTML files.\n\n## Reference documentation\n- [AgiMicroRna](./references/AgiMicroRna.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-agimicrorna",
+    "description": "This tool processes, normalizes, and analyzes Agilent microRNA microarray data exported from Agilent Feature Extraction software. Use when user asks to read AFE files, perform TGS or RMA normalization, generate quality control plots, or conduct differential expression analysis using limma.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AgiMicroRna.html"
+  }
+}

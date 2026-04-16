@@ -1,0 +1,55 @@
+{
+  "id": "smudgeplot",
+  "category": "CLI",
+  "name": "smudgeplot",
+  "description": "Smudgeplot is a bioinformatic tool that visualizes genome structure and ploidy levels by analyzing heterozygous k-mer pairs from genomic reads. Use when user asks to infer ploidy, identify genome structure, extract hetmers, or generate a smudgeplot to distinguish between autopolyploidy and allopolyploidy.",
+  "overview": "Smudgeplot is a bioinformatic tool designed for reference-free genome profiling. It works by extracting heterozygous k-mer pairs (hetmers) from k-mer count databases and analyzing the relationship between the sum of their coverages (CovA + CovB) and their relative coverage ratio (CovB / (CovA + CovB)). This approach allows for the visualization of genome structure, helping to identify ploidy levels and distinguish between different types of polyploidy (e.g., autopolyploidy vs. allopolyploidy) ba",
+  "homepage": "https://github.com/KamilSJaron/smudgeplot",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/smudgeplot/overview",
+  "github": "https://github.com/KamilSJaron/smudgeplot",
+  "conda_downloads": "39.7K",
+  "conda_downloads_num": 39700,
+  "last_updated": "2025-12-18",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "smudgeplot_cutoff",
+      "smudgeplot_hetmers",
+      "smudgeplot_peak_aggregation",
+      "smudgeplot_plot",
+      "smudgeplot_all",
+      "smudgeplot_extract"
+    ],
+    "description": "Calculate meaningful values for lower kmer histogram cutoff.",
+    "docker_image": "quay.io/biocontainers/smudgeplot:0.5.3--py314h577a1d6_0",
+    "homepage": "https://github.com/KamilSJaron/smudgeplot",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/smudgeplot/overview",
+    "github": "https://github.com/KamilSJaron/smudgeplot",
+    "conda_downloads": "39.7K",
+    "last_updated": "2025-12-18",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "smudgeplot_all.cwl",
+    "smudgeplot_cutoff.cwl",
+    "smudgeplot_extract.cwl",
+    "smudgeplot_hetmers.cwl",
+    "smudgeplot_peak_aggregation.cwl",
+    "smudgeplot_plot.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# smudgeplot\n\n## Overview\n\nSmudgeplot is a bioinformatic tool designed for reference-free genome profiling. It works by extracting heterozygous k-mer pairs (hetmers) from k-mer count databases and analyzing the relationship between the sum of their coverages (CovA + CovB) and their relative coverage ratio (CovB / (CovA + CovB)). This approach allows for the visualization of genome structure, helping to identify ploidy levels and distinguish between different types of polyploidy (e.g., autopolyploidy vs. allopolyploidy) based on the \"smudges\" formed on a 2D histogram.\n\n## Installation\n\nInstall the python package and C-backend via pip:\n\n```bash\npip install smudgeplot\n```\n\nNote: Smudgeplot requires **FastK** to be installed for k-mer database generation.\n\n## Core Workflow\n\nThe standard workflow involves generating a k-mer database, identifying k-mer pairs, and then generating the plot.\n\n### 1. Generate K-mer Database (FastK)\nBefore using smudgeplot, create a k-mer table from your raw reads:\n```bash\nFastK -v -t4 -k31 -M16 -T4 reads_R[12].fastq.gz -NFastK_Table\n```\n\n### 2. Extract K-mer Pairs (hetmers)\nIdentify unique k-mer pairs from the FastK database.\n```bash\nsmudgeplot hetmers -L 12 -t 4 -o kmerpairs --verbose FastK_Table\n```\n*   `-L`: Lower coverage cutoff (critical for filtering out sequencing errors).\n*   `-o`: Output prefix (generates a `.smu` file).\n\n### 3. Generate Smudgeplot and Infer Ploidy\nUse the `.smu` file to perform the final analysis.\n```bash\nsmudgeplot all -o my_sample_plot kmerpairs.smu\n```\n*   This command runs the inference and plotting steps together.\n*   Outputs include 3 PDFs (log scale, linear scale, and a summary) and tabular data.\n\n## Expert Tips and Best Practices\n\n### Choosing Cutoffs (L and U)\nThe quality of a smudgeplot depends heavily on the lower (`-L`) and upper (`-U`) coverage cutoffs.\n*   **Lower Cutoff (L):** Should be set to exclude the \"error tail\" in the k-mer distribution. A common rule of thumb is 0.5 times the haploid k-mer coverage.\n*   **Upper Cutoff (U):** Should be set to exclude highly repetitive sequences. A common rule of thumb is 8.5 times the haploid k-mer coverage.\n*   Use `smudgeplot cutoff` to help calculate meaningful values for these parameters.\n\n### Joint Interpretation with GenomeScope\nAlways run **GenomeScope** alongside smudgeplot. GenomeScope provides estimates of genome size, heterozygosity, and repeat content, which help validate the 1n coverage estimate used by smudgeplot to label the smudges (e.g., AB, AAB, AAAB).\n\n### Scaling the Plot\nIf the smudges are compressed at the bottom of the plot, adjust the y-axis:\n```bash\nsmudgeplot all -o scaled_plot kmerpairs.smu -ylim 70\n```\n\n### Handling Large Datasets\nSmudgeplot is designed to handle large WGS datasets. You can pool multiple libraries (single-end or paired-end) together during the k-mer counting phase to increase coverage, which improves smudge separation.\n\n## Common CLI Tasks\n\n| Task | Description |\n| :--- | :--- |\n| `smudgeplot cutoff` | Calculate suggested values for lower k-mer histogram cutoffs. |\n| `smudgeplot hetmers` | Calculate unique k-mer pairs from a FastK database. |\n| `smudgeplot plot` | Generate the 2D histogram and infer ploidy from an existing `.smu` file. |\n| `smudgeplot all` | Executes the full pipeline (aggregation, inference, and plotting). |\n| `smudgeplot extract` | Extract sequences of k-mer pairs for further analysis. |\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| smudgeplot all | Runs all the steps (with default options). |\n| smudgeplot cutoff | Calculate meaningful values for lower kmer histogram cutoff. |\n| smudgeplot hetmers | Calculate unique kmer pairs from FastK k-mer database. |\n| smudgeplot peak_aggregation | Aggregates smudges using local aggregation algorithm. |\n| smudgeplot plot | Generate 2d histogram; infer ploidy and plot a smudgeplot. |\n| smudgeplot_extract | Extract kmer pair sequences from a FastK k-mer database. |\n\n## Reference documentation\n- [Smudgeplot Main README](./references/github_com_KamilSJaron_smudgeplot.md)\n- [Smudgeplot Wiki Home](./references/github_com_KamilSJaron_smudgeplot_wiki.md)\n- [Choosing L and U Cutoffs](./references/github_com_KamilSJaron_smudgeplot_wiki_chosing-L-and-U.md)\n- [Smudgeplot Hetmers Task](./references/github_com_KamilSJaron_smudgeplot_wiki_smudgeplot-hetmers.md)\n- [Joint Interpretation with GenomeScope](./references/github_com_KamilSJaron_smudgeplot_wiki_joint-interpretation-of-smudgeplot-and-GenomeScope.md)",
+  "skill_front_matter": {
+    "name": "smudgeplot",
+    "description": "Smudgeplot is a bioinformatic tool that visualizes genome structure and ploidy levels by analyzing heterozygous k-mer pairs from genomic reads. Use when user asks to infer ploidy, identify genome structure, extract hetmers, or generate a smudgeplot to distinguish between autopolyploidy and allopolyploidy.",
+    "homepage": "https://github.com/KamilSJaron/smudgeplot"
+  }
+}

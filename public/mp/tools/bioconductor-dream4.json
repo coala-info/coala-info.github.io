@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dream4",
+  "category": "bioconductor",
+  "name": "bioconductor-dream4",
+  "description": "The bioconductor-dream4 package provides synthetic gene regulatory network datasets and gold standard adjacency matrices from the DREAM4 challenge for benchmarking network inference algorithms. Use when user asks to access DREAM4 synthetic expression data, load gene regulatory network gold standards, or benchmark network inference software using simulated time series and knockout data.",
+  "overview": "The `DREAM4` package provides 10 synthetic gene regulatory datasets used in the 2009 DREAM4 challenge. These datasets include five 10-node networks and five 100-node networks. Each dataset is stored as a `RangedSummarizedExperiment` containing both the simulated expression data and the \"gold standard\" adjacency matrix used to generate it. This allows for the rigorous assessment of network inference software (like `networkBMA`) by comparing inferred edges against known biological ground truth.",
+  "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/DREAM4.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dream4/overview",
+  "github": "N/A",
+  "conda_downloads": "20.4K",
+  "conda_downloads_num": 20400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DREAM4"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/DREAM4.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dream4/overview",
+    "github": "N/A",
+    "conda_downloads": "20.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dream4\n\n## Overview\nThe `DREAM4` package provides 10 synthetic gene regulatory datasets used in the 2009 DREAM4 challenge. These datasets include five 10-node networks and five 100-node networks. Each dataset is stored as a `RangedSummarizedExperiment` containing both the simulated expression data and the \"gold standard\" adjacency matrix used to generate it. This allows for the rigorous assessment of network inference software (like `networkBMA`) by comparing inferred edges against known biological ground truth.\n\n## Loading Data\nThe package contains 10 datasets named `dream4_010_01` through `dream4_010_05` (10-node) and `dream4_100_01` through `dream4_100_05` (100-node).\n\n```r\nlibrary(DREAM4)\nlibrary(SummarizedExperiment)\n\n# Load a specific dataset (e.g., 10-node network 1)\ndata(dream4_010_01)\n\n# Inspect the object\nshow(dream4_010_01)\n\n# Access the combined expression matrix (rows=genes, cols=experiments)\nmtx.all <- assays(dream4_010_01)[[1]]\n\n# Access the gold standard adjacency matrix\nmtx.goldStandard <- metadata(dream4_010_01)[[1]]\n```\n\n## Data Structure and Extraction\nBecause `RangedSummarizedExperiment` requires uniform dimensions, all experimental conditions (time series, knockouts, etc.) are merged into a single assay matrix. Use string matching on column names to extract specific experiment types.\n\n### Extracting Time Series\nTime series data typically consists of 21 time points (t0 to t1000).\n```r\n# Extract the first perturbation time series\nts1.cols <- grep(\"perturbation.1.\", colnames(mtx.all), fixed=TRUE)\nmtx.ts1 <- mtx.all[, ts1.cols]\n\n# For networkBMA, transpose so columns are genes and rows are time points\nmtx.ts1_input <- t(mtx.ts1)\n```\n\n### Extracting Knockouts and Knockdowns\n- **Knockouts (.ko)**: Transcription rate set to zero.\n- **Knockdowns (.kd)**: Transcription rate reduced by half.\n```r\n# Extract all knockout columns\nko.cols <- grep(\".ko\", colnames(mtx.all), fixed=TRUE)\nmtx.ko <- mtx.all[, ko.cols]\n```\n\n## Workflow: Network Inference Benchmarking\nA typical workflow involves inferring a network from the expression data and validating it against the gold standard.\n\n### 1. Prepare Gold Standard Table\nConvert the adjacency matrix into a data frame of regulators and targets.\n```r\nmtx.gs <- metadata(dream4_010_01)[[1]]\nidx <- which(mtx.gs == 1, arr.ind = TRUE)\ntbl.gs <- data.frame(\n  Regulator = rownames(mtx.gs)[idx[,1]],\n  Target = colnames(mtx.gs)[idx[,2]],\n  stringsAsFactors = FALSE\n)\n```\n\n### 2. Run Inference (Example using networkBMA)\n```r\nlibrary(networkBMA)\n# Use time series data prepared earlier\n# nTimePoints must match the number of rows in the transposed matrix\nresults <- networkBMA(mtx.ts1_input, nTimePoints=nrow(mtx.ts1_input), self=FALSE)\n```\n\n### 3. Assessment\nUse the `networkBMA` assessment functions to calculate Precision and Recall.\n```r\n# Create contingency table\ntbl.contingency <- contabs.netwBMA(results, tbl.gs)\n\n# Calculate scores and Area Under Precision-Recall Curve (AUPR)\npr_scores <- scores(tbl.contingency, what = c(\"precision\", \"recall\"))\naupr <- prc(tbl.contingency, plotit = TRUE)\n```\n\n## Tips for Success\n- **Self-Edges**: The DREAM4 gold standards do not contain self-regulatory loops. Ensure your inference algorithm is configured to ignore self-edges (e.g., `self=FALSE`).\n- **Priors**: You can simulate the effect of prior knowledge (like ChIP-seq data) by taking a subset of the gold standard, adding noise, and passing it to Bayesian inference tools as a `prior.prob` matrix.\n- **Multifactorial Data**: Only the 100-node networks include multifactorial data (steady-state variations). These are useful for algorithms that do not require time-series information.\n\n## Reference documentation\n- [DREAM4](./references/DREAM4.md)\n- [In Silico Network Challenge Description](./references/DREAM4_InSilico_Description.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dream4",
+    "description": "The bioconductor-dream4 package provides synthetic gene regulatory network datasets and gold standard adjacency matrices from the DREAM4 challenge for benchmarking network inference algorithms. Use when user asks to access DREAM4 synthetic expression data, load gene regulatory network gold standards, or benchmark network inference software using simulated time series and knockout data.",
+    "homepage": "https://bioconductor.org/packages/3.8/data/experiment/html/DREAM4.html"
+  }
+}

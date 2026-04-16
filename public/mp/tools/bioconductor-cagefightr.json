@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cagefightr",
+  "category": "bioconductor",
+  "name": "bioconductor-cagefightr",
+  "description": "CAGEfightR is an R/Bioconductor package for analyzing 5'-end genomic data to identify and quantify transcription start sites and enhancers. Use when user asks to quantify CTSSs from BigWig files, identify unidirectional tag clusters or bidirectional enhancers, annotate clusters with transcript models, or perform spatial analysis like TSS-enhancer correlations and super-enhancer identification.",
+  "overview": "CAGEfightR is a Bioconductor package designed for the analysis of 5'-end sequencing data. It provides a comprehensive workflow to transform raw 5'-end counts (CTSSs) into biologically meaningful clusters (TSSs and enhancers). It supports:\n- **Quantification**: Importing BigWig files and summarizing counts at CTSS, cluster, and gene levels.\n- **Clustering**: Identifying unidirectional Tag Clusters (TSSs) and bidirectional clusters (enhancers).\n- **Annotation**: Assigning clusters to transcript mo",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CAGEfightR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cagefightr/overview",
+  "github": "https://github.com/MalteThodberg/CAGEfightR",
+  "conda_downloads": "25.8K",
+  "conda_downloads_num": 25800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CAGEfightR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CAGEfightR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cagefightr/overview",
+    "github": "https://github.com/MalteThodberg/CAGEfightR",
+    "conda_downloads": "25.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cagefightr\n\nname: bioconductor-cagefightr\ndescription: Expert guidance for using the CAGEfightR R/Bioconductor package to analyze 5'-end genomic data (CAGE, PRO-Cap, START-Seq, TSS-Seq). Use this skill when performing Transcription Start Site (TSS) and enhancer identification, quantification, annotation with transcript models, and spatial analysis like TSS-enhancer correlations or super-enhancer identification.\n\n# bioconductor-cagefightr\n\n## Overview\n\nCAGEfightR is a Bioconductor package designed for the analysis of 5'-end sequencing data. It provides a comprehensive workflow to transform raw 5'-end counts (CTSSs) into biologically meaningful clusters (TSSs and enhancers). It supports:\n- **Quantification**: Importing BigWig files and summarizing counts at CTSS, cluster, and gene levels.\n- **Clustering**: Identifying unidirectional Tag Clusters (TSSs) and bidirectional clusters (enhancers).\n- **Annotation**: Assigning clusters to transcript models (promoter, proximal, 5'-UTR, etc.) and genes.\n- **Spatial Analysis**: Calculating expression correlations between nearby TSSs and enhancers (links) and identifying super-enhancers (stretches).\n\n## Core Workflow\n\n### 1. Data Import and CTSS Quantification\nAnalysis begins with BigWig files (plus and minus strands).\n\n```r\nlibrary(CAGEfightR)\nlibrary(SummarizedExperiment)\n\n# Define design and files\nbw_plus <- BigWigFileList(c(S1_plus=\"path/to/s1_plus.bw\"))\nbw_minus <- BigWigFileList(c(S1_minus=\"path/to/s1_minus.bw\"))\ngenomeInfo <- SeqinfoForUCSCGenome(\"mm9\")\n\n# Quantify CTSSs\nCTSSs <- quantifyCTSSs(plusStrand=bw_plus,\n                       minusStrand=bw_minus,\n                       genome=genomeInfo)\n\n# Normalize and Pool\nCTSSs <- calcTPM(CTSSs, inputAssay=\"counts\")\nCTSSs <- calcPooled(CTSSs, inputAssay=\"TPM\")\n```\n\n### 2. Identifying TSSs and Enhancers\nUse `quickTSSs` and `quickEnhancers` for fast processing, or the underlying functions for control.\n\n```r\n# Unidirectional clustering (TSSs)\nTSSs <- clusterUnidirectionally(CTSSs, pooledCutoff=0.1, mergeDist=20)\n\n# Bidirectional clustering (Enhancers)\nenhancers <- clusterBidirectionally(CTSSs, balanceThreshold=0.95)\nenhancers <- calcBidirectionality(enhancers, samples=CTSSs)\nenhancers <- subset(enhancers, bidirectionality > 0)\n```\n\n### 3. Annotation and Filtering\nAnnotate clusters using a `TxDb` object to determine genomic context.\n\n```r\nlibrary(TxDb.Mmusculus.UCSC.mm9.knownGene)\ntxdb <- TxDb.Mmusculus.UCSC.mm9.knownGene\n\n# Annotate and filter enhancers (keep only non-exonic)\nenhancers <- assignTxType(enhancers, txModels=txdb)\nenhancers <- subset(enhancers, txType %in% c(\"intergenic\", \"intron\"))\n\n# Combine for downstream analysis\nRSE <- combineClusters(TSSs, enhancers, removeIfOverlapping=\"object1\")\n```\n\n### 4. Spatial Analysis (Links and Stretches)\nIdentify potential regulatory interactions based on expression correlation.\n\n```r\n# Find TSS-Enhancer links\nrowRanges(RSE)$clusterType <- factor(rowRanges(RSE)$clusterType, levels=c(\"TSS\", \"enhancer\"))\nlinks <- findLinks(RSE, inputAssay=\"counts\", maxDist=5000, directional=\"clusterType\", method=\"kendall\")\n\n# Find Super-enhancers (stretches of enhancers)\nstretches <- findStretches(enhancers, inputAssay=\"counts\", minSize=3, mergeDist=10000)\n```\n\n### 5. Gene-Level Analysis\nCollapse cluster-level expression to gene-level for standard differential expression tools.\n\n```r\n# Assign Gene IDs and quantify\nRSE <- assignGeneID(RSE, geneModels=txdb)\ngene_level <- quantifyGenes(RSE, genes=\"geneID\", inputAssay=\"counts\")\n```\n\n## Key Functions Reference\n\n| Function | Description |\n| :--- | :--- |\n| `quantifyCTSSs` | Imports BigWig files into a sparse RangedSummarizedExperiment. |\n| `calcTPM` / `calcPooled` | Normalizes counts and creates a pooled signal across samples. |\n| `clusterUnidirectionally` | Finds Tag Clusters (TCs) on the same strand. |\n| `clusterBidirectionally` | Finds bidirectional clusters (BCs) based on balance score. |\n| `assignTxType` | Hierarchical annotation (promoter > proximal > UTR > intron > etc). |\n| `findLinks` | Calculates correlation between nearby genomic features. |\n| `subsetBySupport` | Filters features based on the number of samples expressing them. |\n| `trackCTSS` / `trackClusters` | Creates Gviz tracks for visualization. |\n\n## Tips for Success\n- **Sparsity**: CTSS data is stored as `dgCMatrix` (sparse) to save memory. Use `assay(RSE)` to access.\n- **Peak vs Cluster**: Use `swap=\"thick\"` in `assignTxType` to annotate based on the highest peak (TSS) rather than the whole cluster width.\n- **Filtering**: Always filter lowly expressed features using `subsetBySupport` or `subsetByComposition` before differential expression analysis.\n- **Parallelization**: `quantifyCTSSs` and `findLinks` support `BiocParallel`. Register a backend like `MulticoreParam()` to speed up processing.\n\n## Reference documentation\n- [Introduction to CAGEfightR](./references/Introduction_to_CAGEfightR.md)\n- [Introduction to CAGEfightR (Rmd Source)](./references/Introduction_to_CAGEfightR.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cagefightr",
+    "description": "CAGEfightR is an R/Bioconductor package for analyzing 5'-end genomic data to identify and quantify transcription start sites and enhancers. Use when user asks to quantify CTSSs from BigWig files, identify unidirectional tag clusters or bidirectional enhancers, annotate clusters with transcript models, or perform spatial analysis like TSS-enhancer correlations and super-enhancer identification.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CAGEfightR.html"
+  }
+}

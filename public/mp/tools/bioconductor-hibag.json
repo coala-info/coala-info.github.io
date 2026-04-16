@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hibag",
+  "category": "bioconductor",
+  "name": "bioconductor-hibag",
+  "description": "\"HIBAG predicts HLA genotypes from SNP data using an ensemble classifier approach. Use when user asks to impute HLA alleles from GWAS data, build custom HLA prediction models, or perform HLA-specific association testing at the allele and amino acid levels.\"",
+  "overview": "HIBAG (**H**LA **I**mputation using attribute **BAG**ging) is a Bioconductor package designed for predicting HLA genotypes from SNP data. It is particularly useful for GWAS studies where classical HLA typing is unavailable. HIBAG uses an ensemble classifier approach (attribute bagging) to achieve high accuracy without requiring phased haplotypes. It supports parallel computing and provides tools for downstream association analysis at both the allele and amino acid levels.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HIBAG.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hibag/overview",
+  "github": "https://github.com/zhengxwen/HIBAG",
+  "conda_downloads": "51.5K",
+  "conda_downloads_num": 51500,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HIBAG"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HIBAG.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hibag/overview",
+    "github": "https://github.com/zhengxwen/HIBAG",
+    "conda_downloads": "51.5K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hibag\n\n## Overview\n\nHIBAG (**H**LA **I**mputation using attribute **BAG**ging) is a Bioconductor package designed for predicting HLA genotypes from SNP data. It is particularly useful for GWAS studies where classical HLA typing is unavailable. HIBAG uses an ensemble classifier approach (attribute bagging) to achieve high accuracy without requiring phased haplotypes. It supports parallel computing and provides tools for downstream association analysis at both the allele and amino acid levels.\n\n## Core Workflows\n\n### 1. HLA Imputation with Pre-fit Models\nThe most common use case involves using existing model parameters (e.g., from the HIBAG model repository) to impute HLA types in a new dataset.\n\n```R\nlibrary(HIBAG)\n\n# 1. Load a model (example uses package data; typically load an .RData file)\nmodel.list <- get(load(system.file(\"extdata\", \"ModelList.RData\", package=\"HIBAG\")))\nmodel <- hlaModelFromObj(model.list[[\"A\"]])\n\n# 2. Import SNP genotypes (supports PLINK BED format)\nyourgeno <- hlaBED2Geno(bed.fn=\"data.bed\", fam.fn=\"data.fam\", bim.fn=\"data.bim\")\n\n# 3. Predict HLA genotypes\npred.guess <- hlaPredict(model, yourgeno, type=\"response+prob\")\n\n# 4. Access results\nhead(pred.guess$value)    # Best-guess genotypes\nhead(pred.guess$postprob) # Posterior probabilities\n```\n\n### 2. Building a Custom HIBAG Model\nIf you have a training set with both HLA types and SNP genotypes, you can build a population-specific model.\n\n```R\n# 1. Prepare HLA training data\ntrain.HLA <- hlaAllele(sample.id, H1=allele1, H2=allele2, locus=\"A\", assembly=\"hg19\")\n\n# 2. Subset SNPs to flanking region (e.g., 500kb) around the locus\ntrain.geno <- hlaGenoSubsetFlank(HapMap_CEU_Geno, \"A\", 500*1000, assembly=\"hg19\")\n\n# 3. Train the model (use nclassifier=100 for a balance of speed/accuracy)\nset.seed(100)\nmodel <- hlaAttrBagging(train.HLA, train.geno, nclassifier=100)\n\n# 4. Summary and Plotting\nsummary(model)\nplot(model) # Shows SNP importance/frequency in the model\n```\n\n### 3. Parallel Computing\nFor large datasets or many classifiers, use the parallel versions of functions.\n\n```R\nlibrary(parallel)\ncl <- makeCluster(4) # Use 4 cores\n\n# Parallel training\nhlaParallelAttrBagging(cl, train.HLA, train.geno, nclassifier=100)\n\n# Parallel prediction\npred <- hlaPredict(model, yourgeno, cl=cl)\n\nstopCluster(cl)\n```\n\n### 4. HLA Association Testing\nHIBAG includes specialized functions for association tests using imputed dosages or best-guess genotypes.\n\n```R\n# Allelic association (supports dominant, additive, recessive models)\n# 'h' in formula represents the HLA genotypes\nresults <- hlaAssocTest(hla_obj, disease ~ h + pc1, data=pheno_df, model=\"additive\")\n\n# Amino acid association\n# Converts alleles to protein sequences before testing\naa_obj <- hlaConvSequence(hla_obj, code=\"P.code.merge\")\naa_results <- hlaAssocTest(aa_obj, disease ~ h, data=pheno_df, model=\"dominant\")\n```\n\n## Evaluation and Reporting\n\n*   **Accuracy Assessment**: Use `hlaCompareAllele()` to compare imputed results against a validation set (gold standard).\n*   **Matching Proportion**: `hlaReportPlot(pred, model, fig=\"matching\")` visualizes how well the test SNP profiles match the training set. Low values suggest the individual is underrepresented in the training data.\n*   **Reporting**: `hlaReport(comp, type=\"markdown\")` generates formatted tables of sensitivity, specificity, and PPV/NPV per allele.\n\n## Performance Optimization\nFor modern CPUs, you can significantly speed up model building by setting the SIMD kernel target:\n```R\n# Select the best available kernel (AVX2, AVX512, etc.)\nhlaSetKernelTarget(\"max\")\n```\n\n## Reference documentation\n\n- [HIBAG vignette](./references/HIBAG.md)\n- [HLA association tests](./references/HLA_Association.md)\n- [HIBAG algorithm implementation](./references/Implementation.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hibag",
+    "description": "HIBAG predicts HLA genotypes from SNP data using an ensemble classifier approach. Use when user asks to impute HLA alleles from GWAS data, build custom HLA prediction models, or perform HLA-specific association testing at the allele and amino acid levels.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HIBAG.html"
+  }
+}

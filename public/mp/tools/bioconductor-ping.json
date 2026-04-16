@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ping",
+  "category": "bioconductor",
+  "name": "bioconductor-ping",
+  "description": "PING performs probabilistic inference to identify nucleosome positions from high-throughput sequencing data. Use when user asks to infer nucleosome positions, segment genomic regions for nucleosome analysis, or post-process nucleosome predictions from MNase or sonicated data.",
+  "overview": "PING (Probabilistic Inference for Nucleosome Positioning) is a Bioconductor package designed to infer nucleosome positions from high-throughput sequencing data. It extends the PICS algorithm by using a specialized prior for nucleosome spatial positioning, different model selection criteria, and automated post-processing to handle atypical fragment lengths or overlapping predictions.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PING.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PING"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PING.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ping\n\n## Overview\n\nPING (Probabilistic Inference for Nucleosome Positioning) is a Bioconductor package designed to infer nucleosome positions from high-throughput sequencing data. It extends the PICS algorithm by using a specialized prior for nucleosome spatial positioning, different model selection criteria, and automated post-processing to handle atypical fragment lengths or overlapping predictions.\n\n## Typical Workflow\n\n### 1. Data Input and Formatting\nPING requires data in a `GRanges` object. You can convert BAM files using the `PICS` package helper or read BED files.\n\n```r\nlibrary(PING)\nlibrary(PICS)\n\n# For Paired-End (PE) data\nyeastBam <- system.file(\"extdata/yeastChrI.bam\", package = \"PING\")\ngr <- bam2gr(bamFile = yeastBam, PE = TRUE)\n\n# For Single-End (SE) data\npath <- system.file(\"extdata\", package = \"PING\")\ndataIP <- read.table(file.path(path, \"GSM351492_R4_chr1.bed\"), header = TRUE)\ngr <- as(dataIP, \"GRanges\")\n```\n\n### 2. Genome Segmentation\nThe genome must be segmented into candidate regions with sufficient read density before running the probabilistic model.\n\n```r\n# For Single-End: minReads=NULL estimates threshold automatically\nseg <- segmentPING(gr, minReads = NULL, maxLregion = 1200, jitter = TRUE)\n\n# For Paired-End: Set PE = TRUE\n# islandDepth, min_cut, and max_cut control candidate selection for PE\nsegPE <- segmentPING(grI, PE = TRUE)\n```\n\n### 3. Parameter Estimation\nThe `PING` function performs the actual inference. Use the `parallel` package to speed up computation on multiple cores.\n\n```r\nlibrary(parallel)\n# dataType defaults to \"MNase\"; use \"sonicated\" if applicable\npingRes <- PING(seg, nCores = 2, dataType = \"MNase\")\n```\n\n### 4. Post-processing\nRefine predictions to correct for atypical fragment lengths (delta), large sigma values, or boundary issues where nucleosomes in adjacent regions might be duplicates.\n\n```r\n# Ensure dataType matches the PING step\nPS <- postPING(pingRes, seg, dataType = \"MNase\")\n```\n\n### 5. Export and Visualization\nConvert results to `RangedData` for export to BED format or use built-in plotting tools.\n\n```r\n# Exporting\nlibrary(rtracklayer)\nrdBed <- makeRangedDataOutput(PS, type = \"bed\") # Uses predicted delta\nrdFix <- makeRangedDataOutput(PS, type = \"fixed\") # Fixed 147bp size\nexport(rdBed, \"nuc_predictions.bed\")\n\n# Visualization\n# Shows coverage, forward/reverse reads, and nucleosome scores\nplotSummary(PS, pingRes, gr, chr = \"chr1\", from = 149000, to = 153000)\n```\n\n## Key Parameters and Tips\n- **dataType**: Crucial parameter in `PING()` and `postPING()`. Set to `\"sonicated\"` if the DNA was fragmented via sonication rather than MNase digestion.\n- **minReads**: In `segmentPING`, setting this too low increases computation time; setting it too high may miss real nucleosomes. `NULL` is a safe starting point for automatic estimation.\n- **Mappability**: For higher accuracy, PING can use mappability profiles to account for non-uniquely alignable genomic regions.\n- **Scores**: Nucleosomes are assigned a score; `plotSummary` filters out those below 0.05 by default.\n\n## Reference documentation\n\n- [Using PING with Paired-End sequencing data](./references/PING-PE.md)\n- [PING: Probabilistic Inference for Nucleosome Positioning](./references/PING.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ping",
+    "description": "PING performs probabilistic inference to identify nucleosome positions from high-throughput sequencing data. Use when user asks to infer nucleosome positions, segment genomic regions for nucleosome analysis, or post-process nucleosome predictions from MNase or sonicated data.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PING.html"
+  }
+}

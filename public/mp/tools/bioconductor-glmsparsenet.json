@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-glmsparsenet",
+  "category": "bioconductor",
+  "name": "bioconductor-glmsparsenet",
+  "description": "This R package fits sparse generalized linear models by incorporating biological network information to penalize genes based on their connectivity. Use when user asks to perform network-based regularization, identify biomarkers in survival or classification tasks, or penalize hub and orphan genes in transcriptomic data.",
+  "overview": "`glmSparseNet` is an R package that extends the `glmnet` framework by incorporating biological network information into the regularization process. It is particularly useful for transcriptomic data where genes do not act in isolation. The package provides heuristics to penalize \"hubs\" (highly connected nodes) or \"orphans\" (isolated nodes) differently, helping to identify more biologically relevant biomarkers in survival and classification tasks.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/glmSparseNet.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-glmsparsenet/overview",
+  "github": "N/A",
+  "conda_downloads": "22.8K",
+  "conda_downloads_num": 22800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "glmSparseNet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/glmSparseNet.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-glmsparsenet/overview",
+    "github": "N/A",
+    "conda_downloads": "22.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-glmsparsenet\n\n## Overview\n\n`glmSparseNet` is an R package that extends the `glmnet` framework by incorporating biological network information into the regularization process. It is particularly useful for transcriptomic data where genes do not act in isolation. The package provides heuristics to penalize \"hubs\" (highly connected nodes) or \"orphans\" (isolated nodes) differently, helping to identify more biologically relevant biomarkers in survival and classification tasks.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package expects a feature matrix `xdata` (samples as rows, genes as columns) and a response object `ydata`.\n- For **Classification**: `ydata` is a factor or numeric vector.\n- For **Survival**: `ydata` is a `survival::Surv` object containing time and status.\n\nIt is highly recommended to scale your data before fitting:\n```r\nxdata <- scale(xdataRaw)\n```\n\n### 2. Defining the Network\nYou can provide a custom adjacency matrix or use the package's built-in correlation-based network generation.\n- **Correlation Network**: Set `network = \"correlation\"` in the fitting function.\n- **External Network (e.g., STRING)**: Use `stringDBhomoSapiens()` and `buildStringNetwork()` to create a sparse matrix of interactions.\n\n### 3. Fitting Models with Network Penalization\nThe two primary functions are `cv.glmHub` (penalizes based on high connectivity) and `cv.glmOrphan` (penalizes based on low connectivity).\n\n**Example: Survival Analysis (Cox)**\n```r\nlibrary(glmSparseNet)\nlibrary(survival)\n\n# Fit model using correlation network and hub-based penalization\nfitted <- cv.glmHub(xdata, Surv(ydata$time, ydata$status),\n    family  = \"cox\",\n    network = \"correlation\",\n    options = networkOptions(cutoff = 0.6, minDegree = 0.2)\n)\n\n# Plot cross-validation results\nplot(fitted)\n```\n\n**Example: Classification (Binomial)**\n```r\nfitted_class <- cv.glmHub(xdata, ydata_factor,\n    family  = \"binomial\",\n    network = \"correlation\"\n)\n```\n\n### 4. Interpreting Results\nExtract coefficients for the optimal model (usually `lambda.min` or `lambda.1se`):\n```r\n# Get non-zero coefficients\ncoefs <- coef(fitted, s = \"lambda.min\")\nactive_genes <- coefs[coefs[,1] != 0, , drop=FALSE]\n```\n\n### 5. Survival Visualization\nUse `separate2GroupsCox` to validate the model by splitting samples into high and low-risk groups based on the calculated prognostic index.\n\n```r\n# Extract coefficients as a vector\nbetas <- as.vector(active_genes)\nnames(betas) <- rownames(active_genes)\n\n# Generate Kaplan-Meier plot\nres <- separate2GroupsCox(betas, xdata[, names(betas)], ydata)\nprint(res$plot)\nprint(res$pvalue)\n```\n\n## Key Functions and Options\n\n- `networkOptions()`: Configures how the network is processed.\n    - `cutoff`: Correlation threshold for edge creation.\n    - `minDegree`: Minimum degree percentile to consider a node a \"hub\".\n- `geneNames()`: Helper to convert Ensembl IDs to external gene symbols using BioMart.\n- `balancedCvFolds()`: Useful for creating cross-validation folds that maintain the ratio of events in survival data or classes in classification.\n\n## Tips for Success\n- **Memory Management**: When using large networks like STRING, ensure you use sparse matrices (class `dgCMatrix`) to avoid memory exhaustion.\n- **Feature Matching**: Ensure the column names of `xdata` match the node names in your network matrix.\n- **Comparison**: It is often useful to run a standard `glmnet` model as a baseline to see if network-based penalization improves interpretability or performance.\n\n## Reference documentation\n\n- [Example for Classification Data – Breast Invasive Carcinoma](./references/example_brca_logistic.md)\n- [Breast survival dataset using network from STRING DB](./references/example_brca_protein-protein-interactions_survival.md)\n- [Example for Survival Data – Breast Invasive Carcinoma](./references/example_brca_survival.md)\n- [Example for Survival Data – Prostate Adenocarcinoma](./references/example_prad_survival.md)\n- [Example for Survival Data – Skin Melanoma](./references/example_skcm_survival.md)\n- [Separate 2 groups in Cox regression](./references/separate2GroupsCox.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-glmsparsenet",
+    "description": "This R package fits sparse generalized linear models by incorporating biological network information to penalize genes based on their connectivity. Use when user asks to perform network-based regularization, identify biomarkers in survival or classification tasks, or penalize hub and orphan genes in transcriptomic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/glmSparseNet.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-censcyt",
+  "category": "bioconductor",
+  "name": "bioconductor-censcyt",
+  "description": "This tool performs differential abundance analysis in cytometry data when a covariate is subject to right censoring. Use when user asks to analyze cell population abundance associated with survival time, perform differential abundance testing with censored variables, or apply multiple imputation to cytometry datasets.",
+  "overview": "The `censcyt` package extends the `diffcyt` framework to handle differential abundance (DA) analysis when a covariate is right-censored. In cytometry, this is common when trying to associate cell population abundance with survival time or other time-to-event data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/censcyt.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-censcyt/overview",
+  "github": "https://github.com/retogerber/censcyt",
+  "conda_downloads": "10.3K",
+  "conda_downloads_num": 10300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "censcyt"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/censcyt.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-censcyt/overview",
+    "github": "https://github.com/retogerber/censcyt",
+    "conda_downloads": "10.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-censcyt\n\nname: bioconductor-censcyt\ndescription: Perform differential abundance analysis in cytometry when a covariate is subject to right censoring (e.g., survival time). Use this skill when analyzing cytometry data where the primary variable of interest is a time-to-event or censored variable, extending the diffcyt workflow with multiple imputation methods.\n\n# bioconductor-censcyt\n\n## Overview\n\nThe `censcyt` package extends the `diffcyt` framework to handle differential abundance (DA) analysis when a covariate is right-censored. In cytometry, this is common when trying to associate cell population abundance with survival time or other time-to-event data. \n\nBecause censored variables cannot be used directly as covariates in standard GLMMs without introducing bias, `censcyt` employs **Multiple Imputation**. The workflow follows three steps:\n1. **Imputation**: Generating multiple complete datasets by replacing censored values with random draws from a predictive distribution.\n2. **Analysis**: Fitting a Generalized Linear Mixed Model (GLMM) on each imputed dataset.\n3. **Pooling**: Combining results using Rubin's rules to account for imputation uncertainty.\n\n## Typical Workflow\n\n### 1. Prepare Data and Metadata\nData should be in a `SummarizedExperiment` (cluster counts) or a list of flow frames. Metadata must include the censored covariate and an event indicator (1 for observed, 0 for censored).\n\n```r\nlibrary(censcyt)\n\n# Example metadata\nexperiment_info <- data.frame(\n  sample_id = 1:50,\n  survival_time = X_obs,    # The observed time (min of event or censoring)\n  event_status = Event_ind  # 1 = event observed, 0 = censored\n)\n```\n\n### 2. Create Formula and Contrast\nUse `createFormula` with the `event_indicator` argument. This associates the indicator with the first fixed effect provided.\n\n```r\nda_formula <- createFormula(\n  experiment_info = experiment_info,\n  cols_fixed = \"survival_time\",\n  cols_random = \"sample_id\",\n  event_indicator = \"event_status\"\n)\n\n# Contrast for the survival_time coefficient\ncontrast <- matrix(c(0, 1))\n```\n\n### 3. Differential Testing\nThe `testDA_censoredGLMM` function performs the multiple imputation and testing.\n\n```r\nda_out <- testDA_censoredGLMM(\n  d_counts = d_counts,      # SummarizedExperiment of counts\n  formula = da_formula,\n  contrast = contrast,\n  mi_reps = 30,             # Number of imputations\n  imputation_method = \"km\", # Kaplan-Meier imputation\n  verbose = TRUE\n)\n```\n\n### 4. Evaluate Results\nUse the `topTable` function from `diffcyt` to view significant clusters.\n\n```r\ntopTable(da_out)\n```\n\n## Imputation Methods\n\nSpecify the method via the `imputation_method` argument:\n\n| Method | Abbr. | Description |\n| :--- | :--- | :--- |\n| **Risk Set** | `rs` | Replaces censored values with a random value from the risk set. |\n| **Kaplan-Meier** | `km` | Draws from a survival function fit on the risk set. |\n| **Mean Residual Life** | `mrl` | Adds expected time until event given the censoring time. |\n| **Complete Case** | `cc` | Removes incomplete samples (not recommended for high censoring). |\n\n**Tail Handling**: If the largest value is censored, use `km_exp`, `km_wei`, or `km_os` to approximate the tail of the survival function.\n\n## The censcyt Wrapper\nFor a complete pipeline (clustering to testing), use the `censcyt()` wrapper, which mirrors the `diffcyt()` wrapper but includes imputation parameters.\n\n```r\nout_DA <- censcyt(\n  d_input = d_input,        # List of flowFrames or fcs files\n  experiment_info = experiment_info,\n  marker_info = marker_info,\n  formula = da_formula,\n  contrast = contrast,\n  mi_reps = 20,\n  imputation_method = \"km\",\n  meta_k = 10               # Number of clusters\n)\n```\n\n## Tips and Best Practices\n- **Number of Imputations (`mi_reps`)**: More imputations are required as the censoring rate increases. Setting `verbose = TRUE` will display a suggested number of imputations based on the quadratic rule.\n- **Parallelization**: Use the `BPPARAM` argument (e.g., `BiocParallel::MulticoreParam()`) to speed up the analysis step across imputed datasets.\n- **diffcyt Compatibility**: Since `censcyt` depends on `diffcyt`, all standard `diffcyt` visualization functions like `plotHeatmap` work on `censcyt` output objects.\n\n## Reference documentation\n- [Censored covariate in cytometry](./references/censored_covariate.Rmd)\n- [Censored covariate in cytometry](./references/censored_covariate.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-censcyt",
+    "description": "This tool performs differential abundance analysis in cytometry data when a covariate is subject to right censoring. Use when user asks to analyze cell population abundance associated with survival time, perform differential abundance testing with censored variables, or apply multiple imputation to cytometry datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/censcyt.html"
+  }
+}

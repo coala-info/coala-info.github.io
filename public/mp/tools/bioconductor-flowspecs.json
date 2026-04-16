@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-flowspecs",
+  "category": "bioconductor",
+  "name": "bioconductor-flowspecs",
+  "description": "The flowSpecs package provides tools for processing, unmixing, and correcting raw spectral cytometry data. Use when user asks to calculate spectral unmixing matrices, perform spectral unmixing, correct unmixing artifacts, or convert flow data into long-format dataframes.",
+  "overview": "The `flowSpecs` package provides tools for processing raw spectral cytometry data. It extends `flowCore` functionality to handle the unique requirements of spectral instruments (like the Cytek Aurora). Its primary workflows include calculating spectral unmixing matrices from control samples, performing the unmixing (decomposition), correcting for minor unmixing artifacts using a secondary correction matrix, and converting flow data into long-format dataframes for non-flow applications.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/flowSpecs.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowspecs/overview",
+  "github": "https://github.com/jtheorell/flowSpecs",
+  "conda_downloads": "19.5K",
+  "conda_downloads_num": 19500,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "flowSpecs"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowSpecs.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowspecs/overview",
+    "github": "https://github.com/jtheorell/flowSpecs",
+    "conda_downloads": "19.5K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-flowspecs\n\n## Overview\nThe `flowSpecs` package provides tools for processing raw spectral cytometry data. It extends `flowCore` functionality to handle the unique requirements of spectral instruments (like the Cytek Aurora). Its primary workflows include calculating spectral unmixing matrices from control samples, performing the unmixing (decomposition), correcting for minor unmixing artifacts using a secondary correction matrix, and converting flow data into long-format dataframes for non-flow applications.\n\n## Core Workflow\n\n### 1. Data Loading\n`flowSpecs` uses `flowFrame` and `flowSet` objects from the `flowCore` package.\n```r\nlibrary(flowSpecs)\nlibrary(flowCore)\n\n# Load your data (usually via flowCore::read.FCS or read.flowSet)\ndata(\"unmixCtrls\") # Example flowSet of controls\ndata(\"fullPanel\")  # Example flowFrame of fully stained sample\n```\n\n### 2. Calculating the Spectral Unmixing Matrix\nUse `specMatCalc` to generate the matrix from single-stained controls. You must identify groups of samples (e.g., Beads, Cells) and an unstained control for autofluorescence.\n```r\n# groupNames identifies the prefix for single-stained controls\n# autoFluoName identifies the specific file for autofluorescence\nspecMat <- specMatCalc(unmixCtrls, \n                       groupNames = c(\"Beads_\", \"Dead_\"), \n                       autoFluoName = \"PBMC_unstained.fcs\")\n```\n\n### 3. Spectral Unmixing\nApply the calculated matrix to your fully stained samples using least squares regression.\n```r\nfullPanelUnmix <- specUnmix(fullPanel, specMat)\n```\n\n### 4. Data Transformation\nSpectral data requires transformation (typically arcsinh) for visualization and clustering. `arcTrans` provides an automated way to apply this, with defaults for flow or mass cytometry.\n```r\n# Identify columns to transform (usually the unmixed fluorochrome channels)\nchannels_to_transform <- colnames(fullPanelUnmix)[6:18]\nfullPanelTrans <- arcTrans(fullPanelUnmix, transNames = channels_to_transform)\n```\n\n### 5. Identifying and Correcting Artifacts\nSpectral unmixing often leaves minor artifacts (e.g., false negative correlations).\n*   **Visualize**: Use `oneVsAllPlot` to find \"over-unmixed\" or \"under-unmixed\" populations.\n*   **Correct**: Create a correction matrix and apply it to the **unmixed (but non-transformed)** data.\n\n```r\n# 1. Visualize a specific marker against all others\noneVsAllPlot(fullPanelTrans, \"AF647_IgM\", saveResult = FALSE)\n\n# 2. Create empty correction matrix\ncorrMat <- corrMatCreate(specMat)\n\n# 3. Add correction (e.g., -0.03 means 3% negative correction)\n# If marker A bleeds into marker B, adjust corrMat[\"A\", \"B\"]\ncorrMat[\"BV650_CD56\", \"AF647_IgM\"] <- -0.03\n\n# 4. Apply correction (automatically re-transforms for convenience)\nfullPanelCorr <- correctUnmix(fullPanelUnmix, corrMat)\n```\n\n### 6. Exporting to Dataframes\nTo use data in non-flow R packages (e.g., for custom ggplot2 or general ML), convert the `flowSet` to a long-format dataframe.\n```r\n# idInfo uses regex to extract metadata from filenames into columns\nfullPanelDf <- flowSet2LongDf(fullPanelFs, idInfo = list(\n  \"Tissue\" = \"|_full_panel_..\\\\.fcs\", \n  \"Donor\" = \"...._full_panel_|\\\\.fcs\"\n))\n```\n\n## Tips and Best Practices\n*   **Autofluorescence**: Always use an unstained control of the same cell type as your samples for the `autoFluoName` parameter in `specMatCalc`.\n*   **Transformation Cofactors**: While `arcTrans` is convenient, manually checking cofactors is recommended to ensure no artifactual populations are created around zero.\n*   **Correction Logic**: The correction matrix is symmetric and secondary. It is applied to unmixed data to \"nudge\" populations that are biologically unlikely (e.g., a \"slanted\" negative population).\n*   **Integration**: Since `flowSpecs` outputs `flowCore` objects, you can immediately pipe results into `flowViz` for plotting or `OpenCyto` for gating.\n\n## Reference documentation\n- [Example workflow for processing of raw spectral cytometry files](./references/flowSpecs_vinjette.md)\n- [flowSpecs Vignette Source](./references/flowSpecs_vinjette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-flowspecs",
+    "description": "The flowSpecs package provides tools for processing, unmixing, and correcting raw spectral cytometry data. Use when user asks to calculate spectral unmixing matrices, perform spectral unmixing, correct unmixing artifacts, or convert flow data into long-format dataframes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowSpecs.html"
+  }
+}

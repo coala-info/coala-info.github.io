@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-structuralvariantannotation",
+  "category": "bioconductor",
+  "name": "bioconductor-structuralvariantannotation",
+  "description": "This tool provides a framework for parsing, annotating, and comparing structural variants from VCF files using a breakend-centric approach. Use when user asks to convert VCF records to breakend-centric GRanges, find overlaps between structural variant callsets, handle ambiguous breakpoint positions, or identify complex events like insertion-duplication equivalence.",
+  "overview": "The `StructuralVariantAnnotation` package provides a framework for handling structural variants (SVs) in R using a \"breakend-centric\" approach. Unlike standard BEDPE formats that treat breakpoints as pairs, this package represents each side of a breakpoint as a separate entry in a `GRanges` object, linked by a `partner` field. This allows for a unified representation of deletions, duplications, inversions, translocations, and single breakends (where only one side is known).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/StructuralVariantAnnotation.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "StructuralVariantAnnotation"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/StructuralVariantAnnotation.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-structuralvariantannotation\n\nname: bioconductor-structuralvariantannotation\ndescription: Expert guidance for the Bioconductor R package StructuralVariantAnnotation. Use this skill when parsing, annotating, comparing, or visualizing structural variants (SVs) from VCF files. It provides specialized workflows for converting VCF records into breakend-centric GRanges, handling ambiguous breakpoint positions, finding overlaps between SV callsets, and identifying complex events like transitive breakpoints or insertion-duplication equivalence.\n\n# bioconductor-structuralvariantannotation\n\n## Overview\n\nThe `StructuralVariantAnnotation` package provides a framework for handling structural variants (SVs) in R using a \"breakend-centric\" approach. Unlike standard BEDPE formats that treat breakpoints as pairs, this package represents each side of a breakpoint as a separate entry in a `GRanges` object, linked by a `partner` field. This allows for a unified representation of deletions, duplications, inversions, translocations, and single breakends (where only one side is known).\n\n## Core Workflow\n\n### 1. Loading SV Data\nThe package builds on `VariantAnnotation`. Use `readVcf` to load the data, then convert it to the specialized GRanges format.\n\n```r\nlibrary(StructuralVariantAnnotation)\nlibrary(VariantAnnotation)\n\n# Load VCF\nvcf <- readVcf(\"path/to/file.vcf\")\n\n# Convert to breakpoint-centric GRanges\n# This handles BND, DEL, DUP, INV, etc.\ngr <- breakpointRanges(vcf)\n\n# Load single breakends (records with only one known side)\nbegr <- breakendRanges(vcf)\n\n# Combine and sort\nall_sv <- sort(c(gr, begr))\n```\n\n### 2. Navigating Breakpoints\nBecause each breakpoint is represented by two records, use the `partner()` function to find the other side.\n\n```r\n# Get the partner for each breakend\npartner_gr <- partner(gr)\n\n# Check if a record has a valid partner in the current object\nvalid_idx <- hasPartner(gr)\ngr_clean <- gr[valid_idx]\n```\n\n### 3. Comparing Callsets (Overlaps)\nStandard `findOverlaps` is insufficient for SVs because both sides of the breakpoint must match. Use `findBreakpointOverlaps`.\n\n```r\n# Compare a query set to a truth set\noverlaps <- findBreakpointOverlaps(query_gr, truth_gr,\n                                   maxgap = 100,           # Distance allowed between breakends\n                                   sizemargin = 0.25,      # Relative size difference allowed\n                                   restrictMarginToSizeMultiple = 0.5)\n\n# Count matches (useful for Precision-Recall curves)\nquery_gr$matches <- countBreakpointOverlaps(query_gr, truth_gr, maxgap = 100)\n```\n\n### 4. Handling Complex and Equivalent Variants\n*   **Insertion-Duplication Equivalence**: Short-read callers often call duplications while long-read callers call insertions. Use `findInsDupOverlaps(gr1, gr2)` to match these.\n*   **Transitive Breakpoints**: Identify breakpoints that are actually shortcuts for multiple smaller rearrangements.\n    ```r\n    transitive_calls <- findTransitiveCalls(query_gr, truth_gr)\n    ```\n\n## Data Representation Details\n\n*   **Strand Logic**: \n    *   `+` (Forward): The derivative chromosome consists of bases **at and before** the position.\n    *   `-` (Reverse): The derivative chromosome consists of bases **at and after** the position.\n*   **Ambiguity**: The package incorporates `CIPOS` and `HOMPOS` from VCFs into the `start` and `end` coordinates of the `GRanges`. To use only the nominal position, set `nominalPosition = TRUE` in `breakpointRanges()`.\n\n## Visualization\nTo create circos plots with `ggbio`, you must add a `to.gr` metadata column representing the partner's location.\n\n```r\nlibrary(ggbio)\n# Prepare for circos\ngr_circos <- gr\nmcols(gr_circos)$to.gr <- granges(partner(gr_circos))\n\n# Plot links\nggbio() + circle(gr_circos, geom = \"link\", linked.to = \"to.gr\") + circle(hg19sub, geom = \"ideo\")\n```\n\n## Conversion to Other Formats\nTo interface with tools expecting BEDPE or `Pairs` objects:\n\n```r\n# To BEDPE/Pairs\npairs_obj <- breakpointgr2pairs(gr)\nrtracklayer::export(pairs_obj, \"output.bedpe\")\n\n# From BEDPE/Pairs\nnew_gr <- pairs2breakpointgr(rtracklayer::import(\"input.bedpe\"))\n```\n\n## Reference documentation\n- [StructuralVariantAnnotation Quick Overview](./references/vignettes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-structuralvariantannotation",
+    "description": "This tool provides a framework for parsing, annotating, and comparing structural variants from VCF files using a breakend-centric approach. Use when user asks to convert VCF records to breakend-centric GRanges, find overlaps between structural variant callsets, handle ambiguous breakpoint positions, or identify complex events like insertion-duplication equivalence.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/StructuralVariantAnnotation.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cytopipeline",
+  "category": "bioconductor",
+  "name": "bioconductor-cytopipeline",
+  "description": "Bioconductor-cytopipeline automates and visualizes flow cytometry data preprocessing and quality control workflows using a structured S4 class system. Use when user asks to define sequential processing queues, execute multi-step flow cytometry pipelines with disk-based caching, or compare different quality control methods and transformations.",
+  "overview": "CytoPipeline is a Bioconductor package designed to automate and standardize the preprocessing and quality control (QC) stages of flow cytometry data analysis. It uses a structured S4 class system (`CytoPipeline` and `CytoProcessingStep`) to define workflows that can be executed sequentially. The package supports two distinct processing queues: a global \"scale transform\" queue for estimating transformations across all samples, and a per-sample \"pre-processing\" queue. Results are automatically cac",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CytoPipeline.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cytopipeline/overview",
+  "github": "https://github.com/UCLouvain-CBIO/CytoPipeline",
+  "conda_downloads": "3.0K",
+  "conda_downloads_num": 3000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CytoPipeline"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CytoPipeline.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cytopipeline/overview",
+    "github": "https://github.com/UCLouvain-CBIO/CytoPipeline",
+    "conda_downloads": "3.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cytopipeline\n\nname: bioconductor-cytopipeline\ndescription: Automation and visualization of flow cytometry data preprocessing and quality control (QC) pipelines. Use this skill when you need to define, execute, and visualize multi-step flow cytometry workflows using the CytoPipeline R package. It is particularly useful for comparing different QC methods (e.g., flowAI vs. PeacoQC), managing scale transformations across multiple samples, and utilizing disk-based caching for large datasets.\n\n# bioconductor-cytopipeline\n\n## Overview\n\nCytoPipeline is a Bioconductor package designed to automate and standardize the preprocessing and quality control (QC) stages of flow cytometry data analysis. It uses a structured S4 class system (`CytoPipeline` and `CytoProcessingStep`) to define workflows that can be executed sequentially. The package supports two distinct processing queues: a global \"scale transform\" queue for estimating transformations across all samples, and a per-sample \"pre-processing\" queue. Results are automatically cached using `BiocFileCache`, allowing for efficient inspection and visualization of data at any intermediate step.\n\n## Core Workflow\n\n### 1. Initialize the Pipeline\nCreate a `CytoPipeline` object by providing an experiment name and a vector of paths to `.fcs` files.\n\n```r\nlibrary(CytoPipeline)\nexperimentName <- \"MyExperiment\"\nsampleFiles <- list.files(\"path/to/data\", pattern = \".fcs\", full.names = TRUE)\n\npipL <- CytoPipeline(experimentName = experimentName, sampleFiles = sampleFiles)\n```\n\n### 2. Define Processing Queues\nPipelines are built by adding `CytoProcessingStep` objects to one of two queues:\n*   **scale transform**: Executed once using all samples (e.g., for compensation and estimating logicle transforms).\n*   **pre-processing**: Executed for each sample individually (e.g., for QC, doublet removal, and gating).\n\n```r\n# Add a step to the scale transform queue\npipL <- addProcessingStep(pipL, \n    whichQueue = \"scale transform\",\n    CytoProcessingStep(\n        name = \"compensate\",\n        FUN = \"compensateFromMatrix\",\n        ARGS = list(matrixSource = \"fcs\")\n    )\n)\n\n# Add a step to the pre-processing queue\npipL <- addProcessingStep(pipL,\n    whichQueue = \"pre-processing\",\n    CytoProcessingStep(\n        name = \"perform_QC\",\n        FUN = \"qualityControlPeacoQC\",\n        ARGS = list(preTransform = TRUE)\n    )\n)\n```\n\n### 3. Execute the Pipeline\nRun the pipeline by specifying a work directory for the cache.\n\n```r\nworkDir <- \"path/to/output\"\nexecute(pipL, path = workDir)\n```\n\n## Inspection and Visualization\n\n### Visualizing the Workflow\nYou can plot the pipeline structure as a graph to verify the sequence of steps.\n\n```r\nplotCytoPipelineProcessingQueue(pipL, whichQueue = \"pre-processing\", sampleFile = 1, path = workDir)\n```\n\n### Retrieving Intermediate Results\nAccess `flowFrame` objects or other data types from any named step in the cache.\n\n```r\n# Get flowFrame after a specific step\nff <- getCytoPipelineFlowFrame(pipL, \n                               whichQueue = \"pre-processing\", \n                               sampleFile = 1, \n                               objectName = \"perform_QC_obj\", \n                               path = workDir)\n\n# Plot events\nggplotEvents(ff, xChannel = \"FSC-A\", yChannel = \"SSC-A\")\n```\n\n### Tracking Cell Loss\nMonitor how many events are retained after each step to evaluate QC stringency.\n\n```r\nret <- collectNbOfRetainedEvents(experimentName = \"MyExperiment\", path = workDir)\n```\n\n## Tips and Best Practices\n*   **JSON Configuration**: Pipelines can be defined in JSON files for better reproducibility and shared across projects. Use `CytoPipeline(\"pipeline.json\")` to load them.\n*   **Wrapper Functions**: The `FUN` argument in `CytoProcessingStep` refers to wrapper functions. While many are built-in (e.g., `readSampleFiles`, `removeMarginsPeacoQC`), you can find more in the `CytoPipelineUtils` package or write your own.\n*   **QC Method Order**: \n    *   For **flowAI**: Perform QC on raw data before transformations.\n    *   For **PeacoQC**: Perform QC on compensated and scale-transformed data.\n*   **Caching**: The `path` argument in `execute` and retrieval functions must point to the same directory to leverage the `BiocFileCache`.\n\n## Reference documentation\n- [Automation and Visualization of Flow Cytometry Data Analysis Pipelines](./references/CytoPipeline.md)\n- [Demonstration of the CytoPipeline R package suite functionalities](./references/Demo.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cytopipeline",
+    "description": "Bioconductor-cytopipeline automates and visualizes flow cytometry data preprocessing and quality control workflows using a structured S4 class system. Use when user asks to define sequential processing queues, execute multi-step flow cytometry pipelines with disk-based caching, or compare different quality control methods and transformations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CytoPipeline.html"
+  }
+}

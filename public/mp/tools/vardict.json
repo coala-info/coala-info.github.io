@@ -1,0 +1,45 @@
+{
+  "id": "vardict",
+  "category": "CLI",
+  "name": "vardict",
+  "description": "VarDict identifies genetic alterations like SNPs, MNPs, and indels from BAM files. Use when user asks to call variants, call variants for a single sample, call somatic mutations, or perform amplicon-aware variant calling.",
+  "overview": "VarDict is a versatile variant caller designed to identify a wide range of genetic alterations, including SNPs, MNPs, and complex indels, from BAM files. It is particularly distinguished by its ability to perform on-the-fly local realignment, which allows it to rescue long indels that other callers often miss. VarDict operates on a \"call everything\" philosophy, providing high sensitivity that is then refined through downstream statistical scripts for strand bias and somatic validation.",
+  "homepage": "https://github.com/AstraZeneca-NGS/VarDict",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/vardict/overview",
+  "github": "https://github.com/AstraZeneca-NGS/VarDict",
+  "conda_downloads": "130.3K",
+  "conda_downloads_num": 130300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vardict"
+    ],
+    "description": "VarDict is a variant calling program for SNV, MNV, indels (<120 bp default, but can be set using -I option), and complex variants. It accepts any BAM format, either from DNA-seq or RNA-seq. There are several distinct features over other variant callers. First, it can perform local realignment over indels on the fly for more accurate allele frequencies of indels. Second, it rescues softly clipped reads to identify indels not present in the alignments or support existing indels. Third, when given the PCR amplicon information, it will perform amplicon-based variant calling and filter out variants that show amplicon bias, a common false positive in PCR based targeted deep sequencing. Forth, it has very efficient memory management and memory usage is linear to the region of interest, not the depth. Five, it can handle ultra-deep sequencing and the performance is only linear to the depth. It has been tested on depth over 2M reads. Finally, it has a build-in capability to perform paired sample analysis, intended for somatic mutation identification, comparing DNA-seq and RNA-seq, or resistant vs sensitive in cancer research. By default, the region_info is an entry of refGene.txt from IGV, but can be any region or bed files.",
+    "docker_image": "quay.io/biocontainers/vardict:2019.06.04--pl526_0",
+    "homepage": "https://github.com/AstraZeneca-NGS/VarDict",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/vardict/overview",
+    "github": "https://github.com/AstraZeneca-NGS/VarDict",
+    "conda_downloads": "130.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "vardict.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# vardict\n\n## Overview\n\nVarDict is a versatile variant caller designed to identify a wide range of genetic alterations, including SNPs, MNPs, and complex indels, from BAM files. It is particularly distinguished by its ability to perform on-the-fly local realignment, which allows it to rescue long indels that other callers often miss. VarDict operates on a \"call everything\" philosophy, providing high sensitivity that is then refined through downstream statistical scripts for strand bias and somatic validation.\n\n## Core Workflows\n\n### Single Sample Variant Calling\nThe standard pipeline involves piping VarDict's raw output through a strand bias filter and a VCF conversion script.\n\n```bash\n# Set Allele Frequency threshold (e.g., 0.01 for 1%)\nAF_THR=\"0.01\"\n\nvardict -G /path/to/reference.fa \\\n        -f $AF_THR \\\n        -N sample_name \\\n        -b /path/to/my.bam \\\n        -c 1 -S 2 -E 3 -g 4 /path/to/regions.bed \\\n        | teststrandbias.R \\\n        | var2vcf_valid.pl -N sample_name -E -f $AF_THR > output.vcf\n```\n\n### Paired (Tumor/Normal) Variant Calling\nFor somatic mutation discovery, provide both BAM files separated by a pipe character and use the somatic-specific R script and VCF converter.\n\n```bash\nAF_THR=\"0.01\"\n\nvardict -G /path/to/reference.fa \\\n        -f $AF_THR \\\n        -N tumor_sample_name \\\n        -b \"/path/to/tumor.bam|/path/to/normal.bam\" \\\n        -c 1 -S 2 -E 3 -g 4 /path/to/regions.bed \\\n        | testsomatic.R \\\n        | var2vcf_paired.pl -N \"tumor_sample_name|normal_sample_name\" -f $AF_THR > somatic.vcf\n```\n\n## Expert Tips and Best Practices\n\n### 1. Java vs. Perl Implementation\nWhile the original implementation is in Perl (`vardict.pl`), a Java drop-in replacement (`VarDictJava`) is available.\n- **Performance**: The Java version is approximately 10x faster.\n- **Dependencies**: The Java version does not require `samtools` in the PATH, whereas the Perl version does.\n\n### 2. Amplicon-Aware Calling\nTo enable amplicon bias awareness (single sample mode only), you must provide an 8-column BED file.\n- **BED Format**: Columns 7 and 8 must contain the insert interval (a subset of the 2nd and 3rd column interval).\n- **Example Row**: `chr1 115247094 115247253 NRAS 0 . 115247117 115247232`\n\n### 3. Column Mapping Parameters\nVarDict requires explicit mapping of BED file columns if they deviate from defaults:\n- `-c`: Chromosome column (1-based)\n- `-S`: Region start column\n- `-E`: Region end column\n- `-g`: Gene/Region name column\n\n### 4. Handling \"Everything\"\nVarDict is designed to be ultra-sensitive. If the output is too noisy:\n- Increase the Allele Frequency threshold (`-f`).\n- Ensure `teststrandbias.R` or `testsomatic.R` is included in the pipe to filter out artifacts.\n- Use the `vcf2txt.pl` script provided in the repository to annotate variants with dbSNP, Cosmic, or ClinVar context for better prioritization.\n\n### 5. Memory and Scaling\nVarDict scales better than many other Java-based callers, but when processing large whole-genome files, it is recommended to parallelize by chromosome or use the `splitBed.pl` utility to chunk the workload.\n\n## Reference documentation\n- [VarDict Main Repository](./references/github_com_AstraZeneca-NGS_VarDict.md)\n- [VarDict Wiki Overview](./references/github_com_AstraZeneca-NGS_VarDict_wiki.md)",
+  "skill_front_matter": {
+    "name": "vardict",
+    "description": "VarDict identifies genetic alterations like SNPs, MNPs, and indels from BAM files. Use when user asks to call variants, call variants for a single sample, call somatic mutations, or perform amplicon-aware variant calling.",
+    "homepage": "https://github.com/AstraZeneca-NGS/VarDict"
+  }
+}

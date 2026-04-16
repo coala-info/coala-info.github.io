@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-basics",
+  "category": "bioconductor",
+  "name": "bioconductor-basics",
+  "description": "BASiCS performs Bayesian hierarchical modeling for normalization, technical noise quantification, and expression analysis of single-cell RNA sequencing data. Use when user asks to identify highly or lowly variable genes, perform differential expression analysis of mean and variability, or quantify technical noise in datasets with or without spike-ins.",
+  "overview": "BASiCS is a Bayesian hierarchical model designed for supervised single-cell mRNA sequencing experiments. It simultaneously performs normalization and technical noise quantification to identify genes with heterogeneous expression. Unlike traditional tools that focus only on mean expression, BASiCS also quantifies cell-to-cell variability (over-dispersion) and residual over-dispersion (variability relative to a global mean-variance trend).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BASiCS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-basics/overview",
+  "github": "https://github.com/catavallejos/BASiCS",
+  "conda_downloads": "36.7K",
+  "conda_downloads_num": 36700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BASiCS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BASiCS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-basics/overview",
+    "github": "https://github.com/catavallejos/BASiCS",
+    "conda_downloads": "36.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-basics\n\nname: bioconductor-basics\ndescription: Bayesian Analysis of Single-Cell Sequencing data (BASiCS) for normalization, technical noise quantification, and supervised downstream analyses. Use this skill to identify highly/lowly variable genes (HVG/LVG) within a single group of cells or to perform differential expression (DE) analysis (mean and variability) between two or more known groups of cells. It supports datasets with or without spike-in molecules.\n\n## Overview\n\nBASiCS is a Bayesian hierarchical model designed for supervised single-cell mRNA sequencing experiments. It simultaneously performs normalization and technical noise quantification to identify genes with heterogeneous expression. Unlike traditional tools that focus only on mean expression, BASiCS also quantifies cell-to-cell variability (over-dispersion) and residual over-dispersion (variability relative to a global mean-variance trend).\n\n## Typical Workflow\n\n### 1. Data Preparation\nData must be stored in a `SingleCellExperiment` object.\n\n```r\nlibrary(BASiCS)\nlibrary(SingleCellExperiment)\n\n# Case A: With Spike-ins\n# Counts: matrix (biological + spike-in rows)\n# Tech: logical vector (TRUE for spike-ins)\n# SpikeInfo: data.frame (SpikeID, SpikeInput molecules)\nData <- newBASiCS_Data(Counts, Tech, SpikeInfo, BatchInfo = BatchVector)\n\n# Case B: Without Spike-ins (Requires multiple batches)\nData <- SingleCellExperiment(\n  assays = list(counts = Counts),\n  colData = data.frame(BatchInfo = BatchVector)\n)\n```\n\n### 2. Parameter Estimation (MCMC)\nThe `BASiCS_MCMC` function performs the heavy lifting. Recommended settings for publication are `N=20000`, `Thin=20`, and `Burn=10000`.\n\n```r\n# Regression = TRUE is the recommended default\nChain <- BASiCS_MCMC(\n  Data = Data, \n  N = 1000, Thin = 10, Burn = 500, # Use higher values for real data\n  WithSpikes = TRUE, \n  Regression = TRUE,\n  PrintProgress = FALSE\n)\n```\n\n### 3. Single Group Analysis (HVG/LVG Detection)\nIdentify genes with high or low biological variability.\n\n```r\n# HVG: >60% variability attributed to biological component\nHVG <- BASiCS_DetectHVG(Chain, VarThreshold = 0.6, EFDR = 0.10)\n# LVG: <20% variability attributed to biological component\nLVG <- BASiCS_DetectLVG(Chain, VarThreshold = 0.2, EFDR = 0.10)\n\n# View results\nhead(as.data.frame(HVG))\nBASiCS_PlotVG(HVG)\n```\n\n### 4. Two-Group Analysis (Differential Expression)\nCompare mean expression and variability between two conditions.\n\n```r\n# Requires two independent chains\nTest <- BASiCS_TestDE(\n  Chain1 = ChainGroup1, Chain2 = ChainGroup2,\n  GroupLabel1 = \"Cond1\", GroupLabel2 = \"Cond2\",\n  EpsilonM = log2(1.5), # Detect 50% change in mean\n  EpsilonD = log2(1.5), # Detect 50% change in over-dispersion\n  Offset = TRUE         # Recommended to adjust for mRNA content\n)\n\n# Plotting results\nBASiCS_PlotDE(Test, Plots = c(\"MA\", \"Volcano\"))\n\n# Extracting data\nde_mean <- as.data.frame(Test, Parameter = \"Mean\")\nde_disp <- as.data.frame(Test, Parameter = \"Disp\")\n```\n\n## Implementation Tips\n\n- **Convergence**: Always check MCMC convergence before downstream analysis. Acceptance rates displayed in the console should be around 0.44.\n- **No-Spikes Mode**: If `WithSpikes = FALSE`, you must provide `BatchInfo` with at least two batches, as BASiCS uses a horizontal integration strategy.\n- **Regression Mode**: Setting `Regression = TRUE` allows the calculation of *residual over-dispersion*, which identifies genes that are more (or less) variable than expected given their mean expression level.\n- **Supervised Only**: BASiCS is designed for known groups (e.g., Case vs. Control). Do not use it for unsupervised clustering or cell-type discovery.\n\n## Reference documentation\n\n- [Introduction to BASiCS](./references/BASiCS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-basics",
+    "description": "BASiCS performs Bayesian hierarchical modeling for normalization, technical noise quantification, and expression analysis of single-cell RNA sequencing data. Use when user asks to identify highly or lowly variable genes, perform differential expression analysis of mean and variability, or quantify technical noise in datasets with or without spike-ins.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BASiCS.html"
+  }
+}

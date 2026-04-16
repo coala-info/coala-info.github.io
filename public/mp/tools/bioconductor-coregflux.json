@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-coregflux",
+  "category": "bioconductor",
+  "name": "bioconductor-coregflux",
+  "description": "Bioconductor-coregflux integrates gene regulatory networks and transcriptomic data into genome-scale metabolic models to predict metabolic fluxes. Use when user asks to predict phenotypes, perform dynamic Flux Balance Analysis, or simulate the metabolic effects of transcription factor knock-outs and over-expressions.",
+  "overview": "CoRegFlux is an R package designed to integrate reverse-engineered gene regulatory networks and transcriptomic data into metabolic models. It uses a linear model to predict gene states based on transcription factor (TF) influence and applies a softplus function to constrain metabolic fluxes. This allows for more accurate phenotype predictions in various conditions, including wild-type and mutant (knock-out/over-expression) strains.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/CoRegFlux.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CoRegFlux"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/CoRegFlux.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-coregflux\n\nname: bioconductor-coregflux\ndescription: Integration of gene regulatory networks (GRN) and gene expression data into genome-scale metabolic models (GEM). Use when performing phenotype predictions, metabolic engineering simulations (TF/gene knock-outs or over-expression), or dynamic Flux Balance Analysis (dFBA) constrained by transcriptional activity.\n\n# bioconductor-coregflux\n\n## Overview\n\nCoRegFlux is an R package designed to integrate reverse-engineered gene regulatory networks and transcriptomic data into metabolic models. It uses a linear model to predict gene states based on transcription factor (TF) influence and applies a softplus function to constrain metabolic fluxes. This allows for more accurate phenotype predictions in various conditions, including wild-type and mutant (knock-out/over-expression) strains.\n\n## Core Workflow\n\n### 1. Data Preparation\nTo use the full suite of tools, you need a metabolic model (sybil `modelOrg`), a gene regulatory network (`coregnet` object), and gene expression data.\n\n```r\nlibrary(CoRegFlux)\nlibrary(sybil)\nlibrary(CoRegNet)\n\n# Load example data\ndata(\"SC_GRN_1\")    # GRN\ndata(\"iMM904\")      # Metabolic model\ndata(\"SC_EXP_DATA\") # Training expression matrix\ndata(\"SC_Test_data\")# Condition-specific expression\ndata(\"aliases_SC\")  # Gene aliases\n```\n\n### 2. Computing TF Influence and Gene States\nCalculate the activity (influence) of regulators and use it to predict the expression state of metabolic genes.\n\n```r\n# Calculate TF influence\ninf_matrix <- CoRegNet::regulatorInfluence(SC_GRN_1, SC_Test_data)\nexp_influence <- inf_matrix[, 1]\n\n# Predict gene states using a linear model\nPredictedGeneState <- predict_linear_model_influence(\n  network = SC_GRN_1,\n  experiment_influence = exp_influence,\n  train_expression = SC_EXP_DATA,\n  model = iMM904,\n  aliases = aliases_SC\n)\n```\n\n### 3. Running Dynamic Simulations (dFBA)\nThe `Simulation` function performs dynamic Flux Balance Analysis, updating fluxes based on metabolite concentrations and regulatory constraints over time.\n\n```r\nmetabolites <- data.frame(\n  \"names\" = c(\"D-Glucose\", \"Ethanol\"),\n  \"concentrations\" = c(16.6, 0)\n)\n\nsim_results <- Simulation(\n  model = iMM904,\n  time = seq(1, 20, by = 1),\n  metabolites = metabolites,\n  initial_biomass = 0.45,\n  aliases = aliases_SC,\n  gene_state_function = function(a, b) { \n    data.frame(\"Name\" = names(PredictedGeneState), \"State\" = unname(PredictedGeneState)) \n  }\n)\n\n# Access results\nsim_results$biomass_history\nsim_results$fluxes_history\n```\n\n### 4. Applying Specific Constraints (KO/OV)\nManually constrain the model for Transcription Factor or Gene Knock-Out (KO) and Over-Expression (OV).\n\n```r\n# TF KO/OV Table\nregulator_table <- data.frame(\n  \"regulator\" = \"MET32\",\n  \"influence\" = -1.2,\n  \"expression\" = 0, # 0 for KO, >1 for OV\n  stringsAsFactors = FALSE\n)\n\n# Update model constraints\nmodel_constrained <- update_fluxes_constraints_influence(\n  model = iMM904,\n  coregnet = SC_GRN_1,\n  regulator_table = regulator_table,\n  aliases = aliases_SC\n)\n\n# Solve using sybil\nsol <- optimizeProb(model_constrained)\n```\n\n### 5. Mapping Growth Rates to Fluxes\nEstimate internal fluxes or flux variability based on observed growth rates and uptake rates.\n\n```r\n# FBA fluxes from growth rate\nfluxes_obs <- get_fba_fluxes_from_observations(iMM904, observed_growth_rate = 0.3)\n\n# FVA intervals from growth rate\nfluxes_intervals <- get_fva_intervals_from_observations(iMM904, observed_growth_rate = 0.3)\n```\n\n## Usage Tips\n\n*   **Constraint Order:** When manually building a model, apply constraints in this order: (1) Uptake rates, (2) Gene expression integration, (3) TF KO/OV, (4) Gene KO/OV.\n*   **Softplus Parameter:** The integration of gene expression into fluxes uses a softplus function. If the predicted growth rate is far from observed values, use `rBayesianOptimization` to calibrate the `gene_parameter` (theta).\n*   **Gene Aliases:** Ensure the `aliases` data frame correctly maps the gene IDs used in the GRN to those used in the metabolic model (GPR rules).\n*   **Sybil Integration:** Since CoRegFlux returns sybil `modelOrg` objects, you can use any sybil function (e.g., `fluxVar`, `doubleGeneDel`) on the constrained models.\n\n## Reference documentation\n\n- [CoRegFlux](./references/coregflux.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-coregflux",
+    "description": "Bioconductor-coregflux integrates gene regulatory networks and transcriptomic data into genome-scale metabolic models to predict metabolic fluxes. Use when user asks to predict phenotypes, perform dynamic Flux Balance Analysis, or simulate the metabolic effects of transcription factor knock-outs and over-expressions.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/CoRegFlux.html"
+  }
+}

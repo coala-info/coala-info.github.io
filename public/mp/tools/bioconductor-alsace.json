@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-alsace",
+  "category": "bioconductor",
+  "name": "bioconductor-alsace",
+  "description": "This tool analyzes HPLC-DAD data using Multivariate Curve Resolution and Alternating Least Squares to decompose complex chemical mixtures into pure components. Use when user asks to perform baseline correction, smooth spectral data, align peaks across samples, or generate peak tables for metabolomics.",
+  "overview": "The `alsace` package provides a high-throughput framework for Multivariate Curve Resolution (MCR) using Alternating Least Squares (ALS). It is specifically designed for HPLC-DAD (High-Performance Liquid Chromatography with Photo-Diode Array detection) data. It decomposes a data matrix $X$ into concentration profiles $C$ and pure spectra $S$ ($X = CS^T + E$).",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/alsace.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alsace/overview",
+  "github": "https://github.com/rwehrens/alsace",
+  "conda_downloads": "20.4K",
+  "conda_downloads_num": 20400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "alsace"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/alsace.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alsace/overview",
+    "github": "https://github.com/rwehrens/alsace",
+    "conda_downloads": "20.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-alsace\n\nname: bioconductor-alsace\ndescription: Analysis of HPLC-DAD data using Multivariate Curve Resolution (MCR) and Alternating Least Squares (ALS). Use this skill to decompose complex chemical mixtures into pure components, perform baseline correction, smooth spectral data, align peaks across samples, and generate peak tables for metabolomics.\n\n## Overview\n\nThe `alsace` package provides a high-throughput framework for Multivariate Curve Resolution (MCR) using Alternating Least Squares (ALS). It is specifically designed for HPLC-DAD (High-Performance Liquid Chromatography with Photo-Diode Array detection) data. It decomposes a data matrix $X$ into concentration profiles $C$ and pure spectra $S$ ($X = CS^T + E$).\n\n## Typical Workflow\n\n### 1. Data Preparation\nData should be organized as a list of matrices where rows represent time points (retention time) and columns represent wavelengths.\n\n```R\n# Load data (example using csv files)\nallf <- list.files(\"data_dir\", pattern = \"csv\", full.names = TRUE)\nmydata <- lapply(allf, read.csv)\n\n# Preprocess: smoothing, baseline subtraction, and interpolation\n# dim2 specifies the target wavelengths\nnew.lambdas <- seq(260, 500, by = 2)\ntea <- lapply(mydata, preprocess, dim2 = new.lambdas)\n```\n\n### 2. Initializing Components\nBefore running ALS, you must estimate the number of components and provide initial guesses for the spectra using Orthogonal Projection Approach (OPA).\n\n```R\n# Estimate 4 components using OPA\ntea.opa <- opa(tea, 4)\n\n# Plot initial spectra guesses\nmatplot(new.lambdas, tea.opa, type = \"l\")\n```\n\n### 3. Running ALS\nThe `doALS` function is a wrapper that enforces non-negativity and normalizes spectra to unit length.\n\n```R\n# Run the ALS algorithm\ntea.als <- doALS(tea, tea.opa)\n\n# Check model fit\nsummary(tea.als)\n\n# Visualize results (spectra and concentration profiles)\nplot(tea.als)\n```\n\n### 4. Model Refinement\nEvaluate if components are redundant or too small.\n\n- `smallComps(tea.als, Ithresh = 10)`: Identifies components that never reach a specific intensity.\n- `removeComps(tea.als, toRemove)`: Removes specific components and refits the model.\n- `combineComps(tea.als, list(c(1, 2)))`: Merges highly correlated components.\n\n### 5. Peak Table Generation\nConvert the resolved concentration profiles into a structured peak table.\n\n```R\n# 1. Identify peaks in concentration profiles\npks <- getAllPeaks(tea.als$CList, span = 5)\n\n# 2. Align peaks across samples using Parametric Time Warping (PTW)\nwarping.models <- correctRT(tea.als$CList, reference = 1, what = \"models\")\npks.corrected <- correctPeaks(pks, warping.models)\n\n# 3. Group peaks and create final table\npkTab <- getPeakTable(pks.corrected, response = \"height\")\n```\n\n## Advanced Features\n\n### Divide-and-Conquer for Large Data\nFor large datasets, split the time axis into windows to save memory and improve speed.\n\n```R\n# Split into windows with overlap\ntea.split <- splitTimeWindow(tea, c(12, 14), overlap = 10)\n\n# Run ALS on each window (can use mclapply for parallelization)\ntea.alslist <- lapply(tea.split, function(Xl) {\n  Xl.opa <- opa(Xl, 4)\n  doALS(Xl, Xl.opa)\n})\n\n# Merge windows back together\ntea.merged <- mergeTimeWindows(tea.alslist)\n```\n\n### Visualization of Residuals\nUse `showALSresult` to inspect the quality of the fit across multiple samples.\n\n```R\nshowALSresult(tea.als, tea.als$resid, mat.idx = 1:2)\n```\n\n## Reference documentation\n- [alsace](./references/alsace.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-alsace",
+    "description": "This tool analyzes HPLC-DAD data using Multivariate Curve Resolution and Alternating Least Squares to decompose complex chemical mixtures into pure components. Use when user asks to perform baseline correction, smooth spectral data, align peaks across samples, or generate peak tables for metabolomics.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/alsace.html"
+  }
+}

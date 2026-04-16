@@ -1,0 +1,45 @@
+{
+  "id": "qfilt",
+  "category": "CLI",
+  "name": "qfilt",
+  "description": "qfilt compresses the KV cache using a training-free geometric projection to improve efficiency during long-context text generation and retrieval. Use when user asks to compress KV caches, reduce memory usage during inference, or pre-compute filters for efficient attention approximation.",
+  "overview": "Q-Filters is a training-free KV cache compression method that leverages the geometric relationship between Query (Q) and Key (K) vectors to identify and retain only the most critical information for generation. By using a context-agnostic projection, it approximates attention scores without needing to compute full attention maps. This makes the tool uniquely compatible with FlashAttention and highly efficient for long-context retrieval and text generation. It serves as a superior alternative to ",
+  "homepage": "Not found",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/qfilt/overview",
+  "github": "N/A",
+  "conda_downloads": "8.0K",
+  "conda_downloads_num": 8000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "qfilt"
+    ],
+    "description": "filter sequencing data using some simple heuristics",
+    "docker_image": "quay.io/biocontainers/qfilt:0.0.1--h9948957_7",
+    "homepage": "Not found",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/qfilt/overview",
+    "github": "N/A",
+    "conda_downloads": "8.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "qfilt.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# qfilt\n\n## Overview\n\nQ-Filters is a training-free KV cache compression method that leverages the geometric relationship between Query (Q) and Key (K) vectors to identify and retain only the most critical information for generation. By using a context-agnostic projection, it approximates attention scores without needing to compute full attention maps. This makes the tool uniquely compatible with FlashAttention and highly efficient for long-context retrieval and text generation. It serves as a superior alternative to Streaming-LLM for generation quality and is competitive with SnapKV for retrieval tasks.\n\n## Environment Setup\n\nBefore running Q-Filters, ensure the environment is configured for Hugging Face access:\n\n```bash\nexport HF_HOME=<path_to_cache>\nexport HF_TOKEN=<your_token>\n```\n\n## Pre-computing Filters\n\nIf a model does not have pre-computed filters, use `make_filters.py` to generate them. This process uses Singular Value Decomposition (SVD) on a calibration dataset.\n\n### Common CLI Pattern\n```bash\npython make_filters.py \\\n  --model_name deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \\\n  --model_cls Qwen2ForCausalLM \\\n  --max_seq_len 2048 \\\n  --num_sequences 10 \\\n  --num_svd_samples 3000 \\\n  --dataset_name PatrickHaller/fineweb-1B \\\n  --save_mode disk \\\n  --save_dir ./filters\n```\n\n### Parameter Best Practices\n- **--model_cls**: Ensure the exact Transformers class name is provided (e.g., `LlamaForCausalLM`, `Qwen2ForCausalLM`).\n- **--num_svd_samples**: Higher values (e.g., 3000+) improve filter quality but increase computation time.\n- **--save_mode**: Use `disk` for local testing or `hub` to push directly to a Hugging Face repository.\n\n## Integration with Hugging Face\n\nTo use Q-Filters during inference, replace the standard cache with `QFiltersCache`.\n\n### Implementation Pattern\n```python\nfrom src.hf_cache import QFiltersCache\n\n# Initialize the specialized cache\npast_key_values = QFiltersCache(\n    window_length=64, \n    max_length=128, \n    model_name=\"your-model-name\"\n)\n\n# Pass to the generate method\nout = model.generate(\n    **inputs,\n    past_key_values=past_key_values,\n    max_new_tokens=4096\n)\n```\n\n### Key Configuration Parameters\n- **window_length**: The number of recent tokens to keep in the local \"sliding window\" (uncompressed).\n- **max_length**: The total maximum size of the KV cache after compression.\n\n## Expert Tips\n- **FlashAttention Compatibility**: Unlike many pruning methods, Q-Filters does not require attention weights. You can keep FlashAttention enabled for maximum throughput.\n- **Compression Levels**: Q-Filters can achieve up to 32x compression while maintaining ~99% accuracy on needle-in-a-haystack benchmarks.\n- **Uploading Filters**: If you save filters to disk, you can upload them later using the CLI:\n  `huggingface-cli upload <repo_id> ./local_path`\n\n## Reference documentation\n- [Q-Filters Main Repository](./references/github_com_Nathan_Godey_qfilters.md)",
+  "skill_front_matter": {
+    "name": "qfilt",
+    "description": "qfilt compresses the KV cache using a training-free geometric projection to improve efficiency during long-context text generation and retrieval. Use when user asks to compress KV caches, reduce memory usage during inference, or pre-compute filters for efficient attention approximation.",
+    "homepage": "https://github.com/NathanGodey/qfilters"
+  }
+}

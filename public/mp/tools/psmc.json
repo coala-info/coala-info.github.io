@@ -1,0 +1,45 @@
+{
+  "id": "psmc",
+  "category": "CLI",
+  "name": "psmc",
+  "description": "PSMC reconstructs historical population size fluctuations by analyzing the density of heterozygous sites in a diploid genome. Use when user asks to estimate effective population size history, model demographic changes from a single genome, or perform Markovian coalescent inference.",
+  "overview": "The PSMC skill enables the reconstruction of a population's demographic history by analyzing the density of heterozygous sites across a diploid genome. By modeling the local time to the most recent common ancestor (TMRCA), the tool estimates how the effective population size has fluctuated over hundreds of thousands of years. The workflow typically involves converting a diploid consensus sequence into a binned format, running the Markovian coalescent inference, and scaling the results using spec",
+  "homepage": "https://github.com/lh3/psmc",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/psmc/overview",
+  "github": "https://github.com/lh3/psmc",
+  "conda_downloads": "4.5K",
+  "conda_downloads_num": 4500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "psmc"
+    ],
+    "description": "Pairwise SMC Model for estimating population size history",
+    "docker_image": "quay.io/biocontainers/psmc:0.6.5--h5ca1c30_4",
+    "homepage": "https://github.com/lh3/psmc",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/psmc/overview",
+    "github": "https://github.com/lh3/psmc",
+    "conda_downloads": "4.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "psmc.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# psmc\n\n## Overview\nThe PSMC skill enables the reconstruction of a population's demographic history by analyzing the density of heterozygous sites across a diploid genome. By modeling the local time to the most recent common ancestor (TMRCA), the tool estimates how the effective population size has fluctuated over hundreds of thousands of years. The workflow typically involves converting a diploid consensus sequence into a binned format, running the Markovian coalescent inference, and scaling the results using specific mutation rates and generation times.\n\n## Core Workflow\n\n### 1. Input Preparation\nPSMC requires a diploid consensus sequence in FASTQ format. This is typically generated from BAM files using `samtools` and `bcftools`.\n```bash\n# Example of generating the required diploid consensus\nsamtools mpileup -C50 -uf ref.fa aln.bam | bcftools view -c - | vcfutils.pl vcf2fq -d 10 -D 100 | gzip > diploid.fq.gz\n```\n*Note: Set `-d` (minimum depth) to ~1/3 of average depth and `-D` (maximum depth) to ~2x average depth.*\n\n### 2. Format Conversion\nTransform the FASTQ sequence into the `.psmcfa` format, which bins the genome (default bin size = 100bp).\n```bash\nutils/fq2psmcfa -q20 diploid.fq.gz > diploid.psmcfa\n```\n\n### 3. Population Size Inference\nRun the main `psmc` program. The `-p` option is critical as it defines the distribution of free parameters across atomic time intervals.\n```bash\npsmc -N25 -t15 -r5 -p \"4+25*2+4+6\" -o diploid.psmc diploid.psmcfa\n```\n*   `-p`: Pattern of parameters (e.g., `\"4+25*2+4+6\"` means 64 atomic intervals grouped into 28 parameters).\n*   `-N`: Maximum number of iterations (default 25).\n*   `-t`: Initial value of $\\theta/\\rho$ (default 15).\n\n### 4. Visualization and Scaling\nConvert the raw output into a readable history or plot.\n```bash\n# Generate plot (requires Perl and Gnuplot)\nutils/psmc_plot.pl -u 2.5e-8 -g 25 output_prefix diploid.psmc\n```\n*   `-u`: Mutation rate per site per generation.\n*   `-g`: Generation time in years.\n\n## Expert Tips and Best Practices\n\n### Parameter Tuning (`-p`)\nThe pattern provided to `-p` should be chosen so that at least ~10 recombinations occur within each parameter interval after 20 iterations. Using too many parameters on a small dataset or low-heterozygosity genome can lead to overfitting (jagged plots).\n\n### Bootstrapping for Confidence Intervals\nTo assess the reliability of the $N_e$ estimates, perform bootstrapping by splitting the genome into segments:\n1.  Split the input: `utils/splitfa diploid.psmcfa > split.psmcfa`\n2.  Run multiple psmc instances with the `-b` flag.\n3.  Combine results: `cat diploid.psmc round-*.psmc > combined.psmc`\n4.  Plot: `utils/psmc_plot.pl combined combined.psmc`\n\n### Handling Low Coverage\nLow sequencing depth leads to the random loss of heterozygotes (False Negatives). This causes an artificial drop in inferred population size in recent time.\n*   If the False Negative Rate (FNR) is known, use the `-M` flag in `psmc_plot.pl` to correct the visualization.\n*   Example: `psmc_plot.pl -M \"sample1=0.1\" prefix sample1.psmc` (corrects for 10% missed hets).\n\n### Scaling Math\nIf plotting manually, remember the output is scaled to $2N_0$:\n*   $N_0 = \\theta_0 / (4\\mu s)$ (where $s$ is bin size, usually 100).\n*   $T_k = 2N_0 \\times t_k$ (Time in generations).\n*   $N_k = N_0 \\times \\lambda_k$ (Effective population size).\n\n## Reference documentation\n- [GitHub Repository for PSMC](./references/github_com_lh3_psmc.md)\n- [Bioconda PSMC Package Overview](./references/anaconda_org_channels_bioconda_packages_psmc_overview.md)",
+  "skill_front_matter": {
+    "name": "psmc",
+    "description": "PSMC reconstructs historical population size fluctuations by analyzing the density of heterozygous sites in a diploid genome. Use when user asks to estimate effective population size history, model demographic changes from a single genome, or perform Markovian coalescent inference.",
+    "homepage": "https://github.com/lh3/psmc"
+  }
+}

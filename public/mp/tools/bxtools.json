@@ -1,0 +1,56 @@
+{
+  "id": "bxtools",
+  "category": "CLI",
+  "name": "bxtools",
+  "description": "bxtools is a suite of command-line utilities designed for low-level, barcode-aware operations on 10X Genomics sequencing data. Use when user asks to split BAM files by barcode, generate barcode-level statistics, calculate tiled genome coverage, identify molecular footprints, or relabel reads with barcode metadata.",
+  "overview": "bxtools is a specialized suite of lightweight command-line utilities designed for low-level operations on 10X Genomics sequencing data. While standard bioinformatics tools often ignore the metadata stored in BAM tags, bxtools treats the `BX` (barcode) and `MI` (molecular identifier) tags as primary attributes. This allows researchers to perform barcode-aware splitting, statistical analysis, and molecular footprinting that is otherwise difficult with general-purpose tools like samtools.",
+  "homepage": "https://github.com/walaj/bxtools",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bxtools/overview",
+  "github": "https://github.com/walaj/bxtools",
+  "conda_downloads": "12.2K",
+  "conda_downloads_num": 12200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bxtools_split",
+      "bxtools_stats",
+      "bxtools_tile",
+      "bxtools_group",
+      "bxtools_relabel",
+      "bxtools_mol",
+      "bxtools_convert"
+    ],
+    "description": "Split / count a BAM into multiple BAMs, one BAM per unique BX tag",
+    "docker_image": "quay.io/biocontainers/bxtools:0.1.0--h13024bc_6",
+    "homepage": "https://github.com/walaj/bxtools",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bxtools/overview",
+    "github": "https://github.com/walaj/bxtools",
+    "conda_downloads": "12.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bxtools_convert.cwl",
+    "bxtools_mol.cwl",
+    "bxtools_relabel.cwl",
+    "bxtools_split.cwl",
+    "bxtools_stats.cwl",
+    "bxtools_tile.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bxtools\n\n## Overview\n\nbxtools is a specialized suite of lightweight command-line utilities designed for low-level operations on 10X Genomics sequencing data. While standard bioinformatics tools often ignore the metadata stored in BAM tags, bxtools treats the `BX` (barcode) and `MI` (molecular identifier) tags as primary attributes. This allows researchers to perform barcode-aware splitting, statistical analysis, and molecular footprinting that is otherwise difficult with general-purpose tools like samtools.\n\n## Core Components and Usage\n\n### 1. Splitting BAMs by Barcode\nThe `split` command is used to partition a large BAM file into smaller files based on the `BX` tag.\n\n*   **Generate Barcode Counts:** Use the `-x` flag to simply count occurrences of each barcode.\n    ```bash\n    bxtools split input.bam -x | sort -n -k 2,2 > counts.tsv\n    ```\n*   **Physical Splitting:** Split a BAM into individual files (e.g., `prefix.<bx>.bam`), ignoring barcodes with fewer than 10 reads.\n    ```bash\n    bxtools split input.bam -a prefix -m 10\n    ```\n\n### 2. Barcode-Level Statistics\nThe `stats` command summarizes data at the barcode level. Output columns include: BX, read count, median insert size, median mapq, and median alignment score (AS).\n\n*   **Standard Stats:**\n    ```bash\n    bxtools stats input.bam > stats.tsv\n    ```\n*   **Summarize by MI Tag:** Use the `-t` flag to group statistics by a different tag, such as the Molecular Identifier.\n    ```bash\n    bxtools stats -t MI input.bam\n    ```\n\n### 3. Tiled Genome Coverage\nThe `tile` command calculates barcode-level read counts across a tiled genome (default is 1kb tiles).\n\n*   **Genome-wide Tiling:**\n    ```bash\n    bxtools tile input.bam > counts.bed\n    ```\n*   **Custom Window Size:** Use `-w` to adjust the tile size (e.g., 2kb).\n    ```bash\n    samtools view -h input.bam | bxtools tile - -w 2000 > bxcov.bed\n    ```\n\n### 4. Molecular Footprinting\nThe `mol` command identifies the minimum molecular footprint on the genome for each `MI` tag. It defines the footprint from the minimum start to the maximum end position of all reads sharing an `MI`.\n\n*   **Generate Footprints:**\n    ```bash\n    bxtools mol input.bam > mol_footprint.bed\n    ```\n    *Note: This command will throw an error if it detects the same MI tag on multiple chromosomes.*\n\n### 5. Barcode Relabeling\nThe `relabel` command moves the barcode from the `BX` tag directly into the read name (QNAME). This is useful for downstream tools that do not support BAM tags but can parse read names.\n\n*   **Relabel Reads:**\n    ```bash\n    bxtools relabel input.bam > relabeled.bam\n    ```\n\n### 6. Sorting by Barcode (The Convert Hack)\nStandard BAM files are sorted by coordinate or query name. The `convert` command swaps the alignment chromosome with the `BX` tag, allowing you to sort and index the BAM by barcode.\n\n*   **Workflow for Barcode Lookup:**\n    ```bash\n    # Convert and sort\n    bxtools convert input.bam | samtools sort - -o bx_sorted.bam\n    samtools index bx_sorted.bam\n\n    # Rapidly view all reads for a specific barcode\n    samtools view bx_sorted.bam AGTCCAAGTCGGAAGT_1\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Piping with Samtools:** bxtools supports `stdin` (using `-`) for most commands. Always use `samtools view -h` when piping to ensure the header is preserved for bxtools to process.\n*   **Filtering Noise:** Before running heavy operations like `tile`, filter out low-frequency \"bad\" tags to reduce noise and processing time.\n    ```bash\n    # Identify tags with < 100 reads\n    bxtools split input.bam -x | awk '$2 < 100' | cut -f1 > excluded_list.txt\n    # Filter and tile\n    samtools view -h input.bam | grep -v -F -f excluded_list.txt | bxtools tile - > filtered_cov.bed\n    ```\n*   **Memory Management:** Commands like `convert` require two passes over the data and cannot be streamed from `stdin`. Ensure you have sufficient disk space for the intermediate files.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bxtools convert | Convert a BAM to a BX sorted BAM by switching BX and chromosome |\n| bxtools mol | Return span of molecules from 10X data (using MI tag) |\n| bxtools relabel | Move BX barcodes from BX tag to qname |\n| bxtools split | Split / count a BAM into multiple BAMs, one BAM per unique BX tag |\n| bxtools stat | Gather BX-level statistics |\n| bxtools tile | Gather BX counts on tiled ranges |\n\n## Reference documentation\n- [bxtools README](./references/github_com_walaj_bxtools_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "bxtools",
+    "description": "bxtools is a suite of command-line utilities designed for low-level, barcode-aware operations on 10X Genomics sequencing data. Use when user asks to split BAM files by barcode, generate barcode-level statistics, calculate tiled genome coverage, identify molecular footprints, or relabel reads with barcode metadata.",
+    "homepage": "https://github.com/walaj/bxtools"
+  }
+}

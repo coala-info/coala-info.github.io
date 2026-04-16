@@ -1,0 +1,43 @@
+{
+  "id": "ampliconnoise",
+  "category": "library",
+  "name": "ampliconnoise",
+  "description": "\"Ampliconnoise denoises high-throughput amplicon sequencing data from the 454 platform to remove sequencing artifacts. Use when user asks to split multiplexed SFF files, denoise flowgrams using PyroNoise, truncate sequences, or denoise sequences using SeqNoise.\"",
+  "overview": "The `ampliconnoise` skill facilitates the denoising of high-throughput amplicon sequencing data, specifically targeting the 454 platform. It provides a Python-based wrapper for the original AmpliconNoise C code, allowing for a streamlined workflow that transforms raw flowgram data (.sff) into error-corrected sequences. This process is critical for microbial community analysis to ensure that sequencing artifacts are not misinterpreted as biological diversity.",
+  "homepage": "https://github.com/fhcrc/ampliconnoise",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ampliconnoise/overview",
+  "github": "https://github.com/fhcrc/ampliconnoise",
+  "conda_downloads": "N/A",
+  "conda_downloads_num": 0,
+  "last_updated": "N/A",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ampliconnoise"
+    ],
+    "description": "FAIL to generate CWL: ampliconnoise not found in Singularity image. The image may not provide this executable.",
+    "docker_image": "biocontainers/ampliconnoise:v1.29-8-deb_cv1",
+    "homepage": "https://github.com/fhcrc/ampliconnoise",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ampliconnoise/overview",
+    "github": "https://github.com/fhcrc/ampliconnoise",
+    "conda_downloads": "N/A",
+    "last_updated": "N/A",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ampliconnoise\n\n## Overview\n\nThe `ampliconnoise` skill facilitates the denoising of high-throughput amplicon sequencing data, specifically targeting the 454 platform. It provides a Python-based wrapper for the original AmpliconNoise C code, allowing for a streamlined workflow that transforms raw flowgram data (.sff) into error-corrected sequences. This process is critical for microbial community analysis to ensure that sequencing artifacts are not misinterpreted as biological diversity.\n\n## Core Workflow and CLI Patterns\n\nThe standard pipeline involves splitting a multiplexed SFF file, denoising flowgrams, truncating sequences, and finally denoising the sequences themselves.\n\n### 1. Splitting Multiplexed SFF Files\nUse `anoise split` to separate a master SFF file into individual samples based on barcodes and primers.\n\n**Command:**\n`anoise split <barcode_map.csv> <input.sff>`\n\n**Barcode Map Format:**\nThe mapping file must be a comma-delimited CSV with the following structure:\n`output_path_prefix,barcode,primer`\n\n*Example record:* `sample1/sample1,ATAG,TAAATGGCAGTCTAGCAGAARAAG`\n\n### 2. Denoising Flowgrams (PyroNoise)\n`PyroNoise` cleans the raw flowgram data. This step is computationally intensive and benefits from parallelization via MPI.\n\n**Command:**\n```bash\nanoise pyronoise \\\n  --mpi-args \"-np <procs>\" \\\n  --temp-dir <path_to_tmp> \\\n  <sample>.sff\n```\n\n*   **--mpi-args**: Pass MPI parameters (e.g., `-np 12` for 12 processors).\n*   **--temp-dir**: Specify a directory for intermediate files. If using multiple nodes, ensure this path is accessible to all nodes.\n\n### 3. Sequence Truncation\nAfter PyroNoise, sequences should be truncated to a consistent length (e.g., 400bp) before further processing.\n\n**Command:**\n`anoise truncate \"{barcode}\" 400 < <input_pnoise_cd>.fa > <output_trunc>.fa`\n\n### 4. Denoising Sequences (SeqNoise)\nThe final step clusters sequences to remove remaining errors.\n\n**Command:**\n```bash\nanoise seqnoise \\\n  --mpi-args \"-np <procs>\" \\\n  --stub <sample_name> \\\n  --temp-dir <path_to_tmp> \\\n  <input_trunc>.fa \\\n  <mapping_file>\n```\n\n*   **--stub**: The prefix used for output files.\n*   **mapping_file**: The `.mapping` file generated during the PyroNoise step.\n\n## Expert Tips and Best Practices\n\n*   **MPI Configuration**: Always use the `--mpi-args` flag for `pyronoise` and `seqnoise` to significantly reduce processing time.\n*   **Temporary Storage**: For large datasets, the temporary directory can grow significantly. Use a high-performance scratch disk and ensure the `--temp-dir` is explicitly set if the default `/tmp` has space limitations.\n*   **Degenerate Primers**: When defining the barcode map for the `split` command, specify degenerate primers using standard IUPAC codes; the tool handles these appropriately.\n*   **Input Requirements**: Ensure BioPython is installed, as it is a primary dependency for the Python front end.\n\n## Reference documentation\n- [AmpliconNoise GitHub Repository](./references/github_com_fhcrc_ampliconnoise.md)",
+  "skill_front_matter": {
+    "name": "ampliconnoise",
+    "description": "Ampliconnoise denoises high-throughput amplicon sequencing data from the 454 platform to remove sequencing artifacts. Use when user asks to split multiplexed SFF files, denoise flowgrams using PyroNoise, truncate sequences, or denoise sequences using SeqNoise.",
+    "homepage": "https://github.com/fhcrc/ampliconnoise"
+  }
+}

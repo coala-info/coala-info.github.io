@@ -1,0 +1,43 @@
+{
+  "id": "lofreq",
+  "category": "library",
+  "name": "lofreq",
+  "description": "LoFreq is a sequence-quality aware variant caller designed to identify low-frequency mutations in heterogeneous samples with high sensitivity. Use when user asks to call SNVs or indels, perform somatic variant calling on tumor-normal pairs, or add indel qualities to BAM files.",
+  "overview": "LoFreq is a sequence-quality aware variant caller designed to identify low-frequency mutations with high sensitivity and rigorous false-positive control. Unlike many callers that use hard thresholds, LoFreq incorporates base-call qualities, mapping uncertainty, and alignment probabilities into its mathematical model. It is particularly effective for heterogeneous samples like viral quasispecies or clinical somatic samples where variants may exist far below the standard 5% allele frequency thresh",
+  "homepage": "http://csb5.github.io/lofreq/",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/lofreq/overview",
+  "github": "N/A",
+  "conda_downloads": "93.2K",
+  "conda_downloads_num": 93200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lofreq"
+    ],
+    "description": "Could not get help from Docker for: lofreq",
+    "docker_image": "quay.io/biocontainers/lofreq:2.1.5--py311h223056d_13",
+    "homepage": "http://csb5.github.io/lofreq/",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/lofreq/overview",
+    "github": "N/A",
+    "conda_downloads": "93.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# lofreq\n\n## Overview\nLoFreq is a sequence-quality aware variant caller designed to identify low-frequency mutations with high sensitivity and rigorous false-positive control. Unlike many callers that use hard thresholds, LoFreq incorporates base-call qualities, mapping uncertainty, and alignment probabilities into its mathematical model. It is particularly effective for heterogeneous samples like viral quasispecies or clinical somatic samples where variants may exist far below the standard 5% allele frequency threshold.\n\n## Core Workflows\n\n### Basic SNV Calling\nTo call SNVs from a single BAM file against a reference genome:\n```bash\nlofreq call -f ref.fa -o vars.vcf aln.bam\n```\n\n### Calling Indels\nIndel calling requires indel qualities (BI/BD tags) in the BAM file. If these were not added during GATK BQSR, you must add them first:\n```bash\n# 1. Add indel qualities (use --dindel for Illumina data)\nlofreq indelqual --dindel -f ref.fa -o aln_with_indelquals.bam aln.bam\n# 2. Index the new BAM\nsamtools index aln_with_indelquals.bam\n# 3. Call SNVs and Indels\nlofreq call --call-indels -f ref.fa -o vars.vcf aln_with_indelquals.bam\n```\n\n### Parallel Execution\nFor large genomes (e.g., Human), always use the parallel wrapper to utilize multiple CPU cores:\n```bash\nlofreq call-parallel --pp-threads 8 -f ref.fa -o vars.vcf aln.bam\n```\n\n### Somatic Variant Calling\nFor matched tumor-normal pairs, use the somatic subcommand. This automatically enables source quality filtering.\n```bash\nlofreq somatic -n normal.bam -t tumor.bam -f ref.fa --threads 8 -o output_prefix_\n```\n*Note: Providing a dbSNP file (`-d dbsnp.vcf.gz`) is highly recommended for human samples to filter germline variants.*\n\n## Expert Tips and Best Practices\n\n### Preprocessing Requirements\n*   **GATK Best Practices**: It is highly recommended to mark duplicates, realign indels, and perform Base Quality Score Recalibration (BQSR) before running LoFreq.\n*   **High Coverage Warning**: Do NOT use `MarkDuplicates` on extremely high-coverage data (e.g., >1000x amplicon sequencing), as it will incorrectly flag unique reads as duplicates.\n*   **Targeted Sequencing**: If using Exome or targeted panels, always provide the BED file using `-l regions.bed`. This prevents the Bonferroni correction from being overly conservative, which would otherwise hide true variants.\n\n### Handling Specific Data Types\n*   **Amplicons/PCR**: PCR artifacts often appear as low-frequency variants. To mitigate this, use a BED file to exclude primer regions and consider a higher frequency cutoff if artifacts are suspected.\n*   **Non-Illumina Data**: For IonTorrent or PacBio, use `lofreq indelqual --uniform <rate>` to add uniform indel qualities if specific error models are unavailable.\n*   **Mapping Quality Issues**: If using mappers like Bowtie or BWA-SW that assign low or ambiguous mapping qualities, consider disabling mapping quality integration with `-N` to maintain sensitivity.\n\n### Troubleshooting \"Missing\" Variants\nIf a variant is visible in a pileup but not called:\n1.  Check for **Strand Bias**: LoFreq filters variants with significant strand bias by default.\n2.  Check **Alignment Quality**: High uncertainty in the local alignment (Viterbi) may downgrade the variant quality.\n3.  **Permissive Run**: To diagnose, run with relaxed filters:\n    ```bash\n    lofreq call --no-default-filter -A -B -a 1 -b 1 -r region -f ref.fa aln.bam\n    ```\n\n## Reference documentation\n- [LoFreq Commands](./references/csb5_github_io_lofreq_commands.md)\n- [LoFreq FAQ](./references/csb5_github_io_lofreq_faq.md)\n- [LoFreq Blog (Version Updates)](./references/csb5_github_io_lofreq_blog.md)",
+  "skill_front_matter": {
+    "name": "lofreq",
+    "description": "LoFreq is a sequence-quality aware variant caller designed to identify low-frequency mutations in heterogeneous samples with high sensitivity. Use when user asks to call SNVs or indels, perform somatic variant calling on tumor-normal pairs, or add indel qualities to BAM files.",
+    "homepage": "http://csb5.github.io/lofreq/"
+  }
+}

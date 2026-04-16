@@ -1,0 +1,45 @@
+{
+  "id": "samblaster",
+  "category": "CLI",
+  "name": "samblaster",
+  "description": "\"samblaster marks duplicate reads and extracts discordant or split read pairs from read-id grouped SAM files. Use when user asks to mark duplicates, extract discordant read pairs, or isolate split-read mappings for structural variant analysis.\"",
+  "overview": "samblaster is a high-performance tool designed for bioinformatics pipelines to handle duplicate marking and read extraction in a single pass. It operates on read-id grouped SAM files, making it ideal for streaming data directly from aligners. Beyond marking duplicates, it is a standard tool for preparing data for structural variant callers by isolating discordant and split reads.",
+  "homepage": "https://github.com/GregoryFaust/samblaster",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/samblaster/overview",
+  "github": "https://github.com/GregoryFaust/samblaster",
+  "conda_downloads": "223.8K",
+  "conda_downloads_num": 223800,
+  "last_updated": "2025-08-19",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "samblaster"
+    ],
+    "description": "Tool to mark duplicates and optionally output split reads and/or discordant pairs.",
+    "docker_image": "quay.io/biocontainers/samblaster:0.1.26--h9948957_7",
+    "homepage": "https://github.com/GregoryFaust/samblaster",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/samblaster/overview",
+    "github": "https://github.com/GregoryFaust/samblaster",
+    "conda_downloads": "223.8K",
+    "last_updated": "2025-08-19",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "samblaster.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# samblaster\n\n## Overview\nsamblaster is a high-performance tool designed for bioinformatics pipelines to handle duplicate marking and read extraction in a single pass. It operates on read-id grouped SAM files, making it ideal for streaming data directly from aligners. Beyond marking duplicates, it is a standard tool for preparing data for structural variant callers by isolating discordant and split reads.\n\n## Common CLI Patterns\n\n### Standard Duplicate Marking in a Pipeline\nThe most efficient way to use samblaster is by piping output directly from an aligner like `bwa mem`.\n```bash\nbwa mem <index> read1.fq read2.fq | samblaster | samtools view -Sb - > output.bam\n```\n\n### Structural Variant (SV) Read Extraction\nTo extract discordant pairs and split reads into separate files while marking duplicates in the main stream:\n```bash\nbwa mem <index> r1.fq r2.fq | samblaster -e -d discordant.sam -s splitters.sam | samtools view -Sb - > output.bam\n```\n*   `-d`: Output discordant read pairs (pairs where the mapping distance or orientation is unexpected).\n*   `-s`: Output split-read mappings (chimeric reads).\n*   `-e`: Exclude reads marked as duplicates from the discordant and splitter files.\n\n### Compatibility with BWA MEM -M\nIf using the `-M` flag in `bwa mem` (to mark shorter split hits as secondary for Picard compatibility), you must also use the `-M` flag in samblaster.\n```bash\nbwa mem -M <index> r1.fq r2.fq | samblaster -M | samtools view -Sb - > output.bam\n```\n\n### Processing Existing BAM Files\nTo pull SV reads from a BAM file that already has duplicate marks:\n```bash\nsamtools view -h input.bam | samblaster -a -e -d disc.sam -s split.sam -o /dev/null\n```\n*   `-a`: Accept existing duplicate marks (0x400 flag) instead of re-calculating.\n*   `-o /dev/null`: Discard the main SAM stream if only the extracted files are needed.\n\n### Handling Long Reads or Singletons\nFor singleton long reads (e.g., ONT or PacBio) where you want to extract split or unmapped reads:\n```bash\nsamtools view -h input.bam | samblaster --ignoreUnmated --maxReadLength 100000 -s split.sam -u unmapped.fastq | samtools view -Sb - > output.bam\n```\n*   `--ignoreUnmated`: Suppresses errors when the tool encounters reads without a pair.\n*   `--maxReadLength`: Increases the buffer for long-read sequences (default is 500).\n\n## Expert Tips and Best Practices\n\n*   **Input Requirements**: samblaster requires the input SAM file to be **read-id grouped** (all alignments for a specific QNAME must be adjacent). Aligners naturally produce this order. If your file is coordinate-sorted, you must sort it by name (`samtools sort -n`) before using samblaster.\n*   **Memory Management**: samblaster is memory-efficient, requiring approximately 20MB of RAM per 1 million read pairs.\n*   **Duplicate Removal**: By default, samblaster marks duplicates with the 0x400 flag. To completely remove them from the output stream, use the `--removeDups` option.\n*   **Adding Mate Tags**: Use `--addMateTags` to add `MC` (mate CIGAR) and `MQ` (mate mapping quality) tags to paired-end SAM lines, which is helpful for downstream tools that require mate information without looking up the mate record.\n*   **Unmapped/Clipped Reads**: The `-u` (or `--unmappedFile`) option can output unmapped or heavily clipped reads into a FASTQ file, which is useful for re-aligning \"difficult\" reads to a different reference or using them in de novo assembly of insertion sequences.\n\n## Reference documentation\n- [samblaster GitHub Repository](./references/github_com_GregoryFaust_samblaster.md)\n- [samblaster Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_samblaster_overview.md)",
+  "skill_front_matter": {
+    "name": "samblaster",
+    "description": "samblaster marks duplicate reads and extracts discordant or split read pairs from read-id grouped SAM files. Use when user asks to mark duplicates, extract discordant read pairs, or isolate split-read mappings for structural variant analysis.",
+    "homepage": "https://github.com/GregoryFaust/samblaster"
+  }
+}

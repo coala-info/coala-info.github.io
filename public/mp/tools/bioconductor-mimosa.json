@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mimosa",
+  "category": "bioconductor",
+  "name": "bioconductor-mimosa",
+  "description": "This tool performs statistical analysis of paired count data from single-cell assays to identify responders in immunological studies using mixture models. Use when user asks to identify responders in vaccine trials, analyze ICS or ELISpot data, fit Beta-Binomial or Dirichlet-Multinomial models to paired count data, or compare stimulated versus unstimulated samples.",
+  "overview": "MIMOSA (Mixture Models for Single-Cell Analysis) is an R package designed to analyze paired count data, typically from Intracellular Cytokine Staining (ICS) assays. It identifies \"responders\" by comparing cytokine-positive cell counts in an antigen-stimulated sample against a paired unstimulated (negative control) sample from the same individual. It uses a Bayesian framework to borrow strength across subjects, improving sensitivity over frequentist tests like Fisher's Exact Test, especially when",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MIMOSA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MIMOSA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MIMOSA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mimosa\n\nname: bioconductor-mimosa\ndescription: Statistical analysis of paired count data from single-cell assays (like ICS or ELISpot) using Mixture Models for Single-Cell Analysis (MIMOSA). Use this skill to identify responders vs. non-responders in vaccine trials or immunological studies by fitting Beta-Binomial or Dirichlet-Multinomial models to stimulated vs. unstimulated samples.\n\n# bioconductor-mimosa\n\n## Overview\n\nMIMOSA (Mixture Models for Single-Cell Analysis) is an R package designed to analyze paired count data, typically from Intracellular Cytokine Staining (ICS) assays. It identifies \"responders\" by comparing cytokine-positive cell counts in an antigen-stimulated sample against a paired unstimulated (negative control) sample from the same individual. It uses a Bayesian framework to borrow strength across subjects, improving sensitivity over frequentist tests like Fisher's Exact Test, especially when cell counts are low.\n\n## Core Workflow\n\n### 1. Data Preparation\nMIMOSA requires data in a tidy format containing positive counts, negative counts (or total counts), and metadata (Subject ID, Antigen, Cytokine, etc.).\n\n```r\nlibrary(MIMOSA)\n\n# Example: Constructing the MIMOSAExpressionSet\n# 'ICS' is a data.frame with columns: CYTNUM (pos), NSUB (neg), UID (ID), ANTIGEN, etc.\nE <- ConstructMIMOSAExpressionSet(\n  data = ICS,\n  reference = ANTIGEN %in% \"negctrl\", # Logical expression for baseline\n  measure.columns = c(\"CYTNUM\", \"NSUB\"), # Positive and Negative counts\n  other.annotations = c(\"CYTOKINE\", \"TCELLSUBSET\", \"ANTIGEN\", \"UID\"),\n  default.cast.formula = component ~ UID + ANTIGEN + CYTOKINE + TCELLSUBSET,\n  .variables = .(TCELLSUBSET, CYTOKINE, UID), # Variables defining a unique unit\n  featureCols = 1\n)\n```\n\n### 2. Fitting the Model\nThe `MIMOSA` function fits the mixture model. You can choose between \"EM\" (Expectation-Maximization, faster) or \"MCMC\" (Markov Chain Monte Carlo, more stable/detailed).\n\n```r\n# Formula: NegCount + PosCount ~ ID + Metadata | ConditioningVariable\nresult <- MIMOSA(NSUB + CYTNUM ~ UID + TCELLSUBSET + CYTOKINE | ANTIGEN,\n                 data = E, \n                 method = \"EM\")\n```\n\n### 3. Extracting Results\nThe result is a `MIMOSAResultList`. You can extract posterior probabilities (z-scores) and calculate False Discovery Rates (FDR).\n\n*   **Posterior Probabilities:** `result[[1]]@z` or `getZ(result)`\n*   **FDR Calculation:** `fdr(result[[1]])`\n*   **Response Weights:** `getW(result)` (The estimated proportion of responders in the population).\n\n```r\n# Identify responders at 1% FDR\nresponders <- lapply(result, function(x) fdr(x) < 0.01)\ntable(responders[[1]])\n```\n\n### 4. Visualization\nMIMOSA provides built-in plotting functions to evaluate model fit and discrimination.\n\n```r\n# Volcano Plot: Effect size vs. Probability of Response\nvolcanoPlot(result, effect_expression = CYTNUM - CYTNUM_REF, facet_var = ~ANTIGEN)\n```\n\n## Key Functions and Parameters\n\n*   **`ConstructMIMOSAExpressionSet`**: Converts a data.frame into the specialized ExpressionSet required for modeling.\n    *   `reference`: Crucial argument defining which rows are the \"negative control\".\n*   **`MIMOSA`**: The main engine.\n    *   `method = \"EM\"`: Recommended for initial screening.\n    *   `method = \"MCMC\"`: Recommended for final analysis or when EM fails to converge.\n*   **`fdr()`**: Computes the False Discovery Rate from the posterior probabilities.\n\n## Tips for Success\n*   **Column Order**: In the formula `NSUB + CYTNUM`, the **negative** cell counts must come first.\n*   **Experimental Units**: Ensure `.variables` in the constructor correctly identifies unique subjects/subsets so that stimulated and unstimulated samples are paired correctly.\n*   **Filtering**: It is often useful to filter out samples with extremely low total cell counts before running MIMOSA to avoid noise.\n\n## Reference documentation\n- [The MIMOSA Package](./references/MIMOSA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mimosa",
+    "description": "This tool performs statistical analysis of paired count data from single-cell assays to identify responders in immunological studies using mixture models. Use when user asks to identify responders in vaccine trials, analyze ICS or ELISpot data, fit Beta-Binomial or Dirichlet-Multinomial models to paired count data, or compare stimulated versus unstimulated samples.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MIMOSA.html"
+  }
+}

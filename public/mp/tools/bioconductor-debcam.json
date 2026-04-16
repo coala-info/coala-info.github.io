@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-debcam",
+  "category": "bioconductor",
+  "name": "bioconductor-debcam",
+  "description": "bioconductor-debcam performs fully unsupervised deconvolution of heterogeneous biological samples using the Convex Analysis of Mixtures algorithm. Use when user asks to deconvolve gene expression or methylation data, identify subpopulation marker genes, or estimate cell type proportions and profiles without prior knowledge.",
+  "overview": "The `debCAM` package implements the Convex Analysis of Mixtures (CAM) algorithm for the fully unsupervised deconvolution of heterogeneous samples. It operates on the principle that in a linear mixing model ($X = AS$), marker genes for specific subpopulations will be located at the vertices of a scatter simplex in a dimension-reduced space. The package supports gene expression, proteomics, and DNA methylation data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/debCAM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Lululuella/debCAM",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "debCAM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/debCAM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Lululuella/debCAM",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-debcam\n\n## Overview\n\nThe `debCAM` package implements the Convex Analysis of Mixtures (CAM) algorithm for the fully unsupervised deconvolution of heterogeneous samples. It operates on the principle that in a linear mixing model ($X = AS$), marker genes for specific subpopulations will be located at the vertices of a scatter simplex in a dimension-reduced space. The package supports gene expression, proteomics, and DNA methylation data.\n\n## Core Workflow: Unsupervised Deconvolution\n\nThe most common entry point is the `CAM()` function, which wraps preprocessing, marker identification, and matrix estimation.\n\n### 1. Data Preparation\nInput data must be in **non-log linear space** with non-negative values.\n```r\nlibrary(debCAM)\n# data: matrix where rows are molecules and columns are samples\n# K: range of subpopulation numbers to test\n# thres.low/high: percentage of low/high-expressed molecules to filter\nrCAM <- CAM(data, K = 2:5, thres.low = 0.30, thres.high = 0.95)\n```\n\n### 2. Model Selection\nUse the Minimum Description Length (MDL) criterion to determine the optimal number of subpopulations ($K$).\n```r\nplot(MDL(rCAM), data.term = TRUE)\n# Look for the minimum point on the MDL curve\n```\n\n### 3. Extracting Results\nOnce $K$ is selected (e.g., $K=3$), extract the proportion ($A$) and expression ($S$) matrices.\n```r\nAest <- Amat(rCAM, 3) # Proportion matrix\nSest <- Smat(rCAM, 3) # Expression profile matrix\nMGlist <- MGsforA(rCAM, K = 3) # Marker genes used for estimation\n```\n\n### 4. Visualizing the Simplex\nVisualize the data distribution and detected markers in 2D space.\n```r\nsimplexplot(data, Aest, MGlist)\n```\n\n## Refined Marker Selection and Re-estimation\n\nTo improve results, you can re-identify markers based on Fold Change (OVE-FC) and re-run the estimation.\n\n```r\n# Calculate statistics for all genes\nMGstat <- MGstatistic(data, Aest)\n\n# Filter markers (e.g., OVE-FC > 10)\nMGlist.FC <- lapply(1:3, function(x) rownames(MGstat)[MGstat$idx == x & MGstat$OVE.FC > 10])\n\n# Re-estimate A and S using Alternating Least Squares (ALS)\n# Set methy = TRUE for DNA methylation data (S constrained to [0,1])\nrre <- redoASest(data, MGlist.FC, maxIter = 10, methy = FALSE)\nA_final <- rre$Aest\nS_final <- rre$Sest\n```\n\n## Supervised and Semi-supervised Deconvolution\n\nIf partial information is known, use specific functions to bypass the full CAM discovery phase.\n\n- **Known Markers:** Use `AfromMarkers(data, MGlist)` to get $A$.\n- **Known S Matrix:** Use `MGstatistic(S, ...)` to find markers from the reference, then `AfromMarkers()`.\n- **Known A Matrix:** Use `NMF::.fcnnls(A, t(data))` to estimate $S$.\n\n## Key Parameters for Large Datasets\n- `dim.rdc`: Reduced data dimension (default is $K-1$).\n- `cluster.num`: Number of clusters for marker gene detection.\n- `cores`: Set for parallel processing (uses `BiocParallel`).\n- `quick.select`: Use for high-dimensional data (e.g., methylation) to speed up vertex identification.\n\n## Reference documentation\n- [debCAM User Manual](./references/debcam.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-debcam",
+    "description": "bioconductor-debcam performs fully unsupervised deconvolution of heterogeneous biological samples using the Convex Analysis of Mixtures algorithm. Use when user asks to deconvolve gene expression or methylation data, identify subpopulation marker genes, or estimate cell type proportions and profiles without prior knowledge.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/debCAM.html"
+  }
+}

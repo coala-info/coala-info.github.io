@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-speckle",
+  "category": "bioconductor",
+  "name": "bioconductor-speckle",
+  "description": "The speckle package provides statistical methods for analyzing differences in cell type proportions in single-cell RNA-seq data using linear modeling and empirical Bayes shrinkage. Use when user asks to test for compositional changes, analyze cell type proportions across experimental conditions, or visualize mean-variance relationships in single-cell data.",
+  "overview": "The `speckle` package provides a suite of statistical methods for analyzing differences in cell type proportions in single-cell RNA-seq data. Its core method, `propeller`, uses linear modeling and empirical Bayes shrinkage (via `limma`) to test for compositional changes while accounting for biological and technical variability. It is designed for experiments with multiple biological replicates per group.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/speckle.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "speckle"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/speckle.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-speckle\n\n## Overview\n\nThe `speckle` package provides a suite of statistical methods for analyzing differences in cell type proportions in single-cell RNA-seq data. Its core method, `propeller`, uses linear modeling and empirical Bayes shrinkage (via `limma`) to test for compositional changes while accounting for biological and technical variability. It is designed for experiments with multiple biological replicates per group.\n\n## Core Workflow\n\n### 1. Data Preparation\n`speckle` works with `SingleCellExperiment` or `Seurat` objects. It requires three pieces of information for every cell:\n- **Cluster**: The cell type or cluster assignment.\n- **Sample**: The biological replicate/sample ID.\n- **Group**: The experimental condition (e.g., Control vs. Treatment).\n\n### 2. Running Propeller\nThe `propeller` function is the primary interface. It automatically extracts metadata from supported objects if columns are named \"cluster\", \"sample\", and \"group\".\n\n```r\nlibrary(speckle)\n\n# Basic usage with a SingleCellExperiment or Seurat object\n# Default uses logit transformation\nresults <- propeller(sce_object)\n\n# Using arcsin square root transformation\nresults_asin <- propeller(sce_object, transform = \"asin\")\n\n# Manual specification if metadata names differ\nresults_manual <- propeller(clusters = sce_object$cell_type, \n                            sample = sce_object$donor, \n                            group = sce_object$condition)\n```\n\n### 3. Visualization\n`speckle` provides functions to visualize proportions and mean-variance relationships.\n\n```r\n# Plot barplots of cell type proportions across samples\nplotCellTypeProps(sce_object)\n\n# Get transformed proportions for custom plotting\nprops <- getTransformedProps(sce_object$cluster, sce_object$sample)\nbarplot(props$Proportions, col = rainbow(nrow(props$Proportions)), legend = TRUE)\n\n# Check mean-variance relationship\nplotCellTypeMeanVar(props$Counts)\n```\n\n## Advanced Experimental Designs\n\nFor designs involving covariates, continuous variables, or random effects, use the modular functions `getTransformedProps`, `propeller.anova`, and `propeller.ttest`.\n\n### Linear Models with Covariates\n```r\n# 1. Extract proportions\nprops <- getTransformedProps(clusters, sample)\n\n# 2. Define design matrix (No intercept, group first)\ndesign <- model.matrix(~ 0 + group + covariate)\n\n# 3. Run ANOVA (for >2 groups) or t-test\n# Test first 3 columns of design\nres_anova <- propeller.anova(prop.list = props, design = design, coef = c(1,2,3))\n\n# Test specific contrast\nlibrary(limma)\ncontr <- makeContrasts(groupA - groupB, levels = design)\nres_ttest <- propeller.ttest(props, design, contrasts = contr)\n```\n\n### Random Effects (Repeated Measures)\nUse `limma::duplicateCorrelation` to account for random effects like multiple samples from the same individual.\n\n```r\ndesign <- model.matrix(~ group)\ndupcor <- duplicateCorrelation(props$TransformedProps, design = design, block = individual_id)\n\nfit <- lmFit(props$TransformedProps, design = design, block = individual_id, correlation = dupcor$consensus)\nfit <- eBayes(fit)\ntopTable(fit)\n```\n\n## Tips for Success\n- **Replication**: `propeller` requires biological replicates (minimum n=2 in one group) to estimate variance.\n- **Zero Proportions**: The method handles 0 and 1 values gracefully via transformations.\n- **Clustering**: Ensure clusters are biologically meaningful. If clusters are too refined (unique to specific samples), consider broader cell type categories for more robust statistical power.\n- **Integration**: Use integration methods (Harmony, Seurat) before clustering to ensure cell types are represented across samples.\n\n## Reference documentation\n\n- [speckle: statistical methods for analysing single cell RNA-seq data](./references/speckle.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-speckle",
+    "description": "The speckle package provides statistical methods for analyzing differences in cell type proportions in single-cell RNA-seq data using linear modeling and empirical Bayes shrinkage. Use when user asks to test for compositional changes, analyze cell type proportions across experimental conditions, or visualize mean-variance relationships in single-cell data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/speckle.html"
+  }
+}

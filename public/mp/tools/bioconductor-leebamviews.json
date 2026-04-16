@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-leebamviews",
+  "category": "bioconductor",
+  "name": "bioconductor-leebamviews",
+  "description": "This package provides infrastructure for managing and interrogating collections of BAM files using the BamViews class. Use when user asks to manage multiple NGS samples, extract genomic coverage, tabulate read counts across regions, or integrate BAM data with edgeR for differential expression analysis.",
+  "overview": "The `leeBamViews` package provides a lightweight infrastructure for managing multiple Next-Generation Sequencing (NGS) samples. It centers around the `BamViews` class, which allows users to treat a collection of BAM files similarly to an `ExpressionSet`. This skill facilitates the programmatic access to BAM data, extraction of coverage information, and integration with downstream statistical tools like `edgeR`.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/leeBamViews.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-leebamviews/overview",
+  "github": "N/A",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "leeBamViews"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/leeBamViews.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-leebamviews/overview",
+    "github": "N/A",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-leebamviews\n\n## Overview\n\nThe `leeBamViews` package provides a lightweight infrastructure for managing multiple Next-Generation Sequencing (NGS) samples. It centers around the `BamViews` class, which allows users to treat a collection of BAM files similarly to an `ExpressionSet`. This skill facilitates the programmatic access to BAM data, extraction of coverage information, and integration with downstream statistical tools like `edgeR`.\n\n## Core Workflows\n\n### Initializing a BamViews Object\n\nTo manage multiple samples, you must define the paths to BAM files and provide sample metadata.\n\n```r\nlibrary(leeBamViews)\nlibrary(S4Vectors)\n\n# Locate BAM files within the package\nbpaths <- dir(system.file(\"bam\", package=\"leeBamViews\"), full=TRUE, patt=\"bam$\")\n\n# Create sample metadata (DataFrame)\n# Example: extracting genotype from filenames\ngt <- gsub(\".*/\", \"\", bpaths)\ngeno <- gsub(\"_.*\", \"\", gt)\npd <- DataFrame(geno=geno, row.names=paste(geno, seq_along(geno), sep=\".\"))\n\n# Construct the BamViews object\nbs1 <- BamViews(bamPaths=bpaths, bamSamples=pd)\n```\n\n### Defining Genomic Ranges\n\nA `BamViews` object requires a `GRanges` object to specify which regions of the genome to interrogate.\n\n```r\nlibrary(GenomicRanges)\n# Define regions on yeast chromosome XIII (Scchr13)\nSTART <- c(861250, 863000)\nEND <- c(862750, 864000)\nexc <- GRanges(seqnames=\"Scchr13\", IRanges(start=START, end=END), strand=\"+\")\n\n# Assign ranges to the BamViews object\nbamRanges(bs1) <- exc\n```\n\n### Extracting Coverage and Counts\n\nOnce ranges are defined, you can extract coverage or tabulate reads across all samples.\n\n```r\nlibrary(GenomicAlignments)\n\n# Extract coverage for a specific chromosome\ncovex <- RleList(lapply(bamPaths(bs1), function(x) {\n  coverage(readGAlignments(x))[[\"Scchr13\"]]\n}))\n\n# Tabulate reads in the defined bamRanges\n# Returns a matrix of counts (ranges x samples)\ntab <- tabulateReads(bs1, strandmarker=\"+\")\n```\n\n### Differential Expression with edgeR\n\n`leeBamViews` integrates with `edgeR` for statistical analysis of read counts.\n\n```r\nlibrary(edgeR)\n\n# 1. Get total library sizes\ntotcnts <- totalReadCounts(bs1)\n\n# 2. Create DGEList\n# Note: annotab is the result of tabulateReads()\ndgel1 <- DGEList(counts=t(annotab), \n                 group=factor(bamSamples(bs1)$geno), \n                 lib.size=totcnts)\n\n# 3. Estimate dispersion and test\ncd <- estimateCommonDisp(dgel1)\net12 <- exactTest(cd)\ntopTags(et12)\n```\n\n## Tips and Best Practices\n\n- **Chromosome Naming**: Ensure `seqnames` match the BAM header. In this package's yeast data, chromosome XIII is often referred to as \"Scchr13\".\n- **Strand Specificity**: Use the `strandmarker` argument in `tabulateReads` to control how strand information is handled during counting.\n- **Memory Management**: `BamViews` manages data external to R. Data is only imported into memory when specific interrogation functions (like `readGAlignments` or `tabulateReads`) are called.\n- **Metadata Access**: Use `bamSamples(bs1)` to access or modify the sample metadata and `bamPaths(bs1)` to retrieve the file locations.\n\n## Reference documentation\n\n- [Managing and analyzing multiple NGS samples with Bioconductor bamViews objects](./references/leeViews.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-leebamviews",
+    "description": "This package provides infrastructure for managing and interrogating collections of BAM files using the BamViews class. Use when user asks to manage multiple NGS samples, extract genomic coverage, tabulate read counts across regions, or integrate BAM data with edgeR for differential expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/leeBamViews.html"
+  }
+}

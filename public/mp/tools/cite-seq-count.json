@@ -1,0 +1,45 @@
+{
+  "id": "cite-seq-count",
+  "category": "CLI",
+  "name": "cite-seq-count",
+  "description": "\"cite-seq-count quantifies Antibody-Derived Tags or Hashtag Oligos from raw FASTQ files to create UMI-based count matrices for multimodal single-cell analysis. Use when user asks to quantify ADTs or HTOs, configure barcode positions for different sequencing chemistries, or prepare tag count matrices for Seurat and Scanpy.\"",
+  "overview": "The `cite-seq-count` skill enables the quantification of Antibody-Derived Tags (ADTs) or Hashtag Oligos (HTOs) from raw FASTQ files. This tool is essential for multimodal single-cell experiments where researchers need to align tag sequences to specific cell barcodes and collapse them into UMI-based count matrices. Use this skill to determine the correct command-line arguments for different sequencing chemistries, troubleshoot low mapping rates, and prepare outputs for downstream analysis in Seur",
+  "homepage": "https://hoohm.github.io/CITE-seq-Count/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/cite-seq-count/overview",
+  "github": "https://github.com/Hoohm/CITE-seq-Count",
+  "conda_downloads": "3.4K",
+  "conda_downloads_num": 3400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cite-seq-count_CITE-seq-Count"
+    ],
+    "description": "This script counts matching antibody tags from paired fastq files. Version 1.4.5",
+    "docker_image": "quay.io/biocontainers/cite-seq-count:1.4.5--pyhdfd78af_0",
+    "homepage": "https://hoohm.github.io/CITE-seq-Count/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/cite-seq-count/overview",
+    "github": "https://github.com/Hoohm/CITE-seq-Count",
+    "conda_downloads": "3.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "cite-seq-count_CITE-seq-Count.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# cite-seq-count\n\n## Overview\nThe `cite-seq-count` skill enables the quantification of Antibody-Derived Tags (ADTs) or Hashtag Oligos (HTOs) from raw FASTQ files. This tool is essential for multimodal single-cell experiments where researchers need to align tag sequences to specific cell barcodes and collapse them into UMI-based count matrices. Use this skill to determine the correct command-line arguments for different sequencing chemistries, troubleshoot low mapping rates, and prepare outputs for downstream analysis in Seurat or Scanpy.\n\n## Core Command Structure\nThe basic execution requires defining the input reads, the tag list, and the barcode structure:\n\n```bash\nCITE-seq-Count -R1 <READ1_FASTQ> -R2 <READ2_FASTQ> \\\n               -t <TAG_LIST_CSV> \\\n               -cbf <CB_FIRST> -cbl <CB_LAST> \\\n               -umif <UMI_FIRST> -umil <UMI_LAST> \\\n               -cells <EXPECTED_CELLS> \\\n               -o <OUTPUT_FOLDER>\n```\n\n## Barcode Configuration by Chemistry\nCorrectly identifying the positions of the Cell Barcode (CB) and UMI in Read 1 is critical.\n\n### 10x Genomics V2\n- **Cell Barcode**: 1 to 16 (`-cbf 1 -cbl 16`)\n- **UMI**: 17 to 26 (`-umif 17 -umil 26`)\n\n### 10x Genomics V3\n- **Cell Barcode**: 1 to 16 (`-cbf 1 -cbl 16`)\n- **UMI**: 17 to 28 (`-umif 17 -umil 28`)\n- **Note**: For 10x V3, it is recommended to use the `-cells` argument rather than a whitelist due to the massive size of the V3 whitelist.\n\n### Drop-seq\n- **Cell Barcode**: 1 to 12 (`-cbf 1 -cbl 12`)\n- **UMI**: 13 to 20 (`-umif 13 -umil 20`)\n\n## Tag List Preparation (`-t`)\nThe tags CSV file must contain only the **variable region** of the tag.\n- **Format**: `Sequence,Name` (e.g., `ATGCGA,CD3`)\n- **Trimming**: If your protocol includes a constant sequence before the tag, use `-trim <N>` to skip the first N bases of Read 2.\n- **Legacy Barcodes**: If tags have a polyA tail preceded by a single T, C, or G, do not include these in the CSV.\n\n## Advanced Mapping Options\n- **Sliding Window**: Use `--sliding-window` if the tag position in Read 2 varies (common in certain custom protocols).\n- **Error Tolerance**: The default maximum Levenshtein distance for tags is 3 (`--max-error 3`). Increase this only if mapping rates are unexpectedly low and tags are sufficiently distinct.\n- **Parallelization**: Use `-T <N_THREADS>` to speed up processing on multi-core systems.\n\n## Interpreting and Loading Output\nThe tool produces an `umi_count` folder containing `matrix.mtx.gz`, `features.tsv.gz`, and `barcodes.tsv.gz`.\n\n### Loading into R (Seurat)\n```R\nlibrary(Seurat)\n# Use gene.column=1 because features.tsv contains tag names in the first column\nadt_data <- Read10X(\"OUTFOLDER/umi_count/\", gene.column=1)\nadt_obj <- CreateSeuratObject(counts = adt_data, assay = \"ADT\")\n```\n\n### Loading into Python (Scanpy)\n```python\nimport scanpy as sc\nadata = sc.read_mtx(\"OUTFOLDER/umi_count/matrix.mtx.gz\").T\nfeatures = pd.read_csv(\"OUTFOLDER/umi_count/features.tsv.gz\", header=None)\nbarcodes = pd.read_csv(\"OUTFOLDER/umi_count/barcodes.tsv.gz\", header=None)\nadata.var_names = features[0]\nadata.obs_names = barcodes[0]\n```\n\n## Troubleshooting\n- **Low Mapping Percentage**: Check `unmapped.csv` to see the most frequent sequences that failed to map. This often reveals if the `-trim` value is incorrect or if the tag sequences in the CSV are wrong.\n- **High Uncorrected Cells**: Ensure the `-cbf` and `-cbl` positions match your library preparation kit.\n\n## Reference documentation\n- [Running the script](./references/hoohm_github_io_CITE-seq-Count_Running-the-script.md)\n- [Reading the output](./references/hoohm_github_io_CITE-seq-Count_Reading-the-output.md)\n- [Guidelines for typical chemistries](./references/hoohm_github_io_CITE-seq-Count_Guidelines.md)",
+  "skill_front_matter": {
+    "name": "cite-seq-count",
+    "description": "cite-seq-count quantifies Antibody-Derived Tags or Hashtag Oligos from raw FASTQ files to create UMI-based count matrices for multimodal single-cell analysis. Use when user asks to quantify ADTs or HTOs, configure barcode positions for different sequencing chemistries, or prepare tag count matrices for Seurat and Scanpy.",
+    "homepage": "https://hoohm.github.io/CITE-seq-Count/"
+  }
+}

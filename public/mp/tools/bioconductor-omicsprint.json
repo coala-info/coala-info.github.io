@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-omicsprint",
+  "category": "bioconductor",
+  "name": "bioconductor-omicsprint",
+  "description": "This tool verifies sample relationships and detects swaps within or across multi-omic datasets using genetic variant sharing. Use when user asks to verify sample identity, detect sample swaps, calculate allele sharing between datasets, or convert methylation data to genotypes for relationship testing.",
+  "overview": "The `omicsPrint` package provides a method for sample relationship verification within and across omics data types. It uses a set of genetic variants (SNPs) to calculate Identity by State (IBS) metrics—specifically the mean and variance of allele sharing—to classify pairs of samples as identical, related, or unrelated. It is particularly useful for quality control in multi-omic studies to ensure that data from different assays (e.g., RNA-seq, 450k/EPIC methylation, and Genotyping) are correctly ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/omicsPrint.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "omicsPrint"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/omicsPrint.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-omicsprint\n\n## Overview\n\nThe `omicsPrint` package provides a method for sample relationship verification within and across omics data types. It uses a set of genetic variants (SNPs) to calculate Identity by State (IBS) metrics—specifically the mean and variance of allele sharing—to classify pairs of samples as identical, related, or unrelated. It is particularly useful for quality control in multi-omic studies to ensure that data from different assays (e.g., RNA-seq, 450k/EPIC methylation, and Genotyping) are correctly linked to the same individuals.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a matrix where rows are SNPs and columns are samples. Genotypes should be represented as integers (e.g., 1, 2, 3).\n\nFor DNA methylation data, use `beta2genotype` to convert beta-values to discrete genotype calls using an internal K-means algorithm.\n\n```r\nlibrary(omicsPrint)\nlibrary(SummarizedExperiment)\n\n# If starting with a SummarizedExperiment (se)\n# Filter for CpGs known to overlap SNPs\ndata(hm450.manifest.pop.GoNL)\ncpgs <- names(hm450.manifest.pop.GoNL[mcols(hm450.manifest.pop.GoNL)$MASK.snp5.EAS])\nse_filtered <- se[intersect(rownames(se), cpgs), ]\n\n# Convert to genotypes\ngenotypes <- beta2genotype(se_filtered, assayName = \"exprs\")\n```\n\n### 2. Calculating Allele Sharing\nThe `alleleSharing` function calculates the IBS mean and variance for all pairwise combinations.\n\n**Intra-omic (within one matrix):**\n```r\n# x is a matrix of genotypes\nres <- alleleSharing(x)\n```\n\n**Inter-omic (between two matrices):**\n```r\n# x and y are matrices from different omics (e.g., Methylation and SNP-array)\n# Ensure rownames (SNP IDs) match between x and y\nres <- alleleSharing(x, y)\n```\n\n### 3. Defining Expected Relations\nTo detect mismatches, you should provide a data frame of expected relationships.\n\n```r\n# Create a relations data frame\nrelations <- expand.grid(idx = colnames(x), idy = colnames(x))\nrelations$relation_type <- \"unrelated\"\nrelations$relation_type[relations$idx == relations$idy] <- \"identical\"\n\n# Run with relations\nres <- alleleSharing(x, relations = relations)\n```\n\n### 4. Inferring Relations and Detecting Mismatches\nUse `inferRelations` to apply Linear Discriminant Analysis (LDA) to classify the pairs and identify samples that do not match their expected labels.\n\n```r\n# This returns a data frame of pairs where the predicted relation \n# differs from the reported relation.\nmismatches <- inferRelations(res)\n\n# Visualizing the classification\n# Calling inferRelations() without assignment usually produces a diagnostic plot\ninferRelations(res)\n```\n\n## Key Functions\n\n- `alleleSharing(x, y, relations)`: Computes IBS mean and variance. If `y` is provided, it performs cross-platform matching.\n- `beta2genotype(x, assayName)`: Converts DNA methylation beta-values to genotype calls (1, 2, 3).\n- `inferRelations(data)`: Predicts relationships based on IBS stats and identifies discrepancies.\n- `hm450.manifest.pop.GoNL`: Data object containing SNP-masked probes for 450k arrays across different populations.\n\n## Tips for Success\n\n- **SNP Overlap**: For cross-omic verification, ensure the row names of your matrices use the same identifier system (e.g., rs-numbers) so the package can find overlapping markers.\n- **Pruning**: `alleleSharing` automatically prunes SNPs based on call rate, coverage, and Hardy-Weinberg equilibrium. You can adjust these thresholds (e.g., `callRate`, `maf`) in the function arguments.\n- **Interpretation**: A mean IBS near 2.0 and variance near 0.0 strongly indicates \"identical\" samples (replicates or the same person).\n\n## Reference documentation\n\n- [Within omics sample relationship verification](./references/omicsPrint.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-omicsprint",
+    "description": "This tool verifies sample relationships and detects swaps within or across multi-omic datasets using genetic variant sharing. Use when user asks to verify sample identity, detect sample swaps, calculate allele sharing between datasets, or convert methylation data to genotypes for relationship testing.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/omicsPrint.html"
+  }
+}

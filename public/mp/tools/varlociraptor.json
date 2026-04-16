@@ -1,0 +1,59 @@
+{
+  "id": "varlociraptor",
+  "category": "CLI",
+  "name": "varlociraptor",
+  "description": "Varlociraptor is a genomic variant caller that uses a latent variable model to calculate the posterior probability of variants across various biological events. Use when user asks to call single nucleotide or structural variants, preprocess sequencing observations, filter calls based on false discovery rate, or estimate mutational burden.",
+  "overview": "Varlociraptor is a genomic variant caller that utilizes a unified latent variable model to account for uncertainties and biases in sequencing data. Unlike traditional callers that rely on hard-coded filters or heuristic scores, Varlociraptor calculates the posterior probability of variants belonging to user-defined biological events. It supports a wide range of variant types—from single nucleotide variants to large-scale structural alterations—and provides a statistically sound method for filter",
+  "homepage": "https://varlociraptor.github.io",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/varlociraptor/overview",
+  "github": "https://github.com/varlociraptor/varlociraptor",
+  "conda_downloads": "323.6K",
+  "conda_downloads_num": 323600,
+  "last_updated": "2026-02-11",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "varlociraptor_call",
+      "varlociraptor_decode-phred",
+      "varlociraptor_estimate",
+      "varlociraptor_filter-calls",
+      "varlociraptor_by",
+      "varlociraptor_methylation-candidates",
+      "varlociraptor_plot",
+      "varlociraptor_preprocess"
+    ],
+    "description": "Call variants.",
+    "docker_image": "quay.io/biocontainers/varlociraptor:8.9.5--h24073b4_0",
+    "homepage": "https://varlociraptor.github.io",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/varlociraptor/overview",
+    "github": "https://github.com/varlociraptor/varlociraptor",
+    "conda_downloads": "323.6K",
+    "last_updated": "2026-02-11",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "varlociraptor_by.cwl",
+    "varlociraptor_call.cwl",
+    "varlociraptor_decode-phred.cwl",
+    "varlociraptor_estimate.cwl",
+    "varlociraptor_filter-calls.cwl",
+    "varlociraptor_methylation-candidates.cwl",
+    "varlociraptor_plot.cwl",
+    "varlociraptor_preprocess.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# varlociraptor\n\n## Overview\n\nVarlociraptor is a genomic variant caller that utilizes a unified latent variable model to account for uncertainties and biases in sequencing data. Unlike traditional callers that rely on hard-coded filters or heuristic scores, Varlociraptor calculates the posterior probability of variants belonging to user-defined biological events. It supports a wide range of variant types—from single nucleotide variants to large-scale structural alterations—and provides a statistically sound method for filtering calls based on desired False Discovery Rate (FDR) thresholds.\n\n## Common CLI Patterns and Workflows\n\n### 1. Preprocessing Observations\nBefore calling, you must preprocess your BAM files to characterize alignment properties (e.g., insert size distribution, soft-clipping, and read position biases).\n\n```bash\nvarlociraptor preprocess reference.fa --bam sample.bam > sample.observations.bcf\n```\n\n### 2. Variant Calling\nVarlociraptor supports two primary calling modes: `tumor-normal` for standard oncology pairs and `generic` for complex scenarios defined by a grammar.\n\n**Tumor-Normal Calling:**\n```bash\nvarlociraptor call tumor-normal --purity 0.8 --tumor tumor.observations.bcf --normal normal.observations.bcf > calls.bcf\n```\n\n**Generic Calling:**\nRequires a scenario configuration file. Use this for pedigrees or multi-sample tumor evolution.\n```bash\nvarlociraptor call generic --scenario scenario.yaml --obs sample1=s1.obs.bcf sample2=s2.obs.bcf > calls.bcf\n```\n\n### 3. FDR-Based Filtration\nThis is the critical final step. Instead of filtering by \"Quality,\" filter by the probability of the event of interest (e.g., \"SOMATIC_TUMOR\").\n\n```bash\nvarlociraptor filter-fdr calls.bcf --fdr 0.05 --events SOMATIC_TUMOR --local > filtered.bcf\n```\n*   `--fdr`: Sets the global false discovery rate threshold.\n*   `--local`: Controls the local FDR (useful for high-precision requirements).\n\n### 4. Estimating Mutational Burden\nVarlociraptor can estimate the mutational burden (e.g., TMB) directly from the posterior probabilities.\n\n```bash\nvarlociraptor estimate mutational-burden --tsv calls.bcf > burden.tsv\n```\n\n## Expert Tips and Best Practices\n\n*   **Smart Artifact Retention**: When using FDR control, use the `--smart-retain-artifacts` flag (available in v8.7.0+) if you need to distinguish between \"absent\" calls and technical artifacts rather than treating them identically.\n*   **MAPQ Bias Detection**: Varlociraptor can detect systematic associations of low Mapping Quality (MAPQ) with the ALT allele even if the aligner does not provide alternative mappings. This is a powerful internal check for false positives in repetitive regions.\n*   **Methylation Calling**: For long-read data, use the `methylation` subcommand to call methylated sites using the same uncertainty-aware framework.\n*   **Memory Management**: For large cohorts or complex scenarios, Varlociraptor utilizes `jemalloc` for efficient memory allocation. Ensure your environment allows for high memory overhead during the `call` phase.\n*   **Output Interpretation**: Always look for the `AFD` (Allele Frequency Distribution) field in the output BCF. Varlociraptor provides maximum likelihood estimates that are more robust than simple read-count ratios.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| varlociraptor | varlociraptor |\n| varlociraptor call | Call variants. |\n| varlociraptor decode-phred | Decode PHRED-scaled values to human readable probabilities. |\n| varlociraptor estimate | Perform estimations. |\n| varlociraptor filter-calls | Filter calls by either controlling the false discovery rate (FDR) at given level, or by posterior odds against the given events. |\n| varlociraptor plot | Create plots |\n| varlociraptor preprocess | Preprocess variants |\n| varlociraptor-methylation-candidates | Generate BCF with methylation candidates |\n\n## Reference documentation\n- [Varlociraptor README](./references/github_com_varlociraptor_varlociraptor_blob_master_README.md)\n- [Varlociraptor Changelog](./references/github_com_varlociraptor_varlociraptor_blob_master_CHANGELOG.md)\n- [Varlociraptor Homepage](./references/varlociraptor_github_io_landing.md)",
+  "skill_front_matter": {
+    "name": "varlociraptor",
+    "description": "Varlociraptor is a genomic variant caller that uses a latent variable model to calculate the posterior probability of variants across various biological events. Use when user asks to call single nucleotide or structural variants, preprocess sequencing observations, filter calls based on false discovery rate, or estimate mutational burden.",
+    "homepage": "https://varlociraptor.github.io"
+  }
+}

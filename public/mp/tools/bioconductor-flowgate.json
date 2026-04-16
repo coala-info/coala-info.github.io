@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-flowgate",
+  "category": "bioconductor",
+  "name": "bioconductor-flowgate",
+  "description": "This tool provides a Shiny-based interactive interface for manual gating of flow cytometry data within the R environment. Use when user asks to perform GUI-based gating, create GatingSets from FCS files, apply biexponential transformations, or execute multi-step gating strategies on cytometry data.",
+  "overview": "The `flowGate` package bridges the gap between manual, GUI-based gating (common in software like FlowJo) and the R/Bioconductor ecosystem. It provides a Shiny-based interactive interface to draw gates (polygons, rectangles, spans, and quadrants) directly on R objects. It integrates seamlessly with `flowCore`, `flowWorkspace`, and `ggcyto`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/flowGate.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowgate/overview",
+  "github": "N/A",
+  "conda_downloads": "3.1K",
+  "conda_downloads_num": 3100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "flowGate"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowGate.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowgate/overview",
+    "github": "N/A",
+    "conda_downloads": "3.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-flowgate\n\nname: bioconductor-flowgate\ndescription: Interactive manual gating for flow cytometry data in R using the flowGate package. Use this skill when you need to perform GUI-based gating within an R environment, create GatingSets from FCS files, apply biexponential transformations, or execute a multi-step gating strategy on cytometry data.\n\n## Overview\nThe `flowGate` package bridges the gap between manual, GUI-based gating (common in software like FlowJo) and the R/Bioconductor ecosystem. It provides a Shiny-based interactive interface to draw gates (polygons, rectangles, spans, and quadrants) directly on R objects. It integrates seamlessly with `flowCore`, `flowWorkspace`, and `ggcyto`.\n\n## Typical Workflow\n\n### 1. Data Preparation\nLoad FCS files into a `flowSet`, then convert to a `GatingSet` for analysis.\n\n```r\nlibrary(flowGate)\nlibrary(flowCore)\nlibrary(flowWorkspace)\n\n# Load FCS files\npath_to_fcs <- \"./data/\"\nfs <- read.flowSet(path = path_to_fcs, pattern = \".FCS$\", full.names = TRUE)\n\n# Convert to GatingSet\ngs <- GatingSet(fs)\n\n# Apply compensation (example using acquisition-defined spillover)\ncomp_matrix <- spillover(fs[[1]])$SPILL\ngs <- compensate(gs, compensation(comp_matrix))\n```\n\n### 2. Interactive Gating\nUse `gs_gate_interactive` to open the Shiny UI. Select the gate type in the UI **before** drawing.\n\n```r\n# Gate Leukocytes on FSC/SSC\ngs_gate_interactive(gs, \n                    filterId = \"Leukocytes\", \n                    dims = list(\"FSC-H\", \"SSC-H\"))\n\n# Gate a subset (e.g., CD45+ cells within Leukocytes)\ngs_gate_interactive(gs, \n                    filterId = \"CD45\", \n                    dims = \"CD45\", \n                    subset = \"Leukocytes\")\n```\n\n**Gate Types:**\n- **Polygon:** Click multiple points to trace; click \"Done\" to close.\n- **Rectangle/Span:** Click and drag. Span only considers the x-axis.\n- **Quadrant:** Click once at the center point. Note: This creates four child populations automatically named based on markers.\n\n### 3. Applying a Gating Strategy\nFor reproducible workflows, define a strategy in a tibble and apply it across samples.\n\n```r\nstrategy <- tibble::tribble(\n  ~filterId,    ~dims,                  ~subset,\n  \"Leukocytes\", list(\"FSC-H\", \"SSC-H\"), \"root\",\n  \"CD45\",       list(\"CD45\"),           \"Leukocytes\",\n  \"CD33_CD15\",  list(\"CD33\", \"CD15\"),   \"CD45\"\n)\n\ngs_apply_gating_strategy(gs, gating_strategy = strategy)\n```\n\n### 4. Visualization and Scaling\n`flowGate` allows on-the-fly biexponential scaling in the UI. To replicate these plots in `ggcyto`, use the parameters returned by the gating function.\n\n```r\nlibrary(ggcyto)\nggcyto(gs[[1]], aes(\"CD33\", \"CD15\")) +\n  geom_hex(bins = 128) +\n  scale_x_flowjo_biexp(maxValue = 250000, widthBasis = -10) +\n  scale_y_flowjo_biexp(maxValue = 250000, widthBasis = -10) +\n  geom_gate(gs_get_pop_paths(gs)[4:7]) + # Quadrant gates\n  geom_stats()\n```\n\n### 5. Exporting Results\nExtract population statistics or save the entire analysis state.\n\n```r\n# Get percentages\nstats <- gs_pop_get_stats(gs, type = \"percent\")\n\n# Get MFI\nmfi <- gs_pop_get_stats(gs, type = pop.MFI)\n\n# Save GatingSet (use save_gs, not saveRDS)\nsave_gs(gs, \"my_analysis.gs\")\n```\n\n## Tips and Best Practices\n- **UI Sequence:** Always select the radio button for the gate type (Polygon, Rectangle, etc.) in the Shiny app before clicking on the plot.\n- **Large Data:** If the UI is sluggish or gates \"drift,\" apply transformations (e.g., `estimateLogicle`) to the `GatingSet` before calling `gs_gate_interactive`.\n- **Quadrant Names:** Quadrant gates ignore the `filterId` and generate names like `Marker1-Marker2+`. Use `gs_get_pop_paths(gs)` to find the exact strings for plotting.\n- **Windows Paths:** When loading a saved GatingSet on Windows, wrap the path in `file.path()` to avoid directory errors: `load_gs(file.path(\"path/to/gs\"))`.\n\n## Reference documentation\n- [flowGate](./references/flowGate.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-flowgate",
+    "description": "This tool provides a Shiny-based interactive interface for manual gating of flow cytometry data within the R environment. Use when user asks to perform GUI-based gating, create GatingSets from FCS files, apply biexponential transformations, or execute multi-step gating strategies on cytometry data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowGate.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bags",
+  "category": "bioconductor",
+  "name": "bioconductor-bags",
+  "description": "This tool identifies differentially expressed gene sets across phenotypes or time points using a Bayesian Gibbs sampler. Use when user asks to identify differentially expressed gene sets, perform Bayesian gene set enrichment analysis, or analyze gene expression across multiple phenotypes or time points.",
+  "overview": "The `BAGS` package implements a Bayesian hierarchical model to identify significant gene sets (e.g., GO terms, pathways) in cross-sectional or time-series gene expression data. It treats genes within a set as repeated measures, providing a robust statistical framework for gene set enrichment analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BAGS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bags/overview",
+  "github": "N/A",
+  "conda_downloads": "34.2K",
+  "conda_downloads_num": 34200,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BAGS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BAGS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bags/overview",
+    "github": "N/A",
+    "conda_downloads": "34.2K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bags\n\nname: bioconductor-bags\ndescription: Bayesian Approach for Geneset Selection (BAGS). Use this skill to identify gene functional classes (gene sets) that are differentially expressed between phenotypes (2 to 5 groups) or across time points (2 to 5 time points) using a Gibbs sampler.\n\n## Overview\n\nThe `BAGS` package implements a Bayesian hierarchical model to identify significant gene sets (e.g., GO terms, pathways) in cross-sectional or time-series gene expression data. It treats genes within a set as repeated measures, providing a robust statistical framework for gene set enrichment analysis.\n\n## Workflow\n\n### 1. Data Preprocessing\nThe input data must be a gene expression matrix where rows are gene symbols and columns are samples. If multiple probes map to the same gene, it is recommended to select the one with the highest variability across phenotypes.\n\n```r\nlibrary(BAGS)\n# gene.expr: matrix with gene symbols as rownames\n# gene.nams: vector of unique gene symbols\n# phntp.list: list where each element contains indices of samples for a specific phenotype\n# Example: phntp.list = list(group1_indices, group2_indices)\n```\n\n### 2. Preparing Gene Sets\nLoad functional annotations (e.g., GO Molecular Function) and filter for sets meeting a minimum size threshold (e.g., 5 genes).\n\n```r\ndata(AnnotationMFGO, package=\"BAGS\")\n# Filter gene sets to include only those with at least 5 genes present in your data\ndata.gene.grps <- DataGeneSets(AnnotationMFGO, gene.nams, 5)\n```\n\n### 3. Creating the MCMC Data Set\nTransform the expression data into the format required by the Gibbs sampler.\n\n```r\ndata.mcmc <- MCMCDataSet(gene.expr, data.gene.grps$DataGeneSetsIds, phntp.list)\n```\n\n### 4. Executing the Gibbs Sampler\nThe `Gibbs2` function performs the MCMC sampling. You must define prior parameters and the number of iterations.\n\n```r\nnoRow <- dim(data.mcmc$y.mu)[1]\nnoCol <- unlist(lapply(phntp.list, length))\niter <- 10000\nGrpSzs <- data.gene.grps$Size\nYMu <- data.mcmc$y.mu\n\n# Prior parameters (standard defaults)\nL0 <- rep(2, 2); V0 <- rep(4, 2)\nL0A <- rep(3, 1); V0A <- rep(3, 1)\nMM <- 0.55; AAPi <- 10\nApriDiffExp <- floor(noRow * 0.03)\nresults <- matrix(0, noRow, iter)\n\n# Run Sampler\nmcmc.chains <- Gibbs2(noRow, noCol, iter, GrpSzs, YMu, L0, V0, L0A, V0A, MM, AAPi, ApriDiffExp, results)\n```\n\n### 5. Interpreting Results\nCalculate the posterior probability of differential expression for each gene set after discarding a burn-in period.\n\n```r\nburn.in <- 2000\n# Calculate probabilities\nalfa.pi <- apply(mcmc.chains[[1]][, burn.in:iter], 1, function(x) {\n  length(which(x != 0)) / length(burn.in:iter)\n})\n\n# Identify significant processes (e.g., probability > 0.9)\nsignificant.sets <- names(data.gene.grps$Size)[which(alfa.pi > 0.9)]\n\n# Visualize\nplot(alfa.pi, type=\"h\", main=\"Probabilities of Gene Sets Differentially Expressed\")\nabline(h=0.9, col=\"red\")\n```\n\n## Key Functions\n- `DataGeneSets()`: Filters and organizes gene sets based on available genes in the expression matrix.\n- `MCMCDataSet()`: Prepares the data structure for Bayesian analysis.\n- `Gibbs2()`: The core function for cross-sectional designs (2-5 phenotypes).\n- `GibbsTS()`: Used for time-series designs.\n\n## Reference documentation\n- [BAGS](./references/BAGS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bags",
+    "description": "This tool identifies differentially expressed gene sets across phenotypes or time points using a Bayesian Gibbs sampler. Use when user asks to identify differentially expressed gene sets, perform Bayesian gene set enrichment analysis, or analyze gene expression across multiple phenotypes or time points.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BAGS.html"
+  }
+}

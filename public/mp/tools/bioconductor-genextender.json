@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genextender",
+  "category": "bioconductor",
+  "name": "bioconductor-genextender",
+  "description": "bioconductor-genextender performs functional annotation of ChIP-seq peaks by mapping genomic coordinates to genes using optimized upstream and downstream extensions. Use when user asks to map peaks to genes, optimize genomic extension distances for regulatory elements, or perform gene-centric functional summaries of epigenetic data.",
+  "overview": "`geneXtendeR` is a Bioconductor package designed for robust and precise functional annotation of ChIP-seq peaks (or any genomic coverage islands). Unlike standard \"closest-feature\" tools, it allows users to \"extend\" gene boundaries—specifically upstream of the TSS—to capture cis-regulatory elements like promoters and enhancers. This is particularly useful for epigenetic marks with broad enrichment patterns (e.g., H3K9me1, H3K27me3).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/geneXtendeR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genextender/overview",
+  "github": "https://github.com/Bohdan-Khomtchouk/geneXtendeR",
+  "conda_downloads": "44.2K",
+  "conda_downloads_num": 44200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "geneXtendeR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/geneXtendeR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genextender/overview",
+    "github": "https://github.com/Bohdan-Khomtchouk/geneXtendeR",
+    "conda_downloads": "44.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genextender\n\nname: bioconductor-genextender\ndescription: Functional annotation of ChIP-seq peak data using optimized gene extensions. Use this skill when you need to map genomic coordinates (peaks) to genes, explore gene-centric functional annotations, or optimize upstream/downstream extensions to capture regulatory elements and Gene Ontology (GO) terms.\n\n# bioconductor-genextender\n\n## Overview\n`geneXtendeR` is a Bioconductor package designed for robust and precise functional annotation of ChIP-seq peaks (or any genomic coverage islands). Unlike standard \"closest-feature\" tools, it allows users to \"extend\" gene boundaries—specifically upstream of the TSS—to capture cis-regulatory elements like promoters and enhancers. This is particularly useful for epigenetic marks with broad enrichment patterns (e.g., H3K9me1, H3K27me3).\n\n## Core Workflow\n\n### 1. Installation and Setup\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"geneXtendeR\")\nlibrary(geneXtendeR)\nlibrary(rtracklayer) # Required for readGFF\n```\n\n### 2. Loading Data\nYou need a GTF file for the organism and a peak file.\n*   **GTF:** Load using `readGFF()`.\n*   **Peaks:** Must be a tab-delimited file with three columns: `chr`, `start`, `end`.\n\n```R\n# Load GTF\norganism_gtf <- readGFF(\"path/to/species.gtf.gz\")\n\n# Load and format peaks\n# This creates a \"peaks.txt\" file in the working directory for downstream functions\npeaksInput(\"my_peaks.txt\") \n```\n\n### 3. Exploratory Visualization (Optimization)\nUse these functions to determine the optimal upstream extension by observing how many peaks are captured at different distances.\n\n*   `barChart(gtf, start, end, step)`: Raw counts of peaks-on-genes.\n*   `linePlot(gtf, start, end, step)`: Rate of change in peak capture.\n*   `hotspotPlot(allpeaks, sigpeaks, gtf, start, end, step)`: Ratio of significant peaks to total peaks across intervals.\n*   `meanPeakLengthPlot(gtf, start, end, step)`: Visualizes average peak broadness across genomic intervals.\n\nExample:\n```R\n# Check extensions from 0 to 10000bp in 500bp increments\nlinePlot(organism_gtf, 0, 10000, 500)\n```\n\n### 4. Functional Annotation\nOnce an extension (e.g., 2000bp) is chosen, use these functions to map peaks to genes.\n\n*   **Standard Annotation:**\n    ```R\n    # Returns a data table of peaks mapped to genes\n    annotated_data <- annotate(organism_gtf, 2000)\n    ```\n\n*   **Gene-Centric Summary:**\n    ```R\n    # Summarizes peaks per gene (Peaks-on-Gene-Body, Mean Distance, SD)\n    gene_summary <- gene_annotate(organism_gtf, 2000)\n    ```\n\n*   **N-Dimensional Annotation:**\n    ```R\n    # Maps each peak to the 1st, 2nd, ..., nth closest genes\n    # Useful for identifying potential distal regulatory targets\n    expanded_map <- annotate_n(organism_gtf, 2000, n = 3)\n    ```\n\n*   **Gene Lookup:**\n    ```R\n    # Find all peaks associated with a specific gene\n    gene_lookup(organism_gtf, \"mTOR\", n = 20, extension = 2000)\n    ```\n\n### 5. Gene Ontology (GO) Analysis\n`geneXtendeR` provides tools to see which GO terms are gained or lost when changing extension levels.\n\n```R\nlibrary(org.Hs.eg.db) # Use the appropriate org.db for your species\nlibrary(GO.db)\n\n# Find GO terms associated with peaks captured between 2300bp and 2400bp\ngo_diff <- diffGO(organism_gtf, 2300, 2400, BP, org.Hs.eg.db)\n\n# Visualizations\nmakeNetwork(organism_gtf, 2300, 2400, BP, org.Hs.eg.db)\nmakeWordCloud(organism_gtf, 2300, 2400, BP, org.Hs.eg.db)\n```\n\n## Key Tips\n*   **Chromosome Naming:** The package internally converts X to 100, Y to 200, and MT to 300 for sorting.\n*   **Distance Calculation:** Distance is calculated between the 5' end of a gene and the 3' end of a peak (or vice versa), whichever is smallest.\n*   **Mean = 0:** In `gene_annotate()`, a mean distance of 0 indicates that all peaks associated with that gene are overlapping the gene body (including the extension).\n*   **Robustness:** `gene_annotate()` is designed to be robust across different peak callers (e.g., SICER vs. MACS2) by focusing on gene-centric capture rather than exact coordinate overlaps.\n\n## Reference documentation\n- [geneXtendeR](./references/geneXtendeR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genextender",
+    "description": "bioconductor-genextender performs functional annotation of ChIP-seq peaks by mapping genomic coordinates to genes using optimized upstream and downstream extensions. Use when user asks to map peaks to genes, optimize genomic extension distances for regulatory elements, or perform gene-centric functional summaries of epigenetic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/geneXtendeR.html"
+  }
+}

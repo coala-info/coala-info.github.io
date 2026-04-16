@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chipseqspike",
+  "category": "bioconductor",
+  "name": "bioconductor-chipseqspike",
+  "description": "The bioconductor-chipseqspike package normalizes ChIP-seq data using exogenous spike-in controls to account for global signal shifts between samples. Use when user asks to normalize ChIP-seq datasets with spike-in DNA, estimate scaling factors from endogenous and exogenous reads, or generate normalized binding profiles and heatmaps.",
+  "overview": "The `ChIPSeqSpike` package provides a specialized workflow for normalizing ChIP-seq data using exogenous spike-in controls (e.g., Drosophila DNA added to Human samples). Unlike standard RPM (Reads Per Million) normalization, which assumes total signal remains constant across conditions, spike-in normalization allows for the detection of global signal shifts. The package operates primarily on BigWig and BAM files and does not require peak calling, though it can incorporate peak coordinates if ava",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/ChIPSeqSpike.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chipseqspike/overview",
+  "github": "N/A",
+  "conda_downloads": "15.1K",
+  "conda_downloads_num": 15100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChIPSeqSpike"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/ChIPSeqSpike.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chipseqspike/overview",
+    "github": "N/A",
+    "conda_downloads": "15.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chipseqspike\n\n## Overview\n\nThe `ChIPSeqSpike` package provides a specialized workflow for normalizing ChIP-seq data using exogenous spike-in controls (e.g., Drosophila DNA added to Human samples). Unlike standard RPM (Reads Per Million) normalization, which assumes total signal remains constant across conditions, spike-in normalization allows for the detection of global signal shifts. The package operates primarily on BigWig and BAM files and does not require peak calling, though it can incorporate peak coordinates if available.\n\n## Standard Workflow\n\nThe normalization procedure follows a specific four-step sequence:\n\n1.  **RPM Scaling**: Initial normalization for sequencing depth.\n2.  **Input Subtraction**: Removing background noise using a control (Input) sample.\n3.  **RPM Scaling Reversal**: Returning data to a state where exogenous factors can be applied.\n4.  **Exogenous Scaling**: Applying the final scaling factor derived from the spike-in DNA.\n\n### 1. Dataset Initialization\n\nData is managed via an experiment info file (CSV or TSV). Required columns: `expName`, `endogenousBam`, `exogenousBam`, `inputBam`, `bigWigEndogenous`, and `bigWigInput`.\n\n```r\nlibrary(ChIPSeqSpike)\n\n# Define paths to your files\nbam_path <- \"path/to/bam_files\"\nbigwig_path <- \"path/to/bigwig_files\"\ninfo_file_csv <- \"metadata.csv\"\n\n# Create the dataset object\n# Use boost = TRUE to keep data in memory (faster but memory-intensive)\ncsds <- spikeDataset(info_file_csv, bam_path, bigwig_path, boost = FALSE)\n```\n\n### 2. Estimating Scaling Factors\n\nThe package calculates scaling factors based on the number of reads mapped to the endogenous and exogenous genomes.\n\n```r\n# Calculate counts and factors\ncsds <- estimateScalingFactors(csds)\n\n# View a summary of counts and factors\nspikeSummary(csds)\n\n# Check the ratio of exogenous/endogenous DNA (ideally between 2-25%)\ngetRatio(csds)\n```\n\n### 3. The Normalization Pipeline\n\nExecute the steps in order. Note: Windows users cannot perform these steps due to `rtracklayer` limitations with BigWig files.\n\n```r\n# 1. RPM Scaling\ncsds <- scaling(csds, outputFolder = \"normalized_data\")\n\n# 2. Input Subtraction\ncsds <- inputSubtraction(csds)\n\n# 3. Reverse RPM Scaling\ncsds <- scaling(csds, reverse = TRUE)\n\n# 4. Apply Exogenous Scaling\ncsds <- scaling(csds, type = \"exo\")\n```\n\nAlternatively, use the wrapper function for the entire pipeline:\n```r\ncsds <- spikePipe(info_file_csv, bam_path, bigwig_path, gff_vec, genome_name)\n```\n\n### 4. Extracting and Plotting Results\n\nTo visualize data, you must first extract binding values based on genomic coordinates (GFF).\n\n```r\n# Extract scores for annotations\ncsds <- extractBinding(csds, gff_file = \"coords.gff\", genome = \"hg19\")\n\n# Plot average profiles\nplotProfile(csds, legend = TRUE)\n\n# Plot profiles comparing spiked vs unspiked\nplotProfile(csds, legend = TRUE, notScaled = TRUE)\n\n# Generate heatmaps\nplotHeatmaps(csds, clustering_method = \"kmeans\", nb_of_groups = 2)\n\n# Boxplots for distribution analysis\nboxplotSpike(csds, spiked = TRUE)\n\n# Correlation analysis between samples\nplotCor(csds, method_scale = \"log\")\n```\n\n## Tips for Success\n\n*   **Memory Management**: If working with large datasets, avoid `boost = TRUE` unless you have significant RAM. The package will otherwise write intermediate BigWig files to disk.\n*   **Input Subtraction**: This step is critical for removing false positives. Ensure your `info.csv` correctly pairs IP samples with their corresponding Input controls.\n*   **Exogenous Ratio**: If `getRatio()` reports less than 2%, the normalization may be unreliable. If it reports >25%, it is generally safe but indicates a very high spike-in concentration.\n*   **File Formats**: Ensure BigWig files are \"fixed steps\" for compatibility with the internal processing engines.\n\n## Reference documentation\n\n- [ChIPSeqSpike](./references/ChIPSeqSpike.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chipseqspike",
+    "description": "The bioconductor-chipseqspike package normalizes ChIP-seq data using exogenous spike-in controls to account for global signal shifts between samples. Use when user asks to normalize ChIP-seq datasets with spike-in DNA, estimate scaling factors from endogenous and exogenous reads, or generate normalized binding profiles and heatmaps.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/ChIPSeqSpike.html"
+  }
+}

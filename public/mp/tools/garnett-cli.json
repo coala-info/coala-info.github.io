@@ -1,0 +1,57 @@
+{
+  "id": "garnett-cli",
+  "category": "CLI",
+  "name": "garnett-cli",
+  "description": "\"Garnett-cli provides command-line tools for automated cell type classification in single-cell transcriptomics data. Use when user asks to parse expression data, transform or validate marker files, train a cell type classifier, classify cells, or export classification results.\"",
+  "overview": "The `garnett-cli` provides a suite of R-based command-line tools to execute the Garnett workflow for single-cell analysis. It enables researchers to move from raw expression matrices to annotated cell types by leveraging marker gene hierarchies. The toolset covers the entire pipeline: data parsing, marker file transformation and validation, model training, and cell classification.",
+  "homepage": "https://github.com/ebi-gene-expression-group/garnett-cli",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/garnett-cli/overview",
+  "github": "https://github.com/ebi-gene-expression-group/garnett-cli",
+  "conda_downloads": "18.3K",
+  "conda_downloads_num": 18300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "garnett-cli_transform_marker_file.R",
+      "garnett-cli_garnett_check_markers.R",
+      "garnett-cli_update_marker_file.R",
+      "garnett-cli_garnett_train_classifier.R",
+      "garnett-cli_garnett_classify_cells.R",
+      "garnett-cli_garnett_get_std_output.R",
+      "garnett-cli_garnett_get_feature_genes.R"
+    ],
+    "description": "Transforms marker gene files into a format suitable for Garnett.",
+    "docker_image": "quay.io/biocontainers/garnett-cli:0.0.5--hdfd78af_1",
+    "homepage": "https://github.com/ebi-gene-expression-group/garnett-cli",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/garnett-cli/overview",
+    "github": "https://github.com/ebi-gene-expression-group/garnett-cli",
+    "conda_downloads": "18.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "garnett-cli_garnett_check_markers.R.cwl",
+    "garnett-cli_garnett_classify_cells.R.cwl",
+    "garnett-cli_garnett_get_feature_genes.R.cwl",
+    "garnett-cli_garnett_get_std_output.R.cwl",
+    "garnett-cli_garnett_train_classifier.R.cwl",
+    "garnett-cli_transform_marker_file.R.cwl",
+    "garnett-cli_update_marker_file.R.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# garnett-cli\n\n## Overview\n\nThe `garnett-cli` provides a suite of R-based command-line tools to execute the Garnett workflow for single-cell analysis. It enables researchers to move from raw expression matrices to annotated cell types by leveraging marker gene hierarchies. The toolset covers the entire pipeline: data parsing, marker file transformation and validation, model training, and cell classification.\n\n## Core Workflow and Commands\n\n### 1. Data Preparation\nConvert 10x Genomics style data into a CellDataSet (CDS) object required for Garnett.\n```bash\nparse_expr_data.R --input-10x-dir <path_to_10x_dir> --output-cds <output_path.rds>\n```\n\n### 2. Marker File Management\nGarnett uses a specific marker file format. If you have markers from the Single Cell Expression Atlas (SCXA), transform them first:\n```bash\ntransform_marker_file.R \\\n    --input-marker-file <scxa_markers.txt> \\\n    --marker-list <serialized_marker_obj.rds> \\\n    --garnett-marker-file <output_garnett_markers.txt>\n```\n\n### 3. Marker Validation and Refinement\nBefore training, verify that your markers are specific to the intended cell types.\n*   **Check Markers**: Evaluates marker scores and generates quality plots.\n    ```bash\n    garnett_check_markers.R \\\n        --cds-object <data.rds> \\\n        --marker-file-path <markers.txt> \\\n        --database <org.Hs.eg.db|org.Mm.eg.db> \\\n        --cds-gene-id-type ENSEMBL \\\n        --marker-file-gene-id-type SYMBOL \\\n        --marker-output-path <scores.txt> \\\n        --plot-output-path <quality_plot.png>\n    ```\n*   **Update Marker File**: Automatically remove markers that performed poorly in the check step.\n    ```bash\n    update_marker_file.R \\\n        --marker-list-obj <markers.rds> \\\n        --marker-check-file <scores.txt> \\\n        --updated-marker-file <refined_markers.txt>\n    ```\n\n### 4. Training and Classification\n*   **Train Classifier**: Build a custom model based on your data and markers.\n    ```bash\n    garnett_train_classifier.R \\\n        --cds-object <data.rds> \\\n        --marker-file-path <refined_markers.txt> \\\n        --database <org.Hs.eg.db> \\\n        --output-path <classifier.rds>\n    ```\n*   **Classify Cells**: Apply a trained (or pre-trained) classifier to new data.\n    ```bash\n    garnett_classify_cells.R \\\n        --cds-object <query_data.rds> \\\n        --classifier-object <classifier.rds> \\\n        --database <org.Hs.eg.db>\n    ```\n\n### 5. Exporting Results\nExtract classification results into a standard TSV format for downstream analysis.\n```bash\ngarnett_get_std_output.R \\\n    --input-object <classified_data.rds> \\\n    --predicted-cell-type-field \"cell_type\" \\\n    --output-file-path <results.tsv>\n```\n\n## Expert Tips and Best Practices\n\n*   **Database Installation**: Ensure the Bioconductor annotation database (e.g., `org.Hs.eg.db` for human, `org.Mm.eg.db` for mouse) is installed in your Conda environment before running check, train, or classify commands.\n*   **Gene ID Consistency**: Always verify the `--cds-gene-id-type` and `--marker-file-gene-id-type`. Mismatches between ENSEMBL IDs and Gene Symbols are the most common cause of \"zero markers found\" errors.\n*   **Classification Overwrites**: When running `garnett_classify_cells.R` on a CDS object that has been classified before, you must manually remove the existing classification column from the metadata if you wish to re-run the process with different parameters.\n*   **Feature Investigation**: Use `garnett_get_feature_genes.R` to see which genes the model actually prioritized. This is useful for biological validation of the classifier.\n    ```bash\n    garnett_get_feature_genes.R --classifier-object <model.rds> --database <db> --output-path <features.txt>\n    ```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| /usr/local/bin/garnett_get_feature_genes.R | Get feature genes for a given classifier object. |\n| /usr/local/bin/garnett_get_std_output.R | Get standard output from a CDS object |\n| /usr/local/bin/transform_marker_file.R | Transforms marker gene files into a format suitable for Garnett. |\n| /usr/local/bin/update_marker_file.R | Update marker gene list based on assessment file. |\n| garnett-cli_garnett_check_markers.R | Check marker genes for cell types. |\n| garnett_classify_cells.R | Query CDS object holding expression data to be classified |\n| garnett_train_classifier.R | Train a cell type classifier using Garnett. |\n\n## Reference documentation\n- [Garnett CLI GitHub README](./references/github_com_ebi-gene-expression-group_garnett-cli_blob_develop_README.md)\n- [Check Markers Script Details](./references/github_com_ebi-gene-expression-group_garnett-cli_blob_develop_garnett_check_markers.R.md)",
+  "skill_front_matter": {
+    "name": "garnett-cli",
+    "description": "Garnett-cli provides command-line tools for automated cell type classification in single-cell transcriptomics data. Use when user asks to parse expression data, transform or validate marker files, train a cell type classifier, classify cells, or export classification results.",
+    "homepage": "https://github.com/ebi-gene-expression-group/garnett-cli"
+  }
+}

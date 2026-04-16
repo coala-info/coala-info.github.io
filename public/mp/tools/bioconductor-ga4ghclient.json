@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ga4ghclient",
+  "category": "bioconductor",
+  "name": "bioconductor-ga4ghclient",
+  "description": "This tool provides an R interface to access and analyze genomic data from GA4GH-compliant servers. Use when user asks to search for datasets, query variants by genomic coordinates, or retrieve genotype data from public genomic APIs.",
+  "overview": "The `GA4GHclient` package provides an R interface to the GA4GH Genomics API. It allows researchers to query large-scale genomic databases without downloading entire experiments. The package automatically converts API responses into standard Bioconductor objects like `VCF` (from `VariantAnnotation`) or `DataFrame` (from `S4Vectors`), facilitating downstream analysis with existing Bioconductor tools.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GA4GHclient.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ga4ghclient/overview",
+  "github": "https://github.com/labbcb/GA4GHclient",
+  "conda_downloads": "23.7K",
+  "conda_downloads_num": 23700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GA4GHclient"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GA4GHclient.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ga4ghclient/overview",
+    "github": "https://github.com/labbcb/GA4GHclient",
+    "conda_downloads": "23.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ga4ghclient\n\nname: bioconductor-ga4ghclient\ndescription: Access and analyze genomic data from Global Alliance for Genomics and Health (GA4GH) compliant servers. Use this skill to search for datasets, reference genomes, variants, and reads from public APIs (like 1000 Genomes or Ensembl) and convert them into tidy R data frames or Bioconductor S4 objects (VCF, GRanges).\n\n## Overview\n\nThe `GA4GHclient` package provides an R interface to the GA4GH Genomics API. It allows researchers to query large-scale genomic databases without downloading entire experiments. The package automatically converts API responses into standard Bioconductor objects like `VCF` (from `VariantAnnotation`) or `DataFrame` (from `S4Vectors`), facilitating downstream analysis with existing Bioconductor tools.\n\n## Core Workflow\n\n### 1. Setup and Connection\nDefine the host URL of the GA4GH server you wish to query.\n\n```r\nlibrary(GA4GHclient)\nhost <- \"http://1kgenomes.ga4gh.org/\"\n```\n\n### 2. Discovery (Datasets and Variant Sets)\nBefore querying specific variants, you must identify the `datasetId` and `variantSetId`.\n\n```r\n# Find available datasets\ndatasets <- searchDatasets(host, nrows = 1)\ndatasetId <- datasets$id\n\n# Find variant sets (equivalent to VCF files) within a dataset\nvariantSets <- searchVariantSets(host, datasetId, nrows = 1)\nvariantSetId <- variantSets$id\n```\n\n### 3. Searching Variants\nYou can search for variants by genomic coordinates. By default, these return `VCF` objects.\n\n```r\n# Search by coordinates (1-based indexing)\nvariants <- searchVariants(host, variantSetId, \n                           referenceName = \"1\", \n                           start = 15000, \n                           end = 16000, \n                           nrows = 10)\n\n# To get a simple data frame instead of a VCF object:\nvariants_df <- searchVariants(host, variantSetId, \n                              referenceName = \"1\", \n                              start = 15000, \n                              end = 16000, \n                              asVCF = FALSE)\n```\n\n### 4. Integration with Annotation Objects\nUse `GRanges` to query variants for specific genes using Bioconductor annotation packages.\n\n```r\nlibrary(org.Hs.eg.db)\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\nlibrary(GenomeInfoDb)\n\n# Get coordinates for a gene (e.g., SCN1A)\ngene_id <- select(org.Hs.eg.db, keys = \"SCN1A\", keytype = \"SYMBOL\", columns = \"ENTREZID\")$ENTREZID\ngr <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene, filter = list(gene_id = gene_id))\n\n# Match seqlevels style to the server (usually NCBI for 1kGenomes)\nseqlevelsStyle(gr) <- \"NCBI\"\n\n# Search using the GRanges object\nvariants_gene <- searchVariantsByGRanges(host, variantSetId, gr)\n```\n\n### 5. Retrieving Genotypes (CallSets)\nTo get sample-specific genotype data (the `GT` field), you must specify `callSetIds`.\n\n```r\n# Get IDs for the first 5 samples\ncallSetIds <- searchCallSets(host, variantSetId, nrows = 5)$id\n\n# Query variants including genotype calls for those samples\nvcf <- searchVariants(host, variantSetId, \n                      referenceName = \"1\", \n                      start = 15000, \n                      end = 16000, \n                      callSetIds = callSetIds)\n\n# Access genotypes\ngeno(vcf)$GT\n```\n\n## Key Functions Reference\n\n| Category | Functions |\n| --- | --- |\n| **Metadata** | `searchDatasets`, `searchReferenceSets`, `searchReferences` |\n| **Variants** | `searchVariantSets`, `searchVariants`, `searchVariantsByGRanges`, `getVariant` |\n| **Samples** | `searchCallSets`, `getCallSet`, `searchBiosamples`, `searchIndividuals` |\n| **Reads** | `searchReadGroupSets`, `searchReads` |\n| **Sequence** | `listReferenceBases` |\n| **Expression** | `searchRnaQuantifications`, `searchExpressionLevels` |\n\n## Tips and Best Practices\n\n- **Coordinate Systems**: R uses 1-based indexing. Ensure your `start` and `end` parameters align with the server's reference genome version (e.g., hg19/NCBI37 vs hg38).\n- **Response Size**: If queries are slow or timing out, adjust the `responseSize` parameter to control how many records are fetched per API call.\n- **VCF Conversion**: Use `asVCF = TRUE` (default) when you plan to use `VariantAnnotation` methods like `locateVariants` or `predictCoding`. Use `asVCF = FALSE` for quick data exploration in tidy formats.\n- **Reference Genomes**: Always check the reference genome name using `searchReferenceSets(host)` to ensure compatibility with your `TxDb` or `OrgDb` objects.\n\n## Reference documentation\n- [GA4GHclient Vignette (Rmd)](./references/GA4GHclient.Rmd)\n- [GA4GHclient Vignette (Markdown)](./references/GA4GHclient.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ga4ghclient",
+    "description": "This tool provides an R interface to access and analyze genomic data from GA4GH-compliant servers. Use when user asks to search for datasets, query variants by genomic coordinates, or retrieve genotype data from public genomic APIs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GA4GHclient.html"
+  }
+}

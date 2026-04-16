@@ -1,0 +1,51 @@
+{
+  "id": "mtsv-tools",
+  "category": "CLI",
+  "name": "mtsv-tools",
+  "description": "MTSv Tools is a high-performance computational engine designed for the rapid assignment of sequencing reads to taxonomic IDs using a custom FM-index. Use when user asks to prepare reference databases, build genomic indices, bin sequencing reads to taxa, aggregate results into summary reports, or partition reads into matched and unmatched sets.",
+  "overview": "MTSv (Metagenomic Taxon Selection and Verification) Tools is a high-performance computational engine designed for the rapid assignment of sequencing reads to taxonomic IDs. It utilizes a custom FM-index (MG-index) to enable memory-efficient and highly parallelizable workflows. The toolset is modular, allowing users to scale from small datasets to massive reference databases by chunking the reference and processing reads in parallel across multiple indices.",
+  "homepage": "https://github.com/FofanovLab/mtsv_tools",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/mtsv-tools/overview",
+  "github": "https://github.com/FofanovLab/mtsv_tools",
+  "conda_downloads": "18.6K",
+  "conda_downloads_num": 18600,
+  "last_updated": "2026-02-20",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mtsv-tools_mtsv-chunk",
+      "mtsv-tools_mtsv-build",
+      "mtsv-tools_mtsv-binner",
+      "mtsv-tools_mtsv-collapse"
+    ],
+    "description": "Split a FASTA reference database into chunks for index generation.",
+    "docker_image": "quay.io/biocontainers/mtsv-tools:2.1.0--h54198d6_0",
+    "homepage": "https://github.com/FofanovLab/mtsv_tools",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/mtsv-tools/overview",
+    "github": "https://github.com/FofanovLab/mtsv_tools",
+    "conda_downloads": "18.6K",
+    "last_updated": "2026-02-20",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "mtsv-tools_mtsv-binner.cwl",
+    "mtsv-tools_mtsv-build.cwl",
+    "mtsv-tools_mtsv-chunk.cwl",
+    "mtsv-tools_mtsv-collapse.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# mtsv-tools\n\n## Overview\n\nMTSv (Metagenomic Taxon Selection and Verification) Tools is a high-performance computational engine designed for the rapid assignment of sequencing reads to taxonomic IDs. It utilizes a custom FM-index (MG-index) to enable memory-efficient and highly parallelizable workflows. The toolset is modular, allowing users to scale from small datasets to massive reference databases by chunking the reference and processing reads in parallel across multiple indices.\n\n## Core Workflow\n\n### 1. Reference Preparation (`mtsv-chunk`)\nTo maintain performance and manage memory, split large FASTA reference databases into smaller chunks (typically 1-2 GB).\n\n```bash\nmtsv-chunk --input ref_db.fasta --output ./chunks/ --gb 1.0\n```\n\n### 2. Index Construction (`mtsv-build`)\nBuild an MG-index for each FASTA chunk. This step requires a mapping between sequence headers and NCBI TaxIDs.\n\n**Default Header Format:** `>InternalID-TaxID` (e.g., `>12345-987`)\n\n**Using External Mapping:**\nIf headers are not in the default format, provide a TSV/CSV mapping file with columns: `header`, `taxid`, and `seqid`.\n\n```bash\nmtsv-build --fasta ./chunks/ref_0.fasta --index ./indices/ref_0.index --mapping map.tsv\n```\n\n*   **Performance Tip:** Adjust `--sample-interval` (default 64) and `--sa-sample` (default 32). Lower values increase index size but speed up queries.\n\n### 3. Read Binning (`mtsv-binner`)\nAssign sequencing reads to the generated indices. MTSv supports gzipped FASTQ/FASTA inputs and features automatic resume capabilities.\n\n```bash\nmtsv-binner --input reads.fastq.gz --index ./indices/ --output results.bin\n```\n\n*   **Long-form Output:** Use this mode to record Genome ID and alignment offsets for downstream functional annotation.\n*   **Checkpointing:** If a run is interrupted, `mtsv-binner` will detect partially completed output and resume from the last processed read.\n\n### 4. Result Aggregation (`mtsv-collapse`)\nConsolidate binning results into human-readable taxon-level summary reports.\n\n```bash\nmtsv-collapse --input results.bin --output summary.tsv --report\n```\n\n*   **Precision:** The `--report` flag provides detailed percentage columns with 6 decimal places for high-resolution analysis.\n\n## Utility Operations\n\n### Read Partitioning (`mtsv-partition`)\nSeparate reads into \"matched\" and \"unmatched\" sets based on binning results. This is essential for iterative filtering (e.g., removing host contamination).\n\n```bash\nmtsv-partition --input reads.fastq.gz --results results.bin --matched matched.fastq.gz --unmatched unmatched.fastq.gz\n```\n\n### Reference Management (`mtsv-reference`)\nUse this utility for general reference database maintenance and metadata tasks.\n\n## Expert Tips\n\n*   **Memory Management:** Total RAM usage during binning is approximately 3.5x the size of the reference FASTA chunk. Ensure your `--gb` setting in `mtsv-chunk` aligns with your available hardware.\n*   **Parallelization:** Since indices are independent, you can run multiple `mtsv-binner` instances across different nodes or CPU cores for different index chunks, then combine results.\n*   **Gzip Handling:** MTSv tools (v2.1.1+) correctly handle multi-member gzip files. You can safely use concatenated `.gz` files as input.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| mtsv-binner | Metagenomic and metatranscriptomic assignment tool. |\n| mtsv-build | Index construction for mtsv metagenomic and metatranscriptomic assignment tool. |\n| mtsv-chunk | Split a FASTA reference database into chunks for index generation. |\n| mtsv-collapse | Tool for combining the output of multiple separate mtsv runs. |\n\n## Reference documentation\n\n- [MTSv Tools README](./references/github_com_FofanovLab_mtsv_tools_blob_master_README.md)\n- [MTSv Tools Changelog](./references/github_com_FofanovLab_mtsv_tools_blob_master_CHANGELOG.md)",
+  "skill_front_matter": {
+    "name": "mtsv-tools",
+    "description": "MTSv Tools is a high-performance computational engine designed for the rapid assignment of sequencing reads to taxonomic IDs using a custom FM-index. Use when user asks to prepare reference databases, build genomic indices, bin sequencing reads to taxa, aggregate results into summary reports, or partition reads into matched and unmatched sets.",
+    "homepage": "https://github.com/FofanovLab/mtsv_tools"
+  }
+}

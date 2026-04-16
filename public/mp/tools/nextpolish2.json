@@ -1,0 +1,47 @@
+{
+  "id": "nextpolish2",
+  "category": "CLI",
+  "name": "nextpolish2",
+  "description": "NextPolish2 improves the consensus accuracy of genome assemblies by correcting errors in homopolymers and microsatellites using short-read k-mer distributions. Use when user asks to polish a genome assembly, improve consensus accuracy with short reads, or correct errors in PacBio HiFi assemblies while maintaining haplotype phasing.",
+  "overview": "NextPolish2 is a specialized genomic tool used to improve the consensus accuracy of high-quality genome assemblies, particularly those generated from PacBio HiFi reads. While HiFi assemblies are generally excellent, they often contain small errors in microsatellites or homopolymer runs. NextPolish2 resolves these by leveraging the accuracy of short-read k-mer distributions. Unlike its predecessor, it includes a phasing module that ensures corrections do not collapse haplotypes, making it ideal f",
+  "homepage": "https://github.com/Nextomics/NextPolish2",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/nextpolish2/overview",
+  "github": "https://github.com/Nextomics/NextPolish2",
+  "conda_downloads": "7.0K",
+  "conda_downloads_num": 7000,
+  "last_updated": "2025-11-05",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nextpolish2_yak",
+      "nextpolish2_nextPolish2"
+    ],
+    "description": "yak <command> <argument>",
+    "docker_image": "quay.io/biocontainers/nextpolish2:0.2.2--h74ec884_0",
+    "homepage": "https://github.com/Nextomics/NextPolish2",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/nextpolish2/overview",
+    "github": "https://github.com/Nextomics/NextPolish2",
+    "conda_downloads": "7.0K",
+    "last_updated": "2025-11-05",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "nextpolish2_nextPolish2.cwl",
+    "nextpolish2_yak.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# nextpolish2\n\n## Overview\n\nNextPolish2 is a specialized genomic tool used to improve the consensus accuracy of high-quality genome assemblies, particularly those generated from PacBio HiFi reads. While HiFi assemblies are generally excellent, they often contain small errors in microsatellites or homopolymer runs. NextPolish2 resolves these by leveraging the accuracy of short-read k-mer distributions. Unlike its predecessor, it includes a phasing module that ensures corrections do not collapse haplotypes, making it ideal for heterozygous regions and complex repeats.\n\n## Workflow and CLI Usage\n\nThe polishing process requires three main components: the draft assembly, a sorted/indexed BAM file of HiFi reads mapped to that assembly, and k-mer files generated from short reads.\n\n### 1. Prepare the HiFi Mapping File\nIt is recommended to use `winnowmap` for mapping to better handle repetitive regions.\n\n```bash\n# 1. Count k-mers for winnowmap\nmeryl count k=15 output merylDB asm.fa.gz\nmeryl print greater-than distinct=0.9998 merylDB > repetitive_k15.txt\n\n# 2. Map HiFi reads and sort\nwinnowmap -t 8 -W repetitive_k15.txt -ax map-pb asm.fa.gz hifi.fasta.gz | samtools sort -o hifi.map.sort.bam -\n\n# 3. Index the BAM\nsamtools index hifi.map.sort.bam\n```\n\n### 2. Generate K-mer Datasets\nUse `yak` to create k-mer files from Illumina short reads (recommended coverage >= 60X). Perform quality control with `fastp` before counting.\n\n```bash\n# Generate 21-mer and 31-mer datasets\nyak count -o k21.yak -k 21 -b 37 <(zcat sr.R1.clean.fq.gz) <(zcat sr.R2.clean.fq.gz)\nyak count -o k31.yak -k 31 -b 37 <(zcat sr.R1.clean.fq.gz) <(zcat sr.R2.clean.fq.gz)\n```\n\n### 3. Run NextPolish2\nExecute the polishing command by providing the BAM, the assembly, and the yak files.\n\n```bash\nnextPolish2 -t 10 hifi.map.sort.bam asm.fa.gz k21.yak k31.yak > polished_assembly.fa\n```\n\n## Expert Tips and Best Practices\n\n*   **Short Read Quality**: The accuracy of NextPolish2 is heavily dependent on the quality of the short reads. Always perform adapter removal and quality trimming (e.g., using `fastp`) to prevent overcorrection.\n*   **Haplotype Consistency**: If your genome was assembled via trio binning, you should discard reads belonging to the other haplotype before the mapping step to maximize accuracy.\n*   **The `-r` Flag**: Use the `-r` option if you want to try an alternative correction mode that may perform differently in specific genomic contexts.\n*   **Mapping Parameters**: If certain regions are not being corrected, it is often because HiFi reads failed to map there due to high local error rates. Try relaxing mapping parameters in `winnowmap` or `minimap2` to increase coverage in those areas.\n*   **Memory Management**: NextPolish2 is written in Rust and is generally efficient, but processing large T2T genomes with many k-mer files requires significant RAM. Ensure your environment has sufficient resources for the number of threads (`-t`) specified.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| nextPolish2 | Repeat-aware polishing genomes assembled using HiFi long reads |\n| yak | yak <command> <argument> |\n\n## Reference documentation\n- [NextPolish2 Main Documentation](./references/github_com_Nextomics_NextPolish2_blob_main_README.md)\n- [NextPolish2 Benchmarking and Examples](./references/github_com_Nextomics_NextPolish2_blob_main_doc_benchmark1.md)\n- [NextPolish2 FAQ](./references/github_com_Nextomics_NextPolish2_blob_main_doc_faq.md)",
+  "skill_front_matter": {
+    "name": "nextpolish2",
+    "description": "NextPolish2 improves the consensus accuracy of genome assemblies by correcting errors in homopolymers and microsatellites using short-read k-mer distributions. Use when user asks to polish a genome assembly, improve consensus accuracy with short reads, or correct errors in PacBio HiFi assemblies while maintaining haplotype phasing.",
+    "homepage": "https://github.com/Nextomics/NextPolish2"
+  }
+}

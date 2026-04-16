@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-flowtype",
+  "category": "bioconductor",
+  "name": "bioconductor-flowtype",
+  "description": "This tool performs automated phenotyping of flow cytometry data to identify and analyze multi-dimensional cell populations. Use when user asks to partition flow cytometry channels, calculate phenotype frequencies, extract mean fluorescence intensity, or conduct cross-sample statistical comparisons of cell populations.",
+  "overview": "The `flowType` package uses automated thresholding (K-means, flowMeans, or flowClust) to partition every fluorescence channel into positive and negative populations. These partitions are then combined combinatorially to generate a complete set of multi-dimensional phenotypes. This allows for the discovery of complex cell populations that might be missed by manual gating.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/flowType.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowtype/overview",
+  "github": "N/A",
+  "conda_downloads": "15.7K",
+  "conda_downloads_num": 15700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "flowType"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/flowType.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowtype/overview",
+    "github": "N/A",
+    "conda_downloads": "15.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-flowtype\n\nname: bioconductor-flowtype\ndescription: Automated phenotyping of flow cytometry assays to identify and analyze multi-dimensional cell populations. Use this skill when analyzing flow cytometry data (flowFrame or flowSet objects) to perform high-dimensional partitioning, calculate phenotype frequencies (proportions), extract Mean Fluorescence Intensity (MFI), or conduct cross-sample statistical comparisons of cell populations.\n\n## Overview\nThe `flowType` package uses automated thresholding (K-means, flowMeans, or flowClust) to partition every fluorescence channel into positive and negative populations. These partitions are then combined combinatorially to generate a complete set of multi-dimensional phenotypes. This allows for the discovery of complex cell populations that might be missed by manual gating.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the library and your flow cytometry data (typically a `flowFrame`).\n```R\nlibrary(flowType)\ndata(DLBCLExample) # Example dataset\n```\n\n### 2. Running flowType\nIdentify the indices for markers used for proportions and MFIs.\n```R\nPropMarkers <- 3:5\nMFIMarkers <- 3:5\nMarkerNames <- c(\"CD19\", \"CD3\", \"CD5\")\n\n# Run the phenotyping\nRes <- flowType(DLBCLExample, PropMarkers, MFIMarkers, 'kmeans', MarkerNames)\n```\n\n### 3. Visualizing Results\nYou can plot the 1D partitions or specific multi-dimensional populations.\n```R\n# Plot all 1D partitions\nplot(Res, DLBCLExample)\n\n# Plot a specific phenotype (e.g., CD3+CD5-CD19+)\nplot(Res, \"CD3+CD5-CD19+\", Frame=DLBCLExample)\n```\n\n### 4. Extracting Data\nAccess cell frequencies and MFIs from the result object.\n```R\n# Get cell frequencies (proportions)\nProportions <- Res@CellFreqs / max(Res@CellFreqs)\n\n# Decode phenotype codes into human-readable names\nPhenoNames <- unlist(lapply(Res@PhenoCodes, function(x){\n  return(decodePhenotype(x, Res@MarkerNames[PropMarkers], Res@PartitionsPerMarker))\n}))\nnames(Proportions) <- PhenoNames\n```\n\n## Cross-Sample Analysis\nFor multiple samples, use `fsApply` to run `flowType` across a `flowSet` and then perform statistical testing.\n\n```R\n# Run on a flowSet\nResList <- fsApply(HIVData, flowType, PropMarkers, MFIMarkers, 'kmeans', MarkerNames)\n\n# Extract proportions into a matrix\nAll.Proportions <- matrix(0, 3^length(PropMarkers), length(ResList))\nfor (i in 1:length(ResList)){\n  All.Proportions[,i] = ResList[[i]]@CellFreqs / ResList[[i]]@CellFreqs[which(PhenoNames==\"\")]\n}\n\n# Statistical testing (e.g., t-test between groups)\n# Note: Always apply p-value adjustment (e.g., Bonferroni or FDR)\npvals <- apply(All.Proportions, 1, function(x) t.test(x ~ Labels)$p.value)\nadj_pvals <- p.adjust(pvals, method=\"fdr\")\nsignificant_phenotypes <- PhenoNames[which(adj_pvals < 0.05)]\n```\n\n## Memory Management and Optimization\nFor high-dimensional data (>15 markers), the number of potential phenotypes grows exponentially ($3^k$). \n\n- **Estimate Population Count**: Use `calcNumPops` to determine if the analysis will fit in memory.\n```R\n# Calculate number of populations for 34 markers with a depth cutoff of 10\ncalcNumPops(rep(2, 34), 10)\n```\n- **Set Cutoffs**: Use the `MaxMarkersPerPhenotype` parameter in `flowType()` to limit the complexity of phenotypes generated and save memory.\n\n## Tips\n- **Thresholding Methods**: While `kmeans` is fast, `flowMeans` or `flowClust` may provide better partitioning for complex distributions at the cost of computation time.\n- **Normalization**: Always normalize cell frequencies by the total number of cells (the phenotype with an empty string name `\"\"`) when comparing across samples.\n- **Marker Selection**: Only include markers in `PropMarkers` that are relevant for defining cell subsets to avoid combinatorial explosion.\n\n## Reference documentation\n- [flowType Vignette](./references/flowType.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-flowtype",
+    "description": "This tool performs automated phenotyping of flow cytometry data to identify and analyze multi-dimensional cell populations. Use when user asks to partition flow cytometry channels, calculate phenotype frequencies, extract mean fluorescence intensity, or conduct cross-sample statistical comparisons of cell populations.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/flowType.html"
+  }
+}

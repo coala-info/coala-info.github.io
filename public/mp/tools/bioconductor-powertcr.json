@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-powertcr",
+  "category": "bioconductor",
+  "name": "bioconductor-powertcr",
+  "description": "This tool analyzes T cell receptor repertoires by modeling clone size distributions and performing comparative statistical analyses. Use when user asks to fit discrete gamma-GPD or Pareto models to clone counts, cluster repertoires using Jensen-Shannon distance, or estimate diversity metrics like Shannon entropy and clonality.",
+  "overview": "The `powerTCR` package provides tools for the comparative analysis of T cell receptor (TCR) repertoires by modeling their clone size distributions. It specifically addresses the imperfect power-law behavior of TCR data using a discrete gamma-GPD (Generalized Pareto Distribution) spliced threshold model. The package allows for parsing common TCR sequencing formats, fitting statistical models to clone counts, and clustering samples based on the similarity of their fitted distributions.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/powerTCR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "powerTCR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/powerTCR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-powertcr\n\nname: bioconductor-powertcr\ndescription: Analysis of T cell receptor (TCR) repertoires using model-based comparative approaches. Use this skill to fit clone size distributions (discrete gamma-GPD spliced threshold or Type-I Pareto models), perform hierarchical clustering based on Jensen-Shannon distance, and calculate diversity estimators (richness, Shannon entropy, clonality).\n\n# bioconductor-powertcr\n\n## Overview\n\nThe `powerTCR` package provides tools for the comparative analysis of T cell receptor (TCR) repertoires by modeling their clone size distributions. It specifically addresses the imperfect power-law behavior of TCR data using a discrete gamma-GPD (Generalized Pareto Distribution) spliced threshold model. The package allows for parsing common TCR sequencing formats, fitting statistical models to clone counts, and clustering samples based on the similarity of their fitted distributions.\n\n## Typical Workflow\n\n### 1. Data Loading and Parsing\nThe package can parse various formats (MiTCR, MiGEC, VDJtools, ImmunoSEQ, MiXCR, IMSEQ). If data is already in R, it simply requires a vector of clone sizes (counts).\n\n```r\nlibrary(powerTCR)\n\n# Parse a single file\n# sample_counts <- parseFile(\"path/to/file.txt\", format = \"mixcr\")\n\n# Using the built-in toy dataset\ndata(repertoires)\n# repertoires is a list of numeric vectors (clone sizes)\n```\n\n### 2. Fitting the Spliced Threshold Model\nThe core model fits a Gamma distribution to the \"bulk\" (small clones) and a GPD to the \"tail\" (large clones).\n\n```r\n# Define a grid of potential thresholds (u)\n# Usually quantiles of the data (e.g., 75th to 90th)\nthresholds <- unique(round(quantile(repertoires[[1]], c(.75, .8, .85, .9))))\n\n# Fit the model\nfit <- fdiscgammagpd(repertoires[[1]], useq = thresholds, shift = min(repertoires[[1]]))\n\n# Access results\nmle_params <- get_mle(fit) # phi, shape, rate, threshold, sigma, xi\nnllh_val <- get_nllh(fit)\n```\n\n### 3. Fitting the Type-I Pareto Model\nAn alternative power-law model (Desponds et al.) that minimizes the KS-statistic.\n\n```r\npareto_fit <- fdesponds(repertoires[[1]])\n# Returns min.KS, Cmin (threshold), and pareto.alpha\n```\n\n### 4. Comparative Analysis (Clustering)\nCompare samples using Jensen-Shannon (JS) distance between their fitted distributions.\n\n```r\n# 1. Fit models for all samples in a list\nfits_list <- lapply(repertoires, function(x) {\n  fdiscgammagpd(x, useq = unique(round(quantile(x, c(.8, .9)))), shift = min(x))\n})\n\n# 2. Define a grid for evaluation (from min clone size to a large upper bound)\neval_grid <- min(unlist(repertoires)):100000\n\n# 3. Compute distance matrix\ndist_matrix <- get_distances(fits_list, grid = eval_grid, modelType = \"Spliced\")\n\n# 4. Cluster and plot\nclusterPlot(dist_matrix, method = \"ward.D\")\n```\n\n### 5. Diversity Estimation\nExtract model-based diversity metrics.\n\n```r\ndiv_metrics <- get_diversity(fits_list)\n# Returns richness, shannon, clonality, and prop_stim (proportion of highly stimulated clones)\n```\n\n## Distribution Functions and Simulation\nThe package provides standard R-style functions for the discrete gamma-GPD model:\n- `ddiscgammagpd(x, ...)`: Density\n- `pdiscgammagpd(q, ...)`: Distribution\n- `qdiscgammagpd(p, ...)`: Quantile\n- `rdiscgammagpd(n, ...)`: Random generation (simulation)\n\n## Tips\n- **Threshold Selection**: The `useq` parameter in `fdiscgammagpd` is critical. If the model fails to converge, try a different or denser grid of quantiles.\n- **Grid for JS Distance**: When using `get_distances`, ensure the `grid` extends far enough into the tail (e.g., 100,000+) to capture the differences in large clones, as this is where the models often diverge most.\n- **Bootstrapping**: Use `get_bootstraps(fits, resamples = 1000)` to generate confidence intervals for model parameters like $\\xi$ (the shape parameter of the GPD tail).\n\n## Reference documentation\n- [powerTCR](./references/powerTCR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-powertcr",
+    "description": "This tool analyzes T cell receptor repertoires by modeling clone size distributions and performing comparative statistical analyses. Use when user asks to fit discrete gamma-GPD or Pareto models to clone counts, cluster repertoires using Jensen-Shannon distance, or estimate diversity metrics like Shannon entropy and clonality.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/powerTCR.html"
+  }
+}

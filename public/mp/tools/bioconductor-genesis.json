@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genesis",
+  "category": "bioconductor",
+  "name": "bioconductor-genesis",
+  "description": "The GENESIS package performs genetic association testing and population structure inference in samples with complex ancestry and relatedness. Use when user asks to infer population structure using PC-AiR, estimate kinship with PC-Relate, fit linear mixed models, or perform variant association tests for quantitative and binary traits.",
+  "overview": "The GENESIS package provides tools for analyzing genetic data from samples with complex population structure and familial relatedness. It implements PC-AiR for robust Principal Component Analysis and PC-Relate for estimating kinship coefficients adjusted for ancestry. These components are integrated into a mixed-model framework for association testing of both quantitative and binary traits, supporting both SNP array and sequencing data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GENESIS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genesis/overview",
+  "github": "https://github.com/UW-GAC/GENESIS",
+  "conda_downloads": "38.0K",
+  "conda_downloads_num": 38000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GENESIS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GENESIS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genesis/overview",
+    "github": "https://github.com/UW-GAC/GENESIS",
+    "conda_downloads": "38.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genesis\n\nname: bioconductor-genesis\ndescription: Genetic association testing and population structure inference using the GENESIS R package. Use this skill when performing mixed model association analysis (LMM/GLMM), estimating heritability, or inferring population structure (PC-AiR) and relatedness (PC-Relate) in samples with population stratification and cryptic relatedness.\n\n## Overview\n\nThe GENESIS package provides tools for analyzing genetic data from samples with complex population structure and familial relatedness. It implements PC-AiR for robust Principal Component Analysis and PC-Relate for estimating kinship coefficients adjusted for ancestry. These components are integrated into a mixed-model framework for association testing of both quantitative and binary traits, supporting both SNP array and sequencing data.\n\n## Core Workflow\n\n### 1. Data Preparation\nGENESIS uses `GenotypeData` (GWASTools) or `SeqVarData` (SeqVarTools) objects.\n\n```R\nlibrary(GENESIS)\nlibrary(GWASTools)\n\n# For GDS files\ngeno <- GdsGenotypeReader(filename = \"genotype.gds\")\nscanAnnot <- ScanAnnotationDataFrame(pheno_data) # Must include 'scanID'\ngenoData <- GenotypeData(geno, scanAnnot = scanAnnot)\n```\n\n### 2. Population Structure and Relatedness\nTo account for structure without confounding from relatives:\n\n1.  **LD Pruning**: Use `SNPRelate::snpgdsLDpruning`.\n2.  **PC-AiR**: Identify ancestry PCs robust to relatedness.\n    ```R\n    # KINGmat is a kinship matrix from KING or snpgdsIBDKING\n    mypcair <- pcair(genoData, kinobj = KINGmat, divobj = KINGmat, snp.include = pruned_ids)\n    ```\n3.  **PC-Relate**: Estimate kinship adjusted for PCs.\n    ```R\n    iterator <- GenotypeBlockIterator(genoData, snpInclude = pruned_ids)\n    mypcrel <- pcrelate(iterator, pcs = mypcair$vectors[,1:2], training.set = mypcair$unrels)\n    grm <- pcrelateToMatrix(mypcrel, scaleKin = 2)\n    ```\n\n### 3. Null Model Fitting\nFit the model under the null hypothesis (no SNP effect) before running association tests.\n\n```R\n# Quantitative trait (LMM)\nnullmod <- fitNullModel(scanAnnot, outcome = \"pheno\", covars = c(\"pc1\", \"sex\"), \n                        cov.mat = grm, family = \"gaussian\")\n\n# Binary trait (GLMM via PQL)\nnullmod_bin <- fitNullModel(scanAnnot, outcome = \"case_control\", covars = \"pc1\", \n                            cov.mat = grm, family = \"binomial\")\n```\n\n### 4. Association Testing\nUse the null model to test SNPs.\n\n*   **Single Variant**:\n    ```R\n    genoIterator <- GenotypeBlockIterator(genoData, snpBlock = 10000)\n    assoc <- assocTestSingle(genoIterator, null.model = nullmod)\n    ```\n*   **Aggregate (Rare Variants)**:\n    ```R\n    # Requires SeqVarData and an iterator (Window, Range, or List)\n    assoc_agg <- assocTestAggregate(seqIterator, nullmod, test = \"Burden\", AF.max = 0.05)\n    ```\n\n## Key Functions and Tips\n\n- **`pcrelateToMatrix`**: Converts PC-Relate output to a Genetic Relationship Matrix (GRM). Use `scaleKin = 2` to match the scale expected by `fitNullModel`.\n- **`varCompCI`**: Estimates heritability (proportion of variance explained) for quantitative traits.\n- **Parallelization**: Use the `BPPARAM` argument (e.g., `BiocParallel::MulticoreParam()`) in `assocTestSingle` and `pcrelate` to speed up computation.\n- **Memory Management**: For large datasets, use `GenotypeBlockIterator` or `SeqVarBlockIterator` to process SNPs in chunks.\n- **Binary Traits**: Variance components from PQL (binary models) are not directly interpretable as heritability.\n\n## Reference documentation\n\n- [Genetic Association Testing using the GENESIS Package](./references/assoc_test.md)\n- [Analyzing Sequence Data using the GENESIS Package](./references/assoc_test_seq.md)\n- [Population Structure and Relatedness Inference using the GENESIS Package](./references/pcair.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genesis",
+    "description": "The GENESIS package performs genetic association testing and population structure inference in samples with complex ancestry and relatedness. Use when user asks to infer population structure using PC-AiR, estimate kinship with PC-Relate, fit linear mixed models, or perform variant association tests for quantitative and binary traits.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GENESIS.html"
+  }
+}

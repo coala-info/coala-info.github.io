@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biotmle",
+  "category": "bioconductor",
+  "name": "bioconductor-biotmle",
+  "description": "This tool performs biomarker discovery using Targeted Maximum Likelihood Estimation to identify genomic features associated with a binary exposure while adjusting for confounding. Use when user asks to identify biomarkers using causal inference, compute influence curve representations of the average treatment effect, or perform moderated t-tests on transformed expression data.",
+  "overview": "The `biotmle` package implements a causal inference framework for biomarker discovery. It uses Targeted Maximum Likelihood Estimation (TMLE) to transform biomarker expression data into influence curve (IC) representations of the Average Treatment Effect (ATE). These transformed values are then analyzed using moderated t-statistics (via `limma`) to identify significant associations. This approach provides a causal interpretation of biomarker-exposure relationships while accounting for potential c",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/biotmle.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biotmle/overview",
+  "github": "https://github.com/nhejazi/biotmle",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "biotmle"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/biotmle.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biotmle/overview",
+    "github": "https://github.com/nhejazi/biotmle",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biotmle\n\nname: bioconductor-biotmle\ndescription: Targeted Maximum Likelihood Estimation (TMLE) for biomarker discovery. Use this skill to identify genomic biomarkers (genes, proteins, etc.) associated with a binary exposure variable while adjusting for confounding covariates using causal inference methods.\n\n## Overview\n\nThe `biotmle` package implements a causal inference framework for biomarker discovery. It uses Targeted Maximum Likelihood Estimation (TMLE) to transform biomarker expression data into influence curve (IC) representations of the Average Treatment Effect (ATE). These transformed values are then analyzed using moderated t-statistics (via `limma`) to identify significant associations. This approach provides a causal interpretation of biomarker-exposure relationships while accounting for potential confounding.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires three components, typically stored in a `SummarizedExperiment` object:\n- **W**: Baseline covariates (confounders).\n- **A**: The binary exposure of interest.\n- **Y**: Biomarker expression measures.\n\n**Note:** Continuous covariates in $W$ and $A$ should be discretized to ensure the positivity assumption is met.\n\n```r\nlibrary(biotmle)\nlibrary(SummarizedExperiment)\nlibrary(dplyr)\n\n# Example: Discretize a covariate in colData\ncolData(se) <- colData(se) %>%\n  data.frame() %>%\n  mutate(age_bin = as.numeric(age > median(age))) %>%\n  DataFrame()\n\n# Identify the index of the exposure variable\nexp_idx <- which(names(colData(se)) == \"exposure_var\")\n```\n\n### 2. Biomarker Assessment (`biomarkertmle`)\nThis function computes the TML estimates for each biomarker. It is resource-intensive and supports parallelization via `BiocParallel`.\n\n```r\nbiotmle_out <- biomarkertmle(\n  se = se,\n  varInt = exp_idx,\n  g_lib = c(\"SL.mean\", \"SL.glm\"),        # SuperLearner library for treatment mechanism\n  Q_lib = c(\"SL.bayesglm\", \"SL.ranger\"), # SuperLearner library for outcome mechanism\n  cv_folds = 2,\n  bppar_type = BiocParallel::SerialParam()\n)\n```\n\n### 3. Statistical Testing (`modtest_ic`)\nAfter computing the IC-based transformations, use `modtest_ic` to perform moderated t-tests. This function wraps `limma` logic.\n\n```r\n# Performs the moderated t-test on the influence curve representations\nmodtmle_results <- modtest_ic(biotmle = biotmle_out)\n\n# Results are stored in the topTable slot\nresults_df <- modtmle_results@topTable\n```\n\n## Visualization\n\nThe package provides specialized plotting functions for `bioTMLE` objects:\n\n- **P-value Histograms**: `plot(modtmle_results, type = \"pvals_adj\")` to check the distribution of adjusted p-values.\n- **Heatmaps**: `heatmap_ic()` visualizes how biomarker contributions to the ATE vary across exposure groups.\n  ```r\n  heatmap_ic(modtmle_results, design = exposure_vector, top = 20, FDRcutoff = 0.05)\n  ```\n- **Volcano Plots**: `volcano_ic()` displays the relationship between the change in ATE contribution and the statistical significance.\n  ```r\n  volcano_ic(biotmle = modtmle_results)\n  ```\n\n## Implementation Tips\n- **Design Matrix**: When using `modtest_ic`, do not include additional covariates in the design. The TMLE transformation already accounts for confounders specified in the `biomarkertmle` step.\n- **SuperLearner**: Use a diverse set of algorithms in `g_lib` and `Q_lib` for robust estimation, but be mindful of computational time.\n- **Parallelization**: For large datasets (e.g., >20,000 probes), always use `MulticoreParam()` or `SnowParam()` from `BiocParallel`.\n\n## Reference documentation\n- [Identifying Biomarkers from an Exposure Variable](./references/exposureBiomarkers.md)\n- [Identifying Biomarkers from an Exposure Variable (Rmd)](./references/exposureBiomarkers.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-biotmle",
+    "description": "This tool performs biomarker discovery using Targeted Maximum Likelihood Estimation to identify genomic features associated with a binary exposure while adjusting for confounding. Use when user asks to identify biomarkers using causal inference, compute influence curve representations of the average treatment effect, or perform moderated t-tests on transformed expression data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/biotmle.html"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "changeo",
+  "category": "CLI",
+  "name": "changeo",
+  "description": "Change-O is a suite of command-line utilities for processing B cell and T cell receptor repertoires and standardizing V(D)J alignment data. Use when user asks to convert alignment tool outputs to AIRR format, filter or manipulate repertoire databases, assign sequences to clonal lineages, or reconstruct ancestral germline sequences.",
+  "overview": "Change-O is a specialized suite of command-line utilities designed for the advanced processing of B cell and T cell receptor repertoires. It serves as the bridge between initial V(D)J alignment tools and downstream statistical analysis. The toolkit excels at transforming raw alignment files into a standardized tabular format (AIRR Community Rearrangement standard), clustering sequences into clonal lineages based on shared ancestry, and reconstructing ancestral germline sequences to facilitate th",
+  "homepage": "http://changeo.readthedocs.io",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/changeo/overview",
+  "github": "https://github.com/immcantation/changeo",
+  "conda_downloads": "34.4K",
+  "conda_downloads_num": 34400,
+  "last_updated": "2025-07-31",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "changeo",
+      "changeo_MakeDb.py",
+      "changeo_ParseDb.py",
+      "changeo_FilterDb.py",
+      "changeo_DefineClones.py",
+      "changeo_CreateGermlines.py"
+    ],
+    "description": "The provided text does not contain help information for the 'changeo' tool. It appears to be a system error log from a container runtime (Singularity/Apptainer) indicating a failure to build or extract the container image due to insufficient disk space ('no space left on device').",
+    "docker_image": "quay.io/biocontainers/changeo:1.3.4--pyhdfd78af_0",
+    "homepage": "http://changeo.readthedocs.io",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/changeo/overview",
+    "github": "https://github.com/immcantation/changeo",
+    "conda_downloads": "34.4K",
+    "last_updated": "2025-07-31",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "changeo_DefineClones.py.cwl",
+    "changeo_ParseDb.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# changeo\n\n## Overview\n\nChange-O is a specialized suite of command-line utilities designed for the advanced processing of B cell and T cell receptor repertoires. It serves as the bridge between initial V(D)J alignment tools and downstream statistical analysis. The toolkit excels at transforming raw alignment files into a standardized tabular format (AIRR Community Rearrangement standard), clustering sequences into clonal lineages based on shared ancestry, and reconstructing ancestral germline sequences to facilitate the study of somatic hypermutation.\n\n## Core Workflow and CLI Patterns\n\n### 1. Database Generation (MakeDb.py)\nThe first step is converting alignment tool output into a Change-O/AIRR compliant TSV file.\n\n**From IgBLAST output:**\n```bash\nMakeDb.py igblast -i input.fmt7 -s input.fasta -r IMGT_V.fasta IMGT_D.fasta IMGT_J.fasta --extended\n```\n*   **Tip**: The `-r` reference sequences must be IMGT-gapped to ensure correct junction (CDR3) parsing.\n*   **Tip**: Use `--extended` to include IMGT-gapped CDR/FWR regions and alignment metrics.\n\n**From IMGT/HighV-QUEST output:**\n```bash\nMakeDb.py imgt -i output.txz -s input.fasta --extended\n```\n\n### 2. Data Filtering and Manipulation (ParseDb.py)\nUse `ParseDb.py` to clean your database before clonal assignment.\n\n**Filter for productive sequences:**\n```bash\nParseDb.py select -d database.tsv -f productive -u T\n```\n\n**Split by locus (e.g., Heavy vs Light chains):**\n```bash\nParseDb.py select -d database.tsv -f locus -u \"IGH\" --logic all --regex --outname heavy\n```\n\n### 3. Clonal Assignment (DefineClones.py)\nGroups sequences into clones based on V-gene, J-gene, and junction length similarity.\n\n**Standard Hamming distance clustering:**\n```bash\nDefineClones.py -d database_pass.tsv --act set --model ham --norm len --dist 0.16\n```\n*   **Expert Tip**: The `--dist` threshold is critical. For BCR data, a threshold around 0.1 to 0.2 is common, but should be determined using the `distToNearest` function in the SHazaM R package.\n*   **T-Cell Tip**: For TCR data, use `--dist 0` or a very low value, as T cells do not undergo somatic hypermutation.\n\n### 4. Germline Reconstruction (CreateGermlines.py)\nReconstructs the unmutated ancestral sequence for each record or clone.\n\n**Generate germlines with D-segment masking:**\n```bash\nCreateGermlines.py -d database_clones.tsv -g dmask -r IMGT_V.fasta IMGT_D.fasta IMGT_J.fasta\n```\n*   **Note**: Use `-g dmask` (default) to place Ns in the D-segment, which is safer when D-assignment confidence is low. Use `--cloned` if you have already run `DefineClones.py` to ensure a consensus germline for the entire clone.\n\n### 5. Format Conversion (ConvertDb.py)\nExport data for external tools or submission.\n\n**Export to FASTA with annotations in the header:**\n```bash\nConvertDb.py fasta -d database.tsv --if sequence_id --sf sequence_alignment --mf v_call duplicate_count\n```\n\n## Expert Tips and Best Practices\n\n*   **AIRR Standard**: As of v1.0.0, Change-O defaults to the AIRR Community Rearrangement standard. If working with older pipelines, use `--format changeo` to maintain compatibility with legacy Change-O columns (e.g., `V_CALL` vs `v_call`).\n*   **10X Genomics**: To process 10X V(D)J data, use `MakeDb.py` with the `--10x` flag to incorporate the `filtered_contig_annotations.csv` file provided by Cell Ranger.\n*   **Memory Management**: For very large datasets, use `ParseDb.py split` to divide the database into smaller chunks (e.g., by sample or locus) before running computationally intensive tasks like `DefineClones.py`.\n*   **Reference Consistency**: Always ensure the reference fasta files passed to `MakeDb.py` and `CreateGermlines.py` are identical to those used by the initial aligner (IgBLAST/IMGT).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| DefineClones.py | Assigns Ig sequences to clonal groups based on junction sequence similarity. |\n| ParseDb.py | A utility to parse, filter, and manipulate Change-O tab-delimited database files. |\n\n## Reference documentation\n- [Commandline Usage](./references/changeo_readthedocs_io_en_stable_usage.html.md)\n- [Using IgBLAST](./references/changeo_readthedocs_io_en_stable_examples_igblast.html.md)\n- [Clustering sequences into clonal groups](./references/changeo_readthedocs_io_en_stable_examples_cloning.html.md)\n- [Parsing 10X Genomics V(D)J data](./references/changeo_readthedocs_io_en_stable_examples_10x.html.md)\n- [Reconstructing germline sequences](./references/changeo_readthedocs_io_en_stable_examples_germlines.html.md)",
+  "skill_front_matter": {
+    "name": "changeo",
+    "description": "Change-O is a suite of command-line utilities for processing B cell and T cell receptor repertoires and standardizing V(D)J alignment data. Use when user asks to convert alignment tool outputs to AIRR format, filter or manipulate repertoire databases, assign sequences to clonal lineages, or reconstruct ancestral germline sequences.",
+    "homepage": "http://changeo.readthedocs.io"
+  }
+}

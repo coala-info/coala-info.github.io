@@ -1,0 +1,58 @@
+{
+  "id": "bbmap",
+  "category": "CLI",
+  "name": "bbmap",
+  "description": "BBMap is a global, splice-aware aligner used to map DNA and RNA-seq reads from various sequencing platforms to a reference genome. Use when user asks to align reads to a reference, perform adapter trimming, filter contaminants, normalize sequence coverage, or convert between bioinformatics file formats.",
+  "overview": "BBTools is a comprehensive suite of fast, multithreaded bioinformatics utilities written in Java. The core tool, BBMap, is a global, splice-aware aligner capable of handling DNA and RNA-seq data from all major sequencing platforms (Illumina, PacBio, Nanopore, etc.). Beyond alignment, the suite provides specialized tools for nearly every stage of the pre-assembly and post-sequencing pipeline, including error correction, deduplication, and library complexity analysis.",
+  "homepage": "https://sourceforge.net/projects/bbmap",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bbmap/overview",
+  "github": "N/A",
+  "conda_downloads": "1.8M",
+  "conda_downloads_num": 1800000,
+  "last_updated": "2026-03-10",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bbmap_bbmap.sh",
+      "bbmap_bbduk.sh",
+      "bbmap_bbmerge.sh",
+      "bbmap_bbmerge-auto.sh",
+      "bbmap_bbnorm.sh",
+      "bbmap_khist.sh",
+      "bbmap_dedupe.sh",
+      "bbmap_reformat.sh"
+    ],
+    "description": "Fast and accurate splice-aware read aligner.",
+    "docker_image": "quay.io/biocontainers/bbmap:39.79--h9b5c0a0_0",
+    "homepage": "https://sourceforge.net/projects/bbmap",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bbmap/overview",
+    "github": "N/A",
+    "conda_downloads": "1.8M",
+    "last_updated": "2026-03-10",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bbmap_bbduk.sh.cwl",
+    "bbmap_bbmap.sh.cwl",
+    "bbmap_bbmerge.sh.cwl",
+    "bbmap_bbnorm.sh.cwl",
+    "bbmap_dedupe.sh.cwl",
+    "bbmap_khist.sh.cwl",
+    "bbmap_reformat.sh.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bbmap\n\n## Overview\n\nBBTools is a comprehensive suite of fast, multithreaded bioinformatics utilities written in Java. The core tool, BBMap, is a global, splice-aware aligner capable of handling DNA and RNA-seq data from all major sequencing platforms (Illumina, PacBio, Nanopore, etc.). Beyond alignment, the suite provides specialized tools for nearly every stage of the pre-assembly and post-sequencing pipeline, including error correction, deduplication, and library complexity analysis.\n\n## Core CLI Patterns\n\n### General Syntax\nMost BBTools follow a consistent parameter syntax:\n```bash\ntool.sh in=<input> out=<output> [options]\n```\n- **Memory Management**: Use the `-Xmx` flag to specify memory (e.g., `bbmap.sh -Xmx20g ...`). By default, tools attempt to autodetect available RAM.\n- **Paired Reads**: Handle paired files using `in1=` and `in2=` or the `#` wildcard:\n  ```bash\n  reformat.sh in=reads_#.fq out=processed_#.fq\n  ```\n- **Piping**: Use `stdin` and `stdout` with extensions to guide the tool:\n  ```bash\n  cat reads.fq.gz | bbduk.sh in=stdin.fq.gz out=stdout.fq ...\n  ```\n\n## Tool-Specific Best Practices\n\n### BBMap (Alignment)\n- **Indexing**: BBMap builds an index in a `/ref/` folder. Use `nodisk` to keep the index in memory for one-off runs.\n- **RNA-Seq**: For organisms with long introns (like humans), increase the search range: `maxindel=200k`.\n- **Sensitivity**: Use the `fast` flag for speed or `slow` for maximum sensitivity with highly mutated genomes.\n\n### BBDuk (Trimming & Filtering)\n- **Adapter Trimming**: Use `ktrim=r k=23 mink=11 hdist=1` for standard Illumina adapter removal.\n- **Contaminant Removal**: Filter PhiX or other spike-ins by providing a reference: `ref=phix.fa outu=clean.fq`.\n- **Quality Trimming**: Use `qtrim=rl trimq=10` to trim both ends to a minimum Phred score of 10.\n\n### BBMerge (Read Merging)\n- **Accuracy**: For optimal results, provide the adapter sequences: `adapter1=<seq> adapter2=<seq>`.\n- **Non-overlapping Reads**: Use `bbmerge-auto.sh` with `extend2=20` to attempt merging reads that do not physically overlap by using kmer-based extension.\n\n### BBNorm (Normalization)\n- **Assembly Prep**: Normalize high-coverage datasets to a target depth (e.g., `target=100`) to speed up assembly and reduce graph complexity.\n- **Error Correction**: Enable `ecc=t` during normalization to fix low-frequency kmer errors.\n\n### Reformat (Utility)\n- **Format Conversion**: Convert between any supported format (Fastq, Fasta, SAM, BAM) simply by changing the output extension.\n- **Subsampling**: Use `samplebasestarget=1000000` or `samplerate=0.1` to reduce dataset size.\n- **Fixing Pairs**: If paired files become disordered, use `repair.sh` to re-synchronize them based on read headers.\n\n## Expert Tips\n- **Compression**: BBTools natively supports `.gz` files. If `pigz` is installed, it will automatically use it for high-speed parallel compression.\n- **Validation**: Use `vint` (verify interleaved) or `vpair` (verify pairs) in `reformat.sh` to check if your paired-end files are properly synchronized.\n- **Kmer Length**: For most filtering tasks, `k=31` is the maximum supported length and provides the highest specificity.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bbduk.sh | Compares reads to the kmers in a reference dataset, optionally allowing an edit distance. Splits the reads into two outputs - those that match the reference, and those that don't. Can also trim (remove) the matching parts of the reads rather than binning the reads. |\n| bbmap.sh | Fast and accurate splice-aware read aligner. |\n| bbmap_khist.sh | Kmer normalization and histogram generation tool (jgi.KmerNormalize) |\n| bbmerge.sh | Merges paired reads into single reads by overlap detection. With sufficient coverage, can merge nonoverlapping reads by kmer extension. |\n| bbnorm.sh | Normalizes read depth based on kmer counts. Can also error-correct, bin reads by kmer depth, and generate a kmer depth histogram. |\n| dedupe.sh | Accepts one or more files containing sets of sequences (reads or scaffolds). Removes duplicate sequences, which may be specified to be exact matches, subsequences, or sequences within some percent identity. Can also find overlapping sequences and group them into clusters. |\n| reformat.sh | Reformats reads to change ASCII quality encoding, interleaving, file format, or compression format. Optionally performs additional functions such as quality trimming, subsetting, and subsampling. |\n\n## Reference documentation\n- [BBMap Guide](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_bbmap-guide.md)\n- [BBDuk Guide](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_bbduk-guide.md)\n- [BBMerge Guide](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_bbmerge-guide.md)\n- [BBNorm Guide](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_bbnorm-guide.md)\n- [Reformat Guide](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_reformat-guide.md)\n- [Usage Guide](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_usage-guide.md)\n- [Data Preprocessing](./references/archive_jgi_doe_gov_data-and-tools_software-tools_bbtools_bb-tools-user-guide_data-preprocessing.md)",
+  "skill_front_matter": {
+    "name": "bbmap",
+    "description": "BBMap is a global, splice-aware aligner used to map DNA and RNA-seq reads from various sequencing platforms to a reference genome. Use when user asks to align reads to a reference, perform adapter trimming, filter contaminants, normalize sequence coverage, or convert between bioinformatics file formats.",
+    "homepage": "https://sourceforge.net/projects/bbmap"
+  }
+}

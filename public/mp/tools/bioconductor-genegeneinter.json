@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genegeneinter",
+  "category": "bioconductor",
+  "name": "bioconductor-genegeneinter",
+  "description": "This tool performs statistical analysis of gene-gene interactions in case-control association studies using biallelic SNP data. Use when user asks to test interactions between pairs of genes, import and filter SNP data, or visualize gene interaction networks.",
+  "overview": "The `GeneGeneInteR` package provides a comprehensive pipeline for testing interactions between pairs of genes in case-control studies. It transforms SNP-level genotype data into gene-level interaction statistics. The package supports data importation from standard formats (like .ped), data cleaning (MAF, HWE, call rate filtering), imputation, and multiple statistical testing frameworks.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneGeneInteR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genegeneinter/overview",
+  "github": "N/A",
+  "conda_downloads": "27.5K",
+  "conda_downloads_num": 27500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GeneGeneInteR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneGeneInteR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genegeneinter/overview",
+    "github": "N/A",
+    "conda_downloads": "27.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genegeneinter\n\nname: bioconductor-genegeneinter\ndescription: Statistical analysis of gene-gene interactions in case-control association studies using biallelic SNP data. Use this skill to perform gene-level interaction testing using 10 different methods (PCA, CCA, KCCA, PLSPM, CLD, GBIGM, minP, GATES, tTS, tProd), import/filter SNP data, and visualize interaction networks.\n\n# bioconductor-genegeneinter\n\n## Overview\nThe `GeneGeneInteR` package provides a comprehensive pipeline for testing interactions between pairs of genes in case-control studies. It transforms SNP-level genotype data into gene-level interaction statistics. The package supports data importation from standard formats (like .ped), data cleaning (MAF, HWE, call rate filtering), imputation, and multiple statistical testing frameworks.\n\n## Core Workflow\n\n### 1. Data Importation and Preparation\nThe package uses `SnpMatrix` objects from the `snpStats` package.\n\n```R\nlibrary(GeneGeneInteR)\n\n# Import from PED/INFO files\nped <- \"path/to/data.ped\"\ninfo <- \"path/to/data.info\"\nposi <- \"path/to/data.txt\"\ndata <- importFile(file=ped, snps=info, pos=posi, pos.sep=\"\\t\")\n\n# Access components\nY <- data$status          # Phenotype (factor/numeric)\nsnpX <- data$snpX         # SnpMatrix\ngInfo <- data$genes.info  # Gene/SNP mapping\n```\n\n### 2. Data Cleaning and Imputation\nStatistical methods in this package generally do not handle missing values; imputation or filtering is required.\n\n```R\n# Filter SNPs based on quality metrics\ndata_clean <- snpMatrixScour(data$snpX, genes.info=data$genes.info, \n                             min.maf=0.05, min.eq=1e-3, call.rate=0.9)\n\n# Impute missing values (Leave-One-Out approach)\ndata_imputed <- imputeSnpMatrix(data_clean$snpX, data_clean$genes.info)\n```\n\n### 3. Testing Interactions\nYou can test a single pair of genes or an entire network of genes.\n\n#### Pairwise Testing (Single Pair)\nChoose from 10 methods based on your research needs:\n*   **Multidimensional:** `PCA.test`, `CCA.test`, `KCCA.test`, `PLSPM.test`, `CLD.test`, `GBIGM.test`.\n*   **SNP-Aggregation:** `minP.test`, `gates.test`, `tTS.test`, `tProd.test`.\n\n```R\n# Example: PCA-based test\nres_pair <- PCA.test(Y=Y, G1=gene1_SnpMatrix, G2=gene2_SnpMatrix, threshold=0.7)\n```\n\n#### Network Testing (All Pairs)\nThe `GGI` function automates all pairwise tests between genes in a dataset.\n\n```R\n# Perform all pairwise tests using PCA method\nGGI.res <- GGI(Y=Y, snpX=data_imputed$snpX, genes.info=data_imputed$genes.info, method=\"PCA\")\n\n# Summarize significant interactions\nsummary(GGI.res)\n```\n\n### 4. Visualization\nThe package provides heatmap and network-based visualizations for `GGInetwork` objects.\n\n```R\n# Heatmap visualization\nplot(GGI.res, method=\"heatmap\", threshold=0.05, hclust.order=TRUE)\n\n# Network visualization (genes as nodes, interactions as edges)\nplot(GGI.res, method=\"network\", threshold=0.05)\n```\n\n## Statistical Methods Summary\n\n| Method | Function | Type | Key Parameters |\n| :--- | :--- | :--- | :--- |\n| Principal Components | `PCA.test` | Multidimensional | `threshold` (inertia) |\n| Canonical Correlation | `CCA.test` | Multidimensional | `n.boot` |\n| Kernel CCA | `KCCA.test` | Multidimensional | `kernel`, `sigma` |\n| PLS Path Modeling | `PLSPM.test` | Multidimensional | `n.perm` |\n| Composite LD | `CLD.test` | Multidimensional | `n.perm` |\n| Information Gain | `GBIGM.test` | Multidimensional | `n.perm` |\n| Minimum P-value | `minP.test` | Aggregation | - |\n| GATES | `gates.test` | Aggregation | `me.est` (effective tests) |\n| Truncated Tail Strength| `tTS.test` | Aggregation | `tau`, `n.sim` |\n| Truncated Product | `tProd.test` | Aggregation | `tau`, `n.sim` |\n\n## Reference documentation\n- [Statistical analysis of the interaction between a pair of genes](./references/GenePair.md)\n- [VignetteGeneGeneInteR Introduction](./references/VignetteGeneGeneInteR_Introduction.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genegeneinter",
+    "description": "This tool performs statistical analysis of gene-gene interactions in case-control association studies using biallelic SNP data. Use when user asks to test interactions between pairs of genes, import and filter SNP data, or visualize gene interaction networks.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneGeneInteR.html"
+  }
+}

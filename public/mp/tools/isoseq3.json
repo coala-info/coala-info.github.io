@@ -1,0 +1,63 @@
+{
+  "id": "isoseq3",
+  "category": "CLI",
+  "name": "isoseq3",
+  "description": "isoseq3 transforms PacBio HiFi reads into high-quality, full-length transcript sequences for bulk or single-cell RNA-seq analysis. Use when user asks to refine reads, cluster transcripts, deduplicate UMI-tagged data, or generate polished isoforms.",
+  "overview": "The `isoseq3` (now often invoked as `isoseq`) toolset is designed to transform PacBio Circular Consensus Sequence (CCS) reads into high-quality, full-length transcript sequences. It supports two primary workflows: a standard clustering workflow for bulk RNA-seq and a deduplication workflow for single-cell or UMI-tagged data. This skill provides the necessary command-line patterns to execute these workflows, from initial refinement to final polished isoform generation.",
+  "homepage": "https://github.com/PacificBiosciences/IsoSeq3",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/isoseq3/overview",
+  "github": "https://github.com/PacificBiosciences/IsoSeq3",
+  "conda_downloads": "59.7K",
+  "conda_downloads_num": 59700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "isoseq3_refine",
+      "isoseq3_cluster2",
+      "isoseq3_cluster",
+      "isoseq3_bcstats",
+      "isoseq3_summarize",
+      "isoseq3_collapse",
+      "isoseq3_tag",
+      "isoseq3_correct",
+      "isoseq3_dedup",
+      "isoseq3_groupdedup"
+    ],
+    "description": "Remove polyA and concatemers from FL reads and generate FLNC transcripts (FL to FLNC)",
+    "docker_image": "quay.io/biocontainers/isoseq3:4.0.0--h9ee0642_0",
+    "homepage": "https://github.com/PacificBiosciences/IsoSeq3",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/isoseq3/overview",
+    "github": "https://github.com/PacificBiosciences/IsoSeq3",
+    "conda_downloads": "59.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "isoseq3_bcstats.cwl",
+    "isoseq3_cluster.cwl",
+    "isoseq3_cluster2.cwl",
+    "isoseq3_collapse.cwl",
+    "isoseq3_correct.cwl",
+    "isoseq3_dedup.cwl",
+    "isoseq3_groupdedup.cwl",
+    "isoseq3_refine.cwl",
+    "isoseq3_summarize.cwl",
+    "isoseq3_tag.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# isoseq3\n\n## Overview\nThe `isoseq3` (now often invoked as `isoseq`) toolset is designed to transform PacBio Circular Consensus Sequence (CCS) reads into high-quality, full-length transcript sequences. It supports two primary workflows: a standard clustering workflow for bulk RNA-seq and a deduplication workflow for single-cell or UMI-tagged data. This skill provides the necessary command-line patterns to execute these workflows, from initial refinement to final polished isoform generation.\n\n## Core Workflows\n\n### 1. Standard Clustering Workflow (Bulk RNA-seq)\nUse this workflow to generate transcripts from HiFi reads by clustering similar sequences.\n\n**Step A: Refine**\nRemove primers, trim poly(A) tails, and remove concatemers.\n```bash\n# Basic refinement\nisoseq refine movie.fl.bam primers.fasta output.flnc.bam --require-polya\n```\n\n**Step B: Cluster**\nGenerate polished isoforms using hierarchical alignment and iterative merging.\n```bash\n# Use --use-qvs to utilize quality values for better consensus\nisoseq cluster output.flnc.bam clustered.bam --verbose --use-qvs\n```\n\n**Step C: Polish (Optional)**\nImprove consensus quality using original subreads (time-intensive).\n```bash\nisoseq polish clustered.bam merged.subreadset.xml polished.bam\n```\n\n### 2. Deduplication Workflow (Single-Cell/UMI)\nUse this workflow when your library includes UMIs or Cell Barcodes.\n\n**Step A: Tag**\nClip and associate UMIs/Barcodes based on a design string (e.g., `T-10U-16B`).\n```bash\nisoseq tag movie.fl.bam output.flt.bam --design T-10U-16B\n```\n\n**Step B: Refine**\nPerform refinement on the tagged BAM.\n```bash\nisoseq refine output.flt.bam primers.fasta output.fltnc.bam --require-polya\n```\n\n**Step C: Deduplicate**\nCluster reads by UMI and cell barcode to generate one consensus per founder molecule.\n```bash\nisoseq dedup output.fltnc.bam deduped.bam\n```\n\n## Expert Tips and Best Practices\n\n- **Binary Naming**: While the package is often installed as `isoseq3`, the modern command-line tool is simply `isoseq`.\n- **Parallelization**: \n    - `isoseq cluster` cannot be internally parallelized easily; provide as many CPU cores as possible.\n    - For large datasets, use `--split-bam <N>` in the cluster step to create multiple BAM files that can be polished in parallel.\n- **Poly(A) Selection**: Always use `--require-polya` if your library prep included poly(A) selection. This ensures only true full-length transcripts with a minimum tail length (default 20bp) are kept.\n- **SMRT Cell Merging**: If processing multiple SMRT cells, create a \"File of Filenames\" (`.fofn`) containing the paths to all your `.flnc.bam` files and provide the `.fofn` as input to the cluster/dedup step.\n- **Memory Management**: Clustering hundreds of millions of reads (e.g., using `cluster2`) requires significant RAM. Monitor system resources during the hierarchical alignment phase.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| isoseq bcstats | Generates stats for group barcodes and (optionally) molecular barcodes |\n| isoseq cluster | Cluster FLNC reads and generate transcripts (FLNC to TRANSCRIPTS) |\n| isoseq cluster2 | Cluster FLNC reads and generate transcripts, much faster than \"cluster\" (FLNC to TRANSCRIPTS) |\n| isoseq collapse | Collapse transcripts based on genomic mapping |\n| isoseq correct | Correct group barcodes given a barcode truth set |\n| isoseq dedup | Deduplicate PCR artifacts (FLTNC to DEDUP) |\n| isoseq refine | Remove polyA and concatemers from FL reads and generate FLNC transcripts (FL to FLNC) |\n| isoseq summarize | Create barcode overview from transcripts (TRANSCRIPTS to CSV) |\n| isoseq tag | Remove cell barcodes and UMIs from FL reads and generate tagged FL transcripts (FL to FLT) |\n| isoseq3_groupdedup | Deduplicate PCR artifacts grouped by cell barcode (barcode-sorted FLTNC to DEDUP) |\n\n## Reference documentation\n- [IsoSeq Clustering Workflow](./references/github_com_PacificBiosciences_IsoSeq_blob_master_isoseq-clustering.md)\n- [IsoSeq Deduplication and Tagging](./references/github_com_PacificBiosciences_IsoSeq_blob_master_isoseq-deduplication.md)\n- [IsoSeq Project Overview](./references/github_com_PacificBiosciences_IsoSeq_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "isoseq3",
+    "description": "isoseq3 transforms PacBio HiFi reads into high-quality, full-length transcript sequences for bulk or single-cell RNA-seq analysis. Use when user asks to refine reads, cluster transcripts, deduplicate UMI-tagged data, or generate polished isoforms.",
+    "homepage": "https://github.com/PacificBiosciences/IsoSeq3"
+  }
+}

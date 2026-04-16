@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-alpine",
+  "category": "bioconductor",
+  "name": "bioconductor-alpine",
+  "description": "The alpine package models and corrects technical biases in RNA-seq data to provide more accurate transcript abundance estimates. Use when user asks to estimate fragment sequence bias, fit bias models for GC content or fragment length, and calculate bias-corrected FPKM values.",
+  "overview": "The `alpine` package provides a framework for modeling and correcting technical biases in RNA-seq data, specifically fragment sequence bias. By using a training set of single-isoform genes, `alpine` estimates parameters for various bias components (GC content, fragment length, relative position, and read-start VLMM) and then uses these parameters to provide more accurate transcript abundance estimates (FPKM).",
+  "homepage": "https://bioconductor.org/packages/3.17/bioc/html/alpine.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alpine/overview",
+  "github": "N/A",
+  "conda_downloads": "47.0K",
+  "conda_downloads_num": 47000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "alpine"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.17/bioc/html/alpine.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alpine/overview",
+    "github": "N/A",
+    "conda_downloads": "47.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-alpine\n\n## Overview\n\nThe `alpine` package provides a framework for modeling and correcting technical biases in RNA-seq data, specifically fragment sequence bias. By using a training set of single-isoform genes, `alpine` estimates parameters for various bias components (GC content, fragment length, relative position, and read-start VLMM) and then uses these parameters to provide more accurate transcript abundance estimates (FPKM).\n\n## Typical Workflow\n\n### 1. Data Preparation and Gene Selection\nIdentify a set of ~100 single-isoform genes with medium to high counts (e.g., 200–10,000) to serve as a training set for the bias model.\n\n```r\nlibrary(alpine)\nlibrary(GenomicRanges)\nlibrary(BSgenome.Hsapiens.NCBI.GRCh38)\n\n# ebt.fit should be a GRangesList of exons for single-isoform genes\n# Estimate fragment length distribution\nw <- getFragmentWidths(bam.files[1], ebt.fit[[1]])\nminsize <- quantile(w, .025)\nmaxsize <- quantile(w, .975)\nreadlength <- getReadLength(bam.files)\n```\n\n### 2. Defining Fragment Types\nGenerate a list of DataFrames containing information about all possible fragment types within the training genes.\n\n```r\ngene.names <- names(ebt.fit)\nnames(gene.names) <- gene.names\n\nfragtypes <- lapply(gene.names, function(gene.name) {\n  buildFragtypes(exons=ebt.fit[[gene.name]],\n                 genome=Hsapiens,\n                 readlength=75,\n                 minsize=minsize,\n                 maxsize=maxsize,\n                 gc.str=FALSE)\n})\n```\n\n### 3. Fitting Bias Models\nDefine models using R formulas. **Note:** Formulas must end with `+ gene` to account for base expression levels.\n\n```r\nmodels <- list(\n  \"GC\" = list(\n    formula = \"count ~ ns(gc,knots=gc.knots,Boundary.knots=gc.bk) + ns(relpos,knots=relpos.knots,Boundary.knots=relpos.bk) + gene\",\n    offset=c(\"fraglen\")\n  ),\n  \"all\" = list(\n    formula = \"count ~ ns(gc,knots=gc.knots,Boundary.knots=gc.bk) + ns(relpos,knots=relpos.knots,Boundary.knots=relpos.bk) + gene\",\n    offset=c(\"fraglen\",\"vlmm\")\n  )\n)\n\nfitpar <- lapply(bam.files, function(bf) {\n  fitBiasModels(genes=ebt.fit,\n                bam.file=bf,\n                fragtypes=fragtypes,\n                genome=Hsapiens,\n                models=models,\n                readlength=75,\n                minsize=minsize,\n                maxsize=maxsize)\n})\n```\n\n### 4. Visualizing Bias\nUse built-in plotting functions to inspect the fitted bias parameters across samples.\n\n```r\nplotFragLen(fitpar)\nplotGC(fitpar, model=\"all\")\nplotRelPos(fitpar, model=\"all\")\n```\n\n### 5. Estimating Abundance\nApply the fitted models to estimate abundance for target genes (including multi-isoform genes).\n\n```r\n# ebt.theta is a GRangesList of exons for transcripts of interest\nres <- lapply(genes.theta, function(gene.name) {\n  txs <- txdf.theta$tx_id[txdf.theta$gene_id == gene.name]\n  estimateAbundance(transcripts=ebt.theta[txs],\n                    bam.files=bam.files,\n                    fitpar=fitpar,\n                    genome=Hsapiens,\n                    model.names=c(\"null\", \"GC\", \"all\"))\n})\n```\n\n### 6. Collating and Normalizing Results\nExtract FPKM values into a matrix or `SummarizedExperiment` and normalize across samples.\n\n```r\n# Extract FPKM matrix\nmat <- extractAlpine(res, model=\"all\")\n\n# Normalize using DESeq median ratio method\nnorm.mat <- normalizeDESeq(mat, cutoff=0.1)\n\n# Or extract as SummarizedExperiment\nse <- extractAlpine(res, model=\"all\", transcripts=ebt.theta)\n```\n\n## Key Functions and Tips\n\n- **`buildFragtypes`**: Memory intensive. If processing many genes, consider parallelization or subsetting.\n- **`fitBiasModels`**: Requires a `genome` object (e.g., `BSgenome`).\n- **`predictCoverage`**: Useful for validating the model by comparing observed vs. predicted fragment coverage along a gene.\n- **Model Selection**: The `null` model (no bias correction) and `fraglen` model are often used as baselines to evaluate the impact of GC and VLMM corrections.\n- **Supported Data**: Currently limited to unstranded, paired-end RNA-seq with fixed read lengths.\n\n## Reference documentation\n\n- [Modeling and correcting fragment sequence bias](./references/alpine.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-alpine",
+    "description": "The alpine package models and corrects technical biases in RNA-seq data to provide more accurate transcript abundance estimates. Use when user asks to estimate fragment sequence bias, fit bias models for GC content or fragment length, and calculate bias-corrected FPKM values.",
+    "homepage": "https://bioconductor.org/packages/3.17/bioc/html/alpine.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-inetgrate",
+  "category": "bioconductor",
+  "name": "bioconductor-inetgrate",
+  "description": "This tool integrates DNA methylation and gene expression data to construct correlation networks for module identification and survival analysis. Use when user asks to build multi-omic gene networks, identify module eigengenes, perform patient risk classification, or conduct survival modeling in R.",
+  "overview": "The `iNETgrate` package facilitates the integration of multi-omic data (specifically DNA methylation and gene expression) to identify robust biological signatures. It builds a correlation network where genes are nodes, and connections are defined by both data types. The package identifies gene modules (clusters) and represents them as \"eigengenes,\" which serve as features for downstream survival analysis and patient stratification.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/iNETgrate.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-inetgrate/overview",
+  "github": "https://github.com/Bioconductor/BiocManager",
+  "conda_downloads": "1.7K",
+  "conda_downloads_num": 1700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iNETgrate"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iNETgrate.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-inetgrate/overview",
+    "github": "https://github.com/Bioconductor/BiocManager",
+    "conda_downloads": "1.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-inetgrate\n\nname: bioconductor-inetgrate\ndescription: Integration of DNA methylation and gene expression data into a single gene network for module identification and survival analysis. Use this skill when you need to build correlation networks where nodes are genes, identify biological signatures (eigengenes), and use these signatures for patient risk classification or survival modeling in R.\n\n# bioconductor-inetgrate\n\n## Overview\n\nThe `iNETgrate` package facilitates the integration of multi-omic data (specifically DNA methylation and gene expression) to identify robust biological signatures. It builds a correlation network where genes are nodes, and connections are defined by both data types. The package identifies gene modules (clusters) and represents them as \"eigengenes,\" which serve as features for downstream survival analysis and patient stratification.\n\n## Core Workflow\n\n### 1. Data Preparation and Cleaning\nThe package requires gene expression matrices, DNA methylation beta values, and clinical survival data.\n\n```r\nlibrary(iNETgrate)\n\n# Use the wrapper to clean and preprocess all data types\ncleaned_data <- cleanAllData(\n  genExpr = raw_expression,\n  genExprSampleInfo = expr_metadata,\n  rawDnam = raw_methylation,\n  clinical = clinical_df,\n  savePath = \"results/\",\n  riskCatCol = \"risk_category_column\",\n  riskFactorCol = \"cytogenetics_column\",\n  riskHigh = \"High\",\n  riskLow = \"Low\"\n)\n```\n\n### 2. Feature Selection\nSelect genes that correlate with survival/vital status across both platforms.\n\n```r\nelected <- electGenes(\n  genExpr = cleaned_data$genExpr,\n  dnam = cleaned_data$dnam,\n  survival = cleaned_data$survival,\n  savePath = \"results/\",\n  locus2gene = cleaned_data$locus2gene\n)\n```\n\n### 3. Network Construction and Eigengene Computation\nBuild the integrated network using the `mu` parameter to balance expression vs. methylation (0 = expression only, 1 = methylation only).\n\n```r\n# 1. Compute eigenloci (weighted average of methylation per gene)\neloci <- computEigenloci(\n  dnam = cleaned_data$dnam,\n  locus2gene = cleaned_data$locus2gene,\n  geNames = elected$unionGenes,\n  Labels = patient_labels,\n  Label1 = \"Low\", Label2 = \"High\"\n)\n\n# 2. Build the network\nnet <- makeNetwork(\n  genExpr = cleaned_data$genExpr,\n  eigenloci = eloci$eigenloci,\n  geNames = colnames(eloci$eigenloci),\n  mus = c(0.6), # Weighting factor\n  outPath = \"net_output/\"\n)\n\n# 3. Compute module eigengenes\negs <- computEigengenes(\n  genExpr = cleaned_data$genExpr,\n  eigenloci = eloci$eigenloci,\n  netPath = \"net_output/\",\n  mus = c(0.6),\n  mu2modules = net$mu2modules\n)\n```\n\n### 4. Survival Analysis\nPerform Cox regression and Accelerated Failure Time (AFT) modeling to identify the best predictive modules.\n\n```r\nsurv_results <- analyzeSurvival(\n  survival = cleaned_data$survival,\n  mus = 0.6,\n  netPath = \"net_output/\",\n  outPath = \"surv_output/\",\n  favRisk = \"High\"\n)\n```\n\n## Key Functions and Parameters\n\n- `iNETgrate()`: The master wrapper function that runs the entire pipeline from cleaning to survival analysis.\n- `mu`: The integration parameter. `mu = 0.5` gives equal weight to expression and methylation.\n- `computEigenloci()`: Collapses multiple methylation probes into a single representative value per gene using PCA.\n- `inferEigengenes()`: Used to project the learned signatures onto a new validation dataset.\n- `plotKM()`: Generates Kaplan-Meier survival plots based on predicted risk groups.\n\n## Tips for Success\n\n- **Sample Matching**: Ensure patient IDs match across expression, methylation, and clinical data. Use `findTcgaDuplicates()` if working with TCGA data to handle multiple samples per patient.\n- **Memory Management**: Network construction (especially TOM calculation) is memory-intensive. Set `doRemoveTOM = TRUE` in `makeNetwork` to save disk space.\n- **Validation**: When using `inferEigengenes` for validation, the input expression matrix must have genes as columns and samples as rows.\n\n## Reference documentation\n\n- [iNETgrate Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-inetgrate",
+    "description": "This tool integrates DNA methylation and gene expression data to construct correlation networks for module identification and survival analysis. Use when user asks to build multi-omic gene networks, identify module eigengenes, perform patient risk classification, or conduct survival modeling in R.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iNETgrate.html"
+  }
+}

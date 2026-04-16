@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biomm",
+  "category": "bioconductor",
+  "name": "bioconductor-biomm",
+  "description": "Bioconductor-biomm performs biologically-informed multi-stage machine learning for phenotype prediction using high-dimensional omics data. Use when user asks to map omics features to biological entities, build multi-stage predictive models, or prioritize outcome-associated functional patterns.",
+  "overview": "BioMM is a framework designed to improve phenotype prediction from omics data by incorporating prior biological knowledge. It operates in two main stages:\n1. **Stage 1**: Compresses high-dimensional variables (e.g., CpGs, SNPs) into functional-level \"latent variables\" based on biological metadata (genes, pathways, or chromosomes).\n2. **Stage 2**: Builds a supervised model using these latent variables to predict the target phenotype.",
+  "homepage": "https://bioconductor.org/packages/3.9/bioc/html/BioMM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biomm/overview",
+  "github": "N/A",
+  "conda_downloads": "20.7K",
+  "conda_downloads_num": 20700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BioMM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/BioMM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biomm/overview",
+    "github": "N/A",
+    "conda_downloads": "20.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biomm\n\nname: bioconductor-biomm\ndescription: Biologically-informed Multi-stage Machine learning (BioMM) for phenotype prediction using high-dimensional omics data. Use this skill to perform feature stratification (mapping SNPs/CpGs to genes, pathways, or chromosomes), build multi-stage predictive models (supervised or unsupervised), and prioritize outcome-associated functional patterns.\n\n# bioconductor-biomm\n\n## Overview\n\nBioMM is a framework designed to improve phenotype prediction from omics data by incorporating prior biological knowledge. It operates in two main stages:\n1. **Stage 1**: Compresses high-dimensional variables (e.g., CpGs, SNPs) into functional-level \"latent variables\" based on biological metadata (genes, pathways, or chromosomes).\n2. **Stage 2**: Builds a supervised model using these latent variables to predict the target phenotype.\n\nThis approach handles the \"p >> n\" problem (more features than samples) and provides interpretable results by identifying which biological pathways or regions drive the prediction.\n\n## Getting Started\n\nInstall the package and load necessary dependencies for parallel processing and specific classifiers:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"transbioZI/BioMM\")\n\nlibrary(BioMM)\nlibrary(BiocParallel)\nlibrary(ranger)\nlibrary(e1071)\nlibrary(glmnet)\n```\n\n## Feature Stratification\n\nBefore running the machine learning framework, map omics features to biological entities using annotation data.\n\n- **Chromosome-based**: `omics2chrlist(data, probeAnno)`\n- **Pathway-based**: `omics2pathlist(data, pathlistDB, probeAnno, restrictUp, restrictDown, minPathSize)`\n- **Gene-based**: `omics2genelist(data, probeAnno, restrictUp, restrictDown)`\n\n## End-to-End Prediction\n\nThe `BioMM()` function handles the entire multi-stage workflow.\n\n### Supervised Workflow (e.g., Random Forest)\nUse supervised learning at Stage 1 to create latent variables based on their relationship with the outcome.\n\n```r\n# Define parameters\nparam1 <- MulticoreParam(workers = 1)\nparam2 <- MulticoreParam(workers = 4) # Adjust based on available cores\n\nresult <- BioMM(trainData = studyData, \n                stratify = \"pathway\", \n                pathlistDB = goDB, \n                featureAnno = cpgAnno,\n                supervisedStage1 = TRUE,\n                classifier1 = \"randForest\", \n                classifier2 = \"randForest\",\n                predMode1 = \"classification\", \n                predMode2 = \"classification\",\n                paramlist1 = list(ntree = 300), \n                paramlist2 = list(ntree = 300),\n                resample1 = \"BS\", \n                resample2 = \"CV\",\n                FScore = param1, \n                innerCore = param2)\n\n# View performance metrics (AUC, ACC, R2)\nprint(result)\n```\n\n### Unsupervised Workflow (PCA)\nUse PCA at Stage 1 to reconstruct pathway-level data without using the outcome labels initially.\n\n```r\nresult <- BioMM(trainData = studyData,\n                stratify = \"chromosome\",\n                supervisedStage1 = FALSE,\n                typePCA = \"regular\",\n                classifier2 = \"randForest\",\n                predMode2 = \"classification\")\n```\n\n### Supported Classifiers\n- `randForest`: Random Forest (via `ranger`).\n- `SVM`: Support Vector Machines (via `e1071`).\n- `glmnet`: Lasso, Ridge, or Elastic Net (set `alpha` in `paramlist`).\n\n## Stage-2 Data Exploration and Visualization\n\nAfter Stage 1, you can analyze the \"latent variables\" (Stage-2 data) to understand biological drivers.\n\n### Reconstructing Stage-2 Data\nUse `BioMMreconData()` to generate the latent variable matrix for manual inspection or custom modeling.\n\n### Visualization\n- **Variance Explained**: Plot the proportion of variance explained by each functional feature using Nagelkerke pseudo R-squared.\n  ```r\n  plotVarExplained(data = stage2data, posF = TRUE, stratify = \"pathway\")\n  ```\n- **Feature Ranking**: Rank and visualize the top outcome-associated functional patterns.\n  ```r\n  plotRankedFeature(data = stage2data, \n                    posF = TRUE, \n                    topF = 10, \n                    blocklist = pathlist, \n                    stratify = \"pathway\", \n                    rankMetric = \"R2\")\n  ```\n\n## Computational Tips\n- **Parallelization**: BioMM is computationally intensive. Always use `BiocParallel` (e.g., `MulticoreParam`) to distribute tasks.\n- **Feature Selection**: Use `FSmethod1` or `FSmethod2` (e.g., \"wilcox\") to reduce the number of features processed at each stage.\n- **Data Modalities**: While designed for DNA methylation, BioMM works for any data that can be mapped to genes or pathways (SNPs, RNA-seq, etc.).\n\n## Reference documentation\n- [BioMMtutorial](./references/BioMMtutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biomm",
+    "description": "Bioconductor-biomm performs biologically-informed multi-stage machine learning for phenotype prediction using high-dimensional omics data. Use when user asks to map omics features to biological entities, build multi-stage predictive models, or prioritize outcome-associated functional patterns.",
+    "homepage": "https://bioconductor.org/packages/3.9/bioc/html/BioMM.html"
+  }
+}

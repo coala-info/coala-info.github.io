@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ebarrays",
+  "category": "bioconductor",
+  "name": "bioconductor-ebarrays",
+  "description": "This tool uses parametric empirical Bayes methods to analyze microarray gene expression data across multiple experimental conditions. Use when user asks to identify differentially expressed genes, calculate posterior probabilities of expression patterns, or perform model diagnostics using Gamma-Gamma or Lognormal-Normal models.",
+  "overview": "The `EBarrays` package implements empirical Bayes methodology to account for replicate arrays and multiple experimental conditions. It treats gene-specific means as random effects arising from a system-wide distribution, allowing for information sharing across genes. The primary goal is to calculate the posterior probability that a gene fits a specific expression pattern (e.g., Equivalent Expression vs. Differential Expression).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EBarrays.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ebarrays/overview",
+  "github": "N/A",
+  "conda_downloads": "51.6K",
+  "conda_downloads_num": 51600,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EBarrays"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EBarrays.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-ebarrays/overview",
+    "github": "N/A",
+    "conda_downloads": "51.6K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ebarrays\n\nname: bioconductor-ebarrays\ndescription: Parametric empirical Bayes methods for analyzing microarray gene expression data. Use this skill to identify differentially expressed (DE) genes across two or more conditions, calculate posterior probabilities of expression patterns, and perform model diagnostics using Gamma-Gamma (GG), Lognormal-Normal (LNN), or Lognormal-Normal with Modified Variance (LNNMV) models.\n\n## Overview\n\nThe `EBarrays` package implements empirical Bayes methodology to account for replicate arrays and multiple experimental conditions. It treats gene-specific means as random effects arising from a system-wide distribution, allowing for information sharing across genes. The primary goal is to calculate the posterior probability that a gene fits a specific expression pattern (e.g., Equivalent Expression vs. Differential Expression).\n\n## Core Workflow\n\n### 1. Data Preparation\nData should be a matrix or `ExpressionSet` of normalized intensity values on the **raw scale** (not log-transformed).\n```R\nlibrary(EBarrays)\ndata(gould) # Example dataset\n# Ensure no negative values; rows with negatives are typically omitted\n```\n\n### 2. Defining Expression Patterns\nPatterns define how experimental conditions are grouped. Use `ebPatterns` to create these hypotheses.\n*   `1, 1, 1, 1`: All four samples are in the same group (Equivalent Expression).\n*   `1, 1, 2, 2`: First two samples are Group 1, last two are Group 2 (Differential Expression).\n*   `0`: Use zero to ignore specific columns/arrays.\n\n```R\n# Two-condition comparison (3 arrays total: 1 in Cond A, 2 in Cond B)\npatterns <- ebPatterns(c(\"1, 1, 1\", \"1, 2, 2\"))\n```\n\n### 3. Model Fitting\nUse `emfit` to estimate model parameters using an EM algorithm. Choose a family: `\"GG\"`, `\"LNN\"`, or `\"LNNMV\"`.\n*   **GG**: Gamma-Gamma (constant CV).\n*   **LNN**: Lognormal-Normal (constant CV).\n*   **LNNMV**: Lognormal-Normal with Modified Variance (gene-specific variance; generally recommended).\n\n```R\n# For LNNMV, groupid is required to estimate gene-specific variances\nfit <- emfit(gould, family = \"LNNMV\", hypotheses = patterns, \n             groupid = c(1, 2, 2, 0, 0, 0, 0, 0, 0, 0))\n```\n\n### 4. Posterior Probabilities and FDR\nCalculate the posterior probability for each pattern and determine a threshold to control the False Discovery Rate (FDR).\n\n```R\nprob <- postprob(fit, gould)$pattern\n# Find threshold for 5% FDR (using the probability of the null pattern)\nthreshold <- crit.fun(prob[, 1], 0.05)\n# Identify DE genes (Pattern 2)\nde_genes <- which(prob[, 2] > threshold)\n```\n\n## Model Diagnostics\n\nIt is critical to check if the chosen parametric model fits the data.\n\n*   **checkCCV(data)**: Checks the constant coefficient of variation assumption (for GG and LNN).\n*   **checkModel(data, fit, model=\"gamma\"|\"lognormal\")**: Generates QQ plots for subsets of genes to check observation component assumptions.\n*   **plotMarginal(fit, data)**: Compares the theoretical marginal density of the fitted model against the empirical kernel density of the data.\n*   **checkVarsQQ(data, groupid)**: For LNNMV, checks the scaled inverse chi-square prior assumption for variances.\n\n## Tips\n*   **LNNMV Recommendation**: The LNNMV model is often preferred as it relaxes the constant CV assumption by allowing gene-specific variances.\n*   **Multiple Conditions**: For $K$ conditions, there are many possible patterns. You can restrict the analysis to a subset of biologically relevant patterns to increase power.\n*   **Ordered Patterns**: `ebPatterns` can handle ordered hypotheses (e.g., $\\mu_1 < \\mu_2$) for specific study designs.\n\n## Reference documentation\n- [Parametric Empirical Bayes Methods for Microarrays](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ebarrays",
+    "description": "This tool uses parametric empirical Bayes methods to analyze microarray gene expression data across multiple experimental conditions. Use when user asks to identify differentially expressed genes, calculate posterior probabilities of expression patterns, or perform model diagnostics using Gamma-Gamma or Lognormal-Normal models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EBarrays.html"
+  }
+}

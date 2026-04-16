@@ -1,0 +1,41 @@
+{
+  "id": "r-archr",
+  "category": "R",
+  "name": "r-archr",
+  "description": "\"ArchR is a high-performance R package for the comprehensive analysis of single-cell ATAC-seq data. Use when user asks to create Arrow files, perform doublet inference, conduct dimensionality reduction using Iterative LSI, or visualize single-cell chromatin accessibility data.\"",
+  "overview": "ArchR (Analysis of Regulatory Chromatin in R) is a high-performance R package designed for analyzing single-cell ATAC-seq data. It is optimized for speed and memory efficiency, capable of processing millions of cells. ArchR uses a custom \"Arrow file\" format (based on HDF5) to store data on disk, allowing for fast access without loading entire datasets into RAM.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-archr\n\n## Overview\nArchR (Analysis of Regulatory Chromatin in R) is a high-performance R package designed for analyzing single-cell ATAC-seq data. It is optimized for speed and memory efficiency, capable of processing millions of cells. ArchR uses a custom \"Arrow file\" format (based on HDF5) to store data on disk, allowing for fast access without loading entire datasets into RAM.\n\n## Installation\nArchR is primarily hosted on GitHub and requires several Bioconductor dependencies. It is designed for Unix-based systems (macOS and Linux) and is not supported on Windows.\n\n```R\n# Install devtools and BiocManager if needed\nif (!requireNamespace(\"devtools\", quietly = TRUE)) install.packages(\"devtools\")\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\n\n# Install ArchR\ndevtools::install_github(\"GreenleafLab/ArchR\", ref=\"master\", repos = BiocManager::repositories())\n\n# Install extra dependencies (highly recommended)\nlibrary(ArchR)\nArchR::installExtraPackages()\n```\n\n## Core Workflow\n\n### 1. Initialization and Data Input\nAlways start by setting threads and the reference genome.\n```R\nlibrary(ArchR)\naddArchRThreads(threads = 16)\naddArchRGenome(\"hg19\") # Supports hg19, hg38, mm9, mm10\n\n# Input: paths to fragment files (.tsv.gz)\ninputFiles <- c(\"Sample1\" = \"path/to/sample1.fragments.tsv.gz\")\n```\n\n### 2. Creating Arrow Files\nThis step performs QC, calculates TSS enrichment, and creates tile/gene score matrices.\n```R\nArrowFiles <- createArrowFiles(\n  inputFiles = inputFiles,\n  sampleNames = names(inputFiles),\n  filterTSS = 4, \n  filterFrags = 1000,\n  addTileMat = TRUE,\n  addGeneScoreMat = TRUE\n)\n```\n\n### 3. Doublet Inference and Project Creation\nIdentify potential doublets before creating the `ArchRProject`.\n```R\ndoubScores <- addDoubletScores(input = ArrowFiles)\n\nproj <- ArchRProject(\n  ArrowFiles = ArrowFiles, \n  outputDirectory = \"MyProject\",\n  copyArrows = TRUE\n)\n\n# Filter the doublets identified previously\nproj <- filterDoublets(ArchRProj = proj)\n```\n\n### 4. Dimensionality Reduction and Clustering\nArchR uses Iterative Latent Semantic Indexing (LSI).\n```R\n# Dimensionality Reduction\nproj <- addIterativeLSI(ArchRProj = proj, useMatrix = \"TileMatrix\", name = \"IterativeLSI\")\n\n# Clustering (Seurat-based Louvain)\nproj <- addClusters(input = proj, reducedDims = \"IterativeLSI\")\n\n# UMAP Visualization\nproj <- addUMAP(ArchRProj = proj, reducedDims = \"IterativeLSI\")\n```\n\n### 5. Visualization and Gene Scores\nVisualize clusters and marker genes. Use MAGIC imputation to smooth gene scores for visualization.\n```R\n# Plot UMAP colored by Clusters\np1 <- plotEmbedding(ArchRProj = proj, colorBy = \"cellColData\", name = \"Clusters\")\n\n# Add Imputation Weights\nproj <- addImputeWeights(proj)\n\n# Plot Marker Genes\np2 <- plotEmbedding(\n    ArchRProj = proj, \n    colorBy = \"GeneScoreMatrix\", \n    name = c(\"CD34\", \"CD14\"), \n    imputeWeights = getImputeWeights(proj)\n)\n\n# Save plots to PDF\nplotPDF(p1, p2, name = \"UMAP_Plots.pdf\", ArchRProj = proj)\n```\n\n### 6. Genome Browser Tracks\nGenerate per-cluster accessibility tracks for specific loci.\n```R\np <- plotBrowserTrack(\n    ArchRProj = proj, \n    groupBy = \"Clusters\", \n    geneSymbol = c(\"CD34\"),\n    upstream = 50000,\n    downstream = 50000\n)\n# Display track\ngrid::grid.draw(p$CD34)\n```\n\n## Key Functions Reference\n- `createArrowFiles()`: Initial processing of fragment files.\n- `addDoubletScores()`: Calculates likelihood of a droplet containing multiple cells.\n- `ArchRProject()`: Creates the central object for analysis.\n- `addIterativeLSI()`: Primary dimensionality reduction method.\n- `addClusters()`: Groups cells based on reduced dimensions.\n- `addUMAP()`: Generates 2D embedding for visualization.\n- `plotEmbedding()`: Creates ggplot2 objects of UMAP/t-SNE.\n- `plotBrowserTrack()`: Generates signal tracks for genomic regions.\n- `saveArchRProject()` / `loadArchRProject()`: Persistent storage of analysis state.\n\n## Reference documentation\n- [ArchR Home Page](./references/home_page.md)\n- [ArchR Brief Tutorial](./references/tutorial.html.md)",
+  "skill_front_matter": {
+    "name": "r-archr",
+    "description": "ArchR is a high-performance R package for the comprehensive analysis of single-cell ATAC-seq data. Use when user asks to create Arrow files, perform doublet inference, conduct dimensionality reduction using Iterative LSI, or visualize single-cell chromatin accessibility data.",
+    "homepage": "https://cran.r-project.org/web/packages/archr/index.html"
+  }
+}

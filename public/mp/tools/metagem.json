@@ -1,0 +1,52 @@
+{
+  "id": "metagem",
+  "category": "CLI",
+  "name": "metagem",
+  "description": "metaGEM is a Snakemake-based pipeline that automates the workflow from raw metagenomic sequencing data to functional metabolic simulations and interaction modeling. Use when user asks to process raw reads into metagenome-assembled genomes, assign taxonomy to bins, reconstruct genome-scale metabolic models, or predict metabolic interactions within microbial communities.",
+  "overview": "metaGEM is a specialized Snakemake-based pipeline designed to bridge the gap between metagenomics and systems biology. It automates a complex multi-step workflow that transforms raw sequencing data into functional metabolic simulations. By integrating tools for assembly, binning, taxonomic assignment, and metabolic reconstruction, it allows researchers to predict how microbial species interact within their specific environmental contexts. It is particularly powerful for identifying metabolic dep",
+  "homepage": "https://github.com/franciscozorrilla/metaGEM",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/metagem/overview",
+  "github": "https://github.com/franciscozorrilla/metaGEM",
+  "conda_downloads": "2.3K",
+  "conda_downloads_num": 2300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metagem_fastp",
+      "metagem_megahit",
+      "metagem_concoct",
+      "metagem_metabat",
+      "metagem_gtdbtk"
+    ],
+    "description": "an ultra-fast all-in-one FASTQ preprocessor",
+    "docker_image": "quay.io/biocontainers/metagem:1.0.5--hdfd78af_0",
+    "homepage": "https://github.com/franciscozorrilla/metaGEM",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/metagem/overview",
+    "github": "https://github.com/franciscozorrilla/metaGEM",
+    "conda_downloads": "2.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "metagem_concoct.cwl",
+    "metagem_fastp.cwl",
+    "metagem_megahit.cwl",
+    "metagem_metabat.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# metagem\n\n## Overview\n\nmetaGEM is a specialized Snakemake-based pipeline designed to bridge the gap between metagenomics and systems biology. It automates a complex multi-step workflow that transforms raw sequencing data into functional metabolic simulations. By integrating tools for assembly, binning, taxonomic assignment, and metabolic reconstruction, it allows researchers to predict how microbial species interact within their specific environmental contexts. It is particularly powerful for identifying metabolic dependencies and cross-feeding interactions within complex microbial communities.\n\n## Core Workflow Execution\n\nThe primary interface for metaGEM is the `metaGEM.sh` wrapper script. All tasks follow a standard execution pattern.\n\n### Basic Command Structure\n```bash\nbash metaGEM.sh -t [TASK] [OPTIONS]\n```\n\n### Essential Options\n- `-t, --task`: The specific step to execute (e.g., `fastp`, `megahit`, `carveme`).\n- `-j, --nJobs`: Number of parallel jobs to submit to the cluster.\n- `-c, --nCores`: CPU cores allocated per job.\n- `-m, --mem`: RAM in GB required per job.\n- `-h, --hours`: Maximum runtime for the job.\n- `-l, --local`: Critical flag for running on a local machine instead of a HPC cluster (SLURM/SGE).\n\n## Task Sequences\n\n### 1. Initialization and Setup\nBefore running the core workflow, initialize the directory structure and verify the environment:\n- `createFolders`: Generates the required directory hierarchy.\n- `organizeData`: Moves your raw `.fastq.gz` files into the expected input structure.\n- `check`: Validates that all dependencies and paths are correctly configured.\n\n### 2. From Reads to MAGs (Core)\nExecute these tasks in sequence for standard genome reconstruction:\n1. `fastp`: Quality filtering and adapter trimming.\n2. `megahit`: De novo assembly of filtered reads.\n3. `concoct` / `metabat` / `maxbin`: Generate initial bin sets.\n4. `binRefine`: Use metaWRAP to consolidate and improve bin quality.\n5. `binReassemble`: Reassemble refined bins to improve completion and N50.\n6. `gtdbtk`: Assign taxonomy to the resulting MAGs.\n\n### 3. Metabolic Modeling and Interaction\nOnce MAGs are generated, move into metabolic reconstruction:\n1. `extractProteinBins`: Prepare protein sequences for modeling.\n2. `carveme`: Reconstruct genome-scale metabolic models (GEMs).\n3. `organizeGEMs`: Standardize model file locations for downstream analysis.\n4. `smetana`: Perform species metabolic coupling analysis to predict interactions.\n\n## Expert Tips and Best Practices\n\n- **Local vs. Cluster**: Always include the `-l` flag if you are not on a high-performance computing cluster. Without it, the script defaults to `sbatch` or `qsub` commands which will fail on standard workstations.\n- **Resource Allocation**: Tasks like `megahit` (assembly) and `gtdbtk` (taxonomy) are memory-intensive. Ensure you allocate at least 64GB-128GB of RAM for these steps on large datasets.\n- **Bin Refinement**: Never rely on a single binner. The `binRefine` task is the \"secret sauce\" of metaGEM; it uses a consensus approach to significantly increase the number of high-quality MAGs compared to using CONCOCT or MetaBAT2 alone.\n- **Toy Dataset**: If testing the installation, use the `downloadToy` task to pull a small dataset that allows for rapid verification of the full pipeline.\n- **Abundance Estimation**: Run the `abundance` task after binning to map reads back to MAGs, which is required for context-specific modeling and SMETANA simulations.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| concoct | concoct |\n| fastp | an ultra-fast all-in-one FASTQ preprocessor |\n| megahit | MEGAHIT v1.2.9 |\n| metagem_metabat | Metagenome Binning based on Abundance and Tetranucleotide frequency |\n\n## Reference documentation\n- [metaGEM Main Repository](./references/github_com_francisco_zorrilla_metaGEM.md)\n- [metaGEM Wiki Home](./references/github_com_francisco_zorrilla_metaGEM_wiki.md)\n- [Task Implementation Details](./references/github_com_francisco_zorrilla_metaGEM_wiki_1.md)\n- [Draft Binning Documentation](./references/github_com_francisco_zorrilla_metaGEM_wiki_Draft-bin-sets-with-CONCOCT_MaxBin2_-and-MetaBAT2.md)\n- [Metabolic Reconstruction (CarveMe/memote)](./references/github_com_francisco_zorrilla_metaGEM_wiki_Reconstruct-%26-evaluate-genome-scale-metabolic-models-with-CarveMe-and-memote.md)",
+  "skill_front_matter": {
+    "name": "metagem",
+    "description": "metaGEM is a Snakemake-based pipeline that automates the workflow from raw metagenomic sequencing data to functional metabolic simulations and interaction modeling. Use when user asks to process raw reads into metagenome-assembled genomes, assign taxonomy to bins, reconstruct genome-scale metabolic models, or predict metabolic interactions within microbial communities.",
+    "homepage": "https://github.com/franciscozorrilla/metaGEM"
+  }
+}

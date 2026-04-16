@@ -1,0 +1,43 @@
+{
+  "id": "smudgeplot_rn",
+  "category": "library",
+  "name": "smudgeplot_rn",
+  "description": "smudgeplot_rn analyzes heterozygous kmer pairs to visualize genome structure and estimate ploidy levels. Use when user asks to disentangle genome structure, identify ploidy levels, detect genome duplications, or generate a smudgeplot from kmer counts.",
+  "overview": "`smudgeplot_rn` is a bioinformatic tool designed to disentangle genome structure by analyzing heterozygous kmer pairs. By comparing the sum of kmer pair coverages (CovA + CovB) against their relative coverage (CovB / (CovA + CovB)), it generates a \"smudgeplot\" where distinct \"smudges\" represent different haplotype structures (e.g., AB, AAB, AAAB). This is essential for identifying ploidy levels and detecting genome duplications in non-model organisms.",
+  "homepage": "https://github.com/RNieuwenhuis/smudgeplot",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/smudgeplot_rn/overview",
+  "github": "https://github.com/RNieuwenhuis/smudgeplot",
+  "conda_downloads": "9.1K",
+  "conda_downloads_num": 9100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "smudgeplot_rn"
+    ],
+    "description": "FAIL to generate CWL: smudgeplot_rn not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/smudgeplot:0.5.3--py314h577a1d6_0",
+    "homepage": "https://github.com/RNieuwenhuis/smudgeplot",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/smudgeplot_rn/overview",
+    "github": "https://github.com/RNieuwenhuis/smudgeplot",
+    "conda_downloads": "9.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# smudgeplot_rn\n\n## Overview\n\n`smudgeplot_rn` is a bioinformatic tool designed to disentangle genome structure by analyzing heterozygous kmer pairs. By comparing the sum of kmer pair coverages (CovA + CovB) against their relative coverage (CovB / (CovA + CovB)), it generates a \"smudgeplot\" where distinct \"smudges\" represent different haplotype structures (e.g., AB, AAB, AAAB). This is essential for identifying ploidy levels and detecting genome duplications in non-model organisms.\n\n## Core Workflow\n\nThe standard pipeline requires kmer counts (typically from KMC) and follows these sequential steps:\n\n### 1. Kmer Counting and Histogram Generation\nUse KMC to count kmers and generate a histogram.\n```bash\n# Count kmers (k=21, 16 threads, 64G RAM)\nkmc -k21 -t16 -m64 -ci1 -cs10000 @files_list kmcdb tmp_dir\n\n# Generate histogram\nkmc_tools transform kmcdb histogram kmcdb_k21.hist -cx10000\n```\n\n### 2. Threshold Estimation\nDetermine the lower (L) and upper (U) coverage thresholds for genomic kmers.\n```bash\nL=$(smudgeplot.py cutoff kmcdb_k21.hist L)\nU=$(smudgeplot.py cutoff kmcdb_k21.hist U)\n```\n*Note: L typically ranges from 20-200; U ranges from 500-3000. Always verify these values are sane.*\n\n### 3. Extracting Heterozygous Kmer Pairs\nThere are three primary methods to extract pairs. Choose based on available resources:\n\n**Option A: Memory Efficient (Recommended with tbenavi1/KMC)**\n```bash\nkmc_tools transform kmcdb -ci\"$L\" -cx\"$U\" reduce kmcdb_reduced\nsmudge_pairs kmcdb_reduced coverages.tsv pairs.tsv > familysizes.tsv\n```\n\n**Option B: Fast (Standard Python implementation)**\n```bash\nkmc_tools transform kmcdb -ci\"$L\" -cx\"$U\" dump -s kmcdb.dump\nsmudgeplot.py hetkmers -o kmcdb_output < kmcdb.dump\n```\n\n**Option C: Parallel (Fastest for large genomes)**\n```bash\n# Run for each position in kmer (e.g., k=21)\nparallel -j 21 smudgeplot.py hetkmers -o kmcdb_pos --pos {} kmcdb.dump ::: {0..20}\nsmudgeplot.py aggregate --infile kmcdb.dump -o kmcdb_final --index_files kmcdb_pos*_indices.tsv\n```\n\n### 4. Generating the Smudgeplot\nGenerate the final visualization using the extracted coverages.\n```bash\nsmudgeplot.py plot kmcdb_coverages.tsv\n```\n\n## Expert Tips & Best Practices\n\n- **1n Coverage Estimation**: For the most accurate results, provide the haploid kmer coverage (1n) estimated by GenomeScope using the `-n` parameter in `smudgeplot.py plot`.\n- **Input Quality**: Smudgeplots are highly sensitive to kmer quality. Always use trimmed reads to reduce noise from sequencing errors.\n- **Kmer Length**: A kmer length of 21 is standard for most eukaryotic genomes, but consider increasing it for highly repetitive genomes.\n- **Interpretation**: The \"heat\" of a smudge indicates the frequency of that specific haplotype structure. A dominant smudge at the \"AB\" position suggests diploidy, while strong signals at \"AAB\" or \"ABB\" suggest triploidy.\n- **Memory Management**: If `hetkmers` crashes due to memory limits, switch to the `smudge_pairs` C++ implementation or the parallel `--pos` approach.\n\n## Reference documentation\n- [Smudgeplot GitHub Repository](./references/github_com_RNieuwenhuis_smudgeplot.md)\n- [Bioconda smudgeplot_rn Overview](./references/anaconda_org_channels_bioconda_packages_smudgeplot_rn_overview.md)",
+  "skill_front_matter": {
+    "name": "smudgeplot_rn",
+    "description": "smudgeplot_rn analyzes heterozygous kmer pairs to visualize genome structure and estimate ploidy levels. Use when user asks to disentangle genome structure, identify ploidy levels, detect genome duplications, or generate a smudgeplot from kmer counts.",
+    "homepage": "https://github.com/RNieuwenhuis/smudgeplot"
+  }
+}

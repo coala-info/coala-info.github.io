@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cicero",
+  "category": "bioconductor",
+  "name": "bioconductor-cicero",
+  "description": "Cicero predicts physical proximity between genomic regions by calculating co-accessibility scores from single-cell chromatin accessibility data. Use when user asks to predict cis-regulatory interactions, identify co-accessibility networks, or calculate gene activity scores from scATAC-seq data.",
+  "overview": "Cicero is an R package designed to predict physical proximity between genomic regions using single-cell chromatin accessibility data. It addresses the inherent sparsity of scATAC-seq by aggregating similar cells into \"consensus\" groups. Its primary outputs are co-accessibility scores (ranging from -1 to 1) between peaks and \"Cicero gene activity scores,\" which provide a more robust proxy for gene expression than promoter accessibility alone.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cicero.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cicero/overview",
+  "github": "N/A",
+  "conda_downloads": "29.0K",
+  "conda_downloads_num": 29000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cicero"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cicero.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cicero/overview",
+    "github": "N/A",
+    "conda_downloads": "29.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cicero\n\n## Overview\nCicero is an R package designed to predict physical proximity between genomic regions using single-cell chromatin accessibility data. It addresses the inherent sparsity of scATAC-seq by aggregating similar cells into \"consensus\" groups. Its primary outputs are co-accessibility scores (ranging from -1 to 1) between peaks and \"Cicero gene activity scores,\" which provide a more robust proxy for gene expression than promoter accessibility alone.\n\n## Core Workflow: Cis-Regulatory Networks\n\n### 1. Data Preparation\nCicero uses the `CellDataSet` (CDS) class from Monocle. Features must be peaks formatted as `chr_bp1_bp2`.\n\n```r\nlibrary(cicero)\n\n# Create a CDS from a sparse matrix or data frame\n# Input: 3 columns (peak, cell, count)\ninput_cds <- make_atac_cds(cicero_data, binarize = TRUE)\n\n# Pre-process using Monocle functions\ninput_cds <- detectGenes(input_cds)\ninput_cds <- estimateSizeFactors(input_cds)\n```\n\n### 2. Create Cicero CDS\nTo handle sparsity, you must aggregate cells based on similarity (e.g., tSNE or UMAP coordinates).\n\n```r\n# Reduce dimensions (using Monocle)\ninput_cds <- reduceDimension(input_cds, max_components = 2, num_dim=6,\n                             reduction_method = 'tSNE', norm_method = \"none\")\n\n# Extract coordinates and create aggregated CDS\ntsne_coords <- t(reducedDimA(input_cds))\nrow.names(tsne_coords) <- row.names(pData(input_cds))\ncicero_cds <- make_cicero_cds(input_cds, reduced_coordinates = tsne_coords)\n```\n\n### 3. Run Cicero and Visualize\nThe `run_cicero` function automates the estimation of co-accessibility.\n\n```r\n# Requires a genome coordinates file (chromosome lengths)\ndata(\"human.hg19.genome\")\nconns <- run_cicero(cicero_cds, human.hg19.genome)\n\n# Visualize connections in a specific genomic region\ndata(gene_annotation_sample)\nplot_connections(conns, \"chr18\", 8575097, 8839855,\n                 gene_model = gene_annotation_sample,\n                 coaccess_cutoff = .25)\n```\n\n## Advanced Analysis\n\n### Cis-Coaccessibility Networks (CCANs)\nCCANs are modules of sites that are highly co-accessible.\n```r\nccan_assigns <- generate_ccans(conns)\n```\n\n### Gene Activity Scores\nThis combines promoter accessibility with linked distal site accessibility to better predict expression.\n```r\n# 1. Annotate CDS with 'gene' column in fData (marking TSS/promoters)\ninput_cds <- annotate_cds_by_site(input_cds, gene_annotation_sub)\n\n# 2. Build unnormalized matrix\nunnorm_ga <- build_gene_activity_matrix(input_cds, conns)\n\n# 3. Normalize\nnum_genes <- pData(input_cds)$num_genes_expressed\nnames(num_genes) <- row.names(pData(input_cds))\ncicero_gene_activities <- normalize_gene_activities(unnorm_ga, num_genes)\n```\n\n## Trajectory Analysis\nCicero extends Monocle 2 to order cells in pseudotime based on accessibility.\n\n1. **Aggregate Nearby Peaks**: Use `aggregate_nearby_peaks(input_cds, distance = 10000)` to reduce noise before dimensionality reduction.\n2. **Dimensionality Reduction**: Use `reduceDimension` with `reduction_method = 'DDRTree'`. Always include `num_genes_expressed` in the `residualModelFormulaStr` to account for technical variation.\n3. **Differential Accessibility**: To find sites changing across pseudotime, aggregate similar cells into bins using `aggregate_by_cell_bin` before running `differentialGeneTest`.\n\n## Tips for Success\n- **Peak Formatting**: Ensure peak names use underscores (e.g., `chr1_1000_2000`). Use `make_atac_cds` to ensure the object is correctly initialized.\n- **Sparsity**: Never run co-accessibility analysis on raw single cells; always use `make_cicero_cds` to create aggregated groups.\n- **Memory**: For large datasets, subset the genome or use the `sample_num` parameter in `run_cicero` to manage computational load.\n\n## Reference documentation\n- [Single Cell ATAC-seq Analysis with Cicero](./references/website.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cicero",
+    "description": "Cicero predicts physical proximity between genomic regions by calculating co-accessibility scores from single-cell chromatin accessibility data. Use when user asks to predict cis-regulatory interactions, identify co-accessibility networks, or calculate gene activity scores from scATAC-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cicero.html"
+  }
+}

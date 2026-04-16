@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mdts",
+  "category": "bioconductor",
+  "name": "bioconductor-mdts",
+  "description": "MDTS is an R package that identifies de novo deletions in targeted sequencing data from trios using a minimum distance metric. Use when user asks to identify de novo deletions, calculate empirical genomic bins, or perform minimum distance analysis on trio sequencing data.",
+  "overview": "MDTS (Minimum Distance Trio Sequencing) is an R package designed to identify de novo deletions in targeted sequencing data from trios (mother, father, and offspring). It improves upon standard methods by using empirical capture-based binning rather than probe coordinates and by utilizing a \"Minimum Distance\" metric. This metric assumes that a deletion is more likely inherited than de novo if the offspring shares the signal with either parent, effectively filtering out inherited variants and focu",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MDTS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MDTS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MDTS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mdts\n\n## Overview\n\nMDTS (Minimum Distance Trio Sequencing) is an R package designed to identify de novo deletions in targeted sequencing data from trios (mother, father, and offspring). It improves upon standard methods by using empirical capture-based binning rather than probe coordinates and by utilizing a \"Minimum Distance\" metric. This metric assumes that a deletion is more likely inherited than de novo if the offspring shares the signal with either parent, effectively filtering out inherited variants and focusing on true de novo events.\n\n## Workflow and Key Functions\n\n### 1. Binning and Metadata\nMDTS uses dynamic binning based on actual sequencing coverage. You must first prepare a pedigree/metadata file and define the genomic bins.\n\n```r\nlibrary(MDTS)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Load pedigree data (must contain subj_id, family_id, father_id, mother_id, bam_path)\npD <- getMetaData(\"path/to/pedigree.ped\")\n\n# Calculate empirical bins\n# n: number of samples to subset for bin calculation\n# medianCoverage: target median reads per bin (e.g., 150-160)\nbins <- calcBins(metaData = pD, \n                 n = 5, \n                 readLength = 100, \n                 minimumCoverage = 5, \n                 medianCoverage = 150, \n                 genome = BSgenome.Hsapiens.UCSC.hg19, \n                 mappabilityFile = \"path/to/mappability.bw\")\n```\n\n### 2. Calculating Coverage\nOnce bins are defined, calculate the read counts for all samples across those bins.\n\n```r\n# rl: sequencing read length\ncounts <- calcCounts(pD, bins, rl = 100)\n```\n\n### 3. Normalization\nNormalize the raw count matrix using log2 transformation, median polish, and loess smoothing for GC content and mappability.\n\n```r\n# Returns an M-score matrix\n# Values: ~0 (2 copies), ~-1 (1 copy), < -4 (0 copies)\nmCounts <- normalizeCounts(counts, bins)\n```\n\n### 4. Minimum Distance Calculation\nCalculate the Minimum Distance (MD) for each trio. For every bin, the MD is the smallest absolute difference between the offspring's M-score and both parents' M-scores.\n\n```r\n# md: matrix where rows are bins and columns are trios\nmd <- calcMD(mCounts, pD)\n```\n\n### 5. De Novo Deletion Calling\nUse Circular Binary Segmentation (CBS) on the MD matrix to identify segments that deviate from zero, then filter for de novo candidates.\n\n```r\n# Segment the Minimum Distance\ncbs <- segmentMD(md = md, bins = bins)\n\n# Identify and filter de novo deletions\n# This step removes signals in problematic/highly variable bins\ndenovo <- denovoDeletions(cbs, mCounts, bins)\n```\n\n## Interpretation of Results\nThe `denovoDeletions` function returns a `GRanges` object containing:\n*   **Location**: The genomic coordinates of the candidate deletion.\n*   **m**: The mean Minimum Distance score for the segment.\n*   **famid**: The family ID associated with the call.\n\nA high-confidence de novo deletion typically shows a significant negative M-score in the offspring while both parents maintain M-scores near zero.\n\n## Tips for Success\n*   **Mappability File**: Ensure you use a BigWig (.bw) file for mappability that matches your read length (e.g., 100mer).\n*   **Reference Genome**: The `BSgenome` object must match the reference used for BAM alignment (e.g., hg19).\n*   **Median Coverage**: If you have very high depth, increase `medianCoverage` in `calcBins` to reduce the number of bins and decrease false positives. If depth is low, decrease it to maintain sensitivity.\n\n## Reference documentation\n- [MDTS](./references/mdts.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mdts",
+    "description": "MDTS is an R package that identifies de novo deletions in targeted sequencing data from trios using a minimum distance metric. Use when user asks to identify de novo deletions, calculate empirical genomic bins, or perform minimum distance analysis on trio sequencing data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MDTS.html"
+  }
+}

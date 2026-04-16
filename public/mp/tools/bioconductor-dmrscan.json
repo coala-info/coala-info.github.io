@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dmrscan",
+  "category": "bioconductor",
+  "name": "bioconductor-dmrscan",
+  "description": "bioconductor-dmrscan identifies differentially methylated regions by applying a sliding window scan statistic to CpG-wise test statistics. Use when user asks to detect genomic regions with significant methylation changes, analyze bisulfite sequencing or array data, or estimate significance thresholds for sliding windows.",
+  "overview": "DMRScan identifies differentially methylated regions by applying a sliding window scan statistic to CpG-wise test statistics. Unlike methods that require raw data, DMRScan operates on pre-calculated test statistics (e.g., t-statistics from linear models or Z-scores from meta-analyses), providing flexibility in the underlying statistical model.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DMRScan.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dmrscan/overview",
+  "github": "https://github.com/christpa/DMRScan",
+  "conda_downloads": "21.2K",
+  "conda_downloads_num": 21200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DMRScan"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DMRScan.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dmrscan/overview",
+    "github": "https://github.com/christpa/DMRScan",
+    "conda_downloads": "21.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dmrscan\n\nname: bioconductor-dmrscan\ndescription: Identification of differentially methylated regions (DMRs) using a scan statistic. Use this skill when analyzing DNA methylation data (bisulfite sequencing or arrays) to detect genomic regions with significant methylation changes. It is particularly useful for addressing multiple testing issues in genome-wide studies by applying sliding window statistics and estimating significance thresholds via MCMC, importance sampling, or analytical solutions.\n\n## Overview\nDMRScan identifies differentially methylated regions by applying a sliding window scan statistic to CpG-wise test statistics. Unlike methods that require raw data, DMRScan operates on pre-calculated test statistics (e.g., t-statistics from linear models or Z-scores from meta-analyses), providing flexibility in the underlying statistical model.\n\n## Workflow\n\n### 1. Prepare Test Statistics\nDMRScan requires a vector of test statistics with genomic coordinates.\n```r\nlibrary(DMRScan)\n\n# Example: Generate t-statistics from a linear model\n# methylation_data: matrix (CpGs x Samples)\n# phenotype: vector of outcomes\nobservations <- apply(methylation_data, 1, function(x, y) {\n  summary(lm(x ~ y))$coefficients[2, 3]\n}, y = phenotype)\n\n# Extract coordinates (Chromosome and Position)\n# Ensure 'pos' is a matrix or data frame with two columns: [Chr, BP]\npos <- matrix(as.integer(unlist(strsplit(names(observations), split=\"chr|[.]\"))), \n              ncol = 3, byrow = TRUE)[, -1]\n```\n\n### 2. Cluster CpGs into Regions\nGroup CpGs into \"chunks\" based on genomic proximity to define the search space for the scan statistic.\n```r\n# maxGap: max distance between probes in a cluster\n# minCpG: minimum probes to form a cluster\nregions <- makeCpGregions(observations = observations, \n                          chr = pos[, 1], \n                          pos = pos[, 2], \n                          maxGap = 750, \n                          minCpG = 3)\n```\n\n### 3. Estimate Window Thresholds\nCalculate the significance threshold for the sliding windows. You must specify the window sizes (number of CpGs) to test.\n```r\nwindow.sizes <- 3:10\nn.CpG <- sum(sapply(regions, length))\n\n# Option A: Importance Sampling (Fast, recommended)\nthresholds <- estimateWindowThreshold(nProbe = n.CpG, \n                                       windowSize = window.sizes, \n                                       method = \"sampling\", \n                                       mcmc = 10000)\n\n# Option B: Siegmund (Analytical, conservative, fastest)\nthresholds_sieg <- estimateWindowThreshold(nProbe = n.CpG, \n                                            windowSize = window.sizes, \n                                            method = \"siegmund\")\n\n# Option C: MCMC (For complex correlation structures)\nthresholds_mcmc <- estimateWindowThreshold(nProbe = n.CpG, \n                                            windowSize = window.sizes, \n                                            method = \"mcmc\", \n                                            submethod = \"arima\", \n                                            model = list(ar = c(0.1, 0.03)))\n```\n\n### 4. Run DMRScan\nApply the scan statistic to the clustered regions using the calculated thresholds.\n```r\nresults <- dmrscan(observations = regions, \n                   windowSize = window.sizes, \n                   windowThreshold = thresholds)\n\n# Results are returned as a GRanges object\nprint(results)\n```\n\n## Tips and Best Practices\n- **Window Sizes**: Testing a range of window sizes (e.g., 3:10) allows the algorithm to detect regions of varying lengths. The threshold calculation automatically adjusts for multiple testing across these sizes.\n- **Method Selection**: Use `method = \"sampling\"` for a good balance between speed and power. Use `method = \"siegmund\"` if you require a very conservative threshold with minimal false positives.\n- **Input Flexibility**: Since DMRScan takes test statistics, you can use it for meta-analysis by providing Z-scores from multiple studies.\n- **Data Ordering**: Ensure your test statistics and coordinates are ordered sequentially by genomic position before clustering.\n\n## Reference documentation\n- [Using the DMR Scan Package](./references/DMRScan_vignette.Rmd)\n- [DMRScan Vignette (Markdown)](./references/DMRScan_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dmrscan",
+    "description": "bioconductor-dmrscan identifies differentially methylated regions by applying a sliding window scan statistic to CpG-wise test statistics. Use when user asks to detect genomic regions with significant methylation changes, analyze bisulfite sequencing or array data, or estimate significance thresholds for sliding windows.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DMRScan.html"
+  }
+}

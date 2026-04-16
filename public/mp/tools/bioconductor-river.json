@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-river",
+  "category": "bioconductor",
+  "name": "bioconductor-river",
+  "description": "This tool predicts the regulatory impact of rare variants by integrating genomic annotations with gene expression data using a hierarchical Bayesian model. Use when user asks to prioritize functional rare variants, estimate the probability of a variant having regulatory effects, or integrate WGS and RNA-seq data to identify expression outliers.",
+  "overview": "RIVER is a probabilistic modeling framework that predicts the regulatory effects of rare variants by integrating gene expression data with genomic annotations. It uses a generative model where genomic annotations determine the prior probability of a variant being a functional regulatory variant (unobserved latent variable), which in turn influences the likelihood of observing outlier gene expression levels. The model parameters are optimized via an Expectation-Maximization (EM) algorithm.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RIVER.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ipw012/RIVER",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RIVER"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RIVER.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ipw012/RIVER",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-river\n\nname: bioconductor-river\ndescription: Jointly analyze personal genome and transcriptome data to estimate the probability that a variant has regulatory impact. Use when integrating genomic annotations (WGS) with gene expression outliers (RNA-seq) to prioritize functional rare variants using the RIVER (RNA-Informed Variant Effect on Regulation) hierarchical Bayesian model.\n\n## Overview\n\nRIVER is a probabilistic modeling framework that predicts the regulatory effects of rare variants by integrating gene expression data with genomic annotations. It uses a generative model where genomic annotations determine the prior probability of a variant being a functional regulatory variant (unobserved latent variable), which in turn influences the likelihood of observing outlier gene expression levels. The model parameters are optimized via an Expectation-Maximization (EM) algorithm.\n\n## Data Preparation\n\nThe package uses a standardized `ExpressionSet` object. Data is typically imported from a gzipped text file containing subject IDs, gene names, genomic features, expression Z-scores, and N2 pair identifiers.\n\n```r\nlibrary(RIVER)\n\n# Load example or custom data\nfilename <- system.file(\"extdata\", \"simulation_RIVER.gz\", package=\"RIVER\")\ndataInput <- getData(filename)\n\n# Inspect data\nprint(dataInput)\nfeatures <- t(Biobase::exprs(dataInput))\noutliers <- as.numeric(unlist(dataInput$Outlier)) - 1\n```\n\n## Model Evaluation\n\nUse `evaRIVER` to compare the predictive accuracy of RIVER (genomic + expression) against a Genomic Annotation Model (GAM, genomic only). This function uses held-out N2 pairs (individuals sharing the same rare variants) for validation.\n\n```r\n# Run evaluation\nevaROC <- evaRIVER(dataInput, \n                   pseudoc = 50, \n                   verbose = TRUE)\n\n# Access results\ncat(\"AUC (GAM):\", evaROC$GAM_auc, \"\\n\")\ncat(\"AUC (RIVER):\", evaROC$RIVER_auc, \"\\n\")\ncat(\"P-value:\", evaROC$pvalue, \"\\n\")\n\n# Plot ROC curves\nplot(NULL, xlim=c(0,1), ylim=c(0,1), xlab=\"FPR\", ylab=\"TPR\")\nlines(1-evaROC$RIVER_spec, evaROC$RIVER_sens, col='blue')\nlines(1-evaROC$GAM_spec, evaROC$GAM_sens, col='purple')\n```\n\n## Application and Prioritization\n\nUse `appRIVER` to train the model on the full dataset and calculate posterior probabilities for all instances. This is the primary workflow for prioritizing variants in disease studies.\n\n```r\n# Train model and get posterior probabilities\npostprobs <- appRIVER(dataInput, \n                      pseudoc = 50, \n                      costs = c(100, 10, 1, 0.1, 0.01))\n\n# Extract probabilities\nresults <- data.frame(\n  Subject = postprobs$indiv_name,\n  Gene = postprobs$gene_name,\n  RIVER_Score = postprobs$RIVER_posterior,\n  GAM_Score = postprobs$GAM_posterior\n)\n\n# Visualize the impact of expression data\nplotPosteriors(postprobs, outliers = as.numeric(unlist(dataInput$Outlier)) - 1)\n```\n\n## Key Parameters\n\n- `pseudoc`: Hyperparameter for the Beta distribution of $\\theta$ (default: 50). Lower values increase reliance on observed expression data.\n- `theta_init`: Initial conditional probabilities $P(E|FR)$. Default is matrix `c(0.99, 0.01, 0.3, 0.7)`.\n- `costs`: Candidate $\\lambda$ values for L2-regularized logistic regression (GAM) selected via cross-validation.\n- `verbose`: Set to `TRUE` to monitor EM convergence (norms of $\\beta$ and $\\theta$ differences).\n\n## Reference documentation\n\n- [RIVER Vignette (Rmd)](./references/RIVER.Rmd)\n- [RIVER Vignette (Markdown)](./references/RIVER.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-river",
+    "description": "This tool predicts the regulatory impact of rare variants by integrating genomic annotations with gene expression data using a hierarchical Bayesian model. Use when user asks to prioritize functional rare variants, estimate the probability of a variant having regulatory effects, or integrate WGS and RNA-seq data to identify expression outliers.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RIVER.html"
+  }
+}

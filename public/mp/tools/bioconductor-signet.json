@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-signet",
+  "category": "bioconductor",
+  "name": "bioconductor-signet",
+  "description": "The bioconductor-signet package uses simulated annealing to identify and test the significance of high-scoring gene subnetworks within biological pathways. Use when user asks to find active gene subnetworks, perform pathway-based subnetwork searches, or identify significant connected components in biological networks.",
+  "overview": "The `signet` package implements a heuristic search (simulated annealing) to identify gene subnetworks within biological pathways that exhibit unusually high scores. It is designed to move beyond simple pathway enrichment by finding specific connected components (subnetworks) that drive the signal. The significance of these subnetworks is determined by comparing their scores against an empirical null distribution generated from the input data.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/signet.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "signet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/signet.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-signet\n\n## Overview\n\nThe `signet` package implements a heuristic search (simulated annealing) to identify gene subnetworks within biological pathways that exhibit unusually high scores. It is designed to move beyond simple pathway enrichment by finding specific connected components (subnetworks) that drive the signal. The significance of these subnetworks is determined by comparing their scores against an empirical null distribution generated from the input data.\n\n## Workflow\n\n### 1. Data Preparation\n\nThe package requires two main inputs:\n- **Gene Scores**: A data frame where the first column is the Gene ID (e.g., Entrez) and the second column is the numerical score.\n- **Pathway Graphs**: A list of `graphNEL` objects. It is recommended to use the `graphite` package to retrieve these.\n\n```r\nlibrary(signet)\nlibrary(graphite)\n\n# 1. Get pathways (e.g., KEGG human)\npaths <- graphite::pathways(\"hsapiens\", \"kegg\")\nkegg_human <- lapply(paths, graphite::pathwayGraph)\n\n# 2. Prepare scores (example format)\n# data(daub13) \n# head(scores) \n#   gene     score\n# 1    1 0.9200665\n```\n\n### 2. Searching for Subnetworks\n\nUse `searchSubnet` to find the highest-scoring subnetwork (HSS) within each provided pathway.\n\n```r\n# Run simulated annealing search\nHSS <- searchSubnet(kegg_human, scores)\n```\n\n### 3. Significance Testing\n\nTo determine if the found subnetworks are statistically significant, you must generate a null distribution by randomly sampling scores across the network structures.\n\n```r\n# 1. Generate empirical null distribution (n = 1000 or more recommended)\nnull <- nullDist(kegg_human, scores, n = 1000)\n\n# 2. Compute p-values and update the signet object\nHSS <- testSubnet(HSS, null)\n```\n\n### 4. Results and Interpretation\n\nGenerate a summary table to view the pathway name, subnetwork size, score, p-value, and the specific genes involved.\n\n```r\n# Generate summary table\ntab <- summary(HSS)\n\n# Filter for significant results (e.g., p < 0.05)\nsig_pathways <- tab[tab$p.val < 0.05, ]\n```\n\n### 5. Visualization\n\n`signet` facilitates network visualization by exporting results to XGMML format, which can be imported into Cytoscape.\n\n- **Single Pathway**: Highlights the HSS within the context of the full pathway.\n- **Merged Subnetworks**: Merges all subnetworks meeting a specific p-value threshold.\n\n```r\n# Export a single pathway (the first one in the list)\nwriteXGMML(HSS[[1]], filename = \"single_pathway.xgmml\")\n\n# Export all significant subnetworks (p < 0.01) merged into one graph\nwriteXGMML(HSS, filename = \"merged_significant.xgmml\", threshold = 0.01)\n```\n\n## Tips and Best Practices\n\n- **Identifier Matching**: Ensure that the Gene IDs in your `scores` data frame match the node IDs in the `graphNEL` objects (typically Entrez IDs). Use `graphite::convertIdentifiers` if necessary.\n- **Computation Time**: `searchSubnet` and `nullDist` can be computationally intensive for large pathway sets. Consider parallelizing these steps if working with hundreds of pathways.\n- **Null Distribution Size**: For publication-quality p-values, increase `n` in `nullDist` (e.g., `n = 10000`). You can concatenate multiple null distribution vectors to increase precision.\n- **Score Direction**: The algorithm searches for *high* scores. If your input data consists of p-values where low values are significant, transform them (e.g., `-log10(p-value)`) before running `signet`.\n\n## Reference documentation\n\n- [signet](./references/signet.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-signet",
+    "description": "The bioconductor-signet package uses simulated annealing to identify and test the significance of high-scoring gene subnetworks within biological pathways. Use when user asks to find active gene subnetworks, perform pathway-based subnetwork searches, or identify significant connected components in biological networks.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/signet.html"
+  }
+}

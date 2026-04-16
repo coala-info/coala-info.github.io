@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-damsel",
+  "category": "bioconductor",
+  "name": "bioconductor-damsel",
+  "description": "bioconductor-damsel provides an end-to-end workflow for the analysis of DamID sequencing data. Use when user asks to process BAM files into GATC-specific counts, identify differentially methylated regions, call peaks, associate peaks with target genes, or perform bias-corrected gene ontology analysis.",
+  "overview": "Damsel is an end-to-end R package for analyzing DamID data. It leverages `edgeR` for differential methylation testing and `goseq` for gene ontology analysis with length-bias correction. The workflow typically moves from raw BAM files to GATC-specific counts, differential region identification, peak calling, and finally gene annotation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Damsel.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-damsel/overview",
+  "github": "https://github.com/Oshlack/Damsel",
+  "conda_downloads": "215",
+  "conda_downloads_num": 215,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Damsel"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Damsel.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-damsel/overview",
+    "github": "https://github.com/Oshlack/Damsel",
+    "conda_downloads": "215",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-damsel\n\nname: bioconductor-damsel\ndescription: Analysis of DamID (DNA Adenine Methyltransferase Identification) data. Use this skill to process BAM files, identify differentially methylated regions, call peaks (bridges), associate peaks with target genes, and perform bias-corrected gene ontology analysis using the Damsel R package.\n\n# bioconductor-damsel\n\n## Overview\n\nDamsel is an end-to-end R package for analyzing DamID data. It leverages `edgeR` for differential methylation testing and `goseq` for gene ontology analysis with length-bias correction. The workflow typically moves from raw BAM files to GATC-specific counts, differential region identification, peak calling, and finally gene annotation.\n\n## Core Workflow\n\n### 1. GATC Region Preparation\nDamID analysis requires a GATC region file (the genomic space between GATC sites).\n```r\nlibrary(Damsel)\nlibrary(BSgenome.Dmelanogaster.UCSC.dm6)\n\n# Generate regions from a BSgenome object\nregions_and_sites <- getGatcRegions(BSgenome.Dmelanogaster.UCSC.dm6)\nregions <- regions_and_sites$regions\ngatc_sites <- regions_and_sites$sites\n```\n\n### 2. Counting and Quality Control\nExtract counts from BAM files based on the GATC regions.\n```r\n# Extract counts from a folder of BAM files\ncounts.df <- countBamInGATC(path_to_bams = \"path/to/bams\", regions = regions)\n\n# Correlation heatmap (Spearman)\nplotCorrHeatmap(df = counts.df, method = \"spearman\")\n\n# Visualize coverage distribution\nplotCountsDistribution(counts.df, constant = 1)\n```\n\n### 3. Differential Methylation Analysis\nIdentify regions enriched in the Fusion sample relative to the Dam-only control.\n```r\n# Setup edgeR object (filters, normalizes, and estimates dispersion)\n# Ensure columns are ordered: Dam_1, Fusion_1, Dam_2, Fusion_2...\ndge <- makeDGE(counts.df)\n\n# Test for differentially methylated (DM) regions\ndm_results <- testDmRegions(dge, p.value = 0.05, lfc = 1, regions = regions, plot = TRUE)\n```\n\n### 4. Peak Calling (Bridges)\nAggregate individual enriched GATC regions into larger \"peaks\" or bridges.\n```r\npeaks <- identifyPeaks(dm_results)\n```\n\n### 5. Gene Annotation\nAssociate peaks with potential target genes (default within 5kb).\n```r\n# Option A: Using TxDb and OrgDb\nlibrary(TxDb.Dmelanogaster.UCSC.dm6.ensGene)\nlibrary(org.Dm.eg.db)\ntxdb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene\ngenes <- collateGenes(genes = txdb, regions = regions, org.Db = org.Dm.eg.db)\n\n# Annotate peaks to genes\nannotation <- annotatePeaksGenes(peaks, genes, regions = regions, max_distance = 5000)\n# Access results: annotation$closest, annotation$top_five, or annotation$all\n```\n\n### 6. Visualization\nDamsel provides `ggplot2` layers for genomic tracks.\n```r\nplotCounts(counts.df, seqnames = \"chr2L\", start_region = 1, end_region = 40000) +\n    geom_dm(dm_results) +\n    geom_peak(peaks) +\n    geom_gatc(gatc_sites) +\n    geom_genes_tx(genes, txdb)\n\n# Wrap plot for a specific peak or gene ID\nplotWrap(id = \"PS_2\", counts.df, dm_results, peaks, gatc_sites, genes, txdb)\n```\n\n### 7. Gene Ontology (Bias-Corrected)\nPerform GO analysis using `goseq` to correct for the fact that longer genes contain more GATC sites and are more likely to be called significant by chance.\n```r\nontology <- testGeneOntology(annotation$all, genes, regions = regions, extend_by = 2000)\n\n# Plot top 10 results\nplotGeneOntology(ontology$signif_results)\n```\n\n## Tips and Constraints\n- **Column Naming**: Do not remove the `.BAM` extension from column names in `counts.df`; the package uses this suffix to identify sample columns.\n- **Sample Ordering**: `makeDGE` expects samples to be paired and ordered (Control_1, Treatment_1, Control_2, Treatment_2).\n- **GATC Bias**: DamID captures ~75bp from each GATC site. While regions vary in width, the biological capture is relatively uniform, so length correction is usually only needed at the Gene Ontology stage, not the counting stage.\n- **Peak Aggregation**: Gaps between enriched regions $\\le$ 150bp are combined into a single peak by default in `identifyPeaks`.\n\n## Reference documentation\n- [Damsel-workflow](./references/Damsel-workflow.md)\n- [Damsel-workflow RMarkdown](./references/Damsel-workflow.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-damsel",
+    "description": "bioconductor-damsel provides an end-to-end workflow for the analysis of DamID sequencing data. Use when user asks to process BAM files into GATC-specific counts, identify differentially methylated regions, call peaks, associate peaks with target genes, or perform bias-corrected gene ontology analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Damsel.html"
+  }
+}

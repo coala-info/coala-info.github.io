@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-inspect",
+  "category": "bioconductor",
+  "name": "bioconductor-inspect",
+  "description": "This tool infers RNA synthesis, processing, and degradation rates from transcriptomic data using ordinary differential equations. Use when user asks to analyze RNA dynamics in time-course or steady-state experiments, model RNA life-cycle kinetics from RNA-seq or 4sU-seq data, or quantify intronic and exonic expressions to estimate kinetic rates.",
+  "overview": "INSPEcT (INference of Synthesis, Processing and dEgradation rates from Transcriptomic data) is a Bioconductor package that uses systems of ordinary differential equations (ODEs) to model RNA life-cycle kinetics. It distinguishes between premature RNA (intronic signal) and mature RNA (exonic signal) to estimate three key rates:\n1. **Synthesis ($k_1$)**: Production of premature RNA.\n2. **Processing ($k_2$)**: Conversion of premature to mature RNA.\n3. **Degradation ($k_3$)**: Decay of mature RNA.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/INSPEcT.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-inspect/overview",
+  "github": "N/A",
+  "conda_downloads": "34.1K",
+  "conda_downloads_num": 34100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "INSPEcT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/INSPEcT.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-inspect/overview",
+    "github": "N/A",
+    "conda_downloads": "34.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-inspect\n\nname: bioconductor-inspect\ndescription: Inference of RNA synthesis, processing, and degradation rates from transcriptomic data (RNA-seq). Use when analyzing RNA dynamics in time-course or steady-state experiments, with or without nascent RNA (4sU-seq) data. Supports quantification from BAM files, read counts, or transcript abundances.\n\n## Overview\n\nINSPEcT (INference of Synthesis, Processing and dEgradation rates from Transcriptomic data) is a Bioconductor package that uses systems of ordinary differential equations (ODEs) to model RNA life-cycle kinetics. It distinguishes between premature RNA (intronic signal) and mature RNA (exonic signal) to estimate three key rates:\n1. **Synthesis ($k_1$)**: Production of premature RNA.\n2. **Processing ($k_2$)**: Conversion of premature to mature RNA.\n3. **Degradation ($k_3$)**: Decay of mature RNA.\n\nThe package supports two main modes: **INSPEcT+** (includes nascent RNA/4sU-seq) and **INSPEcT-** (total RNA-seq only).\n\n## Typical Workflow\n\n### 1. Data Quantification\nQuantify exonic and intronic expressions from various sources.\n\n```r\nlibrary(INSPEcT)\n\n# From BAM files (requires a TxDb object)\n# experimentalDesign: numeric vector of time points or conditions\nexprs <- quantifyExpressionsFromBAMs(txdb=txdb, \n                                     BAMfiles=bamfiles, \n                                     experimentalDesign=c(0,0,1,1))\n\n# From Read Counts\nnasExp <- quantifyExpressionsFromTrCounts(allcounts=nascentCounts,\n                                          libsize=nascentLS,\n                                          exonsWidths=exWdths,\n                                          intronsWidths=intWdths,\n                                          experimentalDesign=expDes)\n```\n\n### 2. Creating an INSPEcT Object\nInitialize the analysis based on the presence or absence of nascent RNA.\n\n```r\n# INSPEcT+ (with Nascent RNA)\n# tL is the labeling time (e.g., 1/6 for 10 mins)\nnascentObj <- newINSPEcT(tpts=tpts, \n                         labeling_time=tL, \n                         nascentExpressions=nasExp, \n                         matureExpressions=matExp)\n\n# INSPEcT- (Total RNA only)\nmatureObj <- newINSPEcT(tpts=tpts, \n                        matureExpressions=matExp)\n```\n\n### 3. Modeling Rates\nRefine \"first guess\" rates by fitting functional forms (sigmoid or impulse) to minimize noise.\n\n```r\n# Fit models to the first 100 genes\nobj_modeled <- modelRates(nascentObj[1:100], seed=1)\n\n# For oscillatory data or non-standard forms, use Non-Functional modeling\nobj_nf <- modelRatesNF(nascentObj[1:100])\n```\n\n### 4. Evaluating Results\nExtract rates, p-values, and visualize gene dynamics.\n\n```r\n# Get p-values for rate variability\npvals <- ratePvals(obj_modeled)\n\n# Get the regulatory class (e.g., \"s\" for synthesis, \"sd\" for synthesis+degradation)\nclasses <- geneClass(obj_modeled)\n\n# Visualize a specific gene\nplotGene(obj_modeled, ix=\"GeneName\")\n\n# Heatmap of all modeled rates\ninHeatmap(obj_modeled, type='model')\n```\n\n### 5. Steady-State Analysis\nCompare two steady states to identify differential regulation.\n\n```r\n# Compare two conditions\ndiffrates <- compareSteady(nasSteadyObj[, c(\"cond1\", \"cond2\")])\n\n# View differential synthesis rates\nhead(synthesis(diffrates))\n\n# MA plot of results\nplotMA(diffrates, rate='synthesis')\n```\n\n## Wrap-up Pipelines\nFor a streamlined analysis, use the high-level wrapper functions:\n- `inspectFromBAM()`: From BAM files to final object.\n- `inspectFromPCR()`: From quantified abundances to final object.\n\n## Tips for Success\n- **Labeling Time**: For labeling times > 30 mins, set `degDuringPulse=TRUE` in `newINSPEcT` to account for nascent RNA degradation during the pulse.\n- **Filtering**: Use `chisqmodel(obj)` to identify and discard genes with poor model fits (e.g., p-value > 0.05).\n- **GUI**: Use `runINSPEcTGUI()` to launch an interactive Shiny application for exploring gene dynamics and manual parameter tuning.\n\n## Reference documentation\n- [INSPEcT - INference of Synthesis, Processing and dEgradation rates from Transcriptomic data](./references/INSPEcT.md)\n- [INSPEcT-GUI](./references/INSPEcT_GUI.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-inspect",
+    "description": "This tool infers RNA synthesis, processing, and degradation rates from transcriptomic data using ordinary differential equations. Use when user asks to analyze RNA dynamics in time-course or steady-state experiments, model RNA life-cycle kinetics from RNA-seq or 4sU-seq data, or quantify intronic and exonic expressions to estimate kinetic rates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/INSPEcT.html"
+  }
+}

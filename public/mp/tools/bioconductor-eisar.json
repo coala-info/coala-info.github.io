@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-eisar",
+  "category": "bioconductor",
+  "name": "bioconductor-eisar",
+  "description": "The eisaR package performs Exon-Intron Split Analysis to distinguish between transcriptional and post-transcriptional gene regulation using RNA-seq data. Use when user asks to perform Exon-Intron Split Analysis, quantify exonic and intronic reads, or generate reference files for RNA velocity analysis.",
+  "overview": "The `eisaR` package facilitates Exon-Intron Split Analysis (EISA). By separately quantifying exonic (mature RNA) and intronic (pre-mRNA) reads, users can distinguish between transcriptional regulation (changes in both) and post-transcriptional regulation (changes in exons only). It also provides utilities to build reference objects for alignment-free tools like Salmon/Alevin used in RNA velocity analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/eisaR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eisar/overview",
+  "github": "https://github.com/fmicompbio/eisaR",
+  "conda_downloads": "17.3K",
+  "conda_downloads_num": 17300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "eisaR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/eisaR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eisar/overview",
+    "github": "https://github.com/fmicompbio/eisaR",
+    "conda_downloads": "17.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-eisar\n\n## Overview\nThe `eisaR` package facilitates Exon-Intron Split Analysis (EISA). By separately quantifying exonic (mature RNA) and intronic (pre-mRNA) reads, users can distinguish between transcriptional regulation (changes in both) and post-transcriptional regulation (changes in exons only). It also provides utilities to build reference objects for alignment-free tools like Salmon/Alevin used in RNA velocity analysis.\n\n## Installation\n```r\nif (!require(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"eisaR\")\n```\n\n## Exon-Intron Split Analysis (EISA) Workflow\n\n### 1. Prepare Annotations\nExtract filtered exonic and gene body regions from a `TxDb` or `EnsDb` object.\n```r\nlibrary(eisaR)\n# strandedData = TRUE for strand-specific RNA-seq\nreg <- getRegionsFromTxDb(txdb = txdb, strandedData = TRUE)\n# Access ranges: reg$exons and reg$genebodies\n```\n\n### 2. Quantify Reads\nCount alignments in exons and gene bodies. Intronic counts are derived by subtracting exonic counts from gene body counts.\n```r\n# Example using QuasR, but any count table (genes x samples) works\ncntEx <- qCount(proj, reg$exons)\ncntGb <- qCount(proj, reg$genebodies)\ncntIn <- cntGb - cntEx\n```\n\n### 3. Run EISA\nUse `runEISA` to perform the statistical analysis. It identifies quantifiable genes and fits a model (typically via `edgeR`) to find significant interactions between region (exon/intron) and condition.\n```r\n# rEx and rIn are count matrices (no width column)\n# cond is a factor defining experimental groups\nres <- runEISA(rEx, rIn, cond)\n\n# To use the original 2015 algorithm:\nres_orig <- runEISA(rEx, rIn, cond, method = \"Gaidatzis2015\")\n```\n\n### 4. Visualize Results\nPlot the relationship between intronic and exonic log-fold changes.\n```r\nplotEISA(res)\n```\n\n## RNA Velocity Reference Preparation\nPrepare references for estimating spliced and unspliced abundances with alignment-free methods (Salmon, kallisto).\n\n### Generate Feature Ranges\nCreate a `GRangesList` containing spliced transcripts and introns (with optional flanking sequences).\n```r\ngrl <- getFeatureRanges(\n    gtf = \"path/to/annotation.gtf\",\n    featureType = c(\"spliced\", \"intron\"),\n    intronType = \"separate\",\n    flankLength = 50L\n)\n```\n\n### Export Reference Files\nExtract sequences and create mapping tables for downstream tools.\n```r\n# Extract sequences (requires a BSgenome object or FASTA)\nseqs <- GenomicFeatures::extractTranscriptSeqs(BSgenome.Hsapiens.UCSC.hg38, transcripts = grl)\nBiostrings::writeXStringSet(seqs, \"transcriptome_plus_introns.fa\")\n\n# Export mapping and GTF\ntx2gene <- getTx2Gene(grl)\nexportToGtf(grl, filepath = \"expanded_annotation.gtf\")\n```\n\n## Reference documentation\n- [Using eisaR for Exon-Intron Split Analysis (EISA)](./references/eisaR.md)\n- [Generating reference files for spliced and unspliced abundance estimation](./references/rna-velocity.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-eisar",
+    "description": "The eisaR package performs Exon-Intron Split Analysis to distinguish between transcriptional and post-transcriptional gene regulation using RNA-seq data. Use when user asks to perform Exon-Intron Split Analysis, quantify exonic and intronic reads, or generate reference files for RNA velocity analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/eisaR.html"
+  }
+}

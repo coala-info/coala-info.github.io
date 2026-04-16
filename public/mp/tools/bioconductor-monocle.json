@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-monocle",
+  "category": "bioconductor",
+  "name": "bioconductor-monocle",
+  "description": "Monocle analyzes single-cell RNA-seq data to model biological processes through pseudotime trajectory reconstruction. Use when user asks to perform cell clustering, identify differentially expressed genes, or order cells along a developmental trajectory.",
+  "overview": "Monocle is a Bioconductor package designed for the analysis of single-cell RNA-seq experiments. Its core strength lies in \"pseudotime\" analysis—ordering cells along a learned trajectory to model biological processes like differentiation or response to stimuli. It also provides robust tools for data normalization, clustering, and identifying genes that vary across cell states or trajectories.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/monocle.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "monocle"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/monocle.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-monocle\n\nname: bioconductor-monocle\ndescription: Analysis of single-cell RNA-seq data using Monocle. Use this skill to perform cell clustering, differential expression analysis, and trajectory reconstruction (pseudotime) for single-cell datasets in R.\n\n# bioconductor-monocle\n\n## Overview\nMonocle is a Bioconductor package designed for the analysis of single-cell RNA-seq experiments. Its core strength lies in \"pseudotime\" analysis—ordering cells along a learned trajectory to model biological processes like differentiation or response to stimuli. It also provides robust tools for data normalization, clustering, and identifying genes that vary across cell states or trajectories.\n\n## Core Workflow\n\n### 1. Data Preparation\nMonocle uses the `CellDataSet` (CDS) class. You can create one from a count matrix, expression matrix, or by converting a Seurat object.\n\n```r\nlibrary(monocle)\n\n# Create CDS from a matrix\n# expr_matrix: genes as rows, cells as columns\n# pd: AnnotatedDataFrame for phenoData (cells)\n# fd: AnnotatedDataFrame for featureData (genes)\ncds <- newCellDataSet(as.matrix(expr_matrix),\n                      phenoData = pd,\n                      featureData = fd,\n                      expressionFamily = negbinomial.size())\n\n# Estimate size factors and dispersions\ncds <- estimateSizeFactors(cds)\ncds <- estimateDispersions(cds)\n```\n\n### 2. Filtering and Preprocessing\nFilter out low-quality cells or genes with low detection.\n\n```r\ncds <- detectGenes(cds, min_expr = 0.1)\nexpressed_genes <- row.names(subset(fData(cds), num_cells_expressed >= 10))\n```\n\n### 3. Clustering Cells\nIdentify cell types or states before trajectory analysis.\n\n```r\n# Identify marker genes\ndisp_table <- dispersionTable(cds)\nunsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)\ncds <- setOrderingFilter(cds, unsup_clustering_genes$gene_id)\n\n# Reduce dimensionality and cluster\ncds <- reduceDimension(cds, max_components = 2, method = 'tSNE')\ncds <- clusterCells(cds)\nplot_cell_clusters(cds)\n```\n\n### 4. Trajectory Reconstruction (Pseudotime)\nThe signature workflow for Monocle involves ordering cells along a path.\n\n```r\n# 1. Choose genes that define progress (e.g., differentially expressed genes)\nordering_genes <- expressed_genes # Or use results from differentialGeneTest\ncds <- setOrderingFilter(cds, ordering_genes)\n\n# 2. Reduce dimension using DDRTree\ncds <- reduceDimension(cds, method = 'DDRTree')\n\n# 3. Order cells\ncds <- orderCells(cds)\n\n# 4. Visualize\nplot_cell_trajectory(cds, color_by = \"Pseudotime\")\nplot_cell_trajectory(cds, color_by = \"State\")\n```\n\n### 5. Differential Expression Analysis\nMonocle provides specialized tests for single-cell data.\n\n```r\n# Test for genes that vary between clusters\ndiff_test_res <- differentialGeneTest(cds[expressed_genes,],\n                                      fullModelFormulaStr = \"~Cluster\")\n\n# Test for genes that change as a function of pseudotime\nsig_genes <- subset(diff_test_res, qval < 0.1)\npseudotime_genes <- differentialGeneTest(cds[sig_genes$gene_id,],\n                                         fullModelFormulaStr = \"~sm.ns(Pseudotime)\")\n```\n\n## Tips for Success\n- **Expression Family**: Ensure you choose the correct `expressionFamily` during CDS creation. Use `negbinomial.size()` for raw counts and `gaussianff()` for log-transformed data or FPKM/TPM.\n- **Gene Selection**: The quality of the trajectory depends heavily on the genes used for ordering. Using genes that are highly variable or differentially expressed across clusters usually yields the best results.\n- **Branching**: Use `BEAM` (Branched Expression Analysis Modeling) to identify genes that are regulated in a cell-fate dependent manner at specific trajectory branches.\n\n## Reference documentation\n- [Monocle Vignette](./references/monocle-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-monocle",
+    "description": "Monocle analyzes single-cell RNA-seq data to model biological processes through pseudotime trajectory reconstruction. Use when user asks to perform cell clustering, identify differentially expressed genes, or order cells along a developmental trajectory.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/monocle.html"
+  }
+}

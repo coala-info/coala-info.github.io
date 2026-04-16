@@ -1,0 +1,51 @@
+{
+  "id": "daligner",
+  "category": "CLI",
+  "name": "daligner",
+  "description": "daligner identifies local alignments and overlaps between long-read sequencing datasets with high error rates. Use when user asks to find overlaps between reads, perform self-comparison of database blocks, or generate local alignment files for long-read assembly pipelines.",
+  "overview": "daligner (the Dazzler Overlap Module) is a specialized tool for identifying local alignments in long-read sequencing datasets characterized by high error rates (up to 15%). It operates by comparing blocks of reads within a Dazzler database (.db or .dam). Instead of storing full alignments, it records \"trace points\" at regular intervals, allowing for efficient reconstruction of alignments while minimizing disk space. It is a core component of many long-read assembly pipelines, such as FALCON.",
+  "homepage": "https://github.com/thegenemyers/DALIGNER",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/daligner/overview",
+  "github": "https://github.com/thegenemyers/DALIGNER",
+  "conda_downloads": "25.8K",
+  "conda_downloads_num": 25800,
+  "last_updated": "2025-11-27",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "daligner",
+      "daligner_LAsort",
+      "daligner_LAmerge",
+      "daligner_LAshow",
+      "daligner_DBinit",
+      "daligner_DBsplit"
+    ],
+    "description": "The provided text does not contain help information for daligner; it is an error log indicating a failure to build a container image due to insufficient disk space.",
+    "docker_image": "quay.io/biocontainers/daligner:2.0.20240118--h7b50bb2_0",
+    "homepage": "https://github.com/thegenemyers/DALIGNER",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/daligner/overview",
+    "github": "https://github.com/thegenemyers/DALIGNER",
+    "conda_downloads": "25.8K",
+    "last_updated": "2025-11-27",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "daligner_DBinit.cwl",
+    "daligner_LAshow.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# daligner\n\n## Overview\n\ndaligner (the Dazzler Overlap Module) is a specialized tool for identifying local alignments in long-read sequencing datasets characterized by high error rates (up to 15%). It operates by comparing blocks of reads within a Dazzler database (.db or .dam). Instead of storing full alignments, it records \"trace points\" at regular intervals, allowing for efficient reconstruction of alignments while minimizing disk space. It is a core component of many long-read assembly pipelines, such as FALCON.\n\n## Core Command Patterns\n\n### Basic Alignment\nTo compare a subject block against one or more target blocks:\n`daligner [options] <subject:db> <target:db> ...`\n\n### Self-Comparison\nWhen comparing a block against itself (e.g., for finding overlaps within a single dataset), use the `-A` (asymmetric) flag to avoid redundant computations:\n`daligner -v -A raw_reads.1 raw_reads.1`\n\n### Block Range Syntax\ndaligner supports a special `@` syntax to handle multiple database blocks efficiently:\n- `db.@` : Matches all blocks (1, 2, 3...).\n- `db.@5` : Starts the sequence at block 5.\n- `db.@1-10` : Processes blocks 1 through 10 inclusive.\n\n## Key Parameters and Optimization\n\n### Filtration and Sensitivity\n- `-k<int>`: K-mer size (default 16). Maximum is 32.\n- `-w<int>`: Diagonal band width (default 64).\n- `-h<int>`: Hit threshold; requires k-mer hits to cover at least this many bases (default 50).\n- `-e<double>`: Average correlation rate (default 0.70 or 70%). Increase for higher stringency; decrease for noisier data.\n- `-l<int>`: Minimum alignment length (default 1000bp).\n\n### Memory and Performance\n- `-M<int>`: Memory limit in Gb. daligner will automatically adjust k-mer suppression (`-t`) to fit within this limit. This is the recommended way to handle over-represented k-mers (e.g., homopolymer runs).\n- `-t<int>`: Explicitly suppress k-mers occurring more than `t` times.\n- `-T<int>`: Number of threads (default 4).\n\n### Output Control\n- `-s<int>`: Trace point spacing (default 100bp). Smaller values increase alignment reconstruction precision but result in larger `.las` files.\n- `-I`: Include identity overlaps (overlaps between different parts of the same read).\n- `-a`: Pass-through flag to `LAsort` to produce sorted output immediately.\n\n## Processing Output (.las files)\n\ndaligner produces `.las` (local alignment) files. These must typically be sorted and merged before downstream use.\n\n### Sorting and Merging\n1. **LAsort**: Sorts alignment records.\n   `LAsort -v raw_reads.1.raw_reads.1.las`\n2. **LAmerge**: Merges multiple sorted `.las` files.\n   `LAmerge total.las block1.las block2.las ...`\n\n### Viewing Alignments\nUse **LAshow** to convert the binary `.las` format into human-readable text:\n`LAshow raw_reads.db overlaps.las | less`\n\n**Output Format Guide:**\n- `a_read b_read`: Indices of the overlapping reads.\n- `flag`: `n` for normal, `c` for reverse-complement.\n- `[start..end]`: The interval of the alignment. Angle brackets `< >` indicate the alignment reaches the start or end of the read.\n- `diffs`: Number of differing bases.\n- `trace pts`: Number of trace points used for the record.\n\n## Expert Tips\n- **K-mer Suppression**: If daligner is crashing due to memory exhaustion, check for highly repetitive sequences. Use the `-M` flag to let the tool self-limit, or run `DBdust` beforehand to mask low-complexity regions.\n- **Asymmetric Comparisons**: Always use `-A` when comparing a block to itself or when running a grid of comparisons (X vs Y) to ensure you only compute the upper triangle of the comparison matrix.\n- **Disk I/O**: daligner is I/O intensive. If running on a cluster, try to use local `/tmp` space for intermediate files via the `-P` option.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| DBinit | Initialize a new database for the DAZZ_DB / daligner suite. |\n| LAshow | Display local alignments produced by daligner in a human-readable format. |\n\n## Reference documentation\n- [DALIGNER README](./references/github_com_thegenemyers_DALIGNER.md)\n- [DAshow Wiki](./references/github_com_thegenemyers_DALIGNER_wiki_DAshow.md)\n- [daligner Executable Wiki](./references/github_com_thegenemyers_DALIGNER_wiki_daligner-executable.md)",
+  "skill_front_matter": {
+    "name": "daligner",
+    "description": "daligner identifies local alignments and overlaps between long-read sequencing datasets with high error rates. Use when user asks to find overlaps between reads, perform self-comparison of database blocks, or generate local alignment files for long-read assembly pipelines.",
+    "homepage": "https://github.com/thegenemyers/DALIGNER"
+  }
+}

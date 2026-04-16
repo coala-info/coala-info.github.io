@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rcaspar",
+  "category": "bioconductor",
+  "name": "bioconductor-rcaspar",
+  "description": "\"RCASPAR performs survival analysis on high-dimensional datasets using a piecewise baseline hazard Cox regression model with Lq-norm regularization. Use when user asks to predict survival times from genomic data, perform k-fold cross-validation for survival models, or evaluate survival predictions using Kaplan-Meier plots and ROC analysis.\"",
+  "overview": "RCASPAR is an R package for survival analysis on high-dimensional datasets. It implements a piecewise baseline hazard Cox regression model. A key feature is the use of an Lq-norm based prior for regularization, which effectively selects the most relevant covariates (e.g., genes) for predicting survival times. It is particularly useful when the number of covariates far exceeds the number of samples.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RCASPAR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RCASPAR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RCASPAR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rcaspar\n\n## Overview\n\nRCASPAR is an R package for survival analysis on high-dimensional datasets. It implements a piecewise baseline hazard Cox regression model. A key feature is the use of an Lq-norm based prior for regularization, which effectively selects the most relevant covariates (e.g., genes) for predicting survival times. It is particularly useful when the number of covariates far exceeds the number of samples.\n\n## Data Preparation\n\nRCASPAR requires two main inputs:\n\n1.  **Covariate Data (e.g., Gene Expression):** A matrix where rows are patients and columns are covariates. Missing values should be filled with zeros.\n2.  **Survival Data:** A data frame with at least two specific columns:\n    *   `True_STs`: Survival times (numeric).\n    *   `censored`: Censorship status (0 for uncensored/event occurred, 1 for censored).\n\n## Core Workflows\n\n### 1. Training and Prediction (Manual Split)\nUse `STpredictor_BLH` when you have pre-defined training and validation sets.\n\n```r\nlibrary(RCASPAR)\n\n# Example using built-in data\ndata(Bergamaschi)\ndata(survData)\n\nresult <- STpredictor_BLH(\n  geDataS = Bergamaschi[1:27, ],  # Validation covariates\n  survDataS = survData[1:27, ],   # Validation survival info\n  geDataT = Bergamaschi[28:82, ], # Training covariates\n  survDataT = survData[28:82, ],  # Training survival info\n  q = 1, s = 1,                   # Prior parameters (L1-norm like)\n  a = 1.558, b = 0.179,           # Gamma prior for baseline hazard\n  cut.off = 3,                    # Threshold to define long/short survivors\n  groups = 3,                     # Number of baseline hazard intervals\n  method = \"CG\"                   # Optimization: \"CG\", \"BFGS\", \"L-BFGS-B\", or \"SANN\"\n)\n```\n\n### 2. K-fold Cross-Validation\nUse `STpredictor_xvBLH` to perform cross-validation on a single dataset.\n\n```r\nresult_xv <- STpredictor_xvBLH(\n  geData = Bergamaschi, \n  survData = survData, \n  k = 5, \n  q = 1, s = 1, a = 1.558, b = 0.179, \n  groups = 3, \n  cut.off = 3\n)\n```\n\n## Visualizing and Evaluating Results\n\n### Kaplan-Meier Plots\nCompare the survival of predicted \"long\" vs \"short\" survivors.\n\n```r\nkmplt_svrl(\n  long = result$long_survivors, \n  short = result$short_survivors, \n  title = \"Survival Comparison\"\n)\n```\n\n### Statistical Significance\nPerform a log-rank test to compare the predicted groups.\n\n```r\nlogrnk(dataL = result$long_survivors, dataS = result$short_survivors)\n```\n\n### Performance Metrics (ROC and AURC)\nEvaluate the predictor at specific time points or across the entire time range.\n\n```r\n# ROC at a specific time point\nsurvivROC(\n  Stime = result$predicted_STs$True_STs,\n  status = result$predicted_STs$censored,\n  marker = result$predicted_STs$Predicted_STs,\n  predict.time = 5,\n  plot = TRUE\n)\n\n# Area Under the ROC Curve (AURC) over time\nsurvivAURC(\n  Stime = result$predicted_STs$True_STs,\n  status = result$predicted_STs$censored,\n  marker = result$predicted_STs$Predicted_STs,\n  time.max = 10\n)\n```\n\n## Parameter Tuning Tips\n\n*   **Prior (q, s):** Use `pltprior(q, s)` to visualize the weight prior. `q=1` corresponds to a Lasso-like effect.\n*   **Baseline Hazard (a, b):** Use `pltgamma(a, b)` to visualize the gamma distribution used as a prior for the baseline hazards.\n*   **Optimization:** If the algorithm terminates too early at the origin, increase the `noprior` argument to run initial iterations without the weight prior.\n*   **Extracting Weights:** \n    *   For `STpredictor_BLH`: `result$log_optimization$par` (first elements are baseline hazards, subsequent are covariate weights).\n    *   For `STpredictor_xvBLH`: `result$weights` and `result$baselineHs`.\n\n## Reference documentation\n- [RCASPAR: A package for survival time analysis using high-dimensional data](./references/RCASPAR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rcaspar",
+    "description": "RCASPAR performs survival analysis on high-dimensional datasets using a piecewise baseline hazard Cox regression model with Lq-norm regularization. Use when user asks to predict survival times from genomic data, perform k-fold cross-validation for survival models, or evaluate survival predictions using Kaplan-Meier plots and ROC analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RCASPAR.html"
+  }
+}

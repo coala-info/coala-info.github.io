@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tximport",
+  "category": "bioconductor",
+  "name": "bioconductor-tximport",
+  "description": "This tool imports and summarizes transcript-level abundance estimates from quantification tools like Salmon, Kallisto, and RSEM for downstream differential expression analysis. Use when user asks to summarize transcript counts to the gene level, correct for gene length changes across samples, or prepare quantification data for DESeq2, edgeR, and limma-voom.",
+  "overview": "The `tximport` package imports transcript-level abundance, estimated counts, and effective lengths from various quantification tools and summarizes them into gene-level matrices. This workflow corrects for potential changes in gene length across samples (e.g., from differential isoform usage) and provides a seamless interface to downstream Bioconductor differential expression packages like *DESeq2*, *edgeR*, and *limma-voom*.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/tximport.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/thelovelab/tximport",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tximport"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tximport.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/thelovelab/tximport",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tximport\n\nname: bioconductor-tximport\ndescription: Import and summarize transcript-level abundance estimates from quantification tools (Salmon, Kallisto, RSEM, etc.) for gene-level or transcript-level differential expression analysis. Use when processing RNA-seq data to: (1) Summarize transcript counts to gene level, (2) Correct for gene length changes across samples, (3) Prepare data for DESeq2, edgeR, or limma-voom, or (4) Import scRNA-seq data from Alevin.\n\n# bioconductor-tximport\n\n## Overview\nThe `tximport` package imports transcript-level abundance, estimated counts, and effective lengths from various quantification tools and summarizes them into gene-level matrices. This workflow corrects for potential changes in gene length across samples (e.g., from differential isoform usage) and provides a seamless interface to downstream Bioconductor differential expression packages like *DESeq2*, *edgeR*, and *limma-voom*.\n\n## Basic Workflow\n\n### 1. Prepare Input Files\nCreate a named vector of paths to the quantification files. The names should correspond to sample IDs.\n```r\nfiles <- file.path(dir, \"salmon\", samples$run, \"quant.sf\")\nnames(files) <- samples$sample_id\n```\n\n### 2. Create Transcript-to-Gene Mapping\nFor gene-level summarization, provide a data frame with two columns: (1) Transcript ID and (2) Gene ID. The order is strict, but column names are flexible.\n```r\n# Using a TxDb object\nlibrary(AnnotationDbi)\ntxdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\nk <- keys(txdb, keytype = \"TXNAME\")\ntx2gene <- select(txdb, k, \"GENEID\", \"TXNAME\")\n```\n\n### 3. Import Data\nUse the `tximport` function, specifying the tool `type` (e.g., \"salmon\", \"kallisto\", \"rsem\", \"stringtie\", \"alevin\", \"oarfish\").\n```r\nlibrary(tximport)\ntxi <- tximport(files, type = \"salmon\", tx2gene = tx2gene)\n```\n\n## Downstream Integration\n\n### DESeq2\nPass the `txi` object directly to `DESeqDataSetFromTximport`. This automatically handles the gene-length offsets.\n```r\nlibrary(DESeq2)\ndds <- DESeqDataSetFromTximport(txi, sampleTable, ~condition)\n```\n\n### edgeR\nManually calculate offsets from the `length` matrix to account for gene length changes.\n```r\nlibrary(edgeR)\ncts <- txi$counts\nnormMat <- txi$length\nnormMat <- normMat / exp(rowMeans(log(normMat)))\nnormCts <- cts / normMat\neff.lib <- calcNormFactors(normCts) * colSums(normCts)\nnormMat <- sweep(normMat, 2, eff.lib, \"*\")\nnormMat <- log(normMat)\n\ny <- DGEList(cts)\ny <- scaleOffset(y, normMat)\n```\n\n### limma-voom\nUse `countsFromAbundance=\"lengthScaledTPM\"` or `\"scaledTPM\"` during import, as `voom` does not use the offset matrix.\n```r\ntxi <- tximport(files, type = \"salmon\", tx2gene = tx2gene, countsFromAbundance = \"lengthScaledTPM\")\ny <- DGEList(txi$counts)\ny <- calcNormFactors(y)\nv <- voom(y, design)\n```\n\n## Advanced Options and Tips\n\n- **Transcript-level output**: Set `txOut = TRUE` to skip gene-level summarization.\n- **Inferential Replicates**: If Salmon/Kallisto were run with Gibbs sampling or bootstrapping, `tximport` automatically imports these into the `infReps` list element.\n- **ID Versioning**: If transcript IDs in the files have versions (e.g., `ENST000001.1`) but the `tx2gene` table does not, use `ignoreTxVersion = TRUE`.\n- **3' Tagged RNA-seq**: For 3' end sequencing, do not use length correction. Use the raw counts (`txi$counts`) directly without offsets or TPM scaling.\n- **Performance**: Ensure the `readr` package is installed; `tximport` will use it automatically for significantly faster file reading.\n- **Alevin (scRNA-seq)**: Import Alevin's `quants_mat.gz` by setting `type = \"alevin\"`. This returns a gene-by-cell sparse matrix.\n\n## Reference documentation\n- [Importing transcript abundance with tximport](./references/tximport.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tximport",
+    "description": "This tool imports and summarizes transcript-level abundance estimates from quantification tools like Salmon, Kallisto, and RSEM for downstream differential expression analysis. Use when user asks to summarize transcript counts to the gene level, correct for gene length changes across samples, or prepare quantification data for DESeq2, edgeR, and limma-voom.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tximport.html"
+  }
+}

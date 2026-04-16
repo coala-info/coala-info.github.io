@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-delayedtensor",
+  "category": "bioconductor",
+  "name": "bioconductor-delayedtensor",
+  "description": "DelayedTensor provides a framework for performing out-of-core tensor operations and decompositions on large-scale biological data using DelayedArray backends. Use when user asks to reshape tensors, perform tensor arithmetic like Hadamard or Kronecker products, or execute tensor decompositions such as CP, Tucker, and HOSVD.",
+  "overview": "The `DelayedTensor` package provides a framework for handling extremely large tensors that do not fit in memory. It extends the `DelayedArray` infrastructure to support tensor-specific operations. It is particularly useful for multi-omics biological data where high-dimensional arrays (e.g., gene x tissue x condition) are common. The package mirrors the API of the `rTensor` package, making it an easy transition for users needing out-of-core capabilities.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DelayedTensor.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-delayedtensor/overview",
+  "github": "https://github.com/rikenbit/DelayedTensor",
+  "conda_downloads": "7.7K",
+  "conda_downloads_num": 7700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DelayedTensor"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DelayedTensor.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-delayedtensor/overview",
+    "github": "https://github.com/rikenbit/DelayedTensor",
+    "conda_downloads": "7.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-delayedtensor\n\nname: bioconductor-delayedtensor\ndescription: Expert guidance for the DelayedTensor R package. Use this skill when performing out-of-core tensor operations, including reshaping (fold/unfold), tensor arithmetic (Hadamard, Kronecker, Khatri-Rao products), and tensor decompositions (CP, Tucker, MPCA, PVD) on large-scale biological data using DelayedArray backends.\n\n# bioconductor-delayedtensor\n\n## Overview\nThe `DelayedTensor` package provides a framework for handling extremely large tensors that do not fit in memory. It extends the `DelayedArray` infrastructure to support tensor-specific operations. It is particularly useful for multi-omics biological data where high-dimensional arrays (e.g., gene x tissue x condition) are common. The package mirrors the API of the `rTensor` package, making it an easy transition for users needing out-of-core capabilities.\n\n## Core Workflows\n\n### 1. Global Settings\nBefore processing large tensors, configure the block processing and storage settings to optimize performance and manage disk space.\n\n```r\nlibrary(DelayedTensor)\nlibrary(DelayedArray)\nlibrary(HDF5Array)\n\n# Set the maximum memory used for each block (e.g., 100MB)\nsetAutoBlockSize(size = 1e+8)\n\n# Set directory for intermediate HDF5 files\nsetHDF5DumpDir(tempdir())\n\n# Optional: Enable verbose mode to monitor progress\nsetVerbose(TRUE)\n```\n\n### 2. Tensor Reshaping (Unfold/Fold)\nReshaping is essential for converting tensors into matrices for standard linear algebra operations.\n\n*   **Unfold**: Convert a tensor to a matrix.\n    ```r\n    # Unfold darr into a matrix with modes 1 and 2 as rows, mode 3 as columns\n    dmat <- unfold(darr, row_idx = c(1, 2), col_idx = 3)\n    \n    # k-mode unfolding (standard matricization)\n    dmat_k <- k_unfold(darr, m = 1)\n    ```\n*   **Fold**: Convert a matrix back into a tensor.\n    ```r\n    # Fold dmat back into original dimensions\n    darr_folded <- fold(dmat, row_idx = c(1, 2), col_idx = 3, modes = dim(darr))\n    ```\n\n### 3. Tensor Arithmetic and Products\nPerform mode-wise operations and specialized products without loading the entire tensor into memory.\n\n*   **Mode-wise Stats**: `modeSum(darr, m = 1)` or `modeMean(darr, m = 2)`.\n*   **Hadamard Product**: Element-wise product (`hadamard(darr1, darr2)`).\n*   **Kronecker Product**: `kronecker(darr1, darr2)`.\n*   **Khatri-Rao Product**: Column-wise Kronecker product for matrices (`khatri_rao(mat1, mat2)`).\n*   **Tensor-Matrix Multiplication (ttm)**: Multiply a tensor by a matrix in mode `m`.\n    ```r\n    res <- ttm(darr, mat, m = 3)\n    ```\n\n### 4. Tensor Decomposition\nDecompose large tensors into factor matrices and core tensors.\n\n*   **Tucker Decomposition**: `tucker(darr, ranks = c(2, 2, 2))` (uses HOOI).\n*   **HOSVD**: `hosvd(darr, ranks = c(2, 2, 2))`.\n*   **CP Decomposition**: `cp(darr, num_components = 2)` (uses ALS).\n*   **MPCA**: Multilinear Principal Component Analysis (`mpca(darr, ranks = c(2, 2))`).\n\n### 5. Einstein Summation (einsum)\nUse `einsum` for a concise, string-based notation for complex operations like contractions and permutations.\n\n```r\n# Matrix multiplication: A %*% B\nC <- DelayedTensor::einsum('ij,jk->ik', darrA, darrB)\n\n# Extract diagonal\ndiag_elements <- DelayedTensor::einsum('ii->i', darrB)\n\n# Complex contraction\nres <- DelayedTensor::einsum('i,ij,ijk->jk', dvec, dmat, darr)\n```\n\n## Tips for Large Data\n*   **Sparse Data**: Use `setSparse(TRUE)` if your data is mostly zeros, but note this mode is experimental and may bypass block-size limits.\n*   **Disk Space**: Ensure the directory set by `setHDF5DumpDir` has enough space for intermediate HDF5 files, as tensor operations can generate large temporary objects.\n*   **Backend**: Works seamlessly with `HDF5Array` and `TileDBArray`.\n\n## Reference documentation\n- [1. Concept of DelayedTensor](./references/DelayedTensor_1.md)\n- [2. Tensor arithmetic by DelayedTensor](./references/DelayedTensor_2.md)\n- [3. Tensor decomposition by DelayedTensor](./references/DelayedTensor_3.md)\n- [4. Einsum operation by DelayedTensor](./references/DelayedTensor_4.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-delayedtensor",
+    "description": "DelayedTensor provides a framework for performing out-of-core tensor operations and decompositions on large-scale biological data using DelayedArray backends. Use when user asks to reshape tensors, perform tensor arithmetic like Hadamard or Kronecker products, or execute tensor decompositions such as CP, Tucker, and HOSVD.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DelayedTensor.html"
+  }
+}

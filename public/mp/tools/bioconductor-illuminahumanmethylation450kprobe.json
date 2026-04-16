@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-illuminahumanmethylation450kprobe",
+  "category": "bioconductor",
+  "name": "bioconductor-illuminahumanmethylation450kprobe",
+  "description": "This tool provides probe sequences and genomic reannotation data for the Illumina HumanMethylation450 microarray. Use when user asks to retrieve probe-level metadata, access genomic coordinates, perform sequence analysis, or identify SNPs at CpG sites for 450k methylation data.",
+  "overview": "The `IlluminaHumanMethylation450kprobe` package is a Bioconductor annotation resource providing detailed information for the 485,577 probes on the Illumina HumanMethylation450 chip. Unlike standard annotation packages that provide high-level mapping, this package contains the actual probe sequences and genomic context, allowing for precise bioinformatics workflows such as sequence analysis, liftOver operations, or identifying potential biases (e.g., SNPs or repeats at the interrogated CpG site).",
+  "homepage": "https://bioconductor.org/packages/release/data/annotation/html/IlluminaHumanMethylation450kprobe.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-illuminahumanmethylation450kprobe/overview",
+  "github": "N/A",
+  "conda_downloads": "5.3K",
+  "conda_downloads_num": 5300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IlluminaHumanMethylation450kprobe"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/IlluminaHumanMethylation450kprobe.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-illuminahumanmethylation450kprobe/overview",
+    "github": "N/A",
+    "conda_downloads": "5.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-illuminahumanmethylation450kprobe\n\nname: bioconductor-illuminahumanmethylation450kprobe\ndescription: Access and utilize probe sequences and reannotation data for the Illumina HumanMethylation450 (450k) microarray. Use this skill when you need to retrieve probe-level metadata, genomic coordinates (hg19), probe sequences, or perform custom annotations (like SNP overlapping or TSS distance calculations) for 450k methylation data.\n\n## Overview\n\nThe `IlluminaHumanMethylation450kprobe` package is a Bioconductor annotation resource providing detailed information for the 485,577 probes on the Illumina HumanMethylation450 chip. Unlike standard annotation packages that provide high-level mapping, this package contains the actual probe sequences and genomic context, allowing for precise bioinformatics workflows such as sequence analysis, liftOver operations, or identifying potential biases (e.g., SNPs or repeats at the interrogated CpG site).\n\n## Loading and Inspecting Data\n\nThe primary data object is a data frame also named `IlluminaHumanMethylation450kprobe`.\n\n```r\nlibrary(IlluminaHumanMethylation450kprobe)\n\n# Load the dataset\ndata(IlluminaHumanMethylation450kprobe)\n\n# Inspect structure\nhead(IlluminaHumanMethylation450kprobe, 3)\nstr(IlluminaHumanMethylation450kprobe)\n```\n\n### Key Columns\n- `Probe_ID`: Illumina probe identifier (cg/ch/rs numbers).\n- `chr`, `start`, `end`: Genomic coordinates in hg19/GRCh37.\n- `strand`: Genomic strand of the target.\n- `site`: The specific coordinate of the interrogated cytosine.\n- `probe.sequence`: The allele A sequence designed for the probe.\n- `forward.genomic.sequence`: The genomic sequence surrounding the site.\n- `CpGs`: Number of CpG sites in the probe sequence.\n\n## Common Workflows\n\n### Converting to GenomicRanges\nTo perform overlaps or spatial analysis, convert the data frame to a `GRanges` object.\n\n```r\nlibrary(GenomicRanges)\n\n# Create GRanges for the interrogated CpG sites\nCpGs.450k <- with(IlluminaHumanMethylation450kprobe,\n  GRanges(paste0('chr', chr),\n          IRanges(start = site, width = 2, names = Probe_ID),\n          strand = strand))\n```\n\n### Sequence Analysis\nUse `Biostrings` to analyze the genomic context provided in the `forward.genomic.sequence` column.\n\n```r\nlibrary(Biostrings)\n\n# Convert to DNAStringSet\nhm450_seqs <- DNAStringSet(IlluminaHumanMethylation450kprobe$forward.genomic.sequence)\n\n# Calculate dinucleotide frequency (e.g., checking for CpG density)\ncg_counts <- dinucleotideFrequency(hm450_seqs)[, \"CG\"]\n```\n\n### Identifying SNPs at CpG Sites\nYou can intersect the probe locations with SNP databases to identify probes that might be affected by underlying genetic variation.\n\n```r\n# Example logic for overlapping with SNPlocs (requires specific SNPlocs package)\n# library(SNPlocs.Hsapiens.dbSNP.XXXXXXXX)\n# snps <- getSNPlocs(\"chr1\", as.GRanges=TRUE)\n# hits <- findOverlaps(CpGs.450k, snps)\n```\n\n### Calculating Distance to Transcription Start Sites (TSS)\nCombine this package with `GenomicFeatures` to find the nearest genes.\n\n```r\nlibrary(GenomicFeatures)\n# Load a TxDb object (e.g., hg19 RefSeq)\n# txdb <- makeTranscriptDbFromUCSC('refGene', genome='hg19')\n# tss <- transcripts(txdb, columns='gene_id')\n# nearest_indices <- precede(CpGs.450k, tss)\n```\n\n## Tips and Best Practices\n- **Genome Build**: Note that the coordinates in this package are based on **hg19/GRCh37**. If working with hg38 data, you must use `rtracklayer::liftOver` on the coordinates.\n- **Memory Management**: The data frame is large (~485k rows). When performing chromosome-wide operations, consider using `mclapply` from the `parallel` package to speed up processing.\n- **CpH Probes**: For non-CpG probes (CpH), the `CpGs` column will be 0. These probes often require different interpretation in downstream analysis.\n\n## Reference documentation\n- [IlluminaHumanMethylation450kprobe](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-illuminahumanmethylation450kprobe",
+    "description": "This tool provides probe sequences and genomic reannotation data for the Illumina HumanMethylation450 microarray. Use when user asks to retrieve probe-level metadata, access genomic coordinates, perform sequence analysis, or identify SNPs at CpG sites for 450k methylation data.",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/IlluminaHumanMethylation450kprobe.html"
+  }
+}

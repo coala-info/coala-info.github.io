@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pepstat",
+  "category": "bioconductor",
+  "name": "bioconductor-pepstat",
+  "description": "Bioconductor-pepstat provides a statistical framework for the analysis and normalization of peptide microarray binding data. Use when user asks to analyze antibody binding intensities from .gpr files, normalize data based on peptide physicochemical properties, apply sliding mean smoothing, or make automated positivity calls.",
+  "overview": "The `pepStat` package provides a statistical framework for analyzing peptide microarray data. It addresses common challenges such as non-specific binding, background noise, and the overlapping nature of peptide sequences. Key features include a normalization method using peptide z-scales, data smoothing via sliding means, and automated positivity calls using False Discovery Rate (FDR) thresholding.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/pepStat.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RGLab/pepStat",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pepStat"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pepStat.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RGLab/pepStat",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pepstat\n\nname: bioconductor-pepstat\ndescription: Analysis of peptide microarray binding data. Use when analyzing antibody binding intensities from .gpr files, performing normalization based on peptide physicochemical properties, applying sliding mean smoothing, and making subject-specific positivity calls.\n\n# bioconductor-pepstat\n\n## Overview\nThe `pepStat` package provides a statistical framework for analyzing peptide microarray data. It addresses common challenges such as non-specific binding, background noise, and the overlapping nature of peptide sequences. Key features include a normalization method using peptide z-scales, data smoothing via sliding means, and automated positivity calls using False Discovery Rate (FDR) thresholding.\n\n## Workflow\n\n### 1. Data Import and Quality Control\nLoad `.gpr` files into a `peptideSet` object. A mapping file (CSV or data frame) is required for downstream analysis and must contain columns: `filename`, `ptid`, and `visit` (where `visit` uses \"pre\" for controls and \"post\" for cases).\n\n```r\nlibrary(pepStat)\nlibrary(pepDat)\n\n# Define paths\nmapFile <- system.file(\"extdata/mapping.csv\", package = \"pepDat\")\ndirToParse <- system.file(\"extdata/gpr_samples\", package = \"pepDat\")\n\n# Create peptideSet\npSet <- makePeptideSet(path = dirToParse, mapping.file = mapFile, log = TRUE)\n\n# Optional: Remove controls and empty spots\npSet <- makePeptideSet(path = dirToParse, mapping.file = mapFile, \n                       rm.control.list = c(\"JPT-control\", \"Ig\", \"Cy3\"),\n                       empty.control.list = c(\"empty\", \"blank control\"))\n\n# Visualize for spatial artifacts\nplotArrayImage(pSet, array.index = 1)\n```\n\n### 2. Peptide Annotation\nAdd sequence position and physicochemical properties. You can create a custom database or use existing collections.\n\n```r\n# Create a peptide database from a data frame (columns: peptide, start, end)\npeps <- read.csv(system.file(\"extdata/pep_info.csv\", package = \"pepDat\"))\npep_db <- create_db(peps)\n\n# Summarize replicates and attach position info\npsSet <- summarizePeptides(pSet, summary = \"mean\", position = pep_db)\n```\n\n### 3. Normalization and Smoothing\nNormalization models non-specific binding based on peptide properties. Smoothing uses a sliding mean to leverage overlapping peptide information.\n\n```r\n# Normalize intensities\npnSet <- normalizeArray(psSet)\n\n# Apply sliding mean smoothing (width is the number of peptides)\n# split.by.clade = TRUE (default) for clade-specific analysis\npsmSet <- slidingMean(pnSet, width = 9)\n\n# Aggregate clades to find general hotspots\npsmSetAg <- slidingMean(pnSet, width = 9, split.by.clade = FALSE)\n```\n\n### 4. Positivity Calls and Results\n`makeCalls` handles paired (PRE/POST) or unpaired samples automatically.\n\n```r\n# Generate calls\n# freq = TRUE returns response percentage; FALSE returns subject-specific matrix\ncalls <- makeCalls(psmSet, freq = TRUE, group = \"treatment\", cutoff = 0.1, method = \"FDR\")\n\n# Combine results into a summary table\nres_table <- restab(psmSet, calls)\nhead(res_table)\n```\n\n## Key Functions\n\n- `makePeptideSet`: Primary constructor. Use `mapping.file` to ensure subject metadata is attached early.\n- `normalizeArray`: Corrects for non-biological bias. Requires z-scales (automatically added by `create_db`).\n- `slidingMean`: Reduces signal variability. Use a `width` that matches the overlap density of your array design.\n- `makeCalls`: The `cutoff` parameter defines the FDR level. It subtracts \"pre\" from \"post\" intensities before thresholding.\n- `shinyPepStat()`: Launches an interactive GUI for the analysis pipeline.\n\n## Reference documentation\n- [pepStat](./references/pepStat.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pepstat",
+    "description": "Bioconductor-pepstat provides a statistical framework for the analysis and normalization of peptide microarray binding data. Use when user asks to analyze antibody binding intensities from .gpr files, normalize data based on peptide physicochemical properties, apply sliding mean smoothing, or make automated positivity calls.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/pepStat.html"
+  }
+}

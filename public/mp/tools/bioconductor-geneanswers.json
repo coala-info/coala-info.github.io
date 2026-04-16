@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-geneanswers",
+  "category": "bioconductor",
+  "name": "bioconductor-geneanswers",
+  "description": "GeneAnswers performs statistical enrichment analysis and provides integrated visualization for gene lists. Use when user asks to perform enrichment tests against GO or KEGG, visualize concept-gene networks, generate heatmaps of gene expression data, or map Entrez IDs to gene symbols.",
+  "overview": "GeneAnswers is a Bioconductor package designed for the integrated interpretation of gene lists. It bridges the gap between raw gene lists (e.g., from microarrays or NGS) and biological meaning by performing statistical enrichment tests against various categories, including Gene Ontology (GO), KEGG pathways, and Disease Ontology (DOLite). Its primary strength lies in its visualization capabilities, offering interactive concept-gene networks and cross-tabulation heatmaps that integrate gene expres",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneAnswers.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geneanswers/overview",
+  "github": "N/A",
+  "conda_downloads": "15.6K",
+  "conda_downloads_num": 15600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GeneAnswers"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneAnswers.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geneanswers/overview",
+    "github": "N/A",
+    "conda_downloads": "15.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-geneanswers\n\n## Overview\n\nGeneAnswers is a Bioconductor package designed for the integrated interpretation of gene lists. It bridges the gap between raw gene lists (e.g., from microarrays or NGS) and biological meaning by performing statistical enrichment tests against various categories, including Gene Ontology (GO), KEGG pathways, and Disease Ontology (DOLite). Its primary strength lies in its visualization capabilities, offering interactive concept-gene networks and cross-tabulation heatmaps that integrate gene expression data with functional annotations.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a character vector of Entrez Gene IDs. Optionally, you can provide a data frame where the first column is Entrez IDs and subsequent columns contain values like fold-change or p-values.\n\n```r\nlibrary(GeneAnswers)\ndata(humanGeneInput)\ndata(humanExpr)\n# humanGeneInput: Col 1 = EntrezID, Col 2 = foldChange, Col 3 = pValue\n```\n\n### 2. Building a GeneAnswers Object\nThe `geneAnswersBuilder` function is the central constructor. It performs the enrichment test and stores the results.\n\n```r\n# Basic GO Biological Process enrichment\nx <- geneAnswersBuilder(humanGeneInput, 'org.Hs.eg.db', categoryType='GO.BP', testType='hyperG')\n\n# KEGG pathway enrichment with expression profile and FDR correction\ny <- geneAnswersBuilder(humanGeneInput, 'org.Hs.eg.db', categoryType='KEGG', \n                        testType='hyperG', pvalueT=0.1, FDR.correction=TRUE, \n                        geneExpressionProfile=humanExpr)\n```\n\n### 3. Making Results Readable\nBy default, objects use Entrez IDs and Category IDs. Use `geneAnswersReadable` to map these to Gene Symbols and Category Terms.\n\n```r\nx_read <- geneAnswersReadable(x)\n```\n\n### 4. Visualization\nGeneAnswers provides several ways to visualize the enrichment:\n\n*   **Chart Plots**: Standard barplots and pie charts of top categories.\n    ```r\n    geneAnswersChartPlots(x_read, chartType='all')\n    ```\n*   **Concept-Gene Network**: Shows how genes link to specific categories. Nodes are colored by fold-change if provided.\n    ```r\n    geneAnswersConceptNet(x_read, colorValueColumn='foldChange', centroidSize='pvalue', output='interactive')\n    ```\n*   **Heatmaps (Cross-tabulation)**: Integrates expression profiles with category membership.\n    ```r\n    geneAnswersHeatmap(x_read, catTerm=TRUE, geneSymbol=TRUE)\n    ```\n*   **Concept Relation**: Shows the relationship between GO terms (ontology structure).\n    ```r\n    geneAnswersConceptRelation(x, direction='both', netMode='connection')\n    ```\n\n## Advanced Features\n\n### Custom Annotations\nYou can use `searchEntrez` to create custom annotation libraries based on NCBI keywords.\n```r\nkeywordsList <- list(Apoptosis=c(\"apoptosis\"), CellAdhesion=c(\"cell adhesion\"))\nentrezIDList <- searchEntrez(keywordsList)\nq <- geneAnswersBuilder(humanGeneInput, entrezIDList, testType='hyperG')\n```\n\n### Multigroup Analysis\nTo compare enrichment across multiple experiments or time points:\n```r\n# Assuming a list of geneInputs\ngAList <- lapply(sampleGroupsData, geneAnswersBuilder, 'org.Hs.eg.db', categoryType='KEGG')\noutputTable <- getConceptTable(gAList, items='geneNum')\n```\n\n### Homologous Mapping\nIf working with non-human species (e.g., Mouse) but wanting to use human-centric databases like DOLite:\n1.  Map IDs to human: `getHomoGeneIDs(mouseIDs, species='mouse', speciesL='human', mappingMethod='direct')`\n2.  Run `geneAnswersBuilder` on human IDs.\n3.  Map back: `geneAnswersHomoMapping(v, species='human', speciesL='mouse')`\n\n### Word Clouds (ListGIF)\nUse `getListGIF` to generate word-cloud visualizations of enriched terms via the ListGIF web server.\n```r\nglist <- c(\"MRPS35\", \"NBL1\", \"PSMD14\")\ngetListGIF(glist=glist, type=\"genelevel\", output=\"cloud.png\")\n```\n\n## Tips for Success\n*   **Entrez IDs**: Ensure your input IDs are character strings of Entrez IDs.\n*   **Annotation Libraries**: Always match the `annLib` (e.g., 'org.Hs.eg.db') to the species of your input genes.\n*   **Interactive Mode**: For complex networks, use `output='interactive'` to manually adjust the layout in the tcl/tk window.\n*   **Sorting**: Use `geneAnswersSort(x, sortBy='pvalue')` to prioritize specific results before plotting.\n\n## Reference documentation\n- [GeneAnswers: Integrated Interpretation of Genes](./references/geneAnswers.md)\n- [getListGIF: Visual Annotation Utility](./references/getListGIF.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-geneanswers",
+    "description": "GeneAnswers performs statistical enrichment analysis and provides integrated visualization for gene lists. Use when user asks to perform enrichment tests against GO or KEGG, visualize concept-gene networks, generate heatmaps of gene expression data, or map Entrez IDs to gene symbols.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GeneAnswers.html"
+  }
+}

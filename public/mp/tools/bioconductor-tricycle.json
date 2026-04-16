@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tricycle",
+  "category": "bioconductor",
+  "name": "bioconductor-tricycle",
+  "description": "This tool infers and visualizes continuous cell cycle positions and stages from single-cell RNA-seq data using transfer learning. Use when user asks to project datasets into a cell cycle space, estimate cell cycle position, or visualize periodic gene expression.",
+  "overview": "The `tricycle` package provides a robust framework for inferring the cell cycle position of individual cells in single-cell RNA-seq (scRNA-seq) data. It utilizes a transfer learning approach where new data is projected into a pre-learned, biologically interpretable cell cycle space. This method is highly transferable across species (human/mouse), cell types, and technologies (10X, Fluidigm C1). The primary output is a continuous variable $\\theta \\in [0, 2\\pi]$ representing the cell's position in",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/tricycle.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/hansenlab/tricycle",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tricycle"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tricycle.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/hansenlab/tricycle",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tricycle\n\nname: bioconductor-tricycle\ndescription: Infer and visualize cell cycle position and stages from single-cell RNA-seq data using transfer learning. Use this skill to project new datasets into a pre-learned cell cycle space, estimate continuous cell cycle position (0 to 2pi), and visualize results on embeddings or through periodic expression plots.\n\n# bioconductor-tricycle\n\n## Overview\nThe `tricycle` package provides a robust framework for inferring the cell cycle position of individual cells in single-cell RNA-seq (scRNA-seq) data. It utilizes a transfer learning approach where new data is projected into a pre-learned, biologically interpretable cell cycle space. This method is highly transferable across species (human/mouse), cell types, and technologies (10X, Fluidigm C1). The primary output is a continuous variable $\\theta \\in [0, 2\\pi]$ representing the cell's position in the cycle.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput should ideally be a `SingleCellExperiment` object. Data must be library-size normalized (e.g., using `scater::logNormCounts`) before processing.\n\n```r\nlibrary(tricycle)\nlibrary(scater)\n\n# Assuming sce is your SingleCellExperiment object\n# Ensure logcounts assay exists\nsce <- logNormCounts(sce)\n```\n\n### 2. Projecting and Estimating Position\nThe `estimate_cycle_position` function is the primary entry point. It handles both the projection into the latent space and the calculation of the cyclic position.\n\n```r\n# This adds 'tricyclePosition' to colData and 'tricycleEmbedding' to reducedDims\nsce <- estimate_cycle_position(sce, species = \"mouse\", gname.type = \"ENSEMBL\")\n```\n\n**Key Parameters:**\n- `species`: \"mouse\" (default) or \"human\".\n- `gname.type`: Type of gene IDs (e.g., \"SYMBOL\", \"ENSEMBL\").\n- `ref.m`: Optional custom reference matrix. If NULL, the pre-learned NeuroRef is used.\n\n### 3. Interpreting Cell Cycle Position ($\\theta$)\nThe position $\\theta$ ranges from $0$ to $2\\pi$. Approximate stages:\n- **0.5$\\pi$**: Start of S stage\n- **$\\pi$**: Start of G2M stage\n- **1.5$\\pi$**: Middle of M stage\n- **1.75$\\pi$ - 0.25$\\pi$**: G1/G0 stage\n\n### 4. Visualizing Results\n`tricycle` provides specialized functions for cyclic data visualization.\n\n**Embedding Plots:**\nUse a cyclic color scale to visualize $\\theta$ on UMAP, t-SNE, or the tricycle embedding.\n```r\nlibrary(ggplot2)\nlibrary(cowplot)\n\np <- plot_emb_circle_scale(sce, dimred = \"UMAP\", point.size = 1)\nlegend <- circle_scale_legend()\nplot_grid(p, legend, ncol = 2, rel_widths = c(1, 0.4))\n```\n\n**Periodic Expression Plots:**\nVerify the inference by plotting known markers (e.g., *Top2a*, *Smc2*) against the inferred position.\n```r\n# Fit a periodic loess line\ntop2a_idx <- which(rowData(sce)$Symbol == \"Top2a\")\nfit <- fit_periodic_loess(sce$tricyclePosition, \n                          assay(sce, \"logcounts\")[top2a_idx, ], \n                          plot = TRUE, \n                          fig.title = \"Top2a Expression\")\nfit$fig\n```\n\n**Density Plots:**\nCompare cell cycle distributions across samples or conditions.\n```r\nplot_ccposition_den(sce$tricyclePosition, sce$sample_id, \"Sample\")\n```\n\n## Alternative: Discrete Stage Prediction\nWhile continuous position is preferred, you can predict 5 discrete stages (G1.S, S, G2, G2.M, M.G1) using a modified Schwabe et al. method.\n\n```r\nsce <- estimate_Schwabe_stage(sce, species = \"mouse\", gname.type = \"ENSEMBL\")\n# Adds 'CCStage' to colData\n```\n\n## Custom References\nFor specialized datasets, you can build a new reference using PCA on GO cell cycle genes.\n```r\n# Run PCA on GO:0007049 genes\ngocc_sce <- run_pca_cc_genes(sce, species = \"mouse\")\n# Extract rotation matrix for top 2 PCs\nnew_ref <- attr(reducedDim(gocc_sce, \"PCA\"), \"rotation\")[, 1:2]\n# Use this reference for estimation\nsce <- estimate_cycle_position(sce, ref.m = new_ref)\n```\n\n## Tips and Best Practices\n- **Gene Mapping**: If gene IDs don't match the reference, ensure you provide the correct `AnnotationDb` (e.g., `org.Mm.eg.db`) to `project_cycle_space`.\n- **Circular Correlation**: When comparing two cyclic variables, use `CircStats::circ.cor` instead of standard Pearson correlation.\n- **Batch Effects**: If building a custom reference from multiple batches, perform batch correction (e.g., using Seurat or MNN) on the expression matrix before running PCA to define the reference.\n\n## Reference documentation\n- [tricycle: Transferable Representation and Inference of Cell Cycle](./references/tricycle.md)\n- [tricycle Vignette Source](./references/tricycle.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-tricycle",
+    "description": "This tool infers and visualizes continuous cell cycle positions and stages from single-cell RNA-seq data using transfer learning. Use when user asks to project datasets into a cell cycle space, estimate cell cycle position, or visualize periodic gene expression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tricycle.html"
+  }
+}

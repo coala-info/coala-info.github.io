@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-acgh",
+  "category": "bioconductor",
+  "name": "bioconductor-acgh",
+  "description": "This tool analyzes and visualizes array Comparative Genomic Hybridization (aCGH) data to identify copy number alterations. Use when user asks to process log2 ratios, perform HMM-based segmentation, identify genomic events like amplifications or transitions, and test associations between copy number changes and clinical outcomes.",
+  "overview": "The `aCGH` package is designed for the analysis of array Comparative Genomic Hybridization data. It provides a specialized `aCGH` class to store log2 ratios alongside genomic mapping information (chromosome, position) and phenotype data. The package is particularly known for its implementation of Unsupervised Hidden Markov Models (HMM) to segment genomic profiles and identify focal aberrations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/aCGH.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-acgh/overview",
+  "github": "N/A",
+  "conda_downloads": "51.7K",
+  "conda_downloads_num": 51700,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "aCGH"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/aCGH.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-acgh/overview",
+    "github": "N/A",
+    "conda_downloads": "51.7K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-acgh\n\nname: bioconductor-acgh\ndescription: Analysis and visualization of array Comparative Genomic Hybridization (aCGH) data. Use this skill to process log2 ratios, perform HMM-based segmentation, identify genomic events (amplifications, transitions), and test associations between copy number alterations and clinical outcomes.\n\n# bioconductor-acgh\n\n## Overview\n\nThe `aCGH` package is designed for the analysis of array Comparative Genomic Hybridization data. It provides a specialized `aCGH` class to store log2 ratios alongside genomic mapping information (chromosome, position) and phenotype data. The package is particularly known for its implementation of Unsupervised Hidden Markov Models (HMM) to segment genomic profiles and identify focal aberrations.\n\n## Core Workflow\n\n### 1. Data Import and Object Creation\n\nYou can create an `aCGH` object from data frames or read Sproc files directly.\n\n```R\nlibrary(aCGH)\n\n# From data frames: log2.ratios, clones.info (name, chrom, kb), and optional pheno.type\nex.acgh <- create.aCGH(log2.ratios, clones.info, pheno.type)\n\n# From Sproc files (UCSF format)\ndatadir <- system.file(\"examples\", package = \"aCGH\")\nlatest.mapping.file <- file.path(datadir, \"human.clones.info.Jul03.txt\")\nex.acgh <- aCGH.read.Sprocs(dir(path = datadir, pattern = \"sproc\", full.names = TRUE), \n                            latest.mapping.file, \n                            chrom.remove.threshold = 23)\n```\n\n### 2. Preprocessing and Imputation\n\nClean the data by filtering poor quality clones/samples and imputing missing values using lowess.\n\n```R\n# Filtering: remove unmapped, Y chromosome, and clones missing > 25%\nex.acgh <- aCGH.process(ex.acgh, chrom.remove.threshold = 23, prop.missing = .25, \n                        sample.quality.threshold = .4, unmapScreen = TRUE)\n\n# Imputation\nlog2.ratios.imputed(ex.acgh) <- impute.lowess(ex.acgh, maxChrom = 23)\n```\n\n### 3. HMM Segmentation and Event Calling\n\nThe HMM fits 2 to 5 states per chromosome and selects the best model via AIC/BIC.\n\n```R\n# Find HMM states\nhmm(ex.acgh) <- find.hmm.states(ex.acgh)\n\n# Merge states that are too close (e.g., < 0.25 log2 difference)\nhmm.merged(ex.acgh) <- mergeHmmStates(ex.acgh, model.use = 1, minDiff = 0.25)\n\n# Compute sample SDs and identify genomic events\nsd.samples(ex.acgh) <- computeSD.Samples(ex.acgh)\ngenomic.events(ex.acgh) <- find.genomic.events(ex.acgh)\n```\n\n### 4. Statistical Analysis\n\nTest associations between clones and categorical, continuous, or survival outcomes.\n\n```R\n# Categorical (e.g., Sex) using multtest\nresT.sex <- mt.maxT(log2.ratios.imputed(ex.acgh), phenotype(ex.acgh)$sex)\n\n# Survival or Linear Regression\nstat.coxph <- aCGH.test(ex.acgh, surv.obj, test = \"coxph\")\nstat.age <- aCGH.test(ex.acgh, age, test = \"linear.regression\")\n\n# Summarize frequencies of gains/losses\nsummary.table <- summarize.clones(ex.acgh, resT.sex, phenotype(ex.acgh)$sex)\n```\n\n### 5. Visualization\n\nThe package provides several plotting functions for different levels of granularity.\n\n- `plot(ex.acgh)`: Overall frequency plot of gains and losses across all samples.\n- `plotGenome(ex.acgh, samples = 1)`: Log2 ratios for a single sample along the whole genome.\n- `plotHmmStates(ex.acgh, sample.ind = 1, chr = 1)`: Detailed view of HMM fits and called events for a specific chromosome.\n- `plotFreqStat(ex.acgh, resT.sex, phenotype(ex.acgh)$sex)`: Comparison of gain/loss frequencies between two groups with significance statistics.\n- `clusterGenome(ex.acgh)`: Heatmap of clones and samples with dendrograms.\n\n## Tips and Best Practices\n\n- **Chromosome Indices**: Use `23` for X and `24` for Y. Many functions use `maxChrom` or `chrom.remove.threshold` to exclude sex chromosomes from analysis.\n- **Subsetting**: When subsetting an `aCGH` object (e.g., `obj[clones, samples]`), use `keep=TRUE` to ensure associated HMM and event slots are preserved where possible.\n- **Thresholding**: Use `threshold.func()` to create a discrete matrix of gains (1), losses (-1), and neutrals (0) based on a multiplier of the sample's MAD (Median Absolute Deviation).\n- **FGA**: Use `fga.func()` to calculate the Fraction of Genome Altered, a common metric for genomic instability.\n\n## Reference documentation\n\n- [Bioconductor’s aCGH package](./references/aCGH.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-acgh",
+    "description": "This tool analyzes and visualizes array Comparative Genomic Hybridization (aCGH) data to identify copy number alterations. Use when user asks to process log2 ratios, perform HMM-based segmentation, identify genomic events like amplifications or transitions, and test associations between copy number changes and clinical outcomes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/aCGH.html"
+  }
+}

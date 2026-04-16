@@ -1,0 +1,45 @@
+{
+  "id": "evidencemodeler",
+  "category": "CLI",
+  "name": "evidencemodeler",
+  "description": "EVidenceModeler integrates diverse gene predictions and evidence types into a single consensus genome annotation. Use when user asks to combine ab initio predictions, protein homology, and transcript assemblies into a best-fit gene structure or partition large genomes for parallel annotation processing.",
+  "overview": "EVidenceModeler (EVM) serves as a consensus builder for genome annotation. Rather than predicting genes from scratch, it acts as a decision-making framework that integrates diverse evidence types—ab initio predictions, protein homology, and transcript assemblies—into a single automated gene structure. By applying user-defined weights to different evidence classes, EVM resolves overlapping or conflicting gene models to produce a final \"best-fit\" annotation.",
+  "homepage": "https://github.com/EVidenceModeler/EVidenceModeler",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/evidencemodeler/overview",
+  "github": "https://github.com/EVidenceModeler/EVidenceModeler",
+  "conda_downloads": "30.2K",
+  "conda_downloads_num": 30200,
+  "last_updated": "2025-05-29",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "evidencemodeler_EVidenceModeler"
+    ],
+    "description": "EvidenceModeler (EVM) automates the process of combining gene predictions and protein/transcript alignments into a single set of high-quality gene models.",
+    "docker_image": "quay.io/biocontainers/evidencemodeler:2.1.0--h9948957_5",
+    "homepage": "https://github.com/EVidenceModeler/EVidenceModeler",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/evidencemodeler/overview",
+    "github": "https://github.com/EVidenceModeler/EVidenceModeler",
+    "conda_downloads": "30.2K",
+    "last_updated": "2025-05-29",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "evidencemodeler_EVidenceModeler.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# evidencemodeler\n\n## Overview\nEVidenceModeler (EVM) serves as a consensus builder for genome annotation. Rather than predicting genes from scratch, it acts as a decision-making framework that integrates diverse evidence types—ab initio predictions, protein homology, and transcript assemblies—into a single automated gene structure. By applying user-defined weights to different evidence classes, EVM resolves overlapping or conflicting gene models to produce a final \"best-fit\" annotation.\n\n## Core Workflow and CLI Usage\n\n### 1. Input Validation\nBefore running the modeler, you must ensure your GFF3 files adhere to EVM's specific requirements (gene -> mRNA -> exon -> CDS structure).\n```bash\n# Validate gene prediction GFF3 files\n$EVM_HOME/EvmUtils/gff3_gene_prediction_file_validator.pl predictions.gff3\n```\n\n### 2. Defining Evidence Weights\nCreate a tab-delimited `weights.txt` file. This file tells EVM which evidence to trust more.\n*   **ABINITIO_PREDICTION**: Standard gene finders (e.g., Augustus, SNAP).\n*   **TRANSCRIPT**: High-quality RNA-seq or PASA assemblies (usually weighted highest).\n*   **PROTEIN**: Spliced alignments from related species.\n\n**Example weights.txt:**\n```text\nABINITIO_PREDICTION  augustus     1\nABINITIO_PREDICTION  glimmerHMM   1\nTRANSCRIPT           PASA_models  10\nPROTEIN              spliced_prot 5\n```\n\n### 3. Running EVidenceModeler\nFor small genomes or single contigs, run the main executable directly:\n```bash\nEVidenceModeler --genome genome.fasta \\\n    --weights weights.txt \\\n    --gene_predictions predictions.gff3 \\\n    --protein_alignments protein_alignments.gff3 \\\n    --transcript_alignments transcript_alignments.gff3 \\\n    --output_file_root evm_output\n```\n\n### 4. Large Genome Processing (Partitioning)\nFor whole genomes, use the utility scripts to partition the genome into manageable chunks, run them in parallel, and recombine.\n1.  **Partition**: `$EVM_HOME/EvmUtils/partition_EVM_inputs.pl --genome genome.fasta --gene_predictions predictions.gff3 ...`\n2.  **Generate Commands**: `$EVM_HOME/EvmUtils/write_EVM_commands.pl --genome genome.fasta --weights weights.txt ... > commands.list`\n3.  **Execute**: Use ParaFly or a similar task runner to execute `commands.list`.\n4.  **Recombine**: `$EVM_HOME/EvmUtils/recombine_EVM_outputs_recursive.pl --output_file_root evm_output`\n\n## Expert Tips and Best Practices\n*   **Unique Exon IDs**: EVM requires that if an exon is shared among different transcripts in your input GFF3, they must be presented as distinct features with unique IDs.\n*   **Spliced Alignments Only**: Do not provide simple BLAST results for protein or transcript evidence. Use spliced-alignment tools like Exonerate, GeneWise, or PASA to ensure intron-aware evidence.\n*   **Weighting Strategy**: Assign higher weights to evidence with higher biological confidence. PASA transcript assemblies typically receive the highest weight (e.g., 10), while ab initio predictors receive lower weights (e.g., 1).\n*   **Alternative Splicing**: Note that EVM does not currently model alternative splicing; it will select the single best consensus structure for a locus.\n*   **Memory Management**: For large genomes, always use the partitioning utilities. Running EVM on a full chromosome without partitioning can lead to excessive memory consumption.\n\n## Reference documentation\n- [EVidenceModeler Wiki](./references/github_com_EVidenceModeler_EVidenceModeler_wiki.md)\n- [Bioconda EVM Overview](./references/anaconda_org_channels_bioconda_packages_evidencemodeler_overview.md)",
+  "skill_front_matter": {
+    "name": "evidencemodeler",
+    "description": "EVidenceModeler integrates diverse gene predictions and evidence types into a single consensus genome annotation. Use when user asks to combine ab initio predictions, protein homology, and transcript assemblies into a best-fit gene structure or partition large genomes for parallel annotation processing.",
+    "homepage": "https://github.com/EVidenceModeler/EVidenceModeler"
+  }
+}

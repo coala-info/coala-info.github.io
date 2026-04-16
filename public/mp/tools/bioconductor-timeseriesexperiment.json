@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-timeseriesexperiment",
+  "category": "bioconductor",
+  "name": "bioconductor-timeseriesexperiment",
+  "description": "This tool provides a specialized workflow for analyzing RNA-seq time-course data using the TimeSeriesExperiment R package. Use when user asks to normalize time-course data, perform dimensionality reduction, cluster gene trajectories, or identify genes with differential kinetics between experimental groups.",
+  "overview": "The `TimeSeriesExperiment` package is designed for analyzing time-course transcriptomic data, particularly datasets with few time points and replicates. It provides a non-parametric framework to handle the dependency structure of time-series data by incorporating lag differences. The core workflow involves creating a `TimeSeriesExperiment` object, normalizing counts, transforming data for gene-to-gene comparison, clustering trajectories, and identifying genes with differential kinetics between e",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/TimeSeriesExperiment.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/nlhuong/TimeSeriesExperiment",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TimeSeriesExperiment"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/TimeSeriesExperiment.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/nlhuong/TimeSeriesExperiment",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-timeseriesexperiment\n\nname: bioconductor-timeseriesexperiment\ndescription: Specialized workflow for analyzing RNA-seq time-course data using the TimeSeriesExperiment R package. Use this skill when you need to perform data normalization, dimensionality reduction (PCA), gene clustering, differential trajectory analysis, and pathway enrichment for short time-series biological datasets.\n\n## Overview\n\nThe `TimeSeriesExperiment` package is designed for analyzing time-course transcriptomic data, particularly datasets with few time points and replicates. It provides a non-parametric framework to handle the dependency structure of time-series data by incorporating lag differences. The core workflow involves creating a `TimeSeriesExperiment` object, normalizing counts, transforming data for gene-to-gene comparison, clustering trajectories, and identifying genes with differential kinetics between experimental groups.\n\n## Core Workflow\n\n### 1. Object Initialization\nCreate the S4 object from raw counts, row metadata, and column metadata. Time variables must be numeric.\n\n```r\nlibrary(TimeSeriesExperiment)\n\n# From matrices\nte <- TimeSeriesExperiment(\n  assays = list(counts = cnts_matrix),\n  rowData = gene_info,\n  colData = sample_info,\n  timepoint = \"time\",\n  replicate = \"replicate\",\n  group = \"condition\"\n)\n\n# From SummarizedExperiment\nte <- makeTimeSeriesExperimentFromSummarizedExperiment(\n  se_object, time = \"time_col\", group = \"group_col\", replicate = \"rep_col\"\n)\n```\n\n### 2. Pre-processing and Normalization\nNormalize for library size and filter low-expression features.\n\n```r\n# Normalize to CPM\nte <- normalizeData(te)\n\n# Filter features (example: mean CPM > 5 in at least one group)\n# User must identify 'genes_to_keep' vector first\nte <- filterFeatures(te, genes_to_keep)\n\n# Aggregate replicates to see mean behavior\nte <- collapseReplicates(te, FUN = mean)\n```\n\n### 3. Time-Course Formatting and Lags\nTransform data for fair comparison (e.g., scaling by gene sum or variance stabilization) and add lag features to capture temporal dependencies.\n\n```r\n# Scale gene expression to even sum for clustering\nte <- makeTimeSeries(te, feature.trans.method = \"scale_feat_sum\")\n\n# Add first and second order lags with weights (lambda)\nte <- addLags(te, lambda = c(0.5, 0.25))\n```\n\n### 4. Visualization and PCA\nExplore sample relationships and gene profiles.\n\n```r\n# Run PCA with variance stabilization\nte <- runPCA(te, var.stabilize.method = \"asinh\")\n\n# Plot samples\nplotSamplePCA(te, col.var = \"timepoint\")\n\n# Plot feature trajectories over PCA grid\nplotTimeSeriesPCA(te, m = 15, n = 15)\n\n# Heatmap of top variable genes\nplotHeatmap(te, num.feat = 100)\n```\n\n### 5. Gene Clustering\nGroup genes with similar trajectories using hierarchical clustering.\n\n```r\n# Cluster top 1000 variable genes\nte <- clusterTimeSeries(\n  te, \n  n.top.feat = 1000, \n  groups = \"all\",\n  clust.params = list(dynamic = TRUE)\n)\n\n# Visualize clusters\nplotTimeSeriesClusters(te)\n```\n\n### 6. Differential Expression (DE)\nIdentify genes that differ at specific time points or exhibit different overall trajectories.\n\n```r\n# Point-wise DE (Limma-Voom wrapper)\nte <- timepointDE(te, timepoints = \"all\", alpha = 0.05)\nde_results <- differentialExpression(te, \"timepoint_de\")\n\n# Trajectory DE (MANOVA/Adonis approach)\n# R2 indicates percentage of variance explained by the group/condition\nte <- trajectoryDE(te, dist_method = \"euclidean\")\ntraj_results <- differentialExpression(te, \"trajectory_de\")\n```\n\n### 7. Pathway Enrichment\nPerform enrichment analysis on clusters of interest or DE gene sets.\n\n```r\n# Enrichment for a specific set of Entrez IDs\nenrich_res <- pathwayEnrichment(\n  object = te,\n  features = de_entrez_ids,\n  species = \"Mm\", \n  ontology = \"BP\"\n)\n\n# Plot results for a specific cluster\nplotEnrichment(enrich_res[[\"C1\"]], n_max = 15)\n```\n\n## Tips for Success\n- **Time Variable**: Ensure the column designated as `timepoint` in `colData` is numeric, not a factor or character string.\n- **Lag Weights**: The `lambda` parameter in `addLags` controls the influence of the \"slope\" of the curve on clustering and DE.\n- **Ranking**: For short time courses with low power, use the $R^2$ value from `trajectoryDE` to rank genes by the magnitude of difference between conditions rather than relying solely on p-values.\n\n## Reference documentation\n- [Cop1 role in pro-inflammatory response](./references/cop1_knockout_timecourse.Rmd)\n- [Gene expression time course data analysis](./references/cop1_knockout_timecourse.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-timeseriesexperiment",
+    "description": "This tool provides a specialized workflow for analyzing RNA-seq time-course data using the TimeSeriesExperiment R package. Use when user asks to normalize time-course data, perform dimensionality reduction, cluster gene trajectories, or identify genes with differential kinetics between experimental groups.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/TimeSeriesExperiment.html"
+  }
+}

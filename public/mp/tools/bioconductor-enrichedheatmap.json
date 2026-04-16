@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-enrichedheatmap",
+  "category": "bioconductor",
+  "name": "bioconductor-enrichedheatmap",
+  "description": "This tool creates enriched heatmaps in R to visualize genomic signal enrichment patterns over specific target regions. Use when user asks to normalize genomic signals into matrices, visualize enrichment patterns with line plots, or concatenate multiple heatmaps to show associations between different epigenomic data sources.",
+  "overview": "The `EnrichedHeatmap` package extends `ComplexHeatmap` to visualize genomic signals relative to specific target regions. It follows a two-step workflow: first, normalizing genomic signals into a `normalizedMatrix` based on distance to targets, and second, visualizing that matrix with specialized annotations (like `anno_enriched`) that summarize enrichment patterns.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EnrichedHeatmap.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-enrichedheatmap/overview",
+  "github": "https://github.com/jokergoo/EnrichedHeatmap",
+  "conda_downloads": "33.8K",
+  "conda_downloads_num": 33800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EnrichedHeatmap"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EnrichedHeatmap.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-enrichedheatmap/overview",
+    "github": "https://github.com/jokergoo/EnrichedHeatmap",
+    "conda_downloads": "33.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-enrichedheatmap\n\nname: bioconductor-enrichedheatmap\ndescription: Specialized for creating enriched heatmaps in R to visualize genomic signal enrichment (e.g., ChIP-seq, methylation) over target regions (e.g., TSS, CpG islands). Use this skill when you need to normalize genomic data into matrices, visualize enrichment patterns with line plots, and concatenate multiple heatmaps to show associations between different epigenomic data sources.\n\n## Overview\nThe `EnrichedHeatmap` package extends `ComplexHeatmap` to visualize genomic signals relative to specific target regions. It follows a two-step workflow: first, normalizing genomic signals into a `normalizedMatrix` based on distance to targets, and second, visualizing that matrix with specialized annotations (like `anno_enriched`) that summarize enrichment patterns.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the library and prepare your genomic coordinates as `GRanges` objects.\n```r\nlibrary(EnrichedHeatmap)\nlibrary(GenomicRanges)\n\n# Example: Targets (TSS) and Signals (H3K4me3)\ntss = promoters(genes, upstream = 0, downstream = 1)\n```\n\n### 2. Normalize to Matrix\nUse `normalizeToMatrix()` to transform genomic signals into a heatmap-ready format.\n```r\nmat = normalizeToMatrix(signal, target, \n                        value_column = \"coverage\", # Column in signal GRanges\n                        extend = 5000,             # Upstream/downstream extension\n                        w = 50,                    # Window size\n                        mean_mode = \"w0\",          # Averaging method\n                        smooth = TRUE)             # Impute NAs/smooth rows\n```\n**Mean Modes:**\n- `w0`: Weighted mean of intersected and un-intersected parts (standard for ChIP-seq coverage).\n- `absolute`: Mean of signal regions regardless of width (good for methylation).\n- `weighted`: Mean weighted by intersection width.\n- `coverage`: Mean signal averaged by window length.\n\n### 3. Create the Heatmap\nUse `EnrichedHeatmap()` to plot. It accepts all arguments from `ComplexHeatmap::Heatmap()`.\n```r\nEnrichedHeatmap(mat, \n                col = c(\"white\", \"red\"), \n                name = \"Signal\",\n                column_title = \"Enrichment at TSS\")\n```\n\n## Advanced Features\n\n### Customizing Enrichment Annotations\nThe top annotation (line plot) is controlled via `anno_enriched()`.\n```r\nEnrichedHeatmap(mat, \n    top_annotation = HeatmapAnnotation(\n        enriched = anno_enriched(gp = gpar(col = \"blue\", lty = 1))\n    ))\n```\n\n### Concatenating Multiple Data Sources\nYou can use the `+` operator to combine enriched heatmaps with standard heatmaps (e.g., gene expression).\n```r\nht_list = EnrichedHeatmap(mat_chip, name = \"ChIP\") + \n          EnrichedHeatmap(mat_meth, name = \"Meth\") + \n          Heatmap(log2_rpkm, name = \"Expression\", width = unit(10, \"mm\"))\n\ndraw(ht_list, main_heatmap = \"ChIP\")\n```\n\n### Handling Outliers and Colors\nGenomic data often has extreme values. Use `keep` in normalization or `colorRamp2` for robust mapping.\n```r\n# Method 1: Trim during normalization\nmat = normalizeToMatrix(..., keep = c(0, 0.99))\n\n# Method 2: Robust color mapping\nlibrary(circlize)\ncol_fun = colorRamp2(quantile(mat, c(0, 0.99)), c(\"white\", \"red\"))\nEnrichedHeatmap(mat, col = col_fun)\n```\n\n### Mapping Signals to Specific Targets\nIf signals should only be associated with specific targets (e.g., a peak only associated with its nearest gene), use `mapping_column`.\n```r\nmat = normalizeToMatrix(signal, target, mapping_column = \"gene_id\")\n```\n\n## Tips for Success\n- **Smoothing:** Set `smooth = TRUE` for sparse data like methylation to impute windows without CpG sites.\n- **Target Regions:** If targets are regions (not points), use `target_ratio` to control the width of the target body in the heatmap.\n- **Row Ordering:** By default, rows are ordered by enrichment. Use `row_km` or `row_split` to group patterns.\n- **Rasterization:** For large datasets (thousands of genes), use `use_raster = TRUE` to improve performance and reduce file size.\n\n## Reference documentation\n- [The EnrichedHeatmap package](./references/EnrichedHeatmap.md)\n- [Make Enriched Heatmaps](./references/EnrichedHeatmap.Rmd)\n- [Introduction to EnrichedHeatmap](./references/EnrichedHeatmap_intro.Rmd)\n- [Visualize Comprehensive Associations in Roadmap dataset](./references/roadmap.md)\n- [Roadmap Analysis Workflow](./references/roadmap.Rmd)\n- [Row Ordering Methods](./references/row_ordering.md)\n- [Row Ordering Comparison](./references/row_ordering.Rmd)\n- [Visualizing Categorical Signals](./references/visualize_categorical_signals.Rmd)\n- [Categorical Signal Wrapper](./references/visualize_categorical_signals_wrapper.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-enrichedheatmap",
+    "description": "This tool creates enriched heatmaps in R to visualize genomic signal enrichment patterns over specific target regions. Use when user asks to normalize genomic signals into matrices, visualize enrichment patterns with line plots, or concatenate multiple heatmaps to show associations between different epigenomic data sources.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EnrichedHeatmap.html"
+  }
+}

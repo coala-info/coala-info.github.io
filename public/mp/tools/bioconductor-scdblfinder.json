@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scdblfinder",
+  "category": "bioconductor",
+  "name": "bioconductor-scdblfinder",
+  "description": "This tool identifies doublets in single-cell RNA-seq and ATAC-seq data using simulation-based, cluster-based, or read-count-based methods. Use when user asks to detect multiplets, flag droplets containing multiple cells, run the AMULET algorithm, or process SingleCellExperiment objects to remove technical artifacts.",
+  "overview": "The `scDblFinder` package provides a suite of methods for identifying doublets (multiplets) in single-cell sequencing data. The primary method, `scDblFinder()`, uses an iterative gradient-boosted tree classifier trained on artificial doublets generated from the dataset. It supports both scRNA-seq and scATAC-seq, handles multiple samples/captures, and can operate with or without prior clustering information.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scDblFinder.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/plger/scDblFinder",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scDblFinder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scDblFinder.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/plger/scDblFinder",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scdblfinder\n\nname: bioconductor-scdblfinder\ndescription: Comprehensive doublet detection in single-cell RNA-seq and ATAC-seq data. Use this skill to identify heterotypic and homotypic doublets using simulation-based, cluster-based, or read-count-based (AMULET) methods. It is particularly useful for processing SingleCellExperiment objects to flag droplets containing multiple cells.\n\n# bioconductor-scdblfinder\n\n## Overview\nThe `scDblFinder` package provides a suite of methods for identifying doublets (multiplets) in single-cell sequencing data. The primary method, `scDblFinder()`, uses an iterative gradient-boosted tree classifier trained on artificial doublets generated from the dataset. It supports both scRNA-seq and scATAC-seq, handles multiple samples/captures, and can operate with or without prior clustering information.\n\n## Core Workflow: scRNA-seq\n\nThe standard input is a `SingleCellExperiment` (SCE) object or a count matrix.\n\n### Basic Usage\nFor a single-sample dataset, run the default random-doublet simulation:\n\n```r\nlibrary(scDblFinder)\nlibrary(SingleCellExperiment)\n\n# Assuming 'sce' is your SingleCellExperiment object\nsce <- scDblFinder(sce)\n\n# Results are stored in colData\n# sce$scDblFinder.score: The doublet score (0 to 1)\n# sce$scDblFinder.class: The classification ('singlet' or 'doublet')\ntable(sce$scDblFinder.class)\n```\n\n### Handling Multiple Samples\nDoublets only form within a single capture. If your SCE contains multiple samples or batches, specify the `samples` argument to process them independently:\n\n```r\n# 'sample_id' is a column in colData(sce)\nsce <- scDblFinder(sce, samples=\"sample_id\")\n```\n\n### Cluster-Based Approach\nIf the data has clear clusters, the cluster-based approach is more efficient and helps identify the specific origins of doublets:\n\n```r\n# Use existing clusters or let the tool fast-cluster automatically\nsce <- scDblFinder(sce, clusters=\"cluster_column\") \n\n# To use internal fast clustering:\nsce <- scDblFinder(sce, clusters=TRUE)\n```\n\n## Core Workflow: scATAC-seq\n\nscATAC-seq data is sparse, requiring different strategies.\n\n### Feature Aggregation\nTo use the `scDblFinder` classifier on ATAC data, aggregate features into meta-features first:\n\n```r\nsce <- scDblFinder(sce, aggregateFeatures=TRUE, nfeatures=25, processing=\"normFeatures\")\n```\n\n### AMULET Method\nAMULET identifies doublets based on the presence of more than two fragments at a single genomic locus in a diploid cell. It requires a fragment file:\n\n```r\n# Returns a data.frame with p-values (low p-value = likely doublet)\nres <- amulet(fragment_file, regionsToExclude = toExclude_granges)\n```\n\n## Key Parameters and Tips\n\n- **Doublet Rate (`dbr`)**: By default, the tool estimates the rate based on the number of cells (approx. 0.8% per 1000 cells for standard 10x). Manually set `dbr` if using high-throughput (HT) kits or if the recovery rate was unusual.\n- **Reproducibility**: Use `set.seed()` for single-core runs. For multi-sample runs using `BPPARAM`, pass the seed to the param object: `MulticoreParam(3, RNGseed=1234)`.\n- **QC Timing**: Run `scDblFinder` *after* removing empty droplets but *before* stringent QC filtering. Low-quality cells can still form doublets with high-quality cells.\n- **Homotypic Doublets**: These (doublets of the same cell type) are harder to detect transcriptionally. If you need to find them, avoid the cluster-based approach and set `removeUnidentifiable=FALSE`.\n\n## Interpreting Results\n\n- **Bimodality**: A successful run typically shows a bimodal distribution in `hist(sce$scDblFinder.score)`, with peaks near 0 and 1.\n- **Thresholding**: The tool automatically determines a threshold by balancing the expected doublet rate and the misclassification rate of artificial doublets.\n- **Doublet Origins**: In cluster-based mode, check `sce$scDblFinder.mostLikelyOrigin` to see which cell types likely formed the doublet.\n\n## Reference documentation\n\n- [Introduction to the scDblFinder package](./references/introduction.md)\n- [scDblFinder Method Details](./references/scDblFinder.md)\n- [Scoring potential doublets from simulated densities](./references/computeDoubletDensity.md)\n- [Detecting clusters of doublet cells with DE analyses](./references/findDoubletClusters.md)\n- [Recovering intra-sample doublets](./references/recoverDoublets.md)\n- [Doublet identification in single-cell ATAC-seq](./references/scATAC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scdblfinder",
+    "description": "This tool identifies doublets in single-cell RNA-seq and ATAC-seq data using simulation-based, cluster-based, or read-count-based methods. Use when user asks to detect multiplets, flag droplets containing multiple cells, run the AMULET algorithm, or process SingleCellExperiment objects to remove technical artifacts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scDblFinder.html"
+  }
+}

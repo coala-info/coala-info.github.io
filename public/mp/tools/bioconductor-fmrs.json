@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fmrs",
+  "category": "bioconductor",
+  "name": "bioconductor-fmrs",
+  "description": "This tool performs parameter estimation and variable selection for Finite Mixture of Regression and Finite Mixture of Accelerated Failure Time models. Use when user asks to fit mixture models, perform variable selection for heterogeneous data, handle right-censored regression data, or estimate parameters using maximum likelihood and penalized likelihood methods.",
+  "overview": "The `fmrs` package provides a robust framework for fitting Finite Mixture of Regression (FMR) models and Finite Mixture of Accelerated Failure Time (FMAFTR) models. It is particularly useful for heterogeneous data where the relationship between covariates and a response variable differs across unobserved subpopulations. The package supports maximum likelihood estimation (MLE) via EM and Newton-Raphson algorithms, as well as variable selection through penalized likelihood (MPLE) using various pen",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/fmrs.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fmrs/overview",
+  "github": "https://github.com/shokoohi/fmrs",
+  "conda_downloads": "16.4K",
+  "conda_downloads_num": 16400,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fmrs"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fmrs.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fmrs/overview",
+    "github": "https://github.com/shokoohi/fmrs",
+    "conda_downloads": "16.4K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fmrs\n\nname: bioconductor-fmrs\ndescription: Parameter estimation and variable selection for Finite Mixture of Regression (FMR) and Finite Mixture of Accelerated Failure Time Regression (FMAFTR) models. Use this skill to perform MLE, MPLE, Ridge Regression, and Elastic Net for mixture models with Normal, Log-Normal, or Weibull distributions, including handling right-censored data.\n\n# bioconductor-fmrs\n\n## Overview\nThe `fmrs` package provides a robust framework for fitting Finite Mixture of Regression (FMR) models and Finite Mixture of Accelerated Failure Time (FMAFTR) models. It is particularly useful for heterogeneous data where the relationship between covariates and a response variable differs across unobserved subpopulations. The package supports maximum likelihood estimation (MLE) via EM and Newton-Raphson algorithms, as well as variable selection through penalized likelihood (MPLE) using various penalties (Lasso, SCAD, MCP, etc.).\n\n## Core Workflow\n\n### 1. Data Preparation and Generation\nData can be generated for simulation purposes using `fmrs.gendata`. For real data, ensure you have a response vector `y`, a covariate matrix `x`, and a censoring indicator vector `delta` (1 for observed, 0 for censored).\n\n```r\nlibrary(fmrs)\n\n# Generate synthetic data (e.g., Log-Normal AFT mixture)\ndat <- fmrs.gendata(nObs = 500, nComp = 2, nCov = 10,\n                    coeff = c(intercepts, coefficients),\n                    dispersion = c(1, 1), mixProp = c(0.4, 0.6),\n                    disFamily = \"lnorm\")\n```\n\n### 2. Maximum Likelihood Estimation (MLE)\nUse `fmrs.mle` to obtain parameter estimates without variable selection. This is often used to provide initial values for more complex variable selection procedures.\n\n```r\nres.mle <- fmrs.mle(y = dat$y, x = dat$x, delta = dat$delta,\n                    nComp = 2, disFamily = \"lnorm\",\n                    initCoeff = rnorm(nComp * nCov + nComp),\n                    initDispersion = rep(1, nComp),\n                    initmixProp = rep(1/nComp, nComp))\nsummary(res.mle)\n```\n\n### 3. Tuning Parameter Selection\nBefore performing variable selection, identify optimal tuning parameters ($\\lambda$) using `fmrs.tunsel`. It supports component-wise selection based on BIC.\n\n```r\nres.lam <- fmrs.tunsel(y = dat$y, x = dat$x, delta = dat$delta,\n                       nComp = 2, disFamily = \"lnorm\",\n                       initCoeff = c(coefficients(res.mle)),\n                       initDispersion = dispersion(res.mle),\n                       initmixProp = mixProp(res.mle),\n                       penFamily = \"adplasso\")\n```\n\n### 4. Variable Selection (MPLE)\nUse `fmrs.varsel` to obtain sparse solutions. This function performs parameter estimation and variable selection simultaneously.\n\n```r\nres.var <- fmrs.varsel(y = dat$y, x = dat$x, delta = dat$delta,\n                       nComp = ncomp(res.mle), disFamily = \"lnorm\",\n                       initCoeff = c(coefficients(res.mle)),\n                       initDispersion = dispersion(res.mle),\n                       initmixProp = mixProp(res.mle),\n                       penFamily = \"adplasso\",\n                       lambPen = slot(res.lam, \"lambPen\"))\n\n# View selected variables (non-zero coefficients)\nslot(res.var, \"selectedset\")\n```\n\n## Key Parameters and Options\n\n### Distribution Families (`disFamily`)\n- `\"norm\"`: Normal distribution (standard FMR).\n- `\"lnorm\"`: Log-Normal distribution (AFT mixture).\n- `\"weibull\"`: Weibull distribution (AFT mixture).\n\n### Penalty Families (`penFamily`)\nSupported penalties for `fmrs.varsel`:\n- `\"adplasso\"` (Adaptive Lasso)\n- `\"lasso\"`\n- `\"mcp\"`\n- `\"scad\"`\n- `\"sica\"`\n- `\"hard\"`\n\n### Ridge Regression\nTo perform Ridge Regression, set the `lambRidge` argument in `fmrs.mle` to a non-zero value.\n\n## Tips for Success\n- **Initialization**: Mixture models are sensitive to initial values. It is highly recommended to run `fmrs.mle` first and pass its results as `init` values to `fmrs.tunsel` and `fmrs.varsel`.\n- **Censoring**: For standard regression (non-censored), use `disFamily = \"norm\"`. For survival/time-to-event data, use `lnorm` or `weibull` and provide the `delta` vector.\n- **Component Switching**: Be aware that the order of components in the output may switch relative to your initial values; always check the `summary` or `coefficients` to interpret which component is which.\n\n## Reference documentation\n- [Using fmrs package](./references/usingfmrs.Rmd)\n- [Using fmrs package](./references/usingfmrs.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fmrs",
+    "description": "This tool performs parameter estimation and variable selection for Finite Mixture of Regression and Finite Mixture of Accelerated Failure Time models. Use when user asks to fit mixture models, perform variable selection for heterogeneous data, handle right-censored regression data, or estimate parameters using maximum likelihood and penalized likelihood methods.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fmrs.html"
+  }
+}

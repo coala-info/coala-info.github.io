@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spqn",
+  "category": "bioconductor",
+  "name": "bioconductor-spqn",
+  "description": "The spqn package implements spatial quantile normalization to remove the mean-correlation bias from gene co-expression matrices. Use when user asks to normalize correlation matrices, remove expression-linked bias in co-expression analysis, or perform spatial quantile normalization.",
+  "overview": "The `spqn` package implements Spatial Quantile Normalization (SpQN). In gene co-expression analysis, correlation matrices often exhibit a \"mean-correlation\" relationship: gene pairs with higher expression levels show higher correlations than those with lower expression. This bias can lead to false positives among highly expressed genes and hidden signals among lowly expressed ones. `spqn` corrects this by partitioning the correlation matrix into bins based on expression levels and applying quant",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/spqn.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/hansenlab/spqn",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spqn"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spqn.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/hansenlab/spqn",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spqn\n\n## Overview\n\nThe `spqn` package implements Spatial Quantile Normalization (SpQN). In gene co-expression analysis, correlation matrices often exhibit a \"mean-correlation\" relationship: gene pairs with higher expression levels show higher correlations than those with lower expression. This bias can lead to false positives among highly expressed genes and hidden signals among lowly expressed ones. `spqn` corrects this by partitioning the correlation matrix into bins based on expression levels and applying quantile normalization to equalize the distribution of correlations across the matrix.\n\n## Core Workflow\n\n### 1. Data Preparation\nBefore using `spqn`, you must have a correlation matrix and a vector of average expression levels for the same genes.\n\n```r\nlibrary(spqn)\nlibrary(SummarizedExperiment)\n\n# Load your data (e.g., SummarizedExperiment)\n# Ensure principal components have been removed to account for global batch effects\n# ave_exp should be the mean/median expression (e.g., log2 RPKM) before PC removal\ncor_m <- cor(t(assay(se)))\nave_exp <- rowData(se)$ave_logrpkm\n```\n\n### 2. Diagnostic Plotting\nAssess the mean-correlation relationship before normalization.\n\n```r\n# Plot distribution of correlations for bins on the diagonal\nplot_signal_condition_exp(cor_m, ave_exp, signal = 0)\n\n# Plot Inter-Quantile Range (IQR) to see variance shifts\nIQR_list <- get_IQR_condition_exp(cor_m, ave_exp)\nplot_IQR_condition_exp(IQR_list)\n\n# Q-Q plots to compare different expression bins\nqqplot_condition_exp(cor_m, ave_exp, i = 1, j = 1) # Compare bin (1,1) to reference\n```\n\n### 3. Spatial Quantile Normalization\nUse `normalize_correlation` to remove the bias.\n\n```r\ncor_m_spqn <- normalize_correlation(\n  cor_m, \n  ave_exp = ave_exp, \n  ngrp = 20,      # Number of bins per row/column\n  size_grp = 300, # Size of outer bins for smoothing (ngrp * size_grp >= n_genes)\n  ref_grp = 18    # Index of the reference bin on the diagonal (usually high expression)\n)\n```\n\n### 4. Validation\nVerify that the normalization removed the dependency.\n\n```r\n# The relationship between expression and correlation IQR should now be flat\nIQR_spqn <- get_IQR_condition_exp(cor_m_spqn, ave_exp)\nplot_IQR_condition_exp(IQR_spqn)\n```\n\n## Key Parameters for `normalize_correlation`\n\n*   `ngrp`: The number of bins to partition the matrix. Higher values provide finer resolution but require more genes.\n*   `size_grp`: Controls the smoothing. It defines the size of the \"outer\" bin used to estimate the distribution for the \"inner\" bin.\n*   `ref_grp`: The target distribution. It is recommended to use a bin corresponding to high (but not necessarily the highest) expression levels as the reference.\n\n## Tips for Success\n\n*   **PC Removal**: Always remove principal components (e.g., using `WGCNA::removePrincipalComponents`) before calculating the correlation matrix. SpQN is designed to remove the expression-linked bias that remains after global latent factors are removed.\n*   **Expression Scale**: Use `log2(RPKM)` or similar length-normalized scales for `ave_exp` to ensure gene length doesn't confound the expression measurement.\n*   **Memory**: For very large matrices, ensure sufficient RAM is available as `spqn` operates on the full dense correlation matrix.\n\n## Reference documentation\n\n- [spqn User's Guide](./references/spqn.md)\n- [spqn RMarkdown Source](./references/spqn.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-spqn",
+    "description": "The spqn package implements spatial quantile normalization to remove the mean-correlation bias from gene co-expression matrices. Use when user asks to normalize correlation matrices, remove expression-linked bias in co-expression analysis, or perform spatial quantile normalization.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spqn.html"
+  }
+}

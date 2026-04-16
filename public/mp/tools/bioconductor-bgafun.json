@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bgafun",
+  "category": "bioconductor",
+  "name": "bioconductor-bgafun",
+  "description": "This tool identifies functional residues in protein alignments using Between Group Analysis to differentiate protein subfamilies. Use when user asks to identify residues that differentiate protein subfamilies, perform Between Group Analysis on multiple sequence alignments, or encode alignments using binary and amino acid properties.",
+  "overview": "The `bgafun` package applies Between Group Analysis (BGA) to protein sequence alignments. It helps identify specific amino acid positions (residues) that are statistically significant in defining the differences between predefined groups of proteins (e.g., different substrate specificities). The workflow involves converting alignments into numerical matrices (Binary or AAP factors), performing ordination (PCA or Correspondence Analysis), and identifying the top contributing residues.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/bgafun.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bgafun/overview",
+  "github": "N/A",
+  "conda_downloads": "29.5K",
+  "conda_downloads_num": 29500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bgafun"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/bgafun.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bgafun/overview",
+    "github": "N/A",
+    "conda_downloads": "29.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bgafun\n\nname: bioconductor-bgafun\ndescription: Identify functional residues in protein alignments using Between Group Analysis (BGA). Use this skill when you need to perform supervised multivariate statistical analysis on multiple sequence alignments (MSA) to find residues that differentiate protein subfamilies (e.g., LDH vs. MDH). It supports binary and Amino Acid Properties (AAP) encoding, gap removal, and visualization of group separation.\n\n# bioconductor-bgafun\n\n## Overview\n\nThe `bgafun` package applies Between Group Analysis (BGA) to protein sequence alignments. It helps identify specific amino acid positions (residues) that are statistically significant in defining the differences between predefined groups of proteins (e.g., different substrate specificities). The workflow involves converting alignments into numerical matrices (Binary or AAP factors), performing ordination (PCA or Correspondence Analysis), and identifying the top contributing residues.\n\n## Core Workflow\n\n### 1. Data Input and Group Definition\nRead sequences using `seqinr` and define a factor for grouping.\n\n```r\nlibrary(bgafun)\nlibrary(seqinr)\n\n# Read alignment\naln <- read.alignment(file = \"path/to/file.fasta\", format = \"fasta\")\n\n# Convert to matrix to extract names for grouping\naln_mat <- convert_aln_amino(aln)\ngroups <- ifelse(grepl(\"Group1\", rownames(aln_mat)), \"Group1\", \"Group2\")\ngroups <- as.factor(groups)\n```\n\n### 2. Matrix Encoding Schemes\nChoose between Binary encoding (presence/absence) or Amino Acid Properties (AAP) encoding (biophysical factors).\n\n**Binary Encoding:**\nBest for Correspondence Analysis (CA).\n```r\n# Convert and remove gaps\namino_mat <- convert_aln_amino(aln)\namino_gapless <- remove_gaps_groups(amino_mat, groups, threshold = 0.05)\n\n# Add pseudocounts (essential to prevent zero-dominance)\namino_pseudo <- add_pseudo_counts(amino_gapless, groups)\n```\n\n**AAP Encoding:**\nUses 5 biophysical factors (Polarity, Secondary Structure, Size, Charge, Codon diversity). Best for PCA.\n```r\n# Convert to AAP\naap_mat <- convert_aln_AAP(aln)\n\n# Replace gaps with subfamily average for that column\naap_ave <- average_cols_aap(aap_mat, groups)\n```\n\n### 3. Running Between Group Analysis (BGA)\nUse `run_between_pca` for continuous data (AAP) or `bga` for integer data (Binary).\n\n```r\n# For AAP data (PCA)\n# Requires a binary matrix for sequence weights and the AAP matrix for analysis\nbga_results <- run_between_pca(amino_gapless, aap_ave, groups)\n\n# For Binary data (CA)\n# Note: Input matrix usually needs to be transposed\nbga_binary <- bga(t(amino_pseudo), groups)\n```\n\n### 4. Identifying Important Residues\nExtract the residues that contribute most to the separation between groups.\n\n```r\n# Identify top residues for 2 groups\ntop_res <- top_residues_2_groups(bga_binary)\n\n# Clean names (remove 'X' prefix often added by R)\nnames(top_res) <- sub(\"X\", \"\", names(top_res))\n\n# Create profile strings to see amino acid distribution at these positions\nprofiles <- create_profile_strings(amino_mat, groups)\nimportant_profiles <- profiles[, colnames(profiles) %in% names(top_res)]\n```\n\n### 5. Visualization\nVisualize the separation of groups and the contribution of residues using `made4` plotting functions.\n\n```r\nplot(bga_results)\n```\n\n## Tips and Best Practices\n- **Pseudocounts**: Always use `add_pseudo_counts` or add 1 to the binary matrix. Without this, the absence of an amino acid in a column can disproportionately skew the BGA.\n- **Gap Removal**: Use `remove_gaps_groups` to filter out columns that are mostly gaps within a specific group, as these are often uninformative for functional residue identification.\n- **Ordination Choice**: Use PCA for AAP encoding (continuous variables) and Correspondence Analysis (CA) for Binary encoding (count/integer data).\n\n## Reference documentation\n- [bgafun](./references/bgafun.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bgafun",
+    "description": "This tool identifies functional residues in protein alignments using Between Group Analysis to differentiate protein subfamilies. Use when user asks to identify residues that differentiate protein subfamilies, perform Between Group Analysis on multiple sequence alignments, or encode alignments using binary and amino acid properties.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/bgafun.html"
+  }
+}

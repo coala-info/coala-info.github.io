@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-calib",
+  "category": "bioconductor",
+  "name": "bioconductor-calib",
+  "description": "This tool normalizes spotted microarray data using a physically motivated calibration model to estimate absolute transcript levels. Use when user asks to normalize spotted microarrays, estimate absolute expression levels from spike-in controls, or handle dye saturation effects.",
+  "overview": "CALIB (Calibration of Microarray Data) provides a mechanistic approach to microarray normalization. Unlike heuristic methods (like loess), CALIB uses a physical model of the hybridization reaction and dye saturation function. It utilizes external control spikes to estimate absolute expression levels for each gene and condition, independent of the number of slides or replicates.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/CALIB.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-calib/overview",
+  "github": "N/A",
+  "conda_downloads": "31.7K",
+  "conda_downloads_num": 31700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CALIB"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/CALIB.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-calib/overview",
+    "github": "N/A",
+    "conda_downloads": "31.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-calib\n\nname: bioconductor-calib\ndescription: Normalization of spotted microarray data using a physically motivated calibration model. Use this skill to estimate absolute transcript levels from spike-in controls, handle dye saturation effects, and perform quality control on spotted microarrays.\n\n## Overview\n\nCALIB (Calibration of Microarray Data) provides a mechanistic approach to microarray normalization. Unlike heuristic methods (like loess), CALIB uses a physical model of the hybridization reaction and dye saturation function. It utilizes external control spikes to estimate absolute expression levels for each gene and condition, independent of the number of slides or replicates.\n\n## Data Classes\n\nThe package uses three primary data structures:\n- **RGList_CALIB**: An extension of `limma::RGList`. It stores raw intensities and includes `RArea` and `GArea` fields for spot areas.\n- **SpikeList**: Created via `read.spike()`. Contains raw measurements and known concentrations for external control spikes.\n- **ParameterList**: Created via `estimateParameter()`. Stores the estimated calibration model parameters for each array.\n\n## Workflow\n\n### 1. Data Input\nLoad the library and read the experimental design (targets) and raw intensity data.\n\n```r\nlibrary(CALIB)\n\n# Read targets file\ntargets <- readTargets(\"targets.txt\")\n\n# Read raw intensities (requires specific columns for intensities and areas)\nRG <- read.rg(targets$FileName, columns=list(\n  Rf=\"CH1_NBC_INT\", Gf=\"CH2_NBC_INT\", \n  Rb=\"CH1_SPOT_BKGD\", Gb=\"CH2_SPOT_BKGD\",\n  RArea=\"CH1_SPOT_AREA\", GArea=\"CH2_SPOT_AREA\"\n))\n\n# Load annotation and spot types\nRG$genes <- read.table(\"annotation.txt\", header=TRUE, sep=\"\\t\")\ntypes <- readSpotTypes()\nRG$genes$Status <- controlStatus(types, RG$genes)\n```\n\n### 2. Spike Handling and QC\nExtract spike-in data and visualize the relationship between measured intensity and known concentration.\n\n```r\n# Read spike concentrations\nspike <- read.spike(RG, file=\"conc.txt\")\n\n# Diagnostic plot for spikes (look for sigmoidal relationship)\nplotSpikeCI(spike, array=1)\n```\n\n### 3. Parameter Estimation\nEstimate the calibration model parameters. This step models the hybridization and saturation effects.\n\n```r\n# bc=F (no background correction), area=T (use spot area), errormodel=\"M\" (multiplicative)\nparameter <- estimateParameter(spike, RG, bc=FALSE, area=TRUE, errormodel=\"M\")\n\n# Visualize the fit of the model to the spikes\nplotSpikeHI(spike, parameter, array=1)\n```\n\n### 4. Normalization\nCalculate absolute expression levels based on the estimated parameters and experimental design.\n\n```r\n# Define experimental design vectors\narray_vec <- c(1, 1, 2, 2)\ncond_vec <- c(1, 2, 2, 1)\ndye_vec <- c(1, 2, 1, 2)\n\n# Normalize data for specific clones or all genes\nnormdata <- normalizeData(RG, parameter, array_vec, cond_vec, dye_vec, idcol=\"CLONE_ID\")\n```\n\n## Tips and Best Practices\n- **Spot Areas**: Ensure your image analysis software exports spot area columns, as CALIB uses these to improve intensity calculations.\n- **Background Correction**: The calibration model often performs better without manual background subtraction (`bc=FALSE`) as the model accounts for non-specific binding.\n- **Model Fit**: Always use `plotSpikeHI` to verify that the black dots (spikes) tightly follow the red/green model curves. Significant deviations suggest poor quality or failed calibration.\n- **Documentation**: Use `calibReadMe()` to access the detailed package manual.\n\n## Reference documentation\n- [Quick Start Guide for CALIB](./references/quickstart.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-calib",
+    "description": "This tool normalizes spotted microarray data using a physically motivated calibration model to estimate absolute transcript levels. Use when user asks to normalize spotted microarrays, estimate absolute expression levels from spike-in controls, or handle dye saturation effects.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/CALIB.html"
+  }
+}

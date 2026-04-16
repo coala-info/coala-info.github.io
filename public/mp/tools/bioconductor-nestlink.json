@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nestlink",
+  "category": "bioconductor",
+  "name": "bioconductor-nestlink",
+  "description": "This tool analyzes NestLink next-generation sequencing and mass spectrometry data to link nanobody sequences with peptide barcodes. Use when user asks to link nanobodies to flycodes, perform in-silico flycode simulations, or conduct quantitative proteomics analysis.",
+  "overview": "NestLink is a Bioconductor package designed for the analysis of binding protein ensembles (like nanobodies) using engineered peptide barcodes called \"flycodes.\" The package provides a complete workflow to link high-throughput sequencing data (NGS) of nanobodies to mass spectrometry (MS) proteomics data. This allows for the identification and quantification of specific binders within complex mixtures.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/NestLink.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NestLink"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/NestLink.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nestlink\n\nname: bioconductor-nestlink\ndescription: Analysis of NestLink next-generation sequencing (NGS) and mass spectrometry (MS) data. Use this skill to link nanobody sequences with peptide barcodes (flycodes), perform in-silico flycode simulations, and conduct quantitative proteomics analysis using the NestLink workflow.\n\n## Overview\n\nNestLink is a Bioconductor package designed for the analysis of binding protein ensembles (like nanobodies) using engineered peptide barcodes called \"flycodes.\" The package provides a complete workflow to link high-throughput sequencing data (NGS) of nanobodies to mass spectrometry (MS) proteomics data. This allows for the identification and quantification of specific binders within complex mixtures.\n\n## Core Workflows\n\n### 1. NGS Data Processing (Linking Nanobodies to Flycodes)\n\nThe primary entry point for NGS data is the `runNGSAnalysis` function. It processes FASTQ files to identify the linkage between nanobodies (NB) and their associated flycodes (FC).\n\n```R\nlibrary(NestLink)\nlibrary(Biostrings)\n\n# Define parameters for the analysis\nparam <- list(\n  nReads = 1000,             # Number of reads to process\n  maxMismatch = 1,           # Allowed mismatches in pattern search\n  NB_Linker1 = \"GGCCggcggGGCC\", \n  NB_Linker2 = \"GCAGGAGGA\",\n  ProteaseSite = \"TTAGTCCCAAGA\",\n  FC_Linker = \"GGCCaaggaggcCGG\",\n  minNanobodyLength = 348,\n  minFlycodeLength = 33,\n  minRelBestHitFreq = 0.8    # Quality filter for consensus\n)\n\n# Run the analysis\nNB2FC <- runNGSAnalysis(file = \"path/to/data.fastq.gz\", param = param)\n\n# Export linkage as FASTA for proteomics search engines (e.g., Mascot)\nfasta_output <- nanobodyFlycodeLinking.as.fasta(NB2FC)\ncat(fasta_output[1:5], file = \"linkage_database.fasta\")\n```\n\n### 2. In-Silico Flycode Simulation\n\nBefore performing experiments, you can simulate flycode populations to assess mass distribution and hydrophobicity (detectability).\n\n```R\n# Define amino acid pools\naa_pool <- c(rep('A', 12), rep('G', 12), rep('P', 12), rep('T', 12))\n\n# Compose random peptides\npeptides <- replicate(100, compose_GPGx8cTerm(pool = aa_pool))\n\n# Calculate theoretical properties\nlibrary(protViz)\nmasses <- sapply(peptides, parentIonMass)\nhydrophobicity <- sapply(peptides, ssrc) # Sequence-specific retention calculator\n```\n\n### 3. Proteomics Data Integration\n\nOnce MS data is processed (e.g., via Mascot), NestLink helps analyze the results, focusing on flycode identification and retention time (RT) validation.\n\n```R\n# Load experiment data (often via ExperimentHub)\nlibrary(ExperimentHub)\neh <- ExperimentHub()\nWU160118 <- eh[[\"EH2070\"]] # Example Mascot search results\n\n# Filter for valid flycode patterns\n# Pattern: GS + 7 variable AAs + specific C-terminal suffix\nPATTERN <- \"^GS[ASTNQDEFVLYWGP]{7}(WR|WLTVR|WQEGGR|WLR|WQSR)$\"\nidx <- grepl(PATTERN, WU160118$pep_seq)\nvalid_PSMs <- WU160118[idx & WU160118$pep_score > 25, ]\n\n# Compare predicted vs. measured Retention Time\nvalid_PSMs$ssrc <- sapply(as.character(valid_PSMs$pep_seq), ssrc)\ncor(valid_PSMs$RTINSECONDS, valid_PSMs$ssrc, method = 'spearman')\n```\n\n### 4. Quantitative Analysis\n\nNestLink supports both absolute and relative quantification of nanobodies based on flycode intensities.\n\n```R\n# Aggregate flycode intensities to nanobody level\n# P is a data frame with 'Accession' (NB ID) and intensity columns\nNB_summary <- aggregate(cbind(coli1, coli2) ~ Accession + ConcGr, \n                        data = P, FUN = sum)\n\n# Calculate Coefficient of Variation (CV) to assess robustness\nNB_summary$CV <- apply(NB_summary[, c(\"coli1\", \"coli2\")], 1, \n                       function(x) 100 * sd(x) / mean(x))\n```\n\n## Tips and Best Practices\n\n- **Pattern Matching**: Use the `PATTERN` variable to strictly filter for flycodes. The standard flycode starts with \"GS\" and ends with specific tryptic suffixes like \"WR\" or \"WLR\".\n- **ExperimentHub**: Most reference datasets for NestLink (like `WU160118` or `F255744`) are hosted on ExperimentHub. Use `query(eh, \"NestLink\")` to find them.\n- **ESP Prediction**: The package often references \"ESP_Prediction\" (Experimental Surface Probability). This is an external metric for LC-MS detectability often included in the metadata of provided datasets.\n- **SSRC**: Use the `ssrc` function from the `protViz` package (automatically loaded with NestLink) to predict peptide hydrophobicity, which correlates strongly with HPLC retention time.\n\n## Reference documentation\n\n- [Analyze Flycode Detectability](./references/analyze-flycode-detectibilty.md)\n- [Compare Predicted vs Observed Flycodes](./references/compare-predicted-observed-flycodes.md)\n- [Link Nanobodies and Flycodes](./references/link-nanobodies-flycodes.md)\n- [Make Data](./references/make-data.md)\n- [Simulate Flycodes](./references/simulate-flycodes.md)\n- [Supplement Note 1](./references/supplement-note1.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nestlink",
+    "description": "This tool analyzes NestLink next-generation sequencing and mass spectrometry data to link nanobody sequences with peptide barcodes. Use when user asks to link nanobodies to flycodes, perform in-silico flycode simulations, or conduct quantitative proteomics analysis.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/NestLink.html"
+  }
+}

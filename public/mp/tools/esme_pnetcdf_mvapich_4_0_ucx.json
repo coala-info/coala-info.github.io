@@ -1,0 +1,51 @@
+{
+  "id": "esme_pnetcdf_mvapich_4_0_ucx",
+  "category": "CLI",
+  "name": "esme_pnetcdf_mvapich_4_0_ucx",
+  "description": "PnetCDF provides high-performance parallel access to NetCDF files using MPI-based communication for large-scale scientific datasets. Use when user asks to compare NetCDF files in parallel, validate file specifications, report variable offsets, or optimize parallel I/O performance through nonblocking APIs and alignment hints.",
+  "overview": "PnetCDF (Parallel NetCDF) is a specialized library designed for MPI-based parallel access to Unidata's NetCDF files. This specific implementation leverages MVAPICH and UCX to provide high-bandwidth communication for large-scale scientific datasets. It supports the classic CDF-1 and CDF-2 formats, as well as the CDF-5 format, which allows for 64-bit integers and variables exceeding 2 billion elements. This skill focuses on utilizing the library's utility programs and performance-tuning mechanisms",
+  "homepage": "https://parallel-netcdf.github.io/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/esme_pnetcdf_mvapich_4_0_ucx/overview",
+  "github": "N/A",
+  "conda_downloads": "290",
+  "conda_downloads_num": 290,
+  "last_updated": "2025-08-13",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "esme_pnetcdf_mvapich_4_0_ucx_ncvalidator",
+      "esme_pnetcdf_mvapich_4_0_ucx_ncoffsets",
+      "esme_pnetcdf_mvapich_4_0_ucx_pnetcdf-config",
+      "esme_pnetcdf_mvapich_4_0_ucx_pnetcdf_version"
+    ],
+    "description": "Validate netCDF files",
+    "docker_image": "quay.io/biocontainers/esme_pnetcdf_mvapich_4_0_ucx:1.14.1--hf580d27_0",
+    "homepage": "https://parallel-netcdf.github.io/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/esme_pnetcdf_mvapich_4_0_ucx/overview",
+    "github": "N/A",
+    "conda_downloads": "290",
+    "last_updated": "2025-08-13",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "esme_pnetcdf_mvapich_4_0_ucx_ncoffsets.cwl",
+    "esme_pnetcdf_mvapich_4_0_ucx_ncvalidator.cwl",
+    "esme_pnetcdf_mvapich_4_0_ucx_pnetcdf-config.cwl",
+    "esme_pnetcdf_mvapich_4_0_ucx_pnetcdf_version.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# esme_pnetcdf_mvapich_4_0_ucx\n\n## Overview\nPnetCDF (Parallel NetCDF) is a specialized library designed for MPI-based parallel access to Unidata's NetCDF files. This specific implementation leverages MVAPICH and UCX to provide high-bandwidth communication for large-scale scientific datasets. It supports the classic CDF-1 and CDF-2 formats, as well as the CDF-5 format, which allows for 64-bit integers and variables exceeding 2 billion elements. This skill focuses on utilizing the library's utility programs and performance-tuning mechanisms to ensure efficient data throughput on parallel file systems.\n\n## Utility Programs\nThe following command-line tools are essential for managing PnetCDF files:\n\n- **ncmpidiff**: Compares two NetCDF files in parallel and reports differences.\n  `mpiexec -n <procs> ncmpidiff file1.nc file2.nc`\n- **ncvalidator**: Validates a NetCDF file against the CDF-1, CDF-2, and CDF-5 specifications.\n  `ncvalidator <filename>`\n- **ncoffsets**: Reports the starting and ending file offsets of NetCDF variables, useful for debugging alignment issues.\n  `ncoffsets <filename>`\n- **pnetcdf-config**: Provides information about the compiler flags and libraries used to build PnetCDF.\n  `pnetcdf-config --libs`\n- **pnetcdf_version**: Reports the version and build date of the PnetCDF library.\n\n## Performance Tuning and Best Practices\n\n### I/O Aggregation with Nonblocking APIs\nFor applications accessing many small variables, use nonblocking APIs (prefixed with `ncmpi_i`) to aggregate requests.\n- **Post requests**: Use `ncmpi_iput_vara_<type>` or `ncmpi_iget_vara_<type>`.\n- **Commit**: Use `ncmpi_wait_all` (collective) or `ncmpi_wait` (independent) to execute the aggregated I/O.\n\n### Alignment and Hints\nTo avoid \"data shift penalties\" (where the entire data section is moved because the header grew), use I/O hints via the `PNETCDF_HINTS` environment variable:\n- **Header Alignment**: Set `nc_header_align_size` to match your file system's striping size (e.g., 1MB).\n- **Variable Alignment**: Set `nc_var_align_size` to align the start of fixed-size variables to block boundaries.\n- **Example**: `export PNETCDF_HINTS=\"nc_header_align_size=1048576;nc_var_align_size=1048576\"`\n\n### File System Optimization (Lustre)\nWhen running on Lustre, match the PnetCDF access pattern to the file striping:\n- Use `lfs setstripe -c <count> -s <size> <directory>` to set high striping counts for large files.\n- Prefer **Collective APIs** (`_all` suffix) over independent APIs, as they allow the library to coordinate requests to match the underlying storage targets.\n\n### Safe Mode and Debugging\n- **PNETCDF_SAFE_MODE**: Set to `1` to enable internal consistency checking for attributes and arguments across all MPI processes.\n- **PNETCDF_VERBOSE_DEBUG_MODE**: Set to `1` (if the library was built with `--enable-debug`) to trace the origin of error codes.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| esme_pnetcdf_mvapich_4_0_ucx_pnetcdf_version | PnetCDF Version and Release Information |\n| ncoffsets | Output variable offsets, sizes, and gaps in a netCDF file. |\n| ncvalidator | Validate netCDF files |\n| pnetcdf-config | pnetcdf-config is a utility program to display the build and installation information of the PnetCDF library. |\n\n## Reference documentation\n- [PnetCDF FAQ and Performance Tuning](./references/parallel-netcdf_github_io_doc_faq.html.md)\n- [Nonblocking I/O and Aggregation](./references/parallel-netcdf_github_io_wiki_CombiningOperations.html.md)\n- [CDF-5 File Format Specification](./references/parallel-netcdf_github_io_doc_c-reference_pnetcdf-c_CDF_002d5-file-format-specification.html.md)\n- [PnetCDF C Interface Guide](./references/parallel-netcdf_github_io_doc_c-reference_pnetcdf-c_index.html.md)",
+  "skill_front_matter": {
+    "name": "esme_pnetcdf_mvapich_4_0_ucx",
+    "description": "PnetCDF provides high-performance parallel access to NetCDF files using MPI-based communication for large-scale scientific datasets. Use when user asks to compare NetCDF files in parallel, validate file specifications, report variable offsets, or optimize parallel I/O performance through nonblocking APIs and alignment hints.",
+    "homepage": "https://parallel-netcdf.github.io/"
+  }
+}

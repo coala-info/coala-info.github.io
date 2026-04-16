@@ -1,0 +1,51 @@
+{
+  "id": "kanpig",
+  "category": "CLI",
+  "name": "kanpig",
+  "description": "kanpig genotypes structural variants by building local variant graphs and finding the best-supported paths using long-read alignments. Use when user asks to genotype structural variants, create project-level VCFs, perform trio analysis, or detect mosaic variants.",
+  "overview": "kanpig (Kmer Analysis of Pileups for Genotyping) is a high-performance tool designed to genotype structural variants by building local variant graphs and finding the best-supported paths using long-read alignments. It transforms the general problem of SV genotyping into a path-finding task through these graphs, allowing for high accuracy even in complex genomic regions. It is particularly useful for creating project-level VCFs (pVCFs), analyzing trios, or detecting mosaic variants.",
+  "homepage": "https://github.com/ACEnglish/kanpig",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/kanpig/overview",
+  "github": "https://github.com/ACEnglish/kanpig",
+  "conda_downloads": "1.1K",
+  "conda_downloads_num": 1100,
+  "last_updated": "2026-01-31",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "kanpig_plup",
+      "kanpig_gt",
+      "kanpig_trio",
+      "kanpig_mosaic"
+    ],
+    "description": "BAM/CRAM to Pileup Index",
+    "docker_image": "quay.io/biocontainers/kanpig:2.0.2--ha6fb395_0",
+    "homepage": "https://github.com/ACEnglish/kanpig",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/kanpig/overview",
+    "github": "https://github.com/ACEnglish/kanpig",
+    "conda_downloads": "1.1K",
+    "last_updated": "2026-01-31",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "kanpig_gt.cwl",
+    "kanpig_mosaic.cwl",
+    "kanpig_plup.cwl",
+    "kanpig_trio.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# kanpig\n\n## Overview\nkanpig (Kmer Analysis of Pileups for Genotyping) is a high-performance tool designed to genotype structural variants by building local variant graphs and finding the best-supported paths using long-read alignments. It transforms the general problem of SV genotyping into a path-finding task through these graphs, allowing for high accuracy even in complex genomic regions. It is particularly useful for creating project-level VCFs (pVCFs), analyzing trios, or detecting mosaic variants.\n\n## Core Workflows\n\n### Standard Genotyping\nTo genotype a set of variants against a long-read sample:\n```bash\nkanpig gt --input variants.vcf.gz \\\n    --reads alignments.bam \\\n    --reference genome.fa \\\n    --out output.vcf\n```\n\n### Optimized Re-analysis (BAM to PLUP)\nFor high-coverage samples or datasets that will be genotyped multiple times (e.g., N+1 cohorts), convert the BAM to a \"pileup\" (plup) file. This file is ~2,000x smaller and significantly faster to parse.\n```bash\n# 1. Create and index the plup file\nkanpig plup --bam alignments.bam | bedtools sort -header | bgzip > alignments.plup.gz\ntabix -p bed alignments.plup.gz\n\n# 2. Genotype using the plup file instead of the BAM\nkanpig gt --input variants.vcf.gz \\\n    --reads alignments.plup.gz \\\n    --reference genome.fa \\\n    --out output.vcf\n```\n\n### Project-Level VCF (pVCF) Pipeline\n1. **Discovery**: Call SVs per sample (e.g., using Sniffles).\n2. **Merge**: Consolidate variants using `bcftools merge -m none`.\n3. **Collapse**: Remove redundant representations using `truvari collapse`.\n4. **Genotype**: Run `kanpig gt` on each sample using the collapsed VCF as input.\n5. **Combine**: Merge the per-sample kanpig outputs back into a single pVCF.\n\n## Parameter Tuning & Best Practices\n\n### Computational Resources\n- **Threads**: Kanpig is I/O limited. Use 4–8 physical cores; hyperthreading generally does not improve performance.\n- **Memory**: Allocate approximately 2GB of RAM per core.\n\n### Sensitivity vs. Precision\n- **Similarity Thresholds**: `--sizesim` and `--seqsim` (default 0.90) control how closely a read must match a graph path. Lowering these (e.g., 0.85) increases recall but may reduce precision.\n- **Scoring Penalties**: \n    - `--gpenalty`: Penalizes paths with split variant representations (default 0.04).\n    - `--fpenalty`: Penalizes putative false-negatives in the graph.\n- **Neighborhoods**: `--neighdist` (default 1000bp) defines the local graph size. If variants are missing support, increasing this may recruit more distant informative pileups.\n\n### Specialized Modes\n- **Trio Genotyping**: Use `kanpig trio` for family-based analysis to improve Mendelian consistency.\n- **Mosaicism**: Use `kanpig mosaic` to detect non-germline haplotype clustering.\n- **Sex Chromosomes**: Always provide a `--ploidy-bed` to ensure correct genotyping on sex chromosomes or for organisms with non-diploid genomes.\n\n## Interpreting Results (FT Bit Flags)\nThe `FT` field in the output VCF provides quality metadata. Common flags include:\n- `0x2`: Genotype Quality (GQ) < 5.\n- `0x4`: Depth (DP) < 5.\n- `0x32`: The best path only used part of the haplotype (potential false-negative).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| kanpig gt | Germline SV Genotyping |\n| kanpig mosaic | Mosaic SV Genotyping |\n| kanpig plup | BAM/CRAM to Pileup Index |\n| kanpig trio | Trio SV Genotyping |\n\n## Reference documentation\n- [kanpig Main Documentation](./references/github_com_ACEnglish_kanpig.md)\n- [Project-Level VCF Pipeline](./references/github_com_ACEnglish_kanpig_wiki_Project_E2_80_90Level-VCF-Pipeline.md)\n- [Genotype Filtering Tips](./references/github_com_ACEnglish_kanpig_wiki_Filtering-Genotypes.md)\n- [Scoring Function Details](./references/github_com_ACEnglish_kanpig_wiki_Scoring-Function.md)",
+  "skill_front_matter": {
+    "name": "kanpig",
+    "description": "kanpig genotypes structural variants by building local variant graphs and finding the best-supported paths using long-read alignments. Use when user asks to genotype structural variants, create project-level VCFs, perform trio analysis, or detect mosaic variants.",
+    "homepage": "https://github.com/ACEnglish/kanpig"
+  }
+}

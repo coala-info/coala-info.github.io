@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ntw",
+  "category": "bioconductor",
+  "name": "bioconductor-ntw",
+  "description": "The NTW package infers gene interaction networks from steady-state gene expression data by solving a linearized system of ordinary differential equations. Use when user asks to estimate gene interaction matrices, identify perturbation targets from expression rankings, or refine prior network structures using regression methods.",
+  "overview": "The `NTW` (Network of Transcripts Wirings) package is designed to infer gene interaction networks from steady-state gene expression data. It solves the linearized ODE system $AX = -P$, where $A$ is the $n \\times n$ interaction network, $X$ is the $n \\times m$ expression matrix, and $P$ is the $n \\times m$ perturbation matrix.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NTW.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NTW"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NTW.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ntw\n\n## Overview\n\nThe `NTW` (Network of Transcripts Wirings) package is designed to infer gene interaction networks from steady-state gene expression data. It solves the linearized ODE system $AX = -P$, where $A$ is the $n \\times n$ interaction network, $X$ is the $n \\times m$ expression matrix, and $P$ is the $n \\times m$ perturbation matrix. \n\nA key feature of `NTW` is its ability to estimate the network even when the perturbation matrix $P$ is unknown, by identifying potential targets based on expression rankings. It also allows for \"forward\" or \"backward\" refinement of a prior network (e.g., from literature).\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data `X` should be a matrix where rows are genes and columns are experiments/samples.\n\n```r\nlibrary(NTW)\ndata(sos.data)\nX <- as.matrix(sos.data)\n```\n\n### 2. Parameter Setting\nSeveral parameters control the search space and computation time:\n- `restK`: Vector of maximum connections per gene (suggested: 20-30% of total genes).\n- `topD`: Number of branches kept in the grid search tree (suggested: 20-30% of total genes).\n- `topK`: Number of potential target genes per perturbation (suggested: 10-20% of total genes).\n- `numP`: Maximum number of times a gene can be perturbed across all experiments.\n\n```r\nrestK <- rep(ncol(X)-1, nrow(X))\ntopD <- round(0.6 * nrow(X))\ntopK <- round(0.5 * nrow(X))\nnumP <- round(0.25 * nrow(X))\n```\n\n### 3. Network Estimation (Main Function)\nUse the `NTW` function to estimate both $A$ and $P$.\n\n**Without Prior Knowledge:**\n```r\nresult <- NTW(X, restK, topD, topK, P.known=NULL, cFlag=\"sse\", \n              pred.net=NULL, sup.drop=-1, numP, noiseLevel=0.1)\n# Access results\nest_A <- result$est.A\nest_P <- result$est.P\n```\n\n**With Prior Knowledge:**\n`pred.net` is a Boolean matrix of the same dimensions as $A$. `sup.drop` determines the mode: `1` for forward (adding edges) and `-1` for backward (pruning edges).\n\n```r\nresult <- NTW(X, restK, topD, topK, P.known=NULL, cFlag=\"geo\", \n              pred.net=my_prior_matrix, sup.drop=1, numP)\n```\n\n### 4. Regression Methods (`cFlag`)\n- `sse`: Ordinary linear regression (Standard).\n- `geo`: Error-in-variable model (Geometric mean).\n- `ml`: Maximum likelihood method (requires `noiseLevel`).\n\n## Parallel Processing and Row-wise Estimation\nFor large networks, estimate rows independently to distribute the workload:\n\n**When P is unknown:**\n```r\n# Pre-estimate potential perturbation targets\nIX <- P.preestimation(X, topK = round(0.2 * nrow(X)))\n# Estimate row 1\nrow1 <- AP.estimation.Srow(r=1, cMM.corrected=1, pred.net=NULL, X, IX, \n                           topD, restK, cFlag=\"sse\", sup.drop=-1, numP)\n```\n\n**When P is known:**\n```r\nrow1 <- A.estimation.Srow(r=1, cMM.corrected=1, pred.net=NULL, X, \n                          P.known, topD, restK, cFlag=\"ml\")\n```\n\n## Tips for Success\n- **Sparsity:** The algorithm assumes the gene interaction matrix is sparse. Setting `restK` too high significantly increases computation time.\n- **Prior Knowledge:** If using `pred.net`, ensure `cMM.corrected` is set to 1 in the sub-functions.\n- **Data Scaling:** Ensure expression data `X` is properly normalized (e.g., log-transformed or standardized) before input.\n\n## Reference documentation\n- [NTW](./references/NTW.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ntw",
+    "description": "The NTW package infers gene interaction networks from steady-state gene expression data by solving a linearized system of ordinary differential equations. Use when user asks to estimate gene interaction matrices, identify perturbation targets from expression rankings, or refine prior network structures using regression methods.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NTW.html"
+  }
+}

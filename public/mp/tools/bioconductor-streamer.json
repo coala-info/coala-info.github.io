@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-streamer",
+  "category": "bioconductor",
+  "name": "bioconductor-streamer",
+  "description": "This tool facilitates streaming data processing in R using a producer-consumer architecture to handle large genomic datasets that exceed memory limits. Use when user asks to process data in chunks, stream large BAM files, or implement iterative data transformation pipelines.",
+  "overview": "The `Streamer` package implements a framework for \"streaming\" data in R, which is essential for processing large biological datasets that cannot fit entirely into memory. It uses a Reference Class (RC) system to define three core components:\n1.  **Producers**: Sources of data (e.g., file readers).\n2.  **Consumers**: Processors of data (e.g., counters, filters, or transformers).\n3.  **Streams**: Pipelines that connect Producers to one or more Consumers.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Streamer.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Streamer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Streamer.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-streamer\n\nname: bioconductor-streamer\ndescription: Facilitates streaming data processing in R using the Streamer package. Use this skill when handling large genomic datasets (like BAM files) that exceed memory limits, requiring a Producer-Consumer-Stream architecture for iterative, chunk-based processing, sampling, or transformation.\n\n# bioconductor-streamer\n\n## Overview\n\nThe `Streamer` package implements a framework for \"streaming\" data in R, which is essential for processing large biological datasets that cannot fit entirely into memory. It uses a Reference Class (RC) system to define three core components:\n1.  **Producers**: Sources of data (e.g., file readers).\n2.  **Consumers**: Processors of data (e.g., counters, filters, or transformers).\n3.  **Streams**: Pipelines that connect Producers to one or more Consumers.\n\n## Core Workflow\n\n### 1. Defining Components\nTo use the streaming framework, you typically instantiate or define classes that inherit from `Producer` or `Consumer`.\n\n*   **Producer**: Must implement a `yield()` method that returns the next chunk of data.\n*   **Consumer**: Must implement a `yield()` method that retrieves data from the previous node in the stream (via `callSuper()`) and processes it.\n\n### 2. Creating a Stream\nConnect components using the `Stream()` function.\n```r\nlibrary(Streamer)\n# Assuming 'prod' is a Producer and 'cons' is a Consumer\ns <- Stream(prod, cons)\n```\n\n### 3. Iterating\nData is processed by repeatedly calling `yield()` on the `Stream` object until the Producer is exhausted (usually indicated by returning an empty object).\n```r\nresult <- yield(s)\n```\n\n## Example: Genomic Overlap Streaming\nA common pattern is streaming through a BAM file by chromosome or genomic range to count overlaps.\n\n### Implementing a BAM Producer\n```r\nsetRefClass(\"BamInput\", \n    contains=\"Producer\",\n    fields=list(file=\"character\", ranges=\"GRanges\", .seqNames=\"character\"),\n    methods=list(\n        yield=function() {\n            if(length(.self$.seqNames)) {\n                seq <- .self$.seqNames[1]\n                .self$.seqNames <- .self$.seqNames[-1]\n                idx <- as.character(seqnames(.self$ranges)) == seq\n                param <- ScanBamParam(which=.self$ranges[idx])\n                aln <- readGAlignments(.self$file, param=param)\n                return(list(aln))\n            } else {\n                return(list(GAlignments()))\n            }\n        }\n    )\n)\n```\n\n### Implementing a Count Consumer\n```r\nsetRefClass(\"CountGOverlap\",\n    contains=\"Consumer\",\n    fields=list(ranges=\"GRanges\", mode=\"character\"),\n    methods=list(\n        yield=function() {\n            aln <- callSuper()[[1]] # Get data from Producer\n            if(length(aln)) {\n                # Perform summarizeOverlaps on the chunk\n                olap <- summarizeOverlaps(.self$ranges, aln, mode=.self$mode)\n                return(assays(olap)[[1]])\n            }\n            return(numeric(0))\n        }\n    )\n)\n```\n\n## Tips for Efficient Streaming\n*   **Memory Management**: Streaming is only effective if the `yield()` method of the Producer returns chunks small enough to fit in RAM.\n*   **Verbose Logging**: Use `msg()` within methods to track stream progress if the process is long-running.\n*   **State Persistence**: Because these are Reference Classes, they maintain state (like the current file pointer or remaining sequence names) across multiple `yield()` calls.\n*   **Collation**: Since `yield()` returns results for one chunk at a time, use `do.call(rbind, ...)` or similar functions to aggregate results after the stream finishes.\n\n## Reference documentation\n- [Using the Streamer classes to count genomic overlaps with summarizeOverlaps](./references/Streamer.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-streamer",
+    "description": "This tool facilitates streaming data processing in R using a producer-consumer architecture to handle large genomic datasets that exceed memory limits. Use when user asks to process data in chunks, stream large BAM files, or implement iterative data transformation pipelines.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Streamer.html"
+  }
+}

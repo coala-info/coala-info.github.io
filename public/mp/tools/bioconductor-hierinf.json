@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hierinf",
+  "category": "bioconductor",
+  "name": "bioconductor-hierinf",
+  "description": "This tool performs hierarchical inference for genome-wide association studies to identify significant associations between SNP clusters and phenotypes while controlling the familywise error rate. Use when user asks to test for associations between groups of SNPs and a response variable, cluster variables by similarity or genomic position, or perform meta-analysis across multiple datasets.",
+  "overview": "The `hierinf` package provides a framework for statistically efficient hypothesis testing in GWAS. It uses a top-down approach on a hierarchical tree of SNPs (often organized by chromosomes) to identify significant clusters or individual SNPs associated with a phenotype. This method is particularly effective for high-dimensional data where SNPs are correlated.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/hierinf.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hierinf/overview",
+  "github": "N/A",
+  "conda_downloads": "25.3K",
+  "conda_downloads_num": 25300,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hierinf"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/hierinf.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hierinf/overview",
+    "github": "N/A",
+    "conda_downloads": "25.3K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hierinf\n\nname: bioconductor-hierinf\ndescription: Perform hierarchical inference for genome-wide association studies (GWAS) using the hierinf R package. Use this skill to test for significant associations between groups of SNPs and a response variable while controlling the familywise error rate (FWER). It supports high-dimensional multivariate models, hierarchical clustering of variables, position-based partitioning, and meta-analysis across multiple datasets.\n\n## Overview\n\nThe `hierinf` package provides a framework for statistically efficient hypothesis testing in GWAS. It uses a top-down approach on a hierarchical tree of SNPs (often organized by chromosomes) to identify significant clusters or individual SNPs associated with a phenotype. This method is particularly effective for high-dimensional data where SNPs are correlated.\n\n## Core Workflow\n\nThe standard analysis involves two primary steps: building the hierarchy and testing it.\n\n### 1. Data Preparation\nThe package requires complete observations (no missing values). Input SNP data should be a matrix for optimal performance.\n\n```r\nlibrary(hierinf)\n\n# Set random number generator for reproducibility (especially for parallel computing)\nRNGkind(\"L'Ecuyer-CMRG\")\n\n# Load example data\ndata(simGWAS)\nsim.geno <- simGWAS$x      # SNP matrix\nsim.pheno <- simGWAS$y     # Response (binary or continuous)\nsim.clvar <- simGWAS$clvar # Control variables (age, sex, etc.)\n```\n\n### 2. Building the Hierarchical Tree\nYou can build the tree based on variable similarity or genomic position. It is highly recommended to define \"blocks\" (e.g., chromosomes) to allow for parallel processing.\n\n**Option A: Clustering by Similarity**\n```r\n# Define blocks (e.g., Chromosome 1 and 2)\nblock <- data.frame(\"colname\" = colnames(sim.geno),\n                    \"block\" = rep(c(\"chrom 1\", \"chrom 2\"), each = 500),\n                    stringsAsFactors = FALSE)\n\n# Cluster based on correlation\ndendr <- cluster_var(x = sim.geno, block = block)\n```\n\n**Option B: Clustering by Genomic Position**\n```r\nposition <- data.frame(\"colnames\" = colnames(sim.geno),\n                       \"position\" = 1:1000,\n                       stringsAsFactors = FALSE)\n\ndendr.pos <- cluster_position(position = position, block = block)\n```\n\n### 3. Hierarchical Testing\nThe `test_hierarchy` function performs the inference using multi-sample splitting.\n\n```r\nset.seed(1234)\nresult <- test_hierarchy(x = sim.geno,\n                         y = sim.pheno,\n                         clvar = sim.clvar,\n                         dendr = dendr,\n                         family = \"binomial\") # Use \"gaussian\" for continuous response\n\n# View significant clusters\nprint(result)\n```\n\n## Advanced Features\n\n### Parallel Computing\nMost functions support parallelization via the `parallel` and `ncpus` arguments. Use `\"multicore\"` for Unix/Mac and `\"snow\"` for Windows.\n\n```r\nresult <- test_hierarchy(..., parallel = \"multicore\", ncpus = 4)\n```\n\n### Meta-analysis (Multiple Datasets)\nTo analyze multiple studies jointly, provide `x`, `y`, and `clvar` as lists of matrices. The package aggregates p-values using Tippett's rule (default) or Stouffer's method.\n\n```r\n# x, y, and clvar are lists where each element is a dataset\nresult_meta <- test_hierarchy(x = list(geno1, geno2),\n                              y = list(pheno1, pheno2),\n                              dendr = joint_dendr,\n                              agg.method = \"Tippett\")\n```\n\n### Calculating R-squared\nFor significant clusters, you can calculate the adjusted R² (continuous) or Nagelkerke’s R² (binary).\n\n```r\n# Get column names of a specific significant cluster\ncoln.cluster <- result$res.hierarchy[[2, \"significant.cluster\"]]\n\n# Compute R2\nr2_val <- compute_r2(x = sim.geno, y = sim.pheno, \n                     res.test.hierarchy = result, \n                     colnames.cluster = coln.cluster)\n```\n\n## Tips and Best Practices\n- **Missing Values**: Impute missing data using packages like `mice` or `missForest` before using `hierinf`.\n- **Block Definition**: Always specify the `block` argument (usually by chromosome) when working with large GWAS datasets to prevent memory exhaustion and enable parallelization.\n- **Reproducibility**: Always set `RNGkind(\"L'Ecuyer-CMRG\")` and `set.seed()` before running `test_hierarchy`.\n\n## Reference documentation\n- [Hierarchical inference for genome-wide association studies](./references/vignette-hierinf.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hierinf",
+    "description": "This tool performs hierarchical inference for genome-wide association studies to identify significant associations between SNP clusters and phenotypes while controlling the familywise error rate. Use when user asks to test for associations between groups of SNPs and a response variable, cluster variables by similarity or genomic position, or perform meta-analysis across multiple datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/hierinf.html"
+  }
+}

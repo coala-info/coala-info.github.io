@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-xcore",
+  "category": "bioconductor",
+  "name": "bioconductor-xcore",
+  "description": "Bioconductor-xcore models transcription factor activities by performing ridge regression on gene expression data and molecular signatures. Use when user asks to estimate transcription factor activities, model gene expression as a linear combination of molecular signatures, or perform promoter-level expression analysis using ridge regression.",
+  "overview": "`xcore` is an R package designed to model changes in gene expression as a linear combination of molecular signatures (typically transcription factor binding sites) to estimate transcription factor activities. It utilizes ridge regression to handle the high dimensionality and multicollinearity of molecular signatures. The package integrates with `MultiAssayExperiment` for data management and `xcoredata` for pre-processed signatures from ReMap and ChIP-Atlas.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/xcore.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "xcore"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/xcore.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-xcore\n\nname: bioconductor-xcore\ndescription: Transcription factor (TF) activity modeling using ridge regression. Use when analyzing gene expression data (e.g., CAGE or promoter-level RNA-seq) to predict TF activities based on molecular signatures (ChIP-seq peaks) and promoter annotations.\n\n# bioconductor-xcore\n\n## Overview\n\n`xcore` is an R package designed to model changes in gene expression as a linear combination of molecular signatures (typically transcription factor binding sites) to estimate transcription factor activities. It utilizes ridge regression to handle the high dimensionality and multicollinearity of molecular signatures. The package integrates with `MultiAssayExperiment` for data management and `xcoredata` for pre-processed signatures from ReMap and ChIP-Atlas.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe starting point is a count matrix (e.g., FANTOM5 promoters) and a design matrix. Use `prepareCountsForRegression` to filter lowly expressed promoters, normalize (CPM), and log2 transform the data.\n\n```r\nlibrary(xcore)\n\n# counts: matrix with promoters as rows and samples as columns\n# design: matrix describing experimental groups\n# base_lvl: the reference group (e.g., \"control\" or \"00hr\")\nmae <- prepareCountsForRegression(counts = count_matrix,\n                                  design = design_matrix,\n                                  base_lvl = \"control\")\n```\n\n### 2. Managing Molecular Signatures\nMolecular signatures are binary matrices indicating TF binding at specific promoters. You can fetch pre-computed signatures via `ExperimentHub` or create custom ones.\n\n**Loading from xcoredata:**\n```r\nlibrary(ExperimentHub)\neh <- ExperimentHub()\nremap_promoters_f5 <- eh[[\"EH7301\"]] # ReMap2020 signatures for FANTOM5\nmae <- addSignatures(mae, remap = remap_promoters_f5)\n```\n\n**Creating Custom Signatures:**\nUse `getInteractionMatrix` to intersect promoter ranges with TF binding sites (GRanges).\n```r\n# a: promoters GRanges, b: TFBS GRanges\n# ext: extension around promoter center\nmolecular_signature <- getInteractionMatrix(a = promoters_gr, b = tfbs_gr, ext = 500)\n```\n\n### 3. Filtering Signatures\nTo improve model stability, filter out signatures that overlap too few or too many promoters.\n```r\nmae <- filterSignatures(mae, min = 0.05, max = 0.95)\n```\n\n### 4. Modeling Gene Expression\nThe `modelGeneExpression` function performs the ridge regression. It is computationally intensive and benefits from parallelization.\n\n```r\nlibrary(doParallel)\nlibrary(BiocParallel)\n\n# Register parallel backend\nregisterDoParallel(cores = 2)\nregister(DoparParam(), default = TRUE)\n\nres <- modelGeneExpression(\n  mae = mae,\n  xnames = \"remap\", # Name of the signature experiment in MAE\n  nfolds = 10       # Folds for cross-validation\n)\n```\n\n### 5. Interpreting Results\nThe output is a list containing:\n- `results`: A data frame with replicate-averaged activities and an overall `z_score` for ranking.\n- `coef_avg`: Matrix of average signatures activities per group.\n- `zscore_avg`: Matrix of average Z-scores per group.\n\n```r\n# View top TFs by Z-score\nhead(res$results$remap)\n\n# Visualize activities\ntop_sigs <- head(res$results$remap, 10)\npheatmap::pheatmap(top_sigs[, c(\"group1\", \"group2\")])\n```\n\n## Tips and Best Practices\n- **Memory Management**: Large signature matrices (like the full ReMap set) can require significant RAM (8GB+). Subset signatures if resources are limited.\n- **Input Requirements**: For `getInteractionMatrix`, both the promoter and TF GRanges must have a `name` column.\n- **Basal Level**: Ensure the `base_lvl` in `prepareCountsForRegression` correctly identifies your reference samples, as activities are modeled relative to this baseline.\n- **Parallelization**: Always register a parallel backend (e.g., `doParallel`) before running `modelGeneExpression` to avoid long execution times.\n\n## Reference documentation\n- [xcore vignette](./references/xcore_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-xcore",
+    "description": "Bioconductor-xcore models transcription factor activities by performing ridge regression on gene expression data and molecular signatures. Use when user asks to estimate transcription factor activities, model gene expression as a linear combination of molecular signatures, or perform promoter-level expression analysis using ridge regression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/xcore.html"
+  }
+}

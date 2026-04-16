@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-process",
+  "category": "bioconductor",
+  "name": "bioconductor-process",
+  "description": "This tool processes and analyzes SELDI and MALDI mass spectrometry data to identify protein biomarkers. Use when user asks to subtract baselines, detect peaks, normalize intensities, or align peaks across multiple protein spectra.",
+  "overview": "The `PROcess` package provides a comprehensive pipeline for the pre-processing of mass spectrometry data. It is designed to handle the specific noise characteristics of MS data, such as elevated baselines at low m/z values and horizontal shifts in peak locations. The workflow typically involves importing raw spectra, removing baseline drifts, normalizing intensities across samples, detecting peaks, and aligning those peaks into \"proto-biomarkers\" for downstream statistical analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PROcess.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PROcess"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PROcess.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-process\n\nname: bioconductor-process\ndescription: Processing and analyzing surface-enhanced laser desorption/ionization (SELDI) and matrix-assisted laser desorption/ionization (MALDI) mass spectrometry (MS) data. Use this skill to perform baseline subtraction, peak detection, normalization, and biomarker identification from protein spectra.\n\n## Overview\n\nThe `PROcess` package provides a comprehensive pipeline for the pre-processing of mass spectrometry data. It is designed to handle the specific noise characteristics of MS data, such as elevated baselines at low m/z values and horizontal shifts in peak locations. The workflow typically involves importing raw spectra, removing baseline drifts, normalizing intensities across samples, detecting peaks, and aligning those peaks into \"proto-biomarkers\" for downstream statistical analysis.\n\n## Core Workflow\n\n### 1. Data Import and Baseline Subtraction\nRaw spectra (often in CSV format) exhibit chemical noise that must be removed.\n\n```r\nlibrary(PROcess)\n# Read a single file\nf1 <- read.files(\"path/to/spectrum.csv\")\n# Remove baseline using loess (bw controls smoothness)\nbseoff <- bslnoff(f1[f1[,1] > 0, ], method = \"loess\", bw = 0.1, plot = TRUE)\n```\n\n### 2. Peak Detection\nPeaks are identified after baseline removal. Smoothing is applied to reduce spurious peaks.\n\n```r\n# Detect peaks; span and sm.span control smoothing and peak width\npkgobj <- isPeak(bseoff, span = 81, sm.span = 11, plot = TRUE)\n\n# Zoom into specific m/z ranges for inspection\nspecZoom(pkgobj, xlim = c(5000, 10000))\n```\n\n### 3. Batch Processing and Normalization\nFor multiple spectra, use batch functions to ensure consistency.\n\n```r\n# Batch baseline removal from a directory\ntestM <- rmBaseline(\"path/to/spectra_dir\")\n\n# Renormalize to median Area Under the Curve (AUC)\n# cutoff ignores low m/z noise during normalization\nrtM <- renorm(testM, cutoff = 1500)\n\n# Batch peak identification\npeakfile <- \"testpeakinfo.csv\"\ngetPeaks(rtM, peakfile)\n```\n\n### 4. Quality Assessment\nIdentify noisy or low-quality spectra that should be excluded.\n\n```r\nqualRes <- quality(testM, peakfile, cutoff = 1500)\n# Criteria for removal: Quality < 0.4, Retain < 0.1, and low peak count\nprint(qualRes)\n```\n\n### 5. Proto-biomarker Alignment\nAlign peaks across different spectra to create a unified feature matrix.\n\n```r\nbmkfile <- \"testbiomarker.csv\"\ntestBio <- pk2bmkr(peakfile, rtM, bmkfile)\n\n# Extract aligned m/z values\nbks <- getMzs(testBio)\n```\n\n## Alternative Workflow: Mean Spectrum Approach\nA faster method involves detecting peaks on the average spectrum of all samples and then quantifying those specific peaks in individual spectra.\n\n```r\n# 1. Compute mean spectrum\ngrandAve <- aveSpec(list.files(pattern = \"\\\\.csv\"))\n\n# 2. Baseline correct and detect peaks on the mean\ngrandOff <- bslnoff(grandAve[grandAve[,1] > 0, ], method = \"loess\")\ngrandPkg <- isPeak(grandOff[grandOff[,1] > 1500, ], ratio = 0.1)\ngrandpvec <- round(grandPkg[grandPkg$peak, \"mz\"])\n\n# 3. Quantify these peaks in individual normalized spectra\ngrandBmk <- getPeaks2(rtM, grandpvec)\n```\n\n## Key Functions Reference\n\n- `read.files()`: Imports MS data from CSV files.\n- `bslnoff()`: Performs baseline subtraction (methods: \"loess\" or \"monotone\").\n- `isPeak()`: Core peak detection function using local maxima and signal-to-noise ratios.\n- `rmBaseline()`: Wrapper for batch baseline removal.\n- `renorm()`: Normalizes spectra intensities.\n- `pk2bmkr()`: Aligns detected peaks across multiple spectra into biomarkers.\n- `getPeaks2()`: Quantifies specific m/z locations across a matrix of spectra.\n\n## Reference documentation\n\n- [HowTo Use the Bioconductor PROcess package](./references/howtoprocess.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-process",
+    "description": "This tool processes and analyzes SELDI and MALDI mass spectrometry data to identify protein biomarkers. Use when user asks to subtract baselines, detect peaks, normalize intensities, or align peaks across multiple protein spectra.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PROcess.html"
+  }
+}

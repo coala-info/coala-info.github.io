@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mirsm",
+  "category": "bioconductor",
+  "name": "bioconductor-mirsm",
+  "description": "The miRSM package identifies and analyzes miRNA sponge modules by integrating expression data with miRNA-target binding information. Use when user asks to identify miRNA sponge modules, infer sample-specific modules, or perform functional and co-expression analysis on identified gene modules.",
+  "overview": "The `miRSM` package identifies miRNA sponge modules (groups of RNAs competing for the same miRNAs) by integrating expression data with miRNA-target binding information. It supports both external competition (e.g., lncRNA vs. mRNA) and internal competition (e.g., mRNA vs. mRNA). The workflow typically involves identifying candidate gene modules, filtering them into miRNA sponge modules using sensitivity correlation methods, and performing downstream modular analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/miRSM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/zhangjunpeng411/miRSM",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "miRSM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/miRSM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/zhangjunpeng411/miRSM",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mirsm\n\nname: bioconductor-mirsm\ndescription: Identify and analyze miRNA sponge (ceRNA) modules in heterogeneous data using the miRSM R package. Use this skill to infer gene modules, discover miRNA sponge modules at single-sample or multi-sample levels, and perform functional, cancer, and co-expression analysis on identified modules.\n\n## Overview\n\nThe `miRSM` package identifies miRNA sponge modules (groups of RNAs competing for the same miRNAs) by integrating expression data with miRNA-target binding information. It supports both external competition (e.g., lncRNA vs. mRNA) and internal competition (e.g., mRNA vs. mRNA). The workflow typically involves identifying candidate gene modules, filtering them into miRNA sponge modules using sensitivity correlation methods, and performing downstream modular analysis.\n\n## Typical Workflow\n\n### 1. Load Data and Identify Gene Modules\nStart by loading matched expression data (miRNA, ceRNA, mRNA) and putative miRNA-target binding information. Use one of the seven module identification functions to find candidate gene modules.\n\n```r\nlibrary(miRSM)\ndata(BRCASampleData)\n\n# Identify modules using WGCNA (example)\nmodulegenes_WGCNA <- module_WGCNA(ceRExp, mRExp)\n\n# Other methods include:\n# module_igraph(ceRExp, mRExp, method = \"greedy\")\n# module_clust(ceRExp, mRExp, method = \"kmeans\")\n# module_biclust(ceRExp, mRExp, method = \"fabia\")\n```\n\n### 2. Discover miRNA Sponge Modules\nFilter the candidate gene modules into miRNA sponge modules using the `miRSM` function. This requires miRNA expression data and target information.\n\n```r\n# Identify modules using Sensitivity RV Coefficient (SRVC)\nmiRSM_SRVC <- miRSM(miRExp, ceRExp, mRExp, miRTarget,\n                    modulegenes_WGCNA,\n                    num_shared_miRNAs = 3,\n                    method = \"SRVC\",\n                    SMC.cutoff = 0.01)\n```\nAvailable methods for `miRSM`: \"SCC\", \"SDC\", \"SRVC\", \"SSI\", \"SGCD\", \"SCRC\", and \"SM\".\n\n### 3. Infer Sample-Specific Modules\nTo identify modules unique to specific samples, use a statistical perturbation strategy (comparing all samples vs. all samples except sample k).\n\n```r\n# After generating modules for 'all' and 'except_k' cases:\nModules_SS <- miRSM_SS(Modulegenes_all, Modulegenes_exceptk)\n```\n\n### 4. Modular Analysis\nPerform downstream analysis to validate and characterize the identified modules.\n\n*   **Functional Analysis**: Perform Enrichment (FEA) or Disease (DEA) analysis.\n    ```r\n    fea_results <- module_FA(miRSM_SRVC[[2]], Analysis.type = 'FEA')\n    ```\n*   **Cancer Enrichment**: Test if modules are associated with specific cancer genes.\n    ```r\n    cea_pvals <- module_CEA(ceRExp, mRExp, BRCA_genes, miRSM_SRVC[[2]])\n    ```\n*   **Co-expression Analysis**: Verify if ceRNA-mRNA pairs are significantly co-expressed.\n    ```r\n    coexp_results <- module_Coexpress(ceRExp, mRExp, miRSM_SRVC[[2]], resample = 100)\n    ```\n*   **Validation**: Compare against groundtruth databases (miRSponge, LncACTdb).\n    ```r\n    groundtruth <- read.csv(\"Groundtruth_high.csv\")\n    validation <- module_Validate(miRSM_SRVC[[2]], groundtruth)\n    ```\n\n### 5. Extract Interactions\nExtract specific miRNA-target or miRNA-sponge interactions from the modules.\n\n```r\n# Identify sharing miRNAs\nshared <- share_miRs(miRExp, miRTarget, miRSM_SRVC[[2]])\n\n# Predict miRNA-target interactions\ntargets <- module_miRtarget(shared, miRSM_SRVC[[2]])\n\n# Extract miRNA sponge interactions\nsponge_int <- module_miRsponge(miRSM_SRVC[[2]])\n```\n\n## Tips for Success\n*   **Method Selection**: `module_igraph` and `module_ProNet` are network-based; `module_clust` and `module_biclust` are clustering-based. Choose based on whether you expect overlapping modules (biclustering) or distinct partitions.\n*   **Data Matching**: Ensure the column names (samples) and row names (genes/miRNAs) match across the expression matrices and the target binding list.\n*   **Memory Management**: For large datasets, use `module_WGCNA` or `module_igraph` as they are generally more computationally efficient than `module_GFA` or certain biclustering methods.\n\n## Reference documentation\n- [miRSM: inferring miRNA sponge modules in heterogeneous data](./references/miRSM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mirsm",
+    "description": "The miRSM package identifies and analyzes miRNA sponge modules by integrating expression data with miRNA-target binding information. Use when user asks to identify miRNA sponge modules, infer sample-specific modules, or perform functional and co-expression analysis on identified gene modules.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/miRSM.html"
+  }
+}

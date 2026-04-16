@@ -1,0 +1,43 @@
+{
+  "id": "hydra-multi",
+  "category": "library",
+  "name": "hydra-multi",
+  "description": "Hydra-multi detects structural variants by integrating paired-end read signals across multiple genomic samples. Use when user asks to identify structural variant breakpoints, run the automated hydra-multi pipeline, or manually extract and cluster discordant alignments.",
+  "overview": "Hydra-multi is a specialized bioinformatics tool designed to detect structural variants by integrating signals from paired-end reads across hundreds of genomic samples. It is particularly effective at identifying breakpoints in both unique and repetitive/duplicated regions of the genome. Use this skill to navigate the multi-step pipeline required to transform raw alignments into finalized SV calls, whether using the automated wrapper or manual execution for fine-grained control.",
+  "homepage": "https://github.com/arq5x/Hydra",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hydra-multi/overview",
+  "github": "https://github.com/arq5x/Hydra",
+  "conda_downloads": "4.3K",
+  "conda_downloads_num": 4300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hydra-multi"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/hydra-multi:0.5.4--py27h5ca1c30_4",
+    "homepage": "https://github.com/arq5x/Hydra",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hydra-multi/overview",
+    "github": "https://github.com/arq5x/Hydra",
+    "conda_downloads": "4.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hydra-multi\n\n## Overview\nHydra-multi is a specialized bioinformatics tool designed to detect structural variants by integrating signals from paired-end reads across hundreds of genomic samples. It is particularly effective at identifying breakpoints in both unique and repetitive/duplicated regions of the genome. Use this skill to navigate the multi-step pipeline required to transform raw alignments into finalized SV calls, whether using the automated wrapper or manual execution for fine-grained control.\n\n## Environment Setup\nBefore running Hydra-multi, ensure the system environment is configured to handle a large number of simultaneous file operations.\n- **System Limits**: Set `ulimit -f 16384`. This is required because the tool opens multiple file handles for chromosome-chromosome combinations.\n- **Dependencies**: Ensure `samtools` and `pysam` are installed and available in the PATH.\n\n## Core Workflows\n\n### 1. Automated Execution\nThe simplest way to run the pipeline is using the `hydra-multi.sh` wrapper.\n\n**Initialization**: Create a \"stub\" file (e.g., `config.stub.txt`) listing sample names and absolute paths to their respective BAM files:\n```bash\nsample1 /path/to/sample1.pos.bam\nsample2 /path/to/sample2.pos.bam\n```\n\n**Execution**:\n```bash\n./hydra-multi.sh run -t <threads> -p <punt_parameter> -o <output_prefix> config.stub.txt\n```\n- `-t`: Number of threads (Default: 2).\n- `-p`: Punt parameter (max read depth allowed for assembly; Default: 10).\n\n### 2. Manual Step-by-Step Pipeline\nManual execution is preferred for troubleshooting or when specific steps need custom parameters.\n\n1.  **Generate Configuration**:\n    ```bash\n    python scripts/make_hydra_config.py -i config.stub.txt > config.hydra.txt\n    ```\n2.  **Extract Discordant Alignments**:\n    Run for each sample listed in the config:\n    ```bash\n    python scripts/extract_discordants.py -c config.hydra.txt -d <sample_name>\n    ```\n3.  **Route Alignments**:\n    Groups alignments by chromosome/orientation:\n    ```bash\n    hydra-router -config config.hydra.txt -routedList routed-files.txt\n    ```\n4.  **Assemble Clusters**:\n    ```bash\n    sh scripts/assemble-routed-files.sh routed-files.txt config.hydra.txt <threads>\n    ```\n5.  **Merge and Finalize**:\n    Combine the individual assembly files and run the final prediction scripts:\n    ```bash\n    sh scripts/combine-assembled-files.sh /path/to/assembled/files/ all.assembled\n    python scripts/forceOneClusterPerPairMem.py -i all.assembled -o all.sv-calls\n    ```\n\n## Expert Tips & Best Practices\n- **BAM Requirements**: Input BAM files should contain \"positional\" or discordant reads. The tool relies on paired-end mapping distance and orientation anomalies.\n- **Memory Management**: The `forceOneClusterPerPairMem.py` script is memory-intensive. Ensure the execution environment has sufficient RAM for the number of assembled clusters.\n- **Breakpoint Refinement**: After generating the frequency file (`.freq`), use `scripts/hydraToBreakpoint` to convert footprint intervals into precise breakpoint intervals for downstream analysis.\n- **Punt Parameter**: If you are working with high-coverage data or regions with high mapping ambiguity, increase the `-p` (punt) parameter to avoid losing valid signals, though this will increase computation time.\n\n## Reference documentation\n- [Hydra GitHub Repository](./references/github_com_arq5x_Hydra.md)\n- [Bioconda Hydra-multi Overview](./references/anaconda_org_channels_bioconda_packages_hydra-multi_overview.md)",
+  "skill_front_matter": {
+    "name": "hydra-multi",
+    "description": "Hydra-multi detects structural variants by integrating paired-end read signals across multiple genomic samples. Use when user asks to identify structural variant breakpoints, run the automated hydra-multi pipeline, or manually extract and cluster discordant alignments.",
+    "homepage": "https://github.com/arq5x/Hydra"
+  }
+}

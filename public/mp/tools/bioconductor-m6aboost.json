@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-m6aboost",
+  "category": "bioconductor",
+  "name": "bioconductor-m6aboost",
+  "description": "This tool predicts m6A sites from miCLIP2 sequencing data using an AdaBoost-based machine learning model. Use when user asks to assign read counts to peaks, extract genomic features from annotation files, or classify miCLIP2 peaks into m6A sites and background signals.",
+  "overview": "m6Aboost is a Bioconductor package designed to accurately identify N6-methyladenosine (m6A) sites from miCLIP2 data. It addresses the high background signal inherent in m6A antibody-based methods by using a machine learning model trained on high-confidence sites. The workflow transforms miCLIP2 peak calls (typically from PureCLIP) into classified m6A sites by integrating experimental signal strength, C-to-T transitions, transcript regions, and local nucleotide sequences.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/m6Aboost.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ZarnackGroup/m6Aboost",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "m6Aboost"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/m6Aboost.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ZarnackGroup/m6Aboost",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-m6aboost\n\nname: bioconductor-m6aboost\ndescription: Predict m6A sites from miCLIP2 sequencing data using the m6Aboost AdaBoost-based machine learning model. Use this skill to assign read counts (truncation and C-to-T transitions), extract genomic features, and classify miCLIP2 peaks into m6A sites and background signals.\n\n## Overview\n\nm6Aboost is a Bioconductor package designed to accurately identify N6-methyladenosine (m6A) sites from miCLIP2 data. It addresses the high background signal inherent in m6A antibody-based methods by using a machine learning model trained on high-confidence sites. The workflow transforms miCLIP2 peak calls (typically from PureCLIP) into classified m6A sites by integrating experimental signal strength, C-to-T transitions, transcript regions, and local nucleotide sequences.\n\n## Workflow and Core Functions\n\n### 1. Data Preparation\nThe input must be a `GRanges` object containing peak calling results (e.g., from PureCLIP).\n\n```r\nlibrary(m6Aboost)\n# Load peaks (example)\npeaks <- readRDS(\"peaks.rds\")\n```\n\n### 2. Read Count Assignment\nAssign truncation events and C-to-T transitions from bigWig files to the peaks. This should be done for each replicate.\n\n```r\n# Assign truncation events\npeaks <- truncationAssignment(peaks, \n                              bw_positive = \"trunc_pos.bw\", \n                              bw_negative = \"trunc_neg.bw\", \n                              sampleName = \"Rep1_Trunc\")\n\n# Assign C-to-T transitions\npeaks <- CtoTAssignment(peaks, \n                        bw_positive = \"ctot_pos.bw\", \n                        bw_negative = \"ctot_neg.bw\", \n                        sampleName = \"Rep1_CtoT\")\n```\n\n### 3. Feature Extraction\nCalculate mean counts across replicates and extract features using a GENCODE annotation file (GFF3).\n\n```r\n# Calculate means if multiple replicates exist\npeaks$WTmean <- (peaks$Rep1_Trunc + peaks$Rep2_Trunc) / 2\npeaks$CtoTmean <- (peaks$Rep1_CtoT + peaks$Rep2_CtoT) / 2\n\n# Extract features (requires GENCODE GFF3)\npeaks_features <- preparingData(peaks, \n                                gff3 = \"annotation.gff3\", \n                                colname_reads = \"WTmean\", \n                                colname_C2T = \"CtoTmean\")\n```\n\n### 4. m6A Prediction\nRun the AdaBoost model. You must specify the `BSgenome` package for your species.\n\n```r\n# Ensure the BSgenome package is installed and loaded\n# BiocManager::install(\"BSgenome.Mmusculus.UCSC.mm10\")\n\nresults <- m6Aboost(peaks_features, \n                    genome = \"BSgenome.Mmusculus.UCSC.mm10\", \n                    normalization = TRUE)\n```\n\n## Interpreting Results\n\nThe `m6Aboost` function returns a `GRanges` object with two critical metadata columns:\n- `class`: \"YES\" (predicted m6A site) or \"NO\" (background).\n- `prob`: The prediction probability score (0 to 1).\n\n**Tip:** While the default cutoff is 0.5, you can apply a more stringent threshold on the `prob` column for higher confidence.\n\n## Reproducibility Filtering\nIt is highly recommended to filter your initial peak set to keep only those present in at least two replicates before running the m6Aboost workflow to ensure robust results.\n\n## Accessing the Raw Model\nThe underlying AdaBoost model is hosted on ExperimentHub (ID: EH6021).\n\n```r\nlibrary(ExperimentHub)\neh <- ExperimentHub()\nmodel <- eh[[\"EH6021\"]]\n```\n\n## Reference documentation\n\n- [Predicting m6A sites from miCLIP2 data with m6Aboost](./references/m6AboosVignettes.md)\n- [m6Aboost Vignettes Source](./references/m6AboosVignettes.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-m6aboost",
+    "description": "This tool predicts m6A sites from miCLIP2 sequencing data using an AdaBoost-based machine learning model. Use when user asks to assign read counts to peaks, extract genomic features from annotation files, or classify miCLIP2 peaks into m6A sites and background signals.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/m6Aboost.html"
+  }
+}

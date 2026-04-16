@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-stdeconvolve",
+  "category": "bioconductor",
+  "name": "bioconductor-stdeconvolve",
+  "description": "STdeconvolve performs unsupervised deconvolution of multi-cellular spatial transcriptomics data to recover cell-type profiles and their spatial proportions without external references. Use when user asks to deconvolve spatial transcriptomics pixels, estimate cell-type proportions in 10X Visium or Slide-seq data, or identify latent cell-type gene expression profiles without a single-cell reference.",
+  "overview": "STdeconvolve is an unsupervised machine learning approach that applies Latent Dirichlet Allocation (LDA) to spatial transcriptomics data. It treats each pixel as a mixture of K latent cell types, discovering both the gene expression profiles of these cell types and their spatial proportions.",
+  "homepage": "https://bioconductor.org/packages/3.16/bioc/html/STdeconvolve.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/JEFworks-Lab/STdeconvolve",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "STdeconvolve"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.16/bioc/html/STdeconvolve.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/JEFworks-Lab/STdeconvolve",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-stdeconvolve\n\nname: bioconductor-stdeconvolve\ndescription: Unsupervised deconvolution of multi-cellular pixel-resolution spatial transcriptomics (ST) data. Use this skill to recover latent cell-type transcriptomic profiles (beta) and their proportional representation (theta) within ST pixels without the need for external single-cell references. Suitable for analyzing datasets from platforms like 10X Visium or Slide-seq.\n\n# bioconductor-stdeconvolve\n\n## Overview\n\nSTdeconvolve is an unsupervised machine learning approach that applies Latent Dirichlet Allocation (LDA) to spatial transcriptomics data. It treats each pixel as a mixture of K latent cell types, discovering both the gene expression profiles of these cell types and their spatial proportions.\n\n## Core Workflow\n\n### 1. Data Preparation and Preprocessing\n\nLoad your counts matrix (genes x pixels) and spatial coordinates. Use `cleanCounts` to filter out low-quality pixels and genes.\n\n```r\nlibrary(STdeconvolve)\n\n# Example with built-in data\ndata(mOB)\npos <- mOB$pos\ncd <- mOB$counts\n\n# Filter pixels and genes\ncounts <- cleanCounts(counts = cd,\n                      min.lib.size = 100,\n                      min.reads = 1,\n                      min.detected = 1)\n```\n\n### 2. Feature Selection\n\nIdentify overdispersed genes to focus the LDA model on the most informative features.\n\n```r\ncorpus <- restrictCorpus(counts,\n                         removeAbove = 1.0, # Remove genes in > 100% of pixels\n                         removeBelow = 0.05, # Remove genes in < 5% of pixels\n                         alpha = 0.05,\n                         plot = TRUE)\n```\n\n### 3. Model Fitting and Selection\n\nFit LDA models across a range of K (number of cell types). Select the optimal model based on perplexity or the `alpha` parameter (prefer `alpha < 1` for sparse, distinct cell-type distributions).\n\n```r\n# Input must be an integer matrix of pixels x genes\nldas <- fitLDA(t(as.matrix(corpus)), \n               Ks = seq(2, 10), \n               plot = TRUE)\n\n# Select model with minimum perplexity\noptLDA <- optimalModel(models = ldas, opt = \"min\")\n```\n\n### 4. Extracting Results\n\nExtract the `theta` (pixel proportions) and `beta` (cell-type expression profiles) matrices.\n\n```r\nresults <- getBetaTheta(optLDA,\n                        perc.filt = 0.05, # Filter low-proportion cell types\n                        betaScale = 1000) # Scale expression profiles\n\ndeconProp <- results$theta\ndeconGexp <- results$beta\n```\n\n### 5. Visualization\n\nVisualize the spatial distribution of all cell types using scatterpie plots or individual topics.\n\n```r\n# Visualize all cell types\nvizAllTopics(deconProp, pos, r = 0.4)\n\n# Visualize a specific cell type (e.g., topic \"5\")\nvizTopic(theta = deconProp, pos = pos, topic = \"5\", high = \"red\")\n```\n\n## Annotation Strategies\n\nSince STdeconvolve is unsupervised, you must annotate the resulting cell types using one of two strategies:\n\n### Strategy 1: Transcriptional Correlation\nCompare the `beta` matrix (deconvolved profiles) or `theta` matrix (proportions) against a known reference using Pearson correlation.\n\n```r\ncorMtx <- getCorrMtx(m1 = as.matrix(deconGexp), \n                     m2 = t(as.matrix(referenceGexp)), \n                     type = \"b\")\n\ncorrelationPlot(corMtx)\n```\n\n### Strategy 2: Gene Set Enrichment Analysis (GSEA)\nUse marker gene lists to identify significantly enriched cell types in the deconvolved profiles.\n\n```r\nannotations <- annotateCellTypesGSEA(beta = deconGexp,\n                                     gset = markerGeneList,\n                                     qval = 0.05)\n\n# View top predictions\nannotations$predictions\n```\n\n## Working with SpatialExperiment\n\nIf using `SpatialExperiment` or `TENxVisiumData`:\n\n```r\nlibrary(SpatialExperiment)\nse <- TENxVisiumData::MouseBrainCoronal()\n\n# Extract counts and coordinates\ncd <- assay(se, \"counts\")\npos <- spatialCoords(se)\ncolnames(pos) <- c(\"y\", \"x\")\n```\n\n## Reference documentation\n\n- [STdeconvolve Vignette](./references/vignette.Rmd)\n- [STdeconvolve Vignette (Markdown)](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-stdeconvolve",
+    "description": "STdeconvolve performs unsupervised deconvolution of multi-cellular spatial transcriptomics data to recover cell-type profiles and their spatial proportions without external references. Use when user asks to deconvolve spatial transcriptomics pixels, estimate cell-type proportions in 10X Visium or Slide-seq data, or identify latent cell-type gene expression profiles without a single-cell reference.",
+    "homepage": "https://bioconductor.org/packages/3.16/bioc/html/STdeconvolve.html"
+  }
+}

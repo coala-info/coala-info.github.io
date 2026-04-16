@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scfeaturefilter",
+  "category": "bioconductor",
+  "name": "bioconductor-scfeaturefilter",
+  "description": "This package filters features in single-cell RNA-seq data using a correlation-based approach to identify statistically sound expression thresholds. Use when user asks to filter single-cell RNA-seq features, determine expression thresholds for gene selection, or remove lowly expressed genes based on correlation to a reference bin.",
+  "overview": "The `scFeatureFilter` package provides a correlation-based method for filtering features in single-cell RNA-seq data. It operates on the principle that highly expressed features (reference bin) capture biological signal more reliably than lowly expressed ones. By correlating subsequent bins of decreasing expression against this reference and randomized controls, the package helps users determine a statistically sound expression threshold for feature selection.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scFeatureFilter.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scFeatureFilter"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scFeatureFilter.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scfeaturefilter\n\n## Overview\n\nThe `scFeatureFilter` package provides a correlation-based method for filtering features in single-cell RNA-seq data. It operates on the principle that highly expressed features (reference bin) capture biological signal more reliably than lowly expressed ones. By correlating subsequent bins of decreasing expression against this reference and randomized controls, the package helps users determine a statistically sound expression threshold for feature selection.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package accepts a `matrix`, `data.frame`, `tibble`, or `SingleCellExperiment` object. Features should be in rows and cells in columns. Normalized values (TPM, FPKM) are recommended over raw counts.\n\n```r\nlibrary(scFeatureFilter)\n# Load your data (e.g., a matrix or SingleCellExperiment)\n# scData <- ... \n```\n\n### 2. Integrated Usage (Quick Start)\nFor a standard analysis using default parameters (max 75% zeros, top window of 100 genes, 1000 genes per bin), use the wrapper function:\n\n```r\nfiltered_data <- sc_feature_filter(scData)\n```\n\n### 3. Step-by-Step Analysis\nFor more control over the filtering process, follow the modular workflow:\n\n**A. Calculate Statistics and Bin Data**\n```r\n# Calculate Mean and CV, then define the reference 'top' bin and subsequent bins\nbinned_data <- scData %>%\n    calculate_cvs(max_zeros = 0.75) %>%\n    define_top_genes(window_size = 100) %>%\n    bin_scdata(window_size = 1000)\n\n# Visualize the mean-variance relationship and binning\nplot_mean_variance(binned_data, colourByBin = TRUE)\n```\n\n**B. Correlation Analysis**\nCorrelate every feature in each bin against the reference bin and randomized controls.\n```r\ncor_distrib <- correlate_windows(binned_data, n_random = 3)\n\n# Calculate metrics (mean/median) for the distributions\nmetrics <- get_mean_median(cor_distrib)\n```\n\n**C. Determine Threshold and Filter**\nIdentify where the biological signal (correlation to top bin) drops toward the background noise level.\n```r\n# Visualize the correlation decay\nplot_metric(metrics, show_ctrl = TRUE, show_threshold = TRUE, threshold = 2)\n\n# Determine the bin cutoff (first bin falling below threshold * background)\ncutoff <- determine_bin_cutoff(metrics, threshold = 2)\n\n# Apply the filter to the original binned data\nfinal_filtered_table <- filter_expression_table(binned_data, bin_cutoff = cutoff)\n```\n\n## Working with SingleCellExperiment\n\nWhile the package accepts `SingleCellExperiment` (SCE) objects as input, it returns a `tibble`. To maintain the SCE structure, use the returned gene names to subset the original object:\n\n```r\n# Run filter on SCE assay\nfiltered_tibble <- sc_feature_filter(sce_object, sce_assay = \"logcounts\")\n\n# Subset original SCE\nsce_filtered <- sce_object[rownames(filtered_tibble), ]\n```\n\n## Key Parameters\n\n- `max_zeros` (default 0.75): Maximum fraction of zero-expression allowed per feature. Lowering this (e.g., 0.5) increases stringency.\n- `top_window_size` (default 100): Number of highest-expressed genes used as the biological reference. Use `plot_top_window_autocor()` to verify if this size captures sufficient signal.\n- `other_window_size` (default 1000): Number of genes per bin. Smaller bins provide higher resolution for the threshold but increase computation.\n- `threshold` (default 2): The multiplier applied to background noise to determine the cutoff. Increase for higher stringency.\n\n## Reference documentation\n\n- [Introduction to the scFeatureFilter package](./references/Introduction.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scfeaturefilter",
+    "description": "This package filters features in single-cell RNA-seq data using a correlation-based approach to identify statistically sound expression thresholds. Use when user asks to filter single-cell RNA-seq features, determine expression thresholds for gene selection, or remove lowly expressed genes based on correlation to a reference bin.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scFeatureFilter.html"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "tepid",
+  "category": "CLI",
+  "name": "tepid",
+  "description": "TEPID (Transposable Element Polymorphism IDentification) is a bioinformatic pipeline designed to find variation in transposable element content between a sample and a reference genome. Use when user asks to run tepid or use its main features.",
+  "overview": "TEPID (Transposable Element Polymorphism IDentification) is a bioinformatic pipeline designed to find variation in transposable element content between a sample and a reference genome. It utilizes a combination of split-read and discordant-read mapping (via bowtie2 and yaha) to pinpoint TE boundaries. The tool is most effective with sequencing coverage greater than 20x and read lengths of at least 100 bp. It supports both individual sample analysis and population-scale refinement to improve vari",
+  "homepage": "https://github.com/ListerLab/TEPID",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/tepid/overview",
+  "github": "https://github.com/ListerLab/TEPID",
+  "conda_downloads": "13.1K",
+  "conda_downloads_num": 13100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tepid",
+      "tepid_tepid-map",
+      "tepid_tepid-map-se",
+      "tepid_tepid-discover",
+      "tepid_tepid-refine",
+      "tepid_merge_insertions.py",
+      "tepid_merge_deletions.py"
+    ],
+    "description": "The provided text does not contain help information for the tool 'tepid'. It appears to be a log of a failed container build process (Apptainer/Singularity) attempting to fetch the 'tepid' image from a container registry.",
+    "docker_image": "quay.io/biocontainers/tepid:0.10--py_0",
+    "homepage": "https://github.com/ListerLab/TEPID",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/tepid/overview",
+    "github": "https://github.com/ListerLab/TEPID",
+    "conda_downloads": "13.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "tepid_tepid-discover.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# tepid\n\n## Overview\nTEPID (Transposable Element Polymorphism IDentification) is a bioinformatic pipeline designed to find variation in transposable element content between a sample and a reference genome. It utilizes a combination of split-read and discordant-read mapping (via bowtie2 and yaha) to pinpoint TE boundaries. The tool is most effective with sequencing coverage greater than 20x and read lengths of at least 100 bp. It supports both individual sample analysis and population-scale refinement to improve variant calling across related samples.\n\n## Installation and Environment\nTEPID is primarily available via Bioconda or source. Note that it traditionally requires a Python 2.7 environment.\n\n```bash\n# Installation via Conda\nconda install -c bioconda tepid\n```\n\n**Required Dependencies:**\n- bowtie2 (>= v2.1.0)\n- yaha (>= v0.1.82)\n- samtools (> v1.3)\n- samblaster (>= v0.1.19, for paired-end data)\n- bedtools (>= v2.25.0)\n\n## Step 1: Read Mapping\nThe mapping step generates the specific BAM files required for discovery, including a standard BAM and a split-read BAM.\n\n### Paired-End Mapping\nUse `tepid-map` for paired-end data.\n```bash\ntepid-map -x /path/to/bowtie2_index \\\n          -y /path/to/yaha_index \\\n          -p 8 \\\n          -s 300 \\\n          -n sample_name \\\n          -1 reads_1.fastq \\\n          -2 reads_2.fastq \\\n          -z\n```\n- `-s`: Average insert size (critical for discordant read identification).\n- `-z`: Use if input fastq files are gzipped.\n- `-r`: Optional recursive search for fastq files in subdirectories.\n\n### Single-End Mapping\nUse `tepid-map-se` for single-end data.\n```bash\ntepid-map-se -x /path/to/bowtie2_index \\\n             -y /path/to/yaha_index \\\n             -p 8 \\\n             -n sample_name \\\n             -q reads.fastq\n```\n\n## Step 2: TE Variant Discovery\nOnce mapping is complete, use `tepid-discover` to identify variants.\n\n```bash\ntepid-discover -n sample_name \\\n               -c sample_name.bam \\\n               -s sample_name.split.bam \\\n               -t TE_annotation.bed \\\n               -p 8 \\\n               --strict\n```\n\n**Key Arguments:**\n- `-t`: TE annotation in BED format (Chrom, Start, Stop, Strand, Name, Family, Superfamily).\n- `--strict`: Recommended for reporting only high-confidence variants.\n- `-d` / `-i`: Limit search to deletions only or insertions only.\n- `--mask`: Provide a list of chromosomes to ignore (e.g., organellar genomes).\n- `--se`: Must be included if the mapping was performed in single-end mode.\n\n## Step 3: Refinement and Genotyping (Optional)\nFor population studies or related samples, use `tepid-refine` to reduce false negatives by checking for evidence of variants identified in other samples.\n\n1. **Merge variants:** Use `merge_insertions.py` and `merge_deletions.py` (found in the `Scripts/` directory) to create a non-redundant list of variants across the population.\n2. **Run Refine:**\n```bash\ntepid-refine -t TE_annotation.bed \\\n             -n sample_name \\\n             -c sample_name.bam \\\n             -s sample_name.split.bam \\\n             -a all_samples_list.txt \\\n             -i merged_insertions.bed \\\n             -d merged_deletions.bed\n```\n- `-a`: A text file containing one sample name per line.\n\n## Best Practices and Tips\n- **Annotation Quality:** The quality of TE calls is heavily dependent on the reference TE annotation. Ensure your BED file is tab-separated and follows the specific 7-column format required by TEPID.\n- **Coverage:** If coverage is below 20x, the sensitivity for detecting heterozygous or low-frequency insertions decreases significantly.\n- **Memory Management:** Mapping with `yaha` can be memory-intensive depending on the genome size; ensure the execution environment has sufficient RAM for the index size.\n- **Output Files:**\n  - `[name]_insertions.bed`: Coordinates of non-reference TE insertions.\n  - `[name]_deletions.bed`: Reference TEs found to be absent in the sample.\n  - Evidence files: TEPID also outputs files containing the names of reads that supported each call, useful for manual curation in IGV.\n\n## Reference documentation\n- [TEPID GitHub Repository](./references/github_com_ListerLab_TEPID.md)\n- [Bioconda TEPID Overview](./references/anaconda_org_channels_bioconda_packages_tepid_overview.md)",
+  "skill_front_matter": {
+    "name": "tepid",
+    "description": "TEPID (Transposable Element Polymorphism IDentification) is a bioinformatic pipeline designed to find variation in transposable element content between a sample and a reference genome. Use when user asks to run tepid or use its main features.",
+    "homepage": "https://github.com/ListerLab/TEPID"
+  }
+}

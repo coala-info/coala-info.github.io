@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-grasp2db",
+  "category": "bioconductor",
+  "name": "bioconductor-grasp2db",
+  "description": "This package provides a high-performance SQLite interface to the GRASP v2.0 database for querying millions of genetic associations from GWAS studies. Use when user asks to access GRASP database records, filter genetic variants by P-value or phenotype, or join SNP-level data with study metadata.",
+  "overview": "The `grasp2db` package provides a high-performance SQLite interface to the GRASP v2.0 database, which contains over 8 million genetic associations (P < 0.05) from GWAS studies. The data is managed via `AnnotationHub` and queried using `dplyr` or `RSQLite`.",
+  "homepage": "https://bioconductor.org/packages/release/data/annotation/html/grasp2db.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-grasp2db/overview",
+  "github": "N/A",
+  "conda_downloads": "5.7K",
+  "conda_downloads_num": 5700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "grasp2db"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/grasp2db.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-grasp2db/overview",
+    "github": "N/A",
+    "conda_downloads": "5.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-grasp2db\n\n## Overview\n\nThe `grasp2db` package provides a high-performance SQLite interface to the GRASP v2.0 database, which contains over 8 million genetic associations (P < 0.05) from GWAS studies. The data is managed via `AnnotationHub` and queried using `dplyr` or `RSQLite`.\n\n## Core Workflow\n\n### 1. Initializing the Database\nThe first time you call `GRASP2()`, a ~5.3GB SQLite file is downloaded to your local `AnnotationHub` cache.\n\n```r\nlibrary(grasp2db)\n# This may take time on the first run\ngrasp2 <- GRASP2()\n```\n\n### 2. Exploring Tables\nThe database consists of three primary tables:\n- `variant`: SNP-level association data (P-values, genomic coordinates hg19, functional annotations).\n- `study`: Publication details (PMID, Journal, Phenotype descriptions).\n- `count`: Sample sizes and population-specific counts (Discovery vs. Replication).\n\n```r\n# View table names and connection details\ngrasp2\n\n# Create references to tables\nvariant_tbl <- tbl(grasp2, \"variant\")\nstudy_tbl <- tbl(grasp2, \"study\")\ncount_tbl <- tbl(grasp2, \"count\")\n```\n\n### 3. Querying with dplyr\nUse standard `dplyr` verbs to filter and select data. Queries are executed lazily on the SQLite backend.\n\n```r\nlibrary(dplyr)\n\n# Filter by significance using the indexed NegativeLog10PBin\n# NegativeLog10PBin is an integer rounding of -log10(Pvalue)\ntop_hits <- variant_tbl %>%\n  filter(NegativeLog10PBin > 10) %>%\n  select(SNPid_dbSNP134, chr_hg19, pos_hg19, Pvalue)\n\n# Join variants with study information using PMID\nresults <- top_hits %>%\n  left_join(study_tbl, by = \"PMID\") %>%\n  filter(PaperPhenotypeDescription == \"Asthma\") %>%\n  collect() # Bring results into R memory\n```\n\n### 4. Advanced Filtering\nYou can use SQL-like pattern matching for phenotype searches.\n\n```r\n# Search for specific keywords in phenotypes\nlipid_studies <- study_tbl %>%\n  filter(PaperPhenotypeDescription %like% \"%Lipid%\") %>%\n  collect()\n```\n\n## Database Schema Details\n\n| Table | Key Column | Description |\n| :--- | :--- | :--- |\n| `variant` | `NHLBIkey` | Main association data; includes `NegativeLog10PBin` for fast P-value filtering. |\n| `study` | `PMID` | Citation metadata; use `PaperPhenotypeDescription` for trait filtering. |\n| `count` | `NHLBIkey` | Breakdown of sample sizes across 12 distinct populations. |\n\n## Tips and Performance\n- **Use Bins for P-values**: Always filter on `NegativeLog10PBin` rather than the raw `Pvalue` column when possible, as the bin column is indexed for speed.\n- **Read-Only Access**: The database is opened in read-only mode by default via `AnnotationHub`.\n- **Direct SQL**: If you prefer raw SQL, access the connection via `grasp2$con` and use `dbGetQuery(grasp2$con, \"SELECT ...\")`.\n\n## Reference documentation\n- [Notes on Bioconductor’s GRASP2 database curation](./references/BiocGRASP2.md)\n- [Using the NHLBI GRASP repository of GWAS test results with Bioconductor](./references/grasp2db.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-grasp2db",
+    "description": "This package provides a high-performance SQLite interface to the GRASP v2.0 database for querying millions of genetic associations from GWAS studies. Use when user asks to access GRASP database records, filter genetic variants by P-value or phenotype, or join SNP-level data with study metadata.",
+    "homepage": "https://bioconductor.org/packages/release/data/annotation/html/grasp2db.html"
+  }
+}

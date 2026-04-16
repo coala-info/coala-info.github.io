@@ -1,0 +1,57 @@
+{
+  "id": "pyfastx",
+  "category": "CLI",
+  "name": "pyfastx",
+  "description": "pyfastx provides fast random access and indexing for plain or gzipped FASTA and FASTQ files using a lightweight Python C extension. Use when user asks to build sequence indexes, calculate assembly statistics, extract subsequences, sample reads, split large files, or convert FASTQ to FASTA.",
+  "overview": "pyfastx is a lightweight Python C extension designed for fast, random access to plain and gzipped FASTA/FASTQ files. By building a persistent SQLite3 index, it allows for efficient sequence retrieval and manipulation without loading entire files into memory. It is an essential tool for bioinformaticians working with large-scale genomic data who require speed and low memory footprints for tasks like assembly evaluation, sequence subsetting, and format conversion.",
+  "homepage": "https://github.com/lmdu/pyfastx",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pyfastx/overview",
+  "github": "https://github.com/lmdu/pyfastx",
+  "conda_downloads": "203.4K",
+  "conda_downloads_num": 203400,
+  "last_updated": "2026-01-24",
+  "cwl_count": 7,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pyfastx_index",
+      "pyfastx_stat",
+      "pyfastx_split",
+      "pyfastx_fq2fa",
+      "pyfastx_subseq",
+      "pyfastx_sample",
+      "pyfastx_extract"
+    ],
+    "description": "Build index for fasta or fastq files",
+    "docker_image": "quay.io/biocontainers/pyfastx:2.3.0--py312h4711d71_1",
+    "homepage": "https://github.com/lmdu/pyfastx",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pyfastx/overview",
+    "github": "https://github.com/lmdu/pyfastx",
+    "conda_downloads": "203.4K",
+    "last_updated": "2026-01-24",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pyfastx_extract.cwl",
+    "pyfastx_fq2fa.cwl",
+    "pyfastx_index.cwl",
+    "pyfastx_sample.cwl",
+    "pyfastx_split.cwl",
+    "pyfastx_stat.cwl",
+    "pyfastx_subseq.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pyfastx\n\n## Overview\npyfastx is a lightweight Python C extension designed for fast, random access to plain and gzipped FASTA/FASTQ files. By building a persistent SQLite3 index, it allows for efficient sequence retrieval and manipulation without loading entire files into memory. It is an essential tool for bioinformaticians working with large-scale genomic data who require speed and low memory footprints for tasks like assembly evaluation, sequence subsetting, and format conversion.\n\n## Core CLI Patterns\n\nThe `pyfastx` command-line interface provides several subcommands for common sequence processing tasks.\n\n### 1. Indexing and Statistics\nBefore performing random access, pyfastx usually builds an index file (`.fxi`).\n*   **Build an index**: `pyfastx index <file.fa/fq>`\n*   **Get assembly statistics**: `pyfastx stat <file.fa>`\n    *   Provides: Total sequence length, sequence count, average length, N50, L50, and GC content.\n\n### 2. Sequence Extraction and Subsetting\n*   **Extract by region**: `pyfastx subseq <file.fa> <region>`\n    *   Example: `pyfastx subseq genome.fa chr1:100-500`\n*   **Extract by ID list**: `pyfastx extract --list <ids.txt> <file.fa> -o output.fa`\n*   **Random sampling**: `pyfastx sample --number 1000 <file.fq> -o sampled.fq`\n    *   Use `--proportion 0.1` to sample a percentage of the total reads.\n\n### 3. File Manipulation\n*   **Split files**: `pyfastx split --number 10 <large.fa> -o output_dir`\n    *   Splits a large file into a specific number of smaller files.\n*   **Convert FASTQ to FASTA**: `pyfastx fq2fa <file.fq> -o <file.fa>`\n\n## Python API Best Practices\n\nFor programmatic use, pyfastx offers high-level objects that behave like Python dictionaries or lists.\n\n### Efficient Iteration\nUse the `Fastx` object for format-agnostic iteration (automatically detects FASTA or FASTQ):\n```python\nimport pyfastx\nfor name, seq in pyfastx.Fastx('data.fa.gz'):\n    # Process sequence\n    pass\n```\n\n### Random Access (FASTA)\nThe `Fasta` object creates an index for instant retrieval by name or index:\n```python\nfa = pyfastx.Fasta('genome.fa.gz')\n# Get sequence by name\ns = fa['chr1']\n# Get subsequence (1-based, inclusive)\nsub = s[10:50].seq\n# Get reverse complement\nrc = s[10:50].reverse_complement\n```\n\n### FASTQ Handling\nThe `Fastq` object allows access to reads and their quality scores:\n```python\nfq = pyfastx.Fastq('reads.fq.gz')\nread = fq[0]\nprint(read.name, read.seq, read.qual)\n```\n\n## Expert Tips\n*   **Persistent Indexes**: Indexing large files can take time. pyfastx saves `.fxi` files in the same directory as the source. Reuse these files across different sessions to skip the indexing step.\n*   **Gzip Performance**: pyfastx uses `indexed_gzip` logic. It is significantly faster than standard Python `gzip` for random access because it doesn't need to decompress the file from the beginning to reach a specific offset.\n*   **Memory Management**: Because it uses a disk-based SQLite index, you can process files much larger than your available RAM.\n*   **Non-standard FASTA**: pyfastx is robust against \"messy\" FASTA files where sequence lines have varying lengths.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| pyfastx fq2fa | Converts FASTQ to FASTA format. |\n| pyfastx split | Split a fasta or fastq file into multiple smaller files. |\n| pyfastx_extract | Extract sequences from FASTA/FASTQ files. |\n| pyfastx_index | Build index for fasta or fastq files |\n| pyfastx_sample | Sample sequences from a FASTA or FASTQ file. |\n| pyfastx_stat | Show statistics for fasta or fastq files. |\n| pyfastx_subseq | Extract subsequences from FASTA/FASTQ files. |\n\n## Reference documentation\n- [github_com_lmdu_pyfastx_blob_master_README.rst.md](./references/github_com_lmdu_pyfastx_blob_master_README.rst.md)\n- [pyfastx_readthedocs_io_en_latest_commandline.html.md](./references/pyfastx_readthedocs_io_en_latest_commandline.html.md)\n- [pyfastx_readthedocs_io_en_latest_usage.html.md](./references/pyfastx_readthedocs_io_en_latest_usage.html.md)",
+  "skill_front_matter": {
+    "name": "pyfastx",
+    "description": "pyfastx provides fast random access and indexing for plain or gzipped FASTA and FASTQ files using a lightweight Python C extension. Use when user asks to build sequence indexes, calculate assembly statistics, extract subsequences, sample reads, split large files, or convert FASTQ to FASTA.",
+    "homepage": "https://github.com/lmdu/pyfastx"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chipanalyser",
+  "category": "bioconductor",
+  "name": "bioconductor-chipanalyser",
+  "description": "This tool predicts transcription factor binding profiles using a statistical thermodynamic framework based on DNA sequence and chromatin accessibility. Use when user asks to model transcription factor binding affinity, infer optimal binding parameters like the number of bound molecules and scaling factors, or generate ChIP-seq-like occupancy profiles.",
+  "overview": "ChIPanalyser is an R package that models the binding of proteins to DNA based on four main factors: DNA accessibility, binding energy (PWM), a scaling factor ($\\lambda$), and the number of bound molecules ($N$). Unlike machine learning approaches, it uses a thermodynamic framework to produce base-pair level ChIP-like profiles. It includes a Genetic Algorithm (GA) to infer optimal parameters by maximizing the fit between predicted profiles and experimental ChIP-seq data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPanalyser.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chipanalyser/overview",
+  "github": "N/A",
+  "conda_downloads": "24.5K",
+  "conda_downloads_num": 24500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChIPanalyser"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPanalyser.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chipanalyser/overview",
+    "github": "N/A",
+    "conda_downloads": "24.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chipanalyser\n\nname: bioconductor-chipanalyser\ndescription: Predicts and explains Transcription Factor (TF) binding using a statistical thermodynamic framework. Use this skill to model TF binding affinity, compute Position Weight Matrices (PWM), infer optimal binding parameters (number of bound molecules and scaling factors), and generate ChIP-seq-like profiles from DNA sequence and chromatin accessibility data.\n\n# bioconductor-chipanalyser\n\n## Overview\nChIPanalyser is an R package that models the binding of proteins to DNA based on four main factors: DNA accessibility, binding energy (PWM), a scaling factor ($\\lambda$), and the number of bound molecules ($N$). Unlike machine learning approaches, it uses a thermodynamic framework to produce base-pair level ChIP-like profiles. It includes a Genetic Algorithm (GA) to infer optimal parameters by maximizing the fit between predicted profiles and experimental ChIP-seq data.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the package and required genomic data (BSgenome, PFMs, and ChIP-seq scores).\n\n```r\nlibrary(ChIPanalyser)\nlibrary(BSgenome.Dmelanogaster.UCSC.dm6)\n\n# Load DNA sequence\ndna <- getSeq(BSgenome.Dmelanogaster.UCSC.dm6)\n\n# Load PFM (supports RAW, JASPAR, Transfac, or matrix)\npfm_path <- system.file(\"extdata\", \"BEAF-32.pfm\", package=\"ChIPanalyser\")\n\n# Process experimental ChIP data\n# 'chip' can be a GRanges, data.frame, or path to wig/bigWig\nchip_scored <- processingChIP(profile = chip_data, loci = regions_of_interest)\n```\n\n### 2. Initializing Genomic Profiles\nThe `genomicProfiles` object stores parameters and intermediate results.\n\n```r\n# PFMs are automatically converted to PWMs\ngp <- genomicProfiles(PFM = pfm_path, \n                      PFMFormat = \"JASPAR\", \n                      BPFrequency = dna)\n```\n\n### 3. Parameter Inference (Two Methods)\n\n#### Method A: Grid Search (`computeOptimal`)\nUse this to test a discrete set of $\\lambda$ and $N$ values.\n\n```r\noptimal_res <- computeOptimal(genomicProfiles = gp,\n                              DNASequenceSet = dna,\n                              ChIPScore = chip_scored,\n                              chromatinState = access_granges) # Optional\n\n# Extract best parameters (e.g., based on MSE or Pearson)\nbest_params <- optimal_res$Optimal$OptimalParameters$MSE\n```\n\n#### Method B: Genetic Algorithm (`evolve`)\nUse this for complex optimization, including chromatin state affinities.\n\n```r\n# Define custom ranges for optimization\nparams_range <- list(N = c(1, 1e6, 5), lambda = c(1, 5, 5))\n\nevo_res <- evolve(population = 20,\n                  generations = 10,\n                  DNASequenceSet = dna,\n                  ChIPScore = training_set,\n                  genomicProfiles = gp,\n                  parameters = params_range,\n                  chromatinState = cs_granges,\n                  method = \"MSE\")\n```\n\n### 4. Generating and Ploting Profiles\nOnce parameters are known, generate the final occupancy and ChIP-like profiles.\n\n```r\n# Run single combination\nfinal_run <- searchSites(optimal_res, lambdaPWM = 1.25, BoundMolecules = 10000)\n\n# Plot results\nplotOccupancyProfile(predictedProfile = final_run$ChIPProfiles,\n                     ChIPScore = chip_scored,\n                     chromatinState = access_granges,\n                     occupancy = final_run$Occupancy,\n                     geneRef = gene_annotations)\n```\n\n## Key Parameters\n- `lambdaPWM` ($\\lambda$): Scales the specificity of the TF.\n- `boundMolecules` ($N$): The number of TF molecules available for binding.\n- `noiseFilter`: Options include \"zero\", \"mean\", \"median\", or \"sigmoid\" to clean experimental ChIP data.\n- `strandRule`: How to handle scores on both strands (\"max\", \"sum\", or \"mean\").\n\n## Tips for Success\n- **Genome Alignment**: Ensure all input data (ChIP, Accessibility, BSgenome) are aligned to the same genome version (e.g., dm6).\n- **Loci Selection**: If no loci are provided to `processingChIP`, use the `reduce` argument to select the top $n$ regions based on signal intensity.\n- **Memory Management**: For large genomes, use the `cores` argument in processing functions to enable parallel computing.\n\n## Reference documentation\n- [The ChIPanalyser User's Guide](./references/ChIPanalyser.md)\n- [ChIPanalyser: Genetic Algorithm and Chromatin States](./references/GA_ChIPanalyser.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chipanalyser",
+    "description": "This tool predicts transcription factor binding profiles using a statistical thermodynamic framework based on DNA sequence and chromatin accessibility. Use when user asks to model transcription factor binding affinity, infer optimal binding parameters like the number of bound molecules and scaling factors, or generate ChIP-seq-like occupancy profiles.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPanalyser.html"
+  }
+}

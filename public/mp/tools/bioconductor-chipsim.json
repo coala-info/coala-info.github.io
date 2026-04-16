@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chipsim",
+  "category": "bioconductor",
+  "name": "bioconductor-chipsim",
+  "description": "This tool simulates ChIP-seq experiments to generate synthetic data for nucleosome positioning and transcription factor binding. Use when user asks to generate synthetic ChIP-seq data, simulate nucleosome positioning, or create FASTQ files to test analysis pipelines.",
+  "overview": "`ChIPsim` provides a flexible framework for simulating ChIP-seq experiments. It models the process in six distinct stages: generating genomic features (via Markov chains), computing binding site densities, calculating strand-specific read densities, sampling read start sites, naming reads, and finally generating sequences with quality scores and errors. While it includes built-in support for nucleosome positioning, it is highly extensible for other experiment types like transcription factor (TF)",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPsim.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chipsim/overview",
+  "github": "N/A",
+  "conda_downloads": "36.1K",
+  "conda_downloads_num": 36100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChIPsim"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPsim.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chipsim/overview",
+    "github": "N/A",
+    "conda_downloads": "36.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chipsim\n\nname: bioconductor-chipsim\ndescription: Simulation of ChIP-seq experiments, including nucleosome positioning and transcription factor binding. Use when you need to generate synthetic ChIP-seq data (FASTQ files or R objects) to test analysis pipelines, evaluate peak callers, or estimate required sequencing depth.\n\n## Overview\n\n`ChIPsim` provides a flexible framework for simulating ChIP-seq experiments. It models the process in six distinct stages: generating genomic features (via Markov chains), computing binding site densities, calculating strand-specific read densities, sampling read start sites, naming reads, and finally generating sequences with quality scores and errors. While it includes built-in support for nucleosome positioning, it is highly extensible for other experiment types like transcription factor (TF) binding.\n\n## Core Workflow\n\nThe primary interface is the `simChIP` function, which orchestrates the entire simulation.\n\n### 1. Basic Nucleosome Simulation\nTo run a simulation with default settings (nucleosome positioning):\n\n```r\nlibrary(ChIPsim)\n\n# 1. Prepare a genome (DNAStringSet)\nchrLen <- c(2e5, 1e5)\nchromosomes <- sapply(chrLen, function(n) paste(sample(DNA_BASES, n, replace = TRUE), collapse = \"\"))\nnames(chromosomes) <- c(\"CHR1\", \"CHR2\")\ngenome <- Biostrings::DNAStringSet(chromosomes)\n\n# 2. Run simulation\n# nReads: number of reads to generate\n# file: prefix for output files (e.g., \"my_sim\"). Use \"\" for no file output.\nsimulated <- simChIP(nReads = 1000, genome = genome, file = \"sim_output\")\n```\n\n### 2. Customizing Parameters\nUse `defaultControl()` to modify specific stages of the simulation without rewriting the whole pipeline.\n\n```r\n# Change mean fragment length to 150bp\ncontrol_params <- defaultControl(readDensity = list(meanLength = 150))\n\nsimulated <- simChIP(1000, genome, file = \"\", control = control_params)\n```\n\n### 3. Simulating Transcription Factor (TF) Binding\nSimulating TF binding requires defining a Markov chain for feature generation.\n\n```r\n# 1. Define state transitions\ntransition <- list(Binding = c(Background = 1), \n                   Background = c(Binding = 0.05, Background = 0.95))\ntransition <- lapply(transition, \"class<-\", \"StateDistribution\")\n\n# 2. Define initial state\ninit <- c(Binding = 0, Background = 1)\nclass(init) <- \"StateDistribution\"\n\n# 3. Define feature generators (functions named [state]Feature)\nbackgroundFeature <- function(start, length=1000, shape=1, scale=20){\n  weight <- rgamma(1, shape=shape, scale=scale)\n  params <- list(start = start, length = length, weight = weight)\n  class(params) <- c(\"Background\", \"SimulatedFeature\")\n  params\n}\n\nbindingFeature <- function(start, length=50, weight=50){\n  params <- list(start = start, length = length, weight = weight)\n  class(params) <- c(\"Binding\", \"SimulatedFeature\")\n  params\n}\n\n# 4. Setup arguments and run\nfeatureArgs <- list(generator = list(Binding=bindingFeature, Background=backgroundFeature),\n                    transition = transition, init = init, experimentType = \"TFExperiment\")\n\nsimulated_tf <- simChIP(1000, genome, file = \"\", \n                        control = defaultControl(features = featureArgs))\n```\n\n## Key Functions\n\n- `simChIP()`: The main wrapper function for the full simulation.\n- `makeFeatures()` / `placeFeatures()`: Generates the sequence of genomic features (nucleosomes, TF sites).\n- `feat2dens()`: Converts features into a binding site density.\n- `bindDens2readDens()`: Converts binding density into strand-specific read densities based on fragment length distributions.\n- `sampleReads()`: Samples read start positions from the read densities.\n- `readSequence()`: Extracts DNA sequences from the genome at specified positions.\n- `readError()`: Introduces sequencing errors based on quality scores.\n\n## Tips for Success\n\n- **Reproducibility**: Always use `set.seed()` before running `simChIP` to ensure the stochastic Markov chain and read sampling are reproducible.\n- **Intermediate Results**: If `file` is provided, `ChIPsim` saves `.rdata` files for each stage. You can skip stages in subsequent runs by setting `load = TRUE` in `simChIP()`.\n- **Memory Management**: For large genomes or high coverage, the density vectors can become very large. Consider simulating one chromosome at a time if memory is an issue.\n- **Custom Quality Scores**: By default, the package expects real quality scores. If unavailable, provide a custom function to the `readSequence` slot in `defaultFunctions()`.\n\n## Reference documentation\n- [Simulating ChIP-seq experiments](./references/ChIPsimIntro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chipsim",
+    "description": "This tool simulates ChIP-seq experiments to generate synthetic data for nucleosome positioning and transcription factor binding. Use when user asks to generate synthetic ChIP-seq data, simulate nucleosome positioning, or create FASTQ files to test analysis pipelines.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChIPsim.html"
+  }
+}

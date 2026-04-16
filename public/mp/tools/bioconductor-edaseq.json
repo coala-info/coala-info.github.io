@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-edaseq",
+  "category": "bioconductor",
+  "name": "bioconductor-edaseq",
+  "description": "The EDASeq package provides a framework for exploratory data analysis and normalization of RNA-Seq data to account for GC-content and gene length biases. Use when user asks to perform quality control on sequencing reads, visualize systematic biases in gene expression, or apply within-lane and between-lane normalization.",
+  "overview": "The `EDASeq` package provides a comprehensive framework for the exploratory data analysis and normalization of RNA-Seq data. It operates at two levels:\n1.  **Read-level EDA**: Quality control of FASTQ or BAM files (mapping percentages, quality scores, nucleotide frequencies).\n2.  **Gene-level EDA**: Detection of systematic biases (GC-content, gene length) and normalization to account for these effects.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EDASeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-edaseq/overview",
+  "github": "https://github.com/drisso/EDASeq",
+  "conda_downloads": "67.4K",
+  "conda_downloads_num": 67400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EDASeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EDASeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-edaseq/overview",
+    "github": "https://github.com/drisso/EDASeq",
+    "conda_downloads": "67.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-edaseq\n\n## Overview\nThe `EDASeq` package provides a comprehensive framework for the exploratory data analysis and normalization of RNA-Seq data. It operates at two levels:\n1.  **Read-level EDA**: Quality control of FASTQ or BAM files (mapping percentages, quality scores, nucleotide frequencies).\n2.  **Gene-level EDA**: Detection of systematic biases (GC-content, gene length) and normalization to account for these effects.\n\nThe package introduces the `SeqExpressionSet` class, which extends `eSet` to store raw counts, normalized counts, and normalization offsets.\n\n## Core Workflows\n\n### 1. Data Import and Object Creation\n`EDASeq` uses `ShortRead` and `Rsamtools` objects for read-level data, and a custom container for gene-level counts.\n\n```R\nlibrary(EDASeq)\n\n# Create a SeqExpressionSet\n# counts: matrix of gene counts\n# featureData: data.frame with 'gc' and 'length' columns\n# phenoData: data.frame with sample conditions\ndata <- newSeqExpressionSet(counts = as.matrix(gene_counts),\n                            featureData = feature_info,\n                            phenoData = sample_info)\n```\n\n### 2. Exploratory Data Analysis\nUse these functions to visualize biases before and after normalization.\n\n*   **Read-level**:\n    *   `barplot(bamFileList)`: Plot number of mapped reads.\n    *   `plotQuality(bamFileList)`: Plot mean per-base quality scores.\n    *   `plotNtFrequency(bamFile)`: Plot nucleotide distribution.\n*   **Gene-level**:\n    *   `biasPlot(data, \"gc\", log=TRUE)`: Visualize count dependence on a feature (e.g., \"gc\" or \"length\").\n    *   `biasBoxplot(log_fold_change, feature_vector)`: Check if differential expression is biased by gene features.\n    *   `meanVarPlot(data)`: Check for over-dispersion (Poisson vs. Negative Binomial).\n    *   `MDPlot(data, c(1,2))`: Mean-Difference plot between two lanes.\n\n### 3. Normalization\nNormalization is typically a two-step process. Within-lane normalization should be performed first.\n\n*   **Within-lane**: Corrects for gene-specific features (GC-content, length).\n    *   Methods: `loess`, `median`, `upper`, `full`.\n    *   `dataWithin <- withinLaneNormalization(data, \"gc\", which=\"full\")`\n*   **Between-lane**: Corrects for sequencing depth and distributional differences.\n    *   Methods: `median`, `upper`, `full`.\n    *   `dataNorm <- betweenLaneNormalization(dataWithin, which=\"full\")`\n\n### 4. Using Offsets for Differential Expression\nInstead of using normalized counts directly, it is often preferred to use the original counts and provide an \"offset\" to statistical models (like `edgeR` or `DESeq2`).\n\n```R\n# Generate offsets\ndataOffset <- withinLaneNormalization(data, \"gc\", which=\"full\", offset=TRUE)\ndataOffset <- betweenLaneNormalization(dataOffset, which=\"full\", offset=TRUE)\n\n# For edgeR: Note that edgeR expects the negative of the EDASeq offset\nlibrary(edgeR)\ny <- DGEList(counts = counts(dataOffset))\ny$offset <- -offst(dataOffset) \n\n# For DESeq2:\nlibrary(DESeq2)\ndds <- DESeqDataSetFromMatrix(countData = counts(dataOffset), \n                              colData = pData(dataOffset), \n                              design = ~ conditions)\nnormalizationFactors(dds) <- exp(-1 * offst(dataOffset))\n```\n\n## Tips and Conventions\n*   **Feature Retrieval**: Use `getGeneLengthAndGCContent(ids, org=\"hsa\")` to automatically fetch GC and length data for human (hsa), mouse (mmu), or yeast (sacCer3).\n*   **Rounding**: By default, normalization functions round results to the nearest integer (\"pseudo-counts\"). Use `round=FALSE` if you need high-precision offsets.\n*   **Zero Counts**: `EDASeq` adds a small constant (0.1) to counts when calculating logs or offsets to avoid mathematical errors with zeros.\n*   **Filtering**: Always filter out non-expressed or very lowly expressed genes (e.g., mean count < 10) before running `biasPlot` or normalization to reduce noise.\n\n## Reference documentation\n- [EDASeq Vignette](./references/EDASeq.md)\n- [EDASeq R Markdown Source](./references/EDASeq.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-edaseq",
+    "description": "The EDASeq package provides a framework for exploratory data analysis and normalization of RNA-Seq data to account for GC-content and gene length biases. Use when user asks to perform quality control on sequencing reads, visualize systematic biases in gene expression, or apply within-lane and between-lane normalization.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EDASeq.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hiiragi2013",
+  "category": "bioconductor",
+  "name": "bioconductor-hiiragi2013",
+  "description": "This package provides experimental data and analysis workflows for studying single-cell gene expression during early mouse embryonic development. Use when user asks to analyze lineage segregation in mouse embryos, perform cluster stability analysis, identify differential expression markers, or measure transcriptomic heterogeneity using Jensen-Shannon Divergence.",
+  "overview": "The `Hiiragi2013` package provides the experimental data and executable analysis for the study of cell-to-cell expression variability in early mouse lineages. It contains normalized microarray data (Affymetrix) and qPCR data for wild-type and FGF4-KO embryos. The package is primarily used to study the progressive segregation of Epiblast (EPI) and Primitive Endoderm (PE) from the Inner Cell Mass (ICM).",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/Hiiragi2013.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hiiragi2013/overview",
+  "github": "N/A",
+  "conda_downloads": "24.4K",
+  "conda_downloads_num": 24400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Hiiragi2013"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/Hiiragi2013.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hiiragi2013/overview",
+    "github": "N/A",
+    "conda_downloads": "24.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hiiragi2013\n\nname: bioconductor-hiiragi2013\ndescription: Analysis of early mouse embryonic development (E3.25 to E4.5) using single-cell gene expression data. Use this skill to perform transcriptomic analysis of lineage segregation (EPI, PE, and ICM), cluster stability analysis, and differential expression workflows based on the Ohnishi et al. (2014) study.\n\n# bioconductor-hiiragi2013\n\n## Overview\nThe `Hiiragi2013` package provides the experimental data and executable analysis for the study of cell-to-cell expression variability in early mouse lineages. It contains normalized microarray data (Affymetrix) and qPCR data for wild-type and FGF4-KO embryos. The package is primarily used to study the progressive segregation of Epiblast (EPI) and Primitive Endoderm (PE) from the Inner Cell Mass (ICM).\n\n## Data Loading and Preparation\nThe package provides two main datasets as `ExpressionSet` objects.\n\n```R\nlibrary(Hiiragi2013)\n\n# Load normalized microarray data (101 samples, 45101 features)\ndata(\"x\")\n\n# Load qPCR data\ndata(\"xq\")\n\n# Access phenotypic data (metadata)\npData(x)\n# Key columns: Embryonic.day (E3.25, E3.5, E4.5), genotype (WT, FGF4-KO), sampleGroup, lineage\n```\n\n## Core Workflows\n\n### 1. Cluster Stability Analysis\nTo determine if samples fall naturally into clusters (e.g., EPI vs. PE), use the `clue` package framework to perform resampling and consensus clustering.\n\n*   **Workflow**: Draw random subsets (67%), select top variable features, apply k-means/PAM, and measure agreement with the consensus.\n*   **Interpretation**: High agreement (near 1.0) indicates stable, reproducible clusters.\n\n### 2. Differential Expression\nIdentify lineage markers or genes responding to FGF4 knockout.\n\n```R\n# Example: T-test between clusters in E3.5 WT samples\nlibrary(genefilter)\nx35wt <- x[, x$Embryonic.day == \"E3.5\" & x$genotype == \"WT\"]\n# Assuming 'clusters' is a factor derived from k-means\nde_results <- rowttests(x35wt, fac = clusters)\n\n# Independent filtering: Use variance to filter out noise before FDR adjustment\nvariance_rank <- rank(-rowVars(exprs(x35wt)))\nadjp <- p.adjust(de_results$p.value[variance_rank <= 20000], method = \"BH\")\n```\n\n### 3. Principal Component Analysis (PCA)\nVisualize sample relationships across developmental time and genotypes.\n\n```R\n# Select top 100 variable features (excluding FGF4 probes to avoid bias)\nnfeatures <- 100\nv_order <- order(rowVars(exprs(x)), decreasing = TRUE)\nsel_features <- v_order[1:nfeatures]\n\n# Compute PCA\nthe_pca <- prcomp(t(exprs(x[sel_features, ])), center = TRUE)\nplot(the_pca$x[, 1:2], col = x$sampleColour, pch = 16)\n```\n\n### 4. Jensen-Shannon Divergence (JSD)\nMeasure transcriptomic heterogeneity within groups.\n\n*   **Function**: `JSD(matrix)` where the matrix contains probability-transformed expression values (sum to 1 per cell).\n*   **Usage**: Compare JSD across embryonic days to see if cell-to-cell variability increases or decreases during lineage commitment.\n\n### 5. Rule-Based Temporal Classification\nClassify genes into temporal profiles (Class 1-4) based on their expression peaks:\n*   **Class 1**: Highest in E3.25.\n*   **Class 2**: Highest in E3.5 (lineage-specific).\n*   **Class 3**: Gradual increase (E3.25 < E3.5 < E4.5).\n*   **Class 4**: Activated only at E4.5.\n\n## Tips and Best Practices\n*   **FGF4 Probes**: When analyzing FGF4-KO samples, be aware that some FGF4 probe sets (e.g., 1420085_at) are better reporters of the knockout effect than others.\n*   **Scaling**: For heatmaps comparing different lineages, scale data to [0, 1] (min-max scaling) to highlight relative temporal changes rather than absolute intensity.\n*   **Batch Effects**: When calculating variability (MAD), consider grouping samples by `Total.number.of.cells` or `ScanDate` to account for potential technical variation.\n\n## Reference documentation\n- [Hiiragi2013](./references/Hiiragi2013.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hiiragi2013",
+    "description": "This package provides experimental data and analysis workflows for studying single-cell gene expression during early mouse embryonic development. Use when user asks to analyze lineage segregation in mouse embryos, perform cluster stability analysis, identify differential expression markers, or measure transcriptomic heterogeneity using Jensen-Shannon Divergence.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/Hiiragi2013.html"
+  }
+}

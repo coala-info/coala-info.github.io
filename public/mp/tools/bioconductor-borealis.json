@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-borealis",
+  "category": "bioconductor",
+  "name": "bioconductor-borealis",
+  "description": "\"bioconductor-borealis detects outlier DNA methylation sites in bisulfite sequencing data by comparing individual samples against a cohort using a beta-binomial model. Use when user asks to identify differentially methylated loci, run the Borealis pipeline on Bismark outputs, or visualize site-specific methylation deviations.\"",
+  "overview": "Borealis is designed for outlier methylation detection using bisulfite sequencing data (specifically Bismark outputs). Unlike traditional case-control studies, Borealis compares each individual sample against the rest of the cohort to identify significant deviations at single CpG-site resolution. It uses a beta-binomial model to account for both mean methylation levels and dispersion across the cohort.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/borealis.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-borealis/overview",
+  "github": "N/A",
+  "conda_downloads": "4.0K",
+  "conda_downloads_num": 4000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "borealis"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/borealis.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-borealis/overview",
+    "github": "N/A",
+    "conda_downloads": "4.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-borealis\n\n## Overview\n\nBorealis is designed for outlier methylation detection using bisulfite sequencing data (specifically Bismark outputs). Unlike traditional case-control studies, Borealis compares each individual sample against the rest of the cohort to identify significant deviations at single CpG-site resolution. It uses a beta-binomial model to account for both mean methylation levels and dispersion across the cohort.\n\n## Core Workflow\n\n### 1. Running the Pipeline\nThe primary entry point is `runBorealis()`. This function processes Bismark coverage files and generates statistical outputs for each sample.\n\n```r\nlibrary(borealis)\n\n# extdata should point to a directory containing .bismark.cov.gz or similar files\nextdata <- system.file(\"extdata\", \"bismark\", package=\"borealis\")\noutdir <- tempdir()\n\nresults <- runBorealis(\n  location = extdata,\n  nThreads = 2,\n  chrs = \"chr14\",\n  suffix = \".gz\",\n  outprefix = file.path(outdir, \"borealis_\"),\n  modelOutPrefix = file.path(outdir, \"CpG_model\")\n)\n```\n\n### 2. Loading and Formatting Results\nBorealis outputs `.tsv` files (ending in `_DMLs.tsv`). It is standard practice to convert these into `GRanges` objects for downstream analysis.\n\n```r\n# Identify output files\nborealis_files <- dir(outdir, pattern = \"*DMLs.tsv\")\n\n# Load a specific sample into GRanges\nsample_data <- read.table(file.path(outdir, borealis_files[1]), header=TRUE)\nsample_gr <- GenomicRanges::makeGRangesFromDataFrame(\n  sample_data, \n  start.field=\"pos\", \n  end.field=\"pos.1\", \n  seqnames.field=\"chr\", \n  keep.extra.columns=TRUE\n)\n```\n\n### 3. Statistical Post-Processing\nBorealis provides raw p-values. You must manually perform multiple testing correction (e.g., Benjamini-Hochberg).\n\n```r\n# Add adjusted p-values to the GRanges object\nsample_gr$pAdj <- p.adjust(sample_gr$pVal, method=\"BH\")\n\n# Filter for significant outliers\nsignificant_sites <- sample_gr[sample_gr$pAdj <= 0.05]\n```\n\n### 4. Interpreting Output Columns\n*   **x**: Number of methylated reads at the position.\n*   **n**: Total read depth at the position.\n*   **mu**: Modeled mean methylation fraction for the cohort.\n*   **theta**: Modeled dispersion (variability) at this site.\n*   **pVal**: Probability of the observed methylation given the cohort model.\n*   **effSize**: Magnitude of deviation from the cohort mean.\n*   **isHypo**: Logical; `TRUE` if the site is hypomethylated, `FALSE` if hypermethylated.\n\n### 5. Visualization\nUse `plotCpGsite` to visualize a specific genomic coordinate's methylation relative to the cohort model.\n\n```r\nplotCpGsite(\n  \"chr14:24780288\", \n  sampleOfInterest = \"patient_72\",\n  modelFile = \"path/to/CpG_model_chr14.csv\",\n  methCountFile = \"path/to/rawMethCount_chr14.tsv\",\n  totalCountFile = \"path/to/rawTotalCount_chr14.tsv\"\n)\n```\n\n## Integration with annotatr\nTo add biological context (e.g., promoters, CpG islands), use the `annotatr` package:\n\n```r\nlibrary(annotatr)\nannots <- build_annotations(genome = 'hg19', annotations = 'hg19_genes_promoters')\nannotated_regions <- annotate_regions(\n  regions = sample_gr,\n  annotations = annots,\n  ignore.strand = TRUE\n)\n```\n\n## Tips for Success\n*   **Cohort Size**: While Borealis works with as few as 3 samples, larger cohorts (20+) provide more robust estimates of `mu` and `theta`.\n*   **Input Format**: Ensure input files are Bismark-style coverage files.\n*   **Memory Management**: For whole-genome analysis, use the `chrs` argument in `runBorealis` to process chromosomes individually if memory is limited.\n\n## Reference documentation\n- [Borealis outlier methylation detection](./references/borealis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-borealis",
+    "description": "bioconductor-borealis detects outlier DNA methylation sites in bisulfite sequencing data by comparing individual samples against a cohort using a beta-binomial model. Use when user asks to identify differentially methylated loci, run the Borealis pipeline on Bismark outputs, or visualize site-specific methylation deviations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/borealis.html"
+  }
+}

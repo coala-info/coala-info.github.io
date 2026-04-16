@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-saigegds",
+  "category": "bioconductor",
+  "name": "bioconductor-saigegds",
+  "description": "SAIGEgds performs large-scale association testing and phenome-wide association studies using generalized linear mixed models optimized for genomic data structure files. Use when user asks to fit a null model with a genetic relationship matrix, perform single-variant association tests using saddlepoint approximation, or analyze biobank-scale datasets with case-control imbalance.",
+  "overview": "SAIGEgds is a high-performance R package designed for large-scale PheWAS. It optimizes the SAIGE (Scalable and Accurate Implementation of Generalized mixed model) method by utilizing the Genomic Data Structure (GDS) format and C++ optimization. It is particularly effective for biobank-scale data (e.g., UK Biobank) where case-control imbalance is common. The package supports both integer genotypes and numeric imputed dosages.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SAIGEgds.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/AbbVie-ComputationalGenomics/SAIGEgds",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SAIGEgds"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SAIGEgds.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/AbbVie-ComputationalGenomics/SAIGEgds",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-saigegds\n\n## Overview\n\nSAIGEgds is a high-performance R package designed for large-scale PheWAS. It optimizes the SAIGE (Scalable and Accurate Implementation of Generalized mixed model) method by utilizing the Genomic Data Structure (GDS) format and C++ optimization. It is particularly effective for biobank-scale data (e.g., UK Biobank) where case-control imbalance is common. The package supports both integer genotypes and numeric imputed dosages.\n\n## Core Workflow\n\n### 1. Data Preparation and LD Pruning\nBefore fitting a null model, you must prepare a pruned set of SNPs to create a Genetic Relationship Matrix (GRM).\n\n```R\nlibrary(SeqArray)\nlibrary(SNPRelate)\nlibrary(SAIGEgds)\n\n# Open SeqArray GDS file\ngds <- seqOpen(geno_fn)\n\n# Perform LD pruning\nset.seed(1000)\nsnpset <- snpgdsLDpruning(gds)\nsnpset.id <- unlist(snpset, use.names=FALSE)\n\n# Export pruned SNPs to a new GDS file for GRM\ngrm_fn <- \"grm_geno.gds\"\nseqSetFilter(gds, variant.id=snpset.id)\nseqExport(gds, grm_fn, info.var=character(), fmt.var=character(), samp.var=character())\nseqClose(gds)\n```\n\n### 2. Fitting the Null Model\nFit the generalized linear mixed model (GLMM) under the null hypothesis. This step accounts for sample relatedness using the GRM.\n\n```R\n# pheno: data.frame containing sample.id, outcome (y), and covariates (x1, x2)\nglmm <- seqFitNullGLMM_SPA(y ~ x1 + x2, \n                           pheno.data = pheno, \n                           gds.fn = grm_fn, \n                           trait.type = \"binary\", \n                           sample.col = \"sample.id\")\n```\n*   `trait.type`: Use \"binary\" for case-control studies or \"quantitative\" for continuous traits.\n*   `sample.col`: The column name in the phenotype data frame matching the GDS sample IDs.\n\n### 3. Association Testing (P-value Calculation)\nRun the association analysis for all variants in the main genotype file using the fitted null model.\n\n```R\n# Calculate associations using SPA\nassoc <- seqAssocGLMM_SPA(geno_fn, \n                          glmm, \n                          mac = 10, \n                          parallel = 2)\n\n# Optional: Save results directly to a GDS file for large outputs\nseqAssocGLMM_SPA(geno_fn, glmm, mac=10, res.savefn=\"assoc.gds\")\n```\n*   `mac`: Minimum Allele Count filter.\n*   `parallel`: Number of CPU cores to use.\n\n### 4. Loading and Visualizing Results\nLoad results from a saved GDS file or visualize the data frame directly.\n\n```R\n# Load from GDS\nres <- seqSAIGE_LoadPval(\"assoc.gds\")\n\n# Visualization using ggmanh\nlibrary(ggmanh)\nmanhattan_plot(res, pval.colname=\"pval\", chr.colname=\"chr\", pos.colname=\"pos\")\nqqunif(res$pval)\n```\n\n## Key Functions\n- `seqFitNullGLMM_SPA()`: Fits the null model using a GRM.\n- `seqAssocGLMM_SPA()`: Performs single-variant association tests with SPA.\n- `seqSAIGE_LoadPval()`: Efficiently loads association results from GDS files.\n- `seqExport()`: Used to subset GDS files for GRM construction.\n\n## Tips for Performance\n- **Memory Management**: Use GDS files instead of loading full genotype matrices into RAM.\n- **Parallelization**: Always utilize the `parallel` argument in `seqAssocGLMM_SPA` for whole-genome scans.\n- **Sparse GRM**: For very large cohorts, ensure the GRM is constructed from a high-quality, LD-pruned set of variants (typically 2,000–5,000 SNPs are sufficient for relatedness).\n\n## Reference documentation\n- [SAIGEgds Tutorial](./references/SAIGEgds.Rmd)\n- [Scalable Generalized Mixed Models in PheWAS using SAIGEgds](./references/SAIGEgds.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-saigegds",
+    "description": "SAIGEgds performs large-scale association testing and phenome-wide association studies using generalized linear mixed models optimized for genomic data structure files. Use when user asks to fit a null model with a genetic relationship matrix, perform single-variant association tests using saddlepoint approximation, or analyze biobank-scale datasets with case-control imbalance.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SAIGEgds.html"
+  }
+}

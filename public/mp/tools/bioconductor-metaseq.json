@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metaseq",
+  "category": "bioconductor",
+  "name": "bioconductor-metaseq",
+  "description": "This tool performs meta-analysis of RNA-seq count data from multiple studies while accounting for sequencing depth variations. Use when user asks to integrate differentially expressed gene probabilities across experiments, perform meta-analysis on RNA-seq datasets, or identify consistently regulated genes using Fisher's or Stouffer's methods.",
+  "overview": "The `metaSeq` package provides tools for the meta-analysis of RNA-seq count data. It specifically addresses the \"Read-Size Effect\" (RSE), where differences in sequencing depth between studies can bias statistical significance. The package utilizes the NOISeq method for individual study analysis because of its robustness against sequencing depth variations. It then integrates these one-sided probabilities using either Fisher’s method or Stouffer’s (inverse normal) method to identify consistently ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/metaSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metaSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metaSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metaseq\n\nname: bioconductor-metaseq\ndescription: Meta-analysis of RNA-seq count data from multiple studies. Use this skill to integrate differentially expressed gene (DEG) probabilities across different experiments while accounting for Read-Size Effect (RSE). This skill is appropriate for combining results from studies with varying sequencing depths using NOISeq-based probabilities and Fisher's or Stouffer's integration methods.\n\n# bioconductor-metaseq\n\n## Overview\n\nThe `metaSeq` package provides tools for the meta-analysis of RNA-seq count data. It specifically addresses the \"Read-Size Effect\" (RSE), where differences in sequencing depth between studies can bias statistical significance. The package utilizes the NOISeq method for individual study analysis because of its robustness against sequencing depth variations. It then integrates these one-sided probabilities using either Fisher’s method or Stouffer’s (inverse normal) method to identify consistently up-regulated or down-regulated genes across multiple datasets.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nPrepare a count matrix where rows are genes and columns are samples. You also need two metadata vectors:\n- **Condition Factor**: Indicates the experimental group (e.g., 0 for Control, 1 for Treatment).\n- **Study Factor**: Indicates which study each sample belongs to (e.g., \"StudyA\", \"StudyB\").\n\n```r\nlibrary(metaSeq)\nlibrary(snow)\n\n# Example data structure\n# counts: matrix of RNA-seq counts\n# group: c(1,1,0,0, 1,0, 1,1,0)\n# study: c(\"A\",\"A\",\"A\",\"A\", \"B\",\"B\", \"C\",\"C\",\"C\")\n\ncds <- meta.readData(data = counts, factor = group, studies = study)\n```\n\n### 2. Calculate One-Sided Probabilities\n\nPerform one-sided NOISeq for each study. This step is computationally intensive and benefits from parallelization using the `snow` package.\n\n```r\n# Setup parallel cluster\ncl <- makeCluster(4, \"SOCK\")\n\n# Calculate probabilities\n# k: replacement for 0 counts (default 0.5)\n# norm: normalization method (\"tmm\", \"rpkm\", \"uqua\", \"none\")\nresult <- meta.oneside.noiseq(cds, k = 0.5, norm = \"tmm\", \n                             replicates = \"biological\", \n                             factor = group, conditions = c(1, 0), \n                             studies = study, cl = cl)\n\nstopCluster(cl)\n```\n\n### 3. Meta-Analysis Integration\n\nIntegrate the results using Fisher's or Stouffer's method. Both return a list containing `Upper` (up-regulated) and `Lower` (down-regulated) probabilities.\n\n- **Fisher's Method**: Standard meta-analysis integration.\n- **Stouffer's Method**: Weights studies by the number of replicates (sample size).\n\n```r\n# Fisher's Method\nres_fisher <- Fisher.test(result)\n\n# Stouffer's Method\nres_stouffer <- Stouffer.test(result)\n\n# Access results\nhead(res_fisher$Upper) # Probabilities for up-regulation\nhead(res_fisher$Lower) # Probabilities for down-regulation\nres_fisher$Weight      # Replicate counts per study\n```\n\n## Meta-Analysis with External Methods\n\nIf you have p-values from other tools (e.g., DESeq2, edgeR, Cuffdiff), use `other.oneside.pvalues` to format them for integration.\n\n1.  Prepare two matrices: one for \"upper\" p-values and one for \"lower\" p-values.\n2.  Provide a weight vector (usually sample sizes).\n\n```r\n# upper: matrix of p-values for up-regulation\n# lower: matrix of p-values for down-regulation (often 1 - upper)\n# weights: vector of study weights\n\next_result <- other.oneside.pvalues(upper, lower, weights)\n\n# Integrate as usual\nfinal_res <- Fisher.test(ext_result)\n```\n\n## Tips and Best Practices\n\n- **One-Sided Tests**: Ensure input p-values or probabilities are one-sided. `metaSeq` is designed to detect direction-specific differential expression.\n- **Parallelization**: Always use `makeCluster` for `meta.oneside.noiseq` if working with large datasets or many studies, as the per-gene probability estimation is slow.\n- **Interpretation**: The output values are probabilities (0 to 1). Higher values in the `Upper` list indicate a higher probability that the gene is up-regulated in the treatment group across studies.\n- **Missing Values**: If a gene is missing in a specific study, the integration functions handle `NA` values, but ensure gene identifiers (row names) are consistent across all input matrices.\n\n## Reference documentation\n\n- [metaSeq](./references/metaSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metaseq",
+    "description": "This tool performs meta-analysis of RNA-seq count data from multiple studies while accounting for sequencing depth variations. Use when user asks to integrate differentially expressed gene probabilities across experiments, perform meta-analysis on RNA-seq datasets, or identify consistently regulated genes using Fisher's or Stouffer's methods.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/metaSeq.html"
+  }
+}

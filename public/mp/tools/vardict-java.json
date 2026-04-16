@@ -1,0 +1,50 @@
+{
+  "id": "vardict-java",
+  "category": "CLI",
+  "name": "vardict-java",
+  "description": "VarDictJava identifies genomic variations including SNPs, MNPs, and structural variants directly from BAM files. Use when user asks to identify genomic variations, perform single-sample variant calling, perform paired/somatic variant calling, or call variants in specific genomic regions.",
+  "overview": "VarDictJava is a high-performance Java port of the VarDict variant caller. It is designed to identify a wide range of genomic variations—including single nucleotide polymorphisms, multi-nucleotide polymorphisms, and structural variants like inversions or duplications—directly from BAM files. It is approximately 10x faster than the original Perl implementation and excels at detecting low-frequency variants and complex mutations that require local realignment.",
+  "homepage": "https://github.com/AstraZeneca-NGS/VarDictJava",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/vardict-java/overview",
+  "github": "https://github.com/AstraZeneca-NGS/VarDictJava",
+  "conda_downloads": "361.6K",
+  "conda_downloads_num": 361600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vardict-java",
+      "vardict-java_VarDict",
+      "vardict-java_teststrandbias.R",
+      "vardict-java_var2vcf_valid.pl",
+      "vardict-java_testsomatic.R",
+      "vardict-java_var2vcf_paired.pl"
+    ],
+    "description": "The provided text does not contain help information for vardict-java. It appears to be a fatal error log from a container execution environment (Singularity/Apptainer) failing to fetch the OCI image.",
+    "docker_image": "quay.io/biocontainers/vardict-java:1.8.3--hdfd78af_0",
+    "homepage": "https://github.com/AstraZeneca-NGS/VarDictJava",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/vardict-java/overview",
+    "github": "https://github.com/AstraZeneca-NGS/VarDictJava",
+    "conda_downloads": "361.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "vardict-java_var2vcf_valid.pl.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# vardict-java\n\n## Overview\n\nVarDictJava is a high-performance Java port of the VarDict variant caller. It is designed to identify a wide range of genomic variations—including single nucleotide polymorphisms, multi-nucleotide polymorphisms, and structural variants like inversions or duplications—directly from BAM files. It is approximately 10x faster than the original Perl implementation and excels at detecting low-frequency variants and complex mutations that require local realignment.\n\n## Core Workflows\n\nVarDictJava typically operates in a pipeline, piping its tabular output into R scripts for bias testing and then into Perl scripts for VCF conversion.\n\n### Single Sample Variant Calling\nUse this pattern for germline or single-sample somatic analysis.\n\n```bash\n# Define Allele Frequency threshold\nAF_THR=\"0.01\"\n\nVarDict -G /path/to/reference.fa \\\n    -f $AF_THR \\\n    -N sample_name \\\n    -b /path/to/sample.bam \\\n    -c 1 -S 2 -E 3 -g 4 /path/to/regions.bed \\\n    | teststrandbias.R \\\n    | var2vcf_valid.pl -N sample_name -E -f $AF_THR > output.vcf\n```\n\n### Paired/Somatic Variant Calling\nUse the pipe `|` symbol between BAM files to trigger paired mode.\n\n```bash\nVarDict -G /path/to/reference.fa \\\n    -f $AF_THR \\\n    -N tumor_name \\\n    -b \"/path/to/tumor.bam|/path/to/normal.bam\" \\\n    -c 1 -S 2 -E 3 -g 4 /path/to/regions.bed \\\n    | testsomatic.R \\\n    | var2vcf_paired.pl -N \"tumor_name|normal_name\" -f $AF_THR > somatic.vcf\n```\n\n### Calling Specific Regions\nUse the `-R` flag to call variants in a specific genomic window without a BED file. Format: `chr:start-end:gene_symbol`.\n\n```bash\nVarDict -G ref.fa -f 0.01 -N sample -b sample.bam -R chr7:55270300-55270348:EGFR | ...\n```\n\n## Command Line Options\n\n| Option | Description |\n| :--- | :--- |\n| `-G` | Path to the reference genome FASTA file. |\n| `-f` | Minimum allele frequency threshold (e.g., 0.01 for 1%). |\n| `-N` | Sample name for the VCF header. |\n| `-b` | Path to BAM file(s). Use `BAM1|BAM2` for paired mode. |\n| `-c` | Column index in BED file for Chromosome (1-based). |\n| `-S` | Column index in BED file for Region Start. |\n| `-E` | Column index in BED file for Region End. |\n| `-g` | Column index in BED file for Gene Name. |\n| `-th` | Number of threads (default is 1). |\n\n## Expert Tips & Best Practices\n\n- **BED Column Mapping**: Ensure your `-c`, `-S`, `-E`, and `-g` flags match your BED file structure. If your BED file only has 3 columns, you may need to omit `-g` or point it to a dummy column.\n- **Memory Management**: For large BAM files or high-depth regions, if you encounter `java.lang.OutOfMemoryError`, increase the JVM heap size using `java -Xmx8g -jar ...` or ensure the environment has sufficient RAM.\n- **Amplicon Sequencing**: VarDict is uniquely capable of handling amplicon bias. Ensure you use the provided `teststrandbias.R` script in your pipeline to filter out false positives resulting from PCR bias.\n- **Pathing**: The distribution package places helper scripts (`teststrandbias.R`, `var2vcf_valid.pl`) in the `bin/` directory. Ensure these are in your `$PATH` or referenced by their full path.\n- **Local Realignment**: VarDict performs realignment on-the-fly. This allows it to \"rescue\" long indels (up to 125bp) from soft-clipped reads that other callers might ignore.\n\n## Reference documentation\n- [VarDictJava Main Documentation](./references/github_com_AstraZeneca-NGS_VarDictJava.md)\n- [VarDictJava Wiki and Best Practices](./references/github_com_AstraZeneca-NGS_VarDictJava_wiki.md)",
+  "skill_front_matter": {
+    "name": "vardict-java",
+    "description": "VarDictJava identifies genomic variations including SNPs, MNPs, and structural variants directly from BAM files. Use when user asks to identify genomic variations, perform single-sample variant calling, perform paired/somatic variant calling, or call variants in specific genomic regions.",
+    "homepage": "https://github.com/AstraZeneca-NGS/VarDictJava"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genarise",
+  "category": "bioconductor",
+  "name": "bioconductor-genarise",
+  "description": "The genArise package provides a structured workflow for analyzing dual-channel microarray data to identify differentially expressed genes. Use when user asks to perform background correction, normalize intensity ratios, filter low-intensity spots, handle replicates, or calculate Z-scores for microarray data.",
+  "overview": "The `genArise` package provides a structured workflow for analyzing dual-channel microarray data. It transforms raw intensity measurements into normalized ratios to identify genes that are significantly differentially expressed. The package supports background correction, various normalization methods (global and grid-based), intensity filtering, and replicate handling.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/genArise.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genarise/overview",
+  "github": "N/A",
+  "conda_downloads": "25.5K",
+  "conda_downloads_num": 25500,
+  "last_updated": "2026-02-04",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "genArise"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/genArise.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genarise/overview",
+    "github": "N/A",
+    "conda_downloads": "25.5K",
+    "last_updated": "2026-02-04",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genarise\n\n## Overview\nThe `genArise` package provides a structured workflow for analyzing dual-channel microarray data. It transforms raw intensity measurements into normalized ratios to identify genes that are significantly differentially expressed. The package supports background correction, various normalization methods (global and grid-based), intensity filtering, and replicate handling.\n\n## Core Workflow\n\n### 1. Data Loading\nData is imported into a `Spot` object. You must specify the column indices for intensities and identifiers.\n\n```r\nlibrary(genArise)\n# Example: Cy3=1, Cy5=2, BgCy3=3, BgCy5=4, Ids=5\nmy.spot <- read.spot(file.name = \"data.txt\", cy3 = 1, cy5 = 2, \n                     bg.cy3 = 3, bg.cy5 = 4, ids = 5, \n                     header = FALSE, sep = \"\\t\")\n\n# To use the built-in example dataset\ndata(Simon)\n```\n\n### 2. Diagnostic Visualization\nBefore processing, visualize the raw data using image plots or scatter plots.\n\n```r\n# Image plot of log2 ratios (M values)\ndatos <- attr(Simon, \"spotData\")\nM <- log(datos$Cy3, 2) - log(datos$Cy5, 2)\nimageLimma(z = M, row = 23, column = 24, meta.row = 2, meta.column = 2)\n\n# Standard plots\nri.plot(Simon)   # R (log ratio) vs I (mean intensity)\nma.plot(Simon)   # M (log ratio) vs A (average intensity)\ncys.plot(Simon)  # log2(Cy3) vs log2(Cy5)\n```\n\n### 3. Preprocessing Transformations\nFollow this typical sequence to clean the data:\n\n*   **Background Correction**: Subtracts background from foreground intensities.\n    ```r\n    c.spot <- bg.correct(Simon)\n    ```\n*   **Normalization**: Choose between global or grid-specific loess normalization.\n    ```r\n    # Global\n    n.spot <- global.norm(c.spot)\n    # Grid-based (requires subgrid dimensions)\n    n.spot <- grid.norm(c.spot, nr = 23, nc = 24)\n    ```\n*   **Filtering**: Remove spots with intensities not significantly above background.\n    ```r\n    f.spot <- filter.spot(n.spot)\n    ```\n*   **Replicate Handling**: Consolidate duplicate spots.\n    ```r\n    u.spot <- spotUnique(f.spot)   # Geometric mean\n    u.spot <- alter.unique(f.spot) # Keeps extreme values\n    u.spot <- meanUnique(f.spot)  # Mean, filters if diff > 20%\n    ```\n\n### 4. Identifying Differential Expression\nUse the `Zscore` function to identify outliers in the distribution of log-ratios.\n\n```r\n# Calculate Z-scores (returns a DataSet object)\ns.dataset <- Zscore(u.spot, type = \"ri\") # or type = \"ma\"\n\n# Visualize results (color-coded by standard deviations)\nZscore.plot(s.dataset)\n```\n\n### 5. Functional Analysis (genMerge)\nPerform over-representation analysis on identified gene sets. This requires external association and description files.\n\n```r\n# Extract IDs for study\nstudy.ids <- unique(c(s.dataset$Id.up, s.dataset$Id.down))\nwrite.table(study.ids, \"study.genes\", row.names = FALSE, col.names = FALSE)\n\n# Run genMerge\ngenMerge(gene.association = \"assoc.txt\", \n         description = \"desc.txt\", \n         population.genes = \"all_ids.txt\", \n         study.genes = \"study.genes\", \n         output.file = \"Results.txt\")\n```\n\n## Tips and Best Practices\n*   **Object Classes**: Most functions require a `Spot` class object. `Zscore` converts a `Spot` object into a `DataSet` object.\n*   **Normalization Order**: If you eliminate spots (via filtering or unique handling) *before* normalization, you must use `global.norm` instead of `grid.norm`.\n*   **GUI**: For interactive analysis, call `genArise()`. Note that `post.analysis` (combinatorial analysis) is primarily designed for projects managed via the GUI.\n*   **Dye Swaps**: For dye-swapped experiments, use the GUI \"Swap Analysis\" or manually calculate cross-log-ratios $R = \\log_2(\\frac{Cy5_1 \\cdot Cy3_2}{Cy3_1 \\cdot Cy5_2})$.\n\n## Reference documentation\n- [The genArise Package](./references/genArise.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genarise",
+    "description": "The genArise package provides a structured workflow for analyzing dual-channel microarray data to identify differentially expressed genes. Use when user asks to perform background correction, normalize intensity ratios, filter low-intensity spots, handle replicates, or calculate Z-scores for microarray data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/genArise.html"
+  }
+}

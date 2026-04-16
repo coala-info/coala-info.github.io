@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-wavetiling",
+  "category": "bioconductor",
+  "name": "bioconductor-wavetiling",
+  "description": "bioconductor-wavetiling performs wavelet-based functional data analysis for transcriptome profiling using genomic tiling arrays. Use when user asks to identify transcriptionally active regions, detect differentially expressed regions, or fit wavelet-based models to tiling array data.",
+  "overview": "The `waveTiling` package provides a wavelet-based functional model for analyzing tiling array transcriptome data. It is designed to handle complex experimental designs (e.g., time-course, multiple groups) and identifies transcriptionally active regions (TARs) or differentially expressed regions (DERs) without relying on predefined gene annotations. It uses wavelet decomposition to model the expression signal across genomic positions, allowing for multi-resolution analysis.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/waveTiling.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "waveTiling"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/waveTiling.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-wavetiling\n\nname: bioconductor-wavetiling\ndescription: Wavelet-based transcriptome analysis for tiling arrays. Use this skill to perform functional data analysis on genomic tiling array data, including data preparation, model fitting using wavelets, inference for differential expression, and visualization of transcriptionally active regions.\n\n## Overview\n\nThe `waveTiling` package provides a wavelet-based functional model for analyzing tiling array transcriptome data. It is designed to handle complex experimental designs (e.g., time-course, multiple groups) and identifies transcriptionally active regions (TARs) or differentially expressed regions (DERs) without relying on predefined gene annotations. It uses wavelet decomposition to model the expression signal across genomic positions, allowing for multi-resolution analysis.\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be converted to a `WaveTilingFeatureSet` and annotated with phenotypic information.\n\n```R\nlibrary(waveTiling)\nlibrary(waveTilingData)\nlibrary(pd.atdschip.tiling) # Array-specific annotation\ndata(leafdev)\n\n# Convert and add group/replicate info\nleafdev <- as(leafdev, \"WaveTilingFeatureSet\")\nleafdev <- addPheno(leafdev, noGroups=6, \n                    groupNames=c(\"day8\",\"day9\",\"day10\",\"day11\",\"day12\",\"day13\"), \n                    replics=rep(3,6))\n```\n\n### 2. Filtering and Normalization\nFilter probes that map to multiple locations and perform background correction/normalization.\n\n```R\nlibrary(BSgenome.Athaliana.TAIR.TAIR9)\n# Filter redundant probes\nmapFilter <- filterOverlap(leafdev, remap=TRUE, BSgenomeObject=Athaliana, \n                           chrId=1:5, strand=\"both\", MM=FALSE)\n\n# Background correction and quantile normalization\nleafdevBQ <- bgCorrQn(leafdev, useMapFilter=mapFilter)\n```\n\n### 3. Model Fitting (`wfm.fit`)\nFit the wavelet-based functional model (WFM) chromosome-wise and strand-wise.\n\n```R\nleafdevFit <- wfm.fit(leafdevBQ, \n                      filter.overlap=mapFilter, \n                      design=\"time\", \n                      n.levels=10, \n                      chromosome=1, \n                      strand=\"forward\", \n                      minPos=22000000, \n                      maxPos=24000000)\n```\n- `design`: \"time\", \"group\", or \"custom\".\n- `n.levels`: Number of wavelet decomposition levels (usually 10).\n- `var.eps`: \"marg\" for marginal maximum likelihood estimation of variances.\n\n### 4. Statistical Inference (`wfm.inference`)\nIdentify significant regions based on thresholds (`delta`).\n\n```R\n# delta[1] is for mean transcript discovery, delta[2] for differential expression\ndelta <- log(1.2, 2)\nleafdevInf <- wfm.inference(leafdevFit, contrasts=\"compare\", delta=c(\"median\", delta))\n```\n- `contrasts`: \"compare\" (pairwise), \"effects\" (time effects), or \"means\".\n\n### 5. Result Extraction\nExtract genomic ranges for significant regions and map them to genes if a `TxDb` object is available.\n\n```R\n# Get IRanges of significant regions\nsigRegions <- getGenomicRegions(leafdevInf)\n\n# Get annotated genes\nlibrary(TxDb.Athaliana.BioMart.plantsmart22)\nsigGenes <- getSigGenes(fit=leafdevFit, inf=leafdevInf, \n                        biomartObj=TxDb.Athaliana.BioMart.plantsmart22)\n\n# Get non-annotated regions (potential novel transcripts)\nnonAnno <- getNonAnnotatedRegions(fit=leafdevFit, inf=leafdevInf, \n                                  biomartObj=TxDb.Athaliana.BioMart.plantsmart22)\n```\n\n## Visualization\nUse `plotWfm` to visualize expression data, fitted models, and significant regions alongside gene models.\n\n```R\nplotWfm(fit=leafdevFit, inf=leafdevInf, \n        biomartObj=TxDb.Athaliana.BioMart.plantsmart22,\n        minPos=startPos, maxPos=endPos, \n        two.strand=TRUE, plotData=TRUE)\n```\n\n## Tips and Best Practices\n- **Memory Management**: Tiling array data is large. Process data chromosome-by-chromosome or in specific genomic windows using `minPos` and `maxPos` in `wfm.fit`.\n- **Custom Designs**: For complex experiments, provide a custom design matrix to `wfm.fit(design=\"custom\", design.matrix=...)` and a contrast matrix to `wfm.inference`.\n- **Delta Selection**: The `delta` threshold is critical. Using `\"median\"` for the first element is a common heuristic for background filtering in transcript discovery.\n\n## Reference documentation\n- [The waveTiling package](./references/waveTiling-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-wavetiling",
+    "description": "bioconductor-wavetiling performs wavelet-based functional data analysis for transcriptome profiling using genomic tiling arrays. Use when user asks to identify transcriptionally active regions, detect differentially expressed regions, or fit wavelet-based models to tiling array data.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/waveTiling.html"
+  }
+}

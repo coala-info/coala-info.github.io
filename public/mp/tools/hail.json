@@ -1,0 +1,43 @@
+{
+  "id": "hail",
+  "category": "library",
+  "name": "hail",
+  "description": "Hail is a high-performance Python framework for the scalable analysis and exploration of massive genomic datasets. Use when user asks to ingest genomic data, perform quality control, annotate variants, or run statistical analyses like GWAS and PCA.",
+  "overview": "Hail is a high-performance, Python-based framework designed for the exploration and analysis of massive genomic datasets. It replaces traditional coordinate-based tables with a specialized `MatrixTable` structure that efficiently handles the multi-dimensional nature of genetic data (samples x variants). Use this skill to streamline data ingestion, perform rigorous quality control, annotate variants with external databases, and run statistical tests like linear regression or gene burden tests at ",
+  "homepage": "https://hail.is",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hail/overview",
+  "github": "https://github.com/hail-is/hail",
+  "conda_downloads": "14.3K",
+  "conda_downloads_num": 14300,
+  "last_updated": "2025-08-20",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hail"
+    ],
+    "description": "FAIL to generate CWL: hail not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/hail:0.2.61--py311h9948957_3",
+    "homepage": "https://hail.is",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hail/overview",
+    "github": "https://github.com/hail-is/hail",
+    "conda_downloads": "14.3K",
+    "last_updated": "2025-08-20",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hail\n\n## Overview\nHail is a high-performance, Python-based framework designed for the exploration and analysis of massive genomic datasets. It replaces traditional coordinate-based tables with a specialized `MatrixTable` structure that efficiently handles the multi-dimensional nature of genetic data (samples x variants). Use this skill to streamline data ingestion, perform rigorous quality control, annotate variants with external databases, and run statistical tests like linear regression or gene burden tests at biobank scale.\n\n## Core Concepts\n- **MatrixTable (mt)**: The primary data structure. It contains four field types: `globals`, `rows` (variant data), `cols` (sample data), and `entries` (genotypes/DP/GQ).\n- **Expressions**: Hail uses a declarative syntax. Operations on fields return expressions that are evaluated lazily across a cluster or local cores.\n- **Keys**: Rows are typically keyed by `locus` and `alleles`; columns are keyed by sample ID (`s`).\n\n## Common Workflows\n\n### 1. Data Ingestion\nImport standard genomic formats into Hail's native format for faster processing:\n```python\nimport hail as hl\nhl.init()\n\n# Import from various formats\nmt = hl.import_vcf('data/sample.vcf.bgz')\n# mt = hl.import_plink(bed='data/test.bed', bim='data/test.bim', fam='data/test.fam')\n# mt = hl.import_bgen('data/test.bgen', entry_fields=['GT', 'GP'], sample_file='data/test.sample')\n\n# Always write to .mt format for production performance\nmt.write('output/dataset.mt', overwrite=True)\nmt = hl.read_matrix_table('output/dataset.mt')\n```\n\n### 2. Quality Control (QC)\nGenerate metrics and filter data:\n```python\n# Sample and Variant QC\nmt = hl.sample_qc(mt)\nmt = hl.variant_qc(mt)\n\n# Filter samples: > 95% call rate\nmt = mt.filter_cols(mt.sample_qc.call_rate >= 0.95)\n\n# Filter variants: > 1% MAF and > 95% call rate\nmt = mt.filter_rows((mt.variant_qc.AF[1] > 0.01) & (mt.variant_qc.call_rate > 0.95))\n\n# Sex Check\nimputed_sex = hl.impute_sex(mt.GT)\nmt = mt.annotate_cols(sex_check = imputed_sex[mt.s])\n```\n\n### 3. Annotation and Manipulation\nAdd metadata to rows or columns:\n```python\n# Annotate rows with a separate table\nann_table = hl.read_table('annotations.ht')\nmt = mt.annotate_rows(info = ann_table[mt.locus, mt.alleles])\n\n# Update entry fields (e.g., set low GQ genotypes to missing)\nmt = mt.annotate_entries(GT = hl.or_missing(mt.GQ >= 20, mt.GT))\n```\n\n### 4. Statistical Analysis (GWAS)\nRun association tests with covariates:\n```python\n# PCA for population structure\neigenvalues, pcs, _ = hl.hwe_normalized_pca(mt.GT, k=5)\nmt = mt.annotate_cols(pca = pcs[mt.s])\n\n# Linear Regression\ngwas = hl.linear_regression_rows(\n    y=mt.pheno.height, \n    x=mt.GT.n_alt_alleles(),\n    covariates=[1.0, mt.pheno.age, mt.pca.scores[0], mt.pca.scores[1]]\n)\n\n# Visualization\np = hl.plot.manhattan(gwas.p_value)\n```\n\n## Expert Tips\n- **Lazy Evaluation**: Hail doesn't compute results until you call an action like `count()`, `show()`, `collect()`, or `write()`.\n- **Avoid .entries()**: Converting a MatrixTable to a coordinate-form Table via `mt.entries()` is extremely memory-intensive. Use `annotate_rows` or `aggregate_rows` instead.\n- **Storage**: Use `gs://` or `s3://` paths directly if working in the cloud; Hail handles the localization.\n- **Memory**: Ensure Java 11 JRE is installed, as Hail runs on a Spark backend.\n\n## Reference documentation\n- [Hail Overview MatrixTable](./references/hail_is_docs_0.2_overview_matrix_table.html.md)\n- [Hail Tutorial](./references/hail_is_tutorial.html.md)\n- [Hail Getting Started](./references/hail_is_docs_0.2_getting_started.html.md)",
+  "skill_front_matter": {
+    "name": "hail",
+    "description": "Hail is a high-performance Python framework for the scalable analysis and exploration of massive genomic datasets. Use when user asks to ingest genomic data, perform quality control, annotate variants, or run statistical analyses like GWAS and PCA.",
+    "homepage": "https://hail.is"
+  }
+}

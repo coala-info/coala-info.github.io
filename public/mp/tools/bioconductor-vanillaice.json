@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-vanillaice",
+  "category": "bioconductor",
+  "name": "bioconductor-vanillaice",
+  "description": "This tool identifies chromosomal alterations and copy number variants from high-throughput SNP array data using Hidden Markov Models. Use when user asks to detect deletions, duplications, or loss of heterozygosity from B allele frequencies and Log R Ratios.",
+  "overview": "VanillaICE (Variant Analysis of Illumina and Affymetrix Copy number Estimates) implements a 6-state Hidden Markov Model to infer germline copy number alterations. It is designed to scale to large datasets by using disk-backed storage (via `ArrayViews`) and provides integrated workflows for data preprocessed by the `crlmm` package or raw text exports from software like GenomeStudio.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/VanillaICE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "VanillaICE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/VanillaICE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-vanillaice\n\nname: bioconductor-vanillaice\ndescription: Identify chromosomal alterations and copy number variants (CNVs) from high-throughput SNP array data using Hidden Markov Models (HMM). Use this skill when analyzing B allele frequencies (BAF) and Log R Ratios (LRR) from Illumina or Affymetrix platforms to detect deletions, duplications, and loss of heterozygosity.\n\n## Overview\nVanillaICE (Variant Analysis of Illumina and Affymetrix Copy number Estimates) implements a 6-state Hidden Markov Model to infer germline copy number alterations. It is designed to scale to large datasets by using disk-backed storage (via `ArrayViews`) and provides integrated workflows for data preprocessed by the `crlmm` package or raw text exports from software like GenomeStudio.\n\n## Core Workflow\n\n### 1. Data Organization\nThe package requires marker-level annotation (genomic coordinates) and sample-level summaries (LRR and BAF).\n\n```r\nlibrary(VanillaICE)\nlibrary(GenomicRanges)\n\n# Create marker annotation\n# isSnp is a logical vector indicating polymorphic markers\nfgr <- SnpGRanges(GRanges(seqnames=chr, ranges=IRanges(pos, width=1)), isSnp=isSnp)\nnames(fgr) <- marker_names\n\n# Setup ArrayViews for disk-backed processing\nviews <- ArrayViews(rowRanges=fgr, sourcePaths=files, parsedPath=tempdir())\n```\n\n### 2. Parsing Raw Summaries\nIf starting from text files (e.g., GenomeStudio Final Reports), use `CopyNumScanParams` to define the file structure.\n\n```r\nscan_params <- CopyNumScanParams(\n  index_genome = match(names(fgr), dat[[\"SNP Name\"]]),\n  cnvar = \"Log R Ratio\",\n  bafvar = \"B Allele Freq\",\n  gtvar = c(\"Allele1 - AB\", \"Allele2 - AB\")\n)\n\n# Parse files to internal .rds format\nparseSourceFile(views, scan_params)\n```\n\n### 3. Creating a SnpExperiment\nConvert the views or existing `crlmm` objects into a `SnpArrayExperiment` for HMM fitting.\n\n```r\n# From ArrayViews\nsnp_exp <- SnpExperiment(views)\n\n# From crlmm CNSet\n# library(crlmm)\n# snp_exp <- as(cnSet, \"SnpArrayExperiment\")\n```\n\n### 4. Fitting the HMM\nThe `hmm2` function performs the inference. You can customize emission and transition parameters.\n\n```r\n# Define parameters (optional)\nparam <- EmissionParam(temper = 0.5) # Adjusting sensitivity\n\n# Fit the model\nfit <- hmm2(snp_exp, param)\n```\n\n### 5. Filtering and Inspection\nThe HMM results are returned as an `HMMList`. Use `unlist()` to get a `GRanges` object of all segments.\n\n```r\n# Define filters\nfilter_param <- FilterParam(\n  min.posterior = 0.99,\n  min.markers = 10,\n  state = c(\"1\", \"2\", \"5\", \"6\") # Deletions and Duplications\n)\n\n# Apply filter\ncnvs <- cnvFilter(fit, filter_param)\n\n# Merge adjacent segments of the same state\ncnvs_reduced <- reduce(cnvs, min.gapwidth = 500e3)\n```\n\n## Visualization\nUse `xyplotList` to generate Trellis graphics showing LRR and BAF alongside HMM calls.\n\n```r\ntrellis_param <- HmmTrellisParam()\nfigList <- xyplotList(split(cnvs, cnvs$id), snp_exp, trellis_param)\n# Display first segment for first sample\nprint(figList[[1]][[1]])\n```\n\n## Tips\n- **Parallelization**: `hmm2` supports parallel execution via the `foreach` package. Register a parallel backend (like `doParallel` or `doSNOW`) before running the HMM.\n- **Memory Management**: For large cohorts, use the `ArrayViews` infrastructure to avoid loading all LRR/BAF data into RAM simultaneously.\n- **Wave Correction**: If genomic waves are present (GC bias), consider using the `ArrayTV` package on the LRR values before HMM fitting.\n\n## Reference documentation\n- [VanillaICE](./references/VanillaICE.md)\n- [crlmmDownstream](./references/crlmmDownstream.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-vanillaice",
+    "description": "This tool identifies chromosomal alterations and copy number variants from high-throughput SNP array data using Hidden Markov Models. Use when user asks to detect deletions, duplications, or loss of heterozygosity from B allele frequencies and Log R Ratios.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/VanillaICE.html"
+  }
+}

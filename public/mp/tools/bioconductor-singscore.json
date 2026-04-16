@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-singscore",
+  "category": "bioconductor",
+  "name": "bioconductor-singscore",
+  "description": "Bioconductor-singscore calculates rank-based gene-set enrichment scores for individual transcriptomic samples without requiring cohort-based normalization. Use when user asks to perform N-of-1 gene signature analysis, score bidirectional gene sets, estimate empirical p-values via permutation testing, or visualize rank densities and score landscapes.",
+  "overview": "The `singscore` package implements a rank-based method to score individual samples against gene signatures. Unlike methods that require a cohort for normalization (e.g., GSVA), `singscore` treats each sample independently, making it suitable for N-of-1 analysis and clinical applications. It supports bidirectional signatures (up- and down-regulated gene sets) and provides a \"stingscore\" variant for data with limited gene measurements using stable genes for calibration.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/singscore.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/DavisLaboratory/singscore",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "singscore"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/singscore.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/DavisLaboratory/singscore",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-singscore\n\nname: bioconductor-singscore\ndescription: Perform single-sample gene-set scoring using rank-based statistics. Use this skill to calculate enrichment scores for individual transcriptomic samples, handle up- and down-regulated gene signature pairs, estimate empirical p-values via permutation tests, and visualize score landscapes or rank densities.\n\n## Overview\n\nThe `singscore` package implements a rank-based method to score individual samples against gene signatures. Unlike methods that require a cohort for normalization (e.g., GSVA), `singscore` treats each sample independently, making it suitable for N-of-1 analysis and clinical applications. It supports bidirectional signatures (up- and down-regulated gene sets) and provides a \"stingscore\" variant for data with limited gene measurements using stable genes for calibration.\n\n## Core Workflow\n\n### 1. Prepare Gene Sets\nUse the `GSEABase` package to manage gene sets. `singscore` functions typically expect `GeneSet` objects.\n\n```r\nlibrary(singscore)\nlibrary(GSEABase)\n\n# Create GeneSet objects from vectors of gene symbols or IDs\nup_gs <- GeneSet(up_vector, setName = \"UpRegulated\")\ndn_gs <- GeneSet(dn_vector, setName = \"DownRegulated\")\n```\n\n### 2. Rank Genes\nRank the expression data for each sample. This is a prerequisite for scoring.\n\n```r\n# rankData is a matrix of ranks\nrankData <- rankGenes(expression_matrix) \n# Use tiesMethod = 'min' (default) for standard ranking\n```\n\n### 3. Calculate Scores\nUse `simpleScore` to compute the enrichment scores.\n\n```r\n# For a bidirectional signature\nscoredf <- simpleScore(rankData, upSet = up_gs, downSet = dn_gs)\n\n# For a single gene set (unidirectional)\nscoredf <- simpleScore(rankData, upSet = up_gs)\n\n# If the direction of the gene set is unknown\nscoredf <- simpleScore(rankData, upSet = up_gs, knownDirection = FALSE)\n```\nThe resulting data frame contains `TotalScore`, `UpScore`, `DownScore`, and dispersion metrics.\n\n## Advanced Workflows\n\n### Stingscore (Reduced Measurements)\nWhen working with small gene panels instead of whole-transcriptome data, use stable genes to estimate ranks.\n\n```r\n# Get stable genes for specific contexts\nstable_genes <- getStableGenes(n = 5, type = 'carcinoma')\n\n# Rank using the stable genes as anchors\nrankData_st <- rankGenes(small_expression_matrix, stableGenes = stable_genes)\n\n# Score as usual\nscoredf_st <- simpleScore(rankData_st, upSet = up_gs, downSet = dn_gs)\n```\n\n### Permutation Testing for P-values\nTo determine if a score is statistically significant compared to a random gene set of the same size:\n\n```r\n# 1. Generate null distribution (B = number of permutations)\npermuteResult <- generateNull(upSet = up_gs, downSet = dn_gs, rankData = rankData, B = 1000, seed = 1)\n\n# 2. Calculate p-values\npvals <- getPvals(permuteResult, scoredf)\n```\n\n## Visualization\n\n### Rank Density Plot\nVisualize where the signature genes fall within the transcriptome of a specific sample.\n```r\nplotRankDensity(rankData[, \"SampleName\", drop = FALSE], upSet = up_gs, downSet = dn_gs)\n```\n\n### Score Landscape\nCompare two different scores (e.g., Epithelial vs. Mesenchymal) across a cohort.\n```r\n# Basic landscape\nplotScoreLandscape(scoredf_1, scoredf_2, scorenames = c('Signature1', 'Signature2'))\n\n# Project new samples onto an existing landscape\nprojectScoreLandscape(plotObj = existing_plot, scoredf_1_new, scoredf_2_new)\n```\n\n### Dispersion Plot\nCheck the relationship between scores and their dispersion (MAD).\n```r\nplotDispersion(scoredf, annot = sample_metadata_vector)\n```\n\n## Tips for Success\n- **Gene IDs**: Ensure the gene IDs in your `GeneSet` match the row names of your expression matrix (e.g., Entrez IDs vs. Symbols).\n- **Data Scale**: `singscore` is rank-based; while it works on most scales, it is typically applied to normalized data (TPM, RPKM, or log-transformed counts).\n- **Parallelization**: `generateNull` supports parallel processing via the `ncores` argument or `BiocParallel` parameters.\n- **Interpretation**: A `TotalScore` near 0 indicates no enrichment. Positive scores indicate enrichment in the direction of the signature.\n\n## Reference documentation\n- [singscore](./references/singscore.Rmd)\n- [singscore](./references/singscore.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-singscore",
+    "description": "Bioconductor-singscore calculates rank-based gene-set enrichment scores for individual transcriptomic samples without requiring cohort-based normalization. Use when user asks to perform N-of-1 gene signature analysis, score bidirectional gene sets, estimate empirical p-values via permutation testing, or visualize rank densities and score landscapes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/singscore.html"
+  }
+}

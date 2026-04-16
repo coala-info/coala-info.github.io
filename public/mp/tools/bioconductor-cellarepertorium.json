@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cellarepertorium",
+  "category": "bioconductor",
+  "name": "bioconductor-cellarepertorium",
+  "description": "CellaRepertorium provides a framework for managing and analyzing single-cell immune repertoire data by organizing contigs, cells, and clusters into a structured object. Use when user asks to cluster CDR3 sequences, analyze TCR/BCR pairing, or perform statistical testing for clonal expansion and differential usage.",
+  "overview": "The `CellaRepertorium` package provides a specialized framework for handling single-cell immune repertoire data. It organizes data into a `ContigCellDB` object, which maintains relationships between three levels of information: **contigs** (individual sequence reads), **cells** (barcoded units), and **clusters** (clonotypes or sequence-similarity groups). This structure allows for robust analysis of TCR/BCR pairing, sequence clustering using CD-HIT, and statistical testing for clonal expansion o",
+  "homepage": "https://bioconductor.org/packages/3.12/bioc/html/CellaRepertorium.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellarepertorium/overview",
+  "github": "https://github.com/amcdavid/CellaRepertorium",
+  "conda_downloads": "15.1K",
+  "conda_downloads_num": 15100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CellaRepertorium"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.12/bioc/html/CellaRepertorium.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellarepertorium/overview",
+    "github": "https://github.com/amcdavid/CellaRepertorium",
+    "conda_downloads": "15.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cellarepertorium\n\n## Overview\n\nThe `CellaRepertorium` package provides a specialized framework for handling single-cell immune repertoire data. It organizes data into a `ContigCellDB` object, which maintains relationships between three levels of information: **contigs** (individual sequence reads), **cells** (barcoded units), and **clusters** (clonotypes or sequence-similarity groups). This structure allows for robust analysis of TCR/BCR pairing, sequence clustering using CD-HIT, and statistical testing for clonal expansion or differential usage.\n\n## Core Workflow\n\n### 1. Data Loading and Initialization\n\nThe package is designed to work seamlessly with 10X Genomics Cellranger VDJ output (`all_contig_annotations.csv`).\n\n```r\nlibrary(CellaRepertorium)\n\n# Load 10X data\ncdb = ContigCellDB_10XVDJ(contigs_qc, \n                          contig_pk = c('barcode', 'pop', 'sample', 'contig_id'), \n                          cell_pk = c('barcode', 'pop', 'sample'))\n\n# Basic filtering\ncdb = filter_cdb(cdb, high_confidence, full_length, productive == 'True')\n```\n\n### 2. Sequence Clustering\n\nUse `cdhit_ccdb` to group CDR3 sequences by similarity. This is a wrapper for the CD-HIT algorithm.\n\n```r\n# Cluster Amino Acid sequences at 80% identity\naa80 = cdhit_ccdb(cdb, sequence_key = 'cdr3', type = 'AA', cluster_pk = 'aa80', \n                  identity = 0.8, min_length = 5)\n\n# Calculate internal distances and medoids\naa80 = fine_clustering(aa80, sequence_key = 'cdr3', type = 'AA')\n\n# Visualize cluster sizes\ncluster_plot(aa80)\n```\n\n### 3. Canonicalization and Manipulation\n\nTo perform cell-level analysis, you must often choose a \"representative\" contig for each cell or cluster.\n\n```r\n# Choose a representative CDR3 for each cluster\naa80 = canonicalize_cluster(aa80, representative = 'cdr3', \n                            contig_fields = c('v_gene', 'j_gene', 'chain'))\n\n# Choose a representative contig for each cell (e.g., the dominant TRA/TRB)\ncell_representative = canonicalize_cell(aa80, chain == 'TRB')\n```\n\n### 4. Pairing Analysis\n\nAnalyze the pairing of alpha/beta or heavy/light chains.\n\n```r\n# Enumerate pairing types (paired, single, etc.)\npairing_summary = enumerate_pairing(cdb, chain_recode_fun = 'guess')\n\n# Generate pairing tables for expanded clones\npairing_list = pairing_tables(aa80, table_order = 2, min_expansion = 3)\n\n# Plot pairing heatmap\npairs_plt = ggplot(pairing_list$cell_tbl, aes(x = cluster_idx.1_fct, y = cluster_idx.2_fct)) + \n  geom_jitter()\n```\n\n### 5. Statistical Testing\n\nTest for differential abundance of clusters across groups using logistic regression or permutation tests.\n\n```r\n# Logistic regression for differential usage\ntest_results = cluster_test_by(aa80, fields = 'chain', \n                               formula = ~ pop + (1|sample))\n\n# Permutation test for clonal properties\nperm_test = cluster_permute_test(aa80, cell_covariate_keys = 'pop', \n                                 cell_label_key = 'aa80', \n                                 statistic = my_stat_function)\n```\n\n### 6. Multimodal Integration\n\nIntegrate repertoire data into `SingleCellExperiment` objects for joint analysis with gene expression.\n\n```r\nlibrary(SingleCellExperiment)\n# Join repertoire to SCE colData\nccdb_integrated = ccdb_join(sce, ccdb)\n\n# Add repertoire features to SCE metadata\ncolData(sce)$tcr_pairing = enumerate_pairing(ccdb_integrated)\n```\n\n## Tips and Best Practices\n\n- **Primary Keys**: Always ensure `contig_pk` and `cell_pk` correctly identify unique rows. For multi-sample projects, include `sample` or `dataset` in the keys.\n- **Filtering**: Perform QC (e.g., `guess_celltype`) before clustering to remove debris or non-T/B cell contigs.\n- **Memory**: `fine_clustering` calculates distance matrices; for very large datasets, filter to expanded clones or use `cluster_whitelist` to save memory.\n- **Visualization**: Use `map_axis_labels` to improve the readability of pairing plots by replacing cluster IDs with gene names or CDR3 sequences.\n\n## Reference documentation\n\n- [Clustering and differential usage of repertoire CDR3 sequences](./references/cdr3_clustering.md)\n- [An Introduction to CellaRepertorium](./references/cr-overview.md)\n- [Quality control and Exploration of UMI-based repertoire data](./references/mouse_tcell_qc.md)\n- [Combining Repertoire with Expression with SingleCellExperiment](./references/repertoire_and_expression.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cellarepertorium",
+    "description": "CellaRepertorium provides a framework for managing and analyzing single-cell immune repertoire data by organizing contigs, cells, and clusters into a structured object. Use when user asks to cluster CDR3 sequences, analyze TCR/BCR pairing, or perform statistical testing for clonal expansion and differential usage.",
+    "homepage": "https://bioconductor.org/packages/3.12/bioc/html/CellaRepertorium.html"
+  }
+}

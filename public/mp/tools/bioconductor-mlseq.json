@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mlseq",
+  "category": "bioconductor",
+  "name": "bioconductor-mlseq",
+  "description": "This tool performs supervised classification and machine learning analysis on raw RNA-Seq count data using a variety of discrete and continuous classifiers. Use when user asks to perform RNA-Seq data classification, train machine learning models on sequencing counts, normalize or transform gene expression data for classification, and predict class labels for test samples.",
+  "overview": "MLSeq provides a unified interface for applying machine learning algorithms to RNA-Seq count data. It bridges the gap between discrete sequencing counts and traditional microarray-based classifiers by providing specialized normalization (DESeq, TMM) and transformation (vst, rlog, log-cpm, voom) methods. It supports both discrete-based classifiers (Poisson LDA, Negative Binomial LDA) and continuous classifiers via the `caret` ecosystem.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MLSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MLSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MLSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mlseq\n\nname: bioconductor-mlseq\ndescription: Machine learning interface for RNA-Seq data classification using the MLSeq Bioconductor package. Use this skill to perform supervised classification on raw RNA-Seq count data, including data preprocessing (normalization/transformation), model training with 90+ classifiers (SVM, Random Forest, PLDA, NBLDA, voom-based methods), parameter optimization via cross-validation, and predicting class labels for test samples.\n\n## Overview\n\nMLSeq provides a unified interface for applying machine learning algorithms to RNA-Seq count data. It bridges the gap between discrete sequencing counts and traditional microarray-based classifiers by providing specialized normalization (DESeq, TMM) and transformation (vst, rlog, log-cpm, voom) methods. It supports both discrete-based classifiers (Poisson LDA, Negative Binomial LDA) and continuous classifiers via the `caret` ecosystem.\n\n## Core Workflow\n\n### 1. Data Preparation\nMLSeq requires input data as a `DESeqDataSet` object. Ensure counts are raw integers.\n\n```R\nlibrary(MLSeq)\nlibrary(DESeq2)\n\n# Create DESeqDataSet\n# countData: matrix of raw counts (rows=genes, cols=samples)\n# colData: DataFrame with class labels (factors)\ndds <- DESeqDataSetFromMatrix(countData = counts, \n                              colData = sample_info, \n                              design = ~ condition)\n\n# Split into training and test sets\nnTest <- ceiling(ncol(dds) * 0.3)\nind <- sample(ncol(dds), nTest)\ndata.trainS4 <- dds[, -ind]\ndata.testS4 <- dds[, ind]\n```\n\n### 2. Model Building (`classify`)\nThe `classify` function is the primary interface for training models.\n\n*   **Continuous Classifiers:** Require `preProcessing` (e.g., \"svmRadial\", \"rf\", \"pam\").\n*   **Discrete Classifiers:** Use `normalize` (e.g., \"PLDA\", \"NBLDA\").\n*   **Voom-based Classifiers:** Specialized for RNA-Seq (e.g., \"voomNSC\", \"voomDLDA\").\n\n```R\n# Example: SVM with rlog transformation\nctrl <- trainControl(method = \"repeatedcv\", number = 5, repeats = 2)\nfit <- classify(data = data.trainS4, \n                method = \"svmRadial\", \n                preProcessing = \"deseq-rlog\", \n                ref = \"Tumor\", \n                control = ctrl)\n\n# Example: Voom-based Nearest Shrunken Centroids (Sparse)\nv_ctrl <- voomControl(tuneLength = 20)\nfit_voom <- classify(data = data.trainS4, \n                     method = \"voomNSC\", \n                     normalize = \"deseq\", \n                     control = v_ctrl)\n```\n\n### 3. Control Functions\nSelect the correct control function based on the classifier type:\n*   `trainControl()`: For most continuous/caret-based models.\n*   `discreteControl()`: For \"PLDA\", \"PLDA2\", and \"NBLDA\".\n*   `voomControl()`: For \"voomDLDA\", \"voomDQDA\", and \"voomNSC\".\n\n### 4. Prediction and Evaluation\nUse the `predict` function on the trained MLSeq object. The test data must also be a `DESeqDataSet`.\n\n```R\n# Predict class labels\npred <- predict(fit, data.testS4)\n\n# Evaluate performance\nlibrary(caret)\nconfusionMatrix(table(Predicted = pred, Actual = data.testS4$condition))\n```\n\n### 5. Feature Selection\nFor sparse classifiers (\"voomNSC\", \"pam\", \"PLDA\"), extract the most predictive biomarkers:\n\n```R\nselectedGenes(fit_voom)\n```\n\n## Key Functions and Parameters\n\n*   **`availableMethods()`**: Lists all 90+ supported classification algorithms.\n*   **`preProcessing`**: Options include `\"deseq-vst\"`, `\"deseq-rlog\"`, `\"deseq-logcpm\"`, and `\"tmm-logcpm\"`.\n*   **`update()`**: If you modify an MLSeq object (e.g., changing the method via `method(fit) <- \"rf\"`), you must call `fit <- update(fit)` to re-run the analysis.\n*   **`trained()`**: Accesses the underlying trained model object and cross-validation results.\n\n## Tips for Success\n*   **Reference Class**: Always define the `ref` argument in `classify` to specify which factor level is the \"positive\" or \"target\" class.\n*   **Data Scaling**: Do not manually normalize or transform data before passing it to `classify`; the function handles this internally to ensure the test set is scaled using training set parameters (preventing data leakage).\n*   **Sparsity**: If the goal is biomarker discovery, prefer `voomNSC` or `pam` (NSC) as they perform internal feature selection.\n\n## Reference documentation\n- [MLSeq: Machine Learning Interface to RNA-Seq](./references/MLSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mlseq",
+    "description": "This tool performs supervised classification and machine learning analysis on raw RNA-Seq count data using a variety of discrete and continuous classifiers. Use when user asks to perform RNA-Seq data classification, train machine learning models on sequencing counts, normalize or transform gene expression data for classification, and predict class labels for test samples.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MLSeq.html"
+  }
+}

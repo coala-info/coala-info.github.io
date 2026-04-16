@@ -1,0 +1,49 @@
+{
+  "id": "htseq",
+  "category": "CLI",
+  "name": "htseq",
+  "description": "HTSeq is a Python-based framework used to quantify gene expression by counting aligned high-throughput sequencing reads that overlap with genomic features. Use when user asks to count reads in a BAM or SAM file, quantify gene expression from RNA-Seq data, or perform quality assessment on sequencing files.",
+  "overview": "HTSeq is a powerful Python-based framework designed for the analysis of high-throughput sequencing data. Its primary utility lies in the `htseq-count` script, which serves as a standard tool for quantifying gene expression by counting how many aligned reads overlap with specific genomic features (like exons or genes). Beyond simple counting, HTSeq provides a comprehensive Python API for developers to build custom bioinformatic pipelines, offering specialized classes for handling genomic interval",
+  "homepage": "https://github.com/htseq/htseq",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/htseq/overview",
+  "github": "https://github.com/htseq/htseq",
+  "conda_downloads": "792.1K",
+  "conda_downloads_num": 792100,
+  "last_updated": "2026-02-06",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "htseq_htseq-count",
+      "htseq_htseq-qa",
+      "htseq_htseq-count-barcodes"
+    ],
+    "description": "This script takes one or more alignment files in SAM/BAM format and a feature file in GFF format and calculates for each feature the number of reads mapping to it.",
+    "docker_image": "quay.io/biocontainers/htseq:2.1.2--py311hb6b0eea_0",
+    "homepage": "https://github.com/htseq/htseq",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/htseq/overview",
+    "github": "https://github.com/htseq/htseq",
+    "conda_downloads": "792.1K",
+    "last_updated": "2026-02-06",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "htseq_htseq-count-barcodes.cwl",
+    "htseq_htseq-count.cwl",
+    "htseq_htseq-qa.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# htseq\n\n## Overview\n\nHTSeq is a powerful Python-based framework designed for the analysis of high-throughput sequencing data. Its primary utility lies in the `htseq-count` script, which serves as a standard tool for quantifying gene expression by counting how many aligned reads overlap with specific genomic features (like exons or genes). Beyond simple counting, HTSeq provides a comprehensive Python API for developers to build custom bioinformatic pipelines, offering specialized classes for handling genomic intervals, read alignments, and feature metadata.\n\n## Command Line Usage Patterns\n\n### htseq-count: Quantifying Gene Expression\nThe most common use case is counting reads in a BAM file that overlap with features in a GTF file.\n\n**Basic usage:**\n```bash\nhtseq-count -f bam -r name -s no -t exon -i gene_id aligned_reads.bam features.gtf > counts.txt\n```\n\n**Key Parameters:**\n- `-f | --format`: Specify input format (`bam`, `sam`).\n- `-r | --order`: Sorting order of the alignment file (`name` or `pos`). For paired-end data, `name` is strongly recommended to ensure mates are processed together efficiently.\n- `-s | --stranded`: Whether the data is stranded (`yes`, `no`, or `reverse`). Use `reverse` for most modern Illumina TruSeq \"stranded\" protocols.\n- `-t | --type`: The feature type (3rd column in GTF) to count (default: `exon`).\n- `-i | --idattr`: The attribute in the GTF info column to use as the feature ID (default: `gene_id`).\n- `-m | --mode`: Overlap resolution mode (`union`, `intersection-strict`, `intersection-nonempty`). `union` is the standard for most RNA-Seq workflows.\n\n### htseq-count-barcodes: Single-Cell and UMI Counting\nUsed for single-cell RNA-Seq where cell barcodes and UMIs are present.\n\n```bash\nhtseq-count-barcodes -f bam -r name -s yes --cell-barcode-tag CB --umi-tag UB aligned_reads.bam features.gtf > counts.tsv\n```\n\n### htseq-qa: Quality Assessment\nGenerates a quick quality report from a FASTQ or SAM/BAM file.\n\n```bash\nhtseq-qa -f bam aligned_reads.bam\n```\n\n## Expert Tips and Best Practices\n\n### 1. Sorting Requirements\nWhile `htseq-count` can handle position-sorted files, it is significantly more memory-efficient to use **name-sorted** files for paired-end data. If your BAM is position-sorted, you can re-sort it using samtools:\n```bash\nsamtools sort -n -o name_sorted.bam position_sorted.bam\n```\n\n### 2. Handling Multiple Feature Types\nIf you need to count reads across multiple feature types (e.g., both `exon` and `transcript`), you can provide multiple types:\n```bash\nhtseq-count --type=exon --type=transcript aligned.bam features.gtf\n```\n\n### 3. Performance Optimization\nFor large datasets, use the `-n` or `--nprocesses` flag to enable multiprocessing:\n```bash\nhtseq-count -n 8 aligned.bam features.gtf\n```\n\n### 4. Understanding Overlap Modes\n- **union**: A read is counted if it overlaps any part of a feature. If it overlaps multiple features, it is marked as `__ambiguous`.\n- **intersection-strict**: A read is counted only if it is entirely contained within the feature boundaries.\n- **intersection-nonempty**: A read is counted if its overlap with one feature is unique, even if it partially overlaps others.\n\n## Python API Snippet\nFor custom analysis, use the HTSeq library directly:\n\n```python\nimport HTSeq\n\n# Iterate through a BAM file\nbam_reader = HTSeq.BAM_Reader(\"aligned.bam\")\nfor alignment in bam_reader:\n    if alignment.aligned:\n        print(f\"Read {alignment.read.name} aligned to {alignment.iv.chrom}:{alignment.iv.start}\")\n\n# Parse a GTF file\ngtf_features = HTSeq.GFF_Reader(\"features.gtf\")\nfor feature in gtf_features:\n    print(f\"Feature {feature.name} at {feature.iv}\")\n```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| htseq-count | This script takes one or more alignment files in SAM/BAM format and a feature file in GFF format and calculates for each feature the number of reads mapping to it. |\n| htseq-count-barcodes | This script takes one alignment file in SAM/BAM format and a feature file in GFF format and calculates for each feature the number of reads mapping to it, accounting for barcodes. |\n| htseq-qa | This script takes a file with high-throughput sequencing reads and performs a simple quality assessment by producing plots showing the distribution of called bases and base-call quality scores by position within the reads. The plots are output as a PDF file. |\n\n## Reference documentation\n- [htseq-count: counting reads within features](./references/htseq_readthedocs_io_en_latest_htseqcount.html.md)\n- [htseq-count-barcodes: counting reads with cell barcodes and UMIs](./references/htseq_readthedocs_io_en_latest_htseqcount_with_barcodes.html.md)\n- [Read alignments API](./references/htseq_readthedocs_io_en_latest_alignments.html.md)\n- [Quality Assessment with htseq-qa](./references/htseq_readthedocs_io_en_latest_qa.html.md)",
+  "skill_front_matter": {
+    "name": "htseq",
+    "description": "HTSeq is a Python-based framework used to quantify gene expression by counting aligned high-throughput sequencing reads that overlap with genomic features. Use when user asks to count reads in a BAM or SAM file, quantify gene expression from RNA-Seq data, or perform quality assessment on sequencing files.",
+    "homepage": "https://github.com/htseq/htseq"
+  }
+}

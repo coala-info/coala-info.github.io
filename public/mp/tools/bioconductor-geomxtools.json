@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-geomxtools",
+  "category": "bioconductor",
+  "name": "bioconductor-geomxtools",
+  "description": "GeomxTools provides specialized tools for the analysis, quality control, and normalization of NanoString GeoMx Digital Spatial Profiling data. Use when user asks to load DCC and PKC files, perform segment or probe-level quality control, normalize spatial RNA or protein data, or convert GeoMx objects to Seurat and SpatialExperiment formats.",
+  "overview": "GeomxTools is a Bioconductor package designed for the analysis of NanoString GeoMx Digital Spatial Profiling (DSP) data. It centers around the `NanoStringGeoMxSet` class, which extends the `ExpressionSet` to handle spatial multi-omics data (RNA and Protein). The package provides specialized workflows for data ingestion, segment and probe-level quality control, background subtraction, and normalization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GeomxTools.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geomxtools/overview",
+  "github": "N/A",
+  "conda_downloads": "11.2K",
+  "conda_downloads_num": 11200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GeomxTools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GeomxTools.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geomxtools/overview",
+    "github": "N/A",
+    "conda_downloads": "11.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-geomxtools\n\n## Overview\n\nGeomxTools is a Bioconductor package designed for the analysis of NanoString GeoMx Digital Spatial Profiling (DSP) data. It centers around the `NanoStringGeoMxSet` class, which extends the `ExpressionSet` to handle spatial multi-omics data (RNA and Protein). The package provides specialized workflows for data ingestion, segment and probe-level quality control, background subtraction, and normalization.\n\n## Core Workflow\n\n### 1. Data Ingestion\nLoad DCC (count files), PKC (panel config), and annotation files into a `NanoStringGeoMxSet`.\n\n```r\nlibrary(GeomxTools)\n\n# Define paths to files\ndcc_files <- dir(datadir, pattern=\".dcc$\", full.names=TRUE)\npkc_files <- unzip(zipfile = file.path(datadir, \"pkcs.zip\"))\nannotation_file <- \"annotations.xlsx\"\n\n# Read data (default analyte is \"RNA\")\ndemoData <- readNanoStringGeoMxSet(\n    dccFiles = dcc_files,\n    pkcFiles = pkc_files,\n    phenoDataFile = annotation_file,\n    phenoDataSheet = \"Sheet1\",\n    phenoDataDccColName = \"Sample_ID\",\n    protocolDataColNames = c(\"aoi\", \"cell_line\", \"region\")\n)\n```\n\n### 2. Quality Control (QC)\nQC is performed at both the segment (sample) and probe/target (feature) levels.\n\n```r\n# 1. Shift 0 counts to 1 for log transformations\ndemoData <- shiftCountsOne(demoData, useDALogic=TRUE)\n\n# 2. Segment QC (Flags low saturation, low reads, etc.)\ndemoData <- setSegmentQCFlags(demoData, qcCutoffs = list(percentSaturation = 45))\n\n# 3. Probe QC (Flags outliers and low probe ratios)\ndemoData <- setBioProbeQCFlags(demoData)\n\n# 4. Filter object\npassedQC <- demoData[!fData(demoData)$QCFlags$LowProbeRatio, \n                     !pData(protocolData(demoData))$QCFlags$LowSaturation]\n```\n\n### 3. Data Aggregation and Normalization\nFor RNA, counts must be aggregated from probe-level to target-level before normalization.\n\n```r\n# Aggregate probes to targets\ntarget_data <- aggregateCounts(passedQC)\n\n# Normalization options: \"quant\" (Quantile), \"neg\" (Negative), \"hk\" (Housekeeping)\ntarget_data <- normalize(target_data, norm_method=\"quant\", \n                         desiredQuantile = 0.75, toElt = \"q_norm\")\n```\n\n### 4. Protein-Specific Analysis\nProtein data is typically aggregated upon read-in. Use `iggNames()` and `hkNames()` to identify controls.\n\n```r\n# Identify controls\nigg_names <- iggNames(proteinData)\nhk_names <- hkNames(proteinData)\n\n# Visualize signal vs background\nfig <- qcProteinSignal(proteinData, neg.names = igg_names)\nfig()\n\n# Normalization (Background/Negative is common for protein)\nproteinData <- normalize(proteinData, norm_method=\"neg\", toElt = \"neg_norm\")\n```\n\n### 5. Object Coercion\nTo use Seurat or SpatialExperiment workflows, objects must be at the **Target** level and **Normalized**.\n\n```r\n# To Seurat\ndemoSeurat <- as.Seurat(target_data, normData = \"q_norm\", ident = \"cell_line\")\n\n# To SpatialExperiment (include coordinates for spatial plotting)\ndemoSPE <- as.SpatialExperiment(target_data, normData = \"q_norm\", \n                                 coordinates = c(\"x\", \"y\"))\n```\n\n## Key Functions Reference\n- `readNanoStringGeoMxSet()`: Constructor for the data object.\n- `sData()`: Accesses combined phenoData and protocolData.\n- `featureType()`: Returns \"Probe\" or \"Target\".\n- `munge()`: Converts the object to a long-format data frame for ggplot2.\n- `esBy()`: Applies functions across groups (e.g., calculating mean per cell line).\n\n## Reference documentation\n- [Developer Introduction to the NanoStringGeoMxSet](./references/Developer_Introduction_to_the_NanoStringGeoMxSet.md)\n- [GeoMxSet Coercions](./references/GeomxSet_coercions.md)\n- [Protein in GeomxTools](./references/Protein_in_GeomxTools.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-geomxtools",
+    "description": "GeomxTools provides specialized tools for the analysis, quality control, and normalization of NanoString GeoMx Digital Spatial Profiling data. Use when user asks to load DCC and PKC files, perform segment or probe-level quality control, normalize spatial RNA or protein data, or convert GeoMx objects to Seurat and SpatialExperiment formats.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GeomxTools.html"
+  }
+}

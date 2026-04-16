@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-maskbad",
+  "category": "bioconductor",
+  "name": "bioconductor-maskbad",
+  "description": "This tool identifies and masks Affymetrix probes with binding affinity differences between sample groups to reduce bias in differential expression analysis. Use when user asks to identify BAD probes, mask probes in AffyBatch objects, or account for sequence divergence in cross-species and cross-strain Affymetrix array studies.",
+  "overview": "The `maskBAD` package detects probes that exhibit different binding affinities between two groups of samples. These \"BAD\" probes can introduce false positives or mask real differences in gene expression. The package provides a workflow to score probes based on pairwise correlations within probe sets, evaluate cutoffs using external sequence data or statistical tests, and generate \"masked\" AffyBatch objects for downstream analysis with `rma` or `gcrma`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/maskBAD.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maskBAD"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maskBAD.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-maskbad\n\nname: bioconductor-maskbad\ndescription: Identify and remove Affymetrix probes with Binding Affinity Differences (BAD) between sample groups. Use this skill when analyzing Affymetrix 3' IVT or whole transcript (exon/gene) arrays where SNPs, transcript isoforms, or cross-hybridization might bias differential expression analysis, particularly in cross-species or cross-strain comparisons.\n\n# bioconductor-maskbad\n\n## Overview\n\nThe `maskBAD` package detects probes that exhibit different binding affinities between two groups of samples. These \"BAD\" probes can introduce false positives or mask real differences in gene expression. The package provides a workflow to score probes based on pairwise correlations within probe sets, evaluate cutoffs using external sequence data or statistical tests, and generate \"masked\" AffyBatch objects for downstream analysis with `rma` or `gcrma`.\n\n## Core Workflow\n\n### 1. Identification of BAD Probes\n\nThe primary function `mask()` scores probes based on their signal correlation relative to other probes in the same set across two groups.\n\n```R\nlibrary(maskBAD)\n# ind: numeric vector defining groups (e.g., 1 for Group A, 2 for Group B)\n# useExpr: if TRUE, uses mas5calls to filter for expressed genes (3' IVT only)\nexmask <- mask(myAffyBatch, ind = rep(1:2, each = 10), useExpr = TRUE)\n\n# Access quality scores\nhead(exmask$probes)\n```\n\n### 2. Choosing a Cutoff\n\nA cutoff must be selected to determine which probes to discard.\n\n*   **Quantile-based:** If sequence divergence is known (e.g., 1%), use that percentage as a guide.\n*   **Manual Inspection:** Use `plotProbe()` to visualize signal intensity of a specific probe against its probe set.\n*   **External Validation:** If you have sequence data (SNP locations), use `overlapExprExtMasks()` to compare the expression-based mask against known sequence differences.\n\n```R\n# Plotting a specific probe to inspect binding behavior\nplotProbe(affy = myAffyBatch, \n          probeset = \"1000_at\", \n          probeXY = \"399_559\", \n          ind = rep(1:2, each = 10), \n          exmask = exmask$probes)\n```\n\n### 3. Masking and Expression Estimation\n\nOnce a cutoff is chosen, create a new AffyBatch and a modified CDF environment.\n\n```R\n# Create masked AffyBatch\ncutoff_val <- 0.029\nmasked_data <- prepareMaskedAffybatch(affy = myAffyBatch, \n                                      exmask = exmask$probes, \n                                      cutoff = cutoff_val)\n\n# Extract the new AffyBatch and CDF\nnew_affybatch <- masked_data[[1]]\nnew_cdf <- masked_data[[2]]\n\n# IMPORTANT: The new CDF must be in the global environment for rma/gcrma\nassign(cdfName(new_affybatch), new_cdf)\n\n# Estimate expression using RMA\neset <- rma(new_affybatch)\n```\n\n## Working with GCRMA\n\nIf using `gcrma`, you must also mask the probe affinities.\n\n```R\nlibrary(gcrma)\n# Compute affinities using standard CDF\naffinities <- compute.affinities(\"hgu95av2\")\n\n# Mask the affinities\nmasked_affinities <- prepareMaskedAffybatch(affy = affinities, \n                                            exmask = exmask$probes, \n                                            cdfName = \"MaskedAffinitiesCdf\")\n\n# Calculate expression\neset_gcrma <- gcrma(new_affybatch, masked_affinities)\n```\n\n## Special Cases: Exon and Gene Arrays\n\nFor Exon or Gene arrays, the workflow changes slightly:\n*   Set `useExpr = FALSE` in `mask()` because these arrays lack MM probes required for `mas5calls`.\n*   Use the `exprlist` parameter to process a subset of probe sets to reduce computation time on large arrays.\n\n## Reference documentation\n\n- [maskBAD Vignette](./references/maskBAD.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-maskbad",
+    "description": "This tool identifies and masks Affymetrix probes with binding affinity differences between sample groups to reduce bias in differential expression analysis. Use when user asks to identify BAD probes, mask probes in AffyBatch objects, or account for sequence divergence in cross-species and cross-strain Affymetrix array studies.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maskBAD.html"
+  }
+}

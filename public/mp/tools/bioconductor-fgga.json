@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fgga",
+  "category": "bioconductor",
+  "name": "bioconductor-fgga",
+  "description": "This package implements a hierarchical ensemble method using factor graphs to predict Gene Ontology annotations while ensuring consistency with the Gene Ontology directed acyclic graph structure. Use when user asks to perform hierarchical gene ontology annotation, train SVM classifiers for GO terms, or reconcile flat predictions using message-passing algorithms.",
+  "overview": "The `fgga` package implements a hierarchical ensemble method for Gene Ontology (GO) annotation. It uses Factor Graphs (FG) to model the logical relationships (True Path Rule) and statistical constraints of GO terms. The workflow involves training base binary SVM classifiers for individual GO terms and then using a message-passing algorithm to reconcile these \"flat\" predictions into consistent marginal probabilities that respect the GO DAG structure.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/fgga.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fgga/overview",
+  "github": "https://github.com/fspetale/fgga",
+  "conda_downloads": "10.6K",
+  "conda_downloads_num": 10600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fgga"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fgga.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fgga/overview",
+    "github": "https://github.com/fspetale/fgga",
+    "conda_downloads": "10.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fgga\n\n## Overview\n\nThe `fgga` package implements a hierarchical ensemble method for Gene Ontology (GO) annotation. It uses Factor Graphs (FG) to model the logical relationships (True Path Rule) and statistical constraints of GO terms. The workflow involves training base binary SVM classifiers for individual GO terms and then using a message-passing algorithm to reconcile these \"flat\" predictions into consistent marginal probabilities that respect the GO DAG structure.\n\n## Typical Workflow\n\n### 1. Data Preparation\nInput data should consist of characterized gene product sequences (e.g., physico-chemical properties, motifs).\n```r\nlibrary(fgga)\ndata(CfData)\n\n# dxCf: Characterized data matrix (features)\n# tableCfGO: Binary annotation matrix (1 if annotated, 0 otherwise)\n# nodesGO: Character vector of GO terms\n```\n\n### 2. GO Subgraph Building\nBuild a GO-DAG for a specific subdomain (BP, MF, or CC) or a combined \"GO-Plus\" graph.\n```r\nlibrary(GO.db)\nlibrary(GOstats)\n\n# For a single subdomain (e.g., MF)\nmygraph <- GOGraph(CfData$nodesGO, GOMFPARENTS)\nmygraph <- subGraph(CfData$nodesGO, mygraph)\nmygraph <- t(as(mygraph, \"matrix\"))\nmygraphGO <- as(mygraph, \"graphNEL\")\n\n# For multiple subdomains or automated linking\nmygraphGO <- preCoreFG(CfData$nodesGO, domains = \"GOMF\")\n```\n\n### 3. Model Training\nMap the GO-DAG to a Factor Graph and train the base SVM classifiers.\n```r\n# Convert graph to bipartite Factor Graph structure\nmodelFGGA <- fgga2bipartite(mygraphGO)\n\n# Train SVMs for each GO term\nidsTrain <- CfData$indexGO[[\"indexTrain\"]][1:750]\nmodelSVMs <- lapply(CfData[[\"nodesGO\"]], FUN = svmTrain,\n                    tableOntoTerms = CfData[[\"tableCfGO\"]][idsTrain, ],\n                    dxCharacterized = CfData[[\"dxCf\"]][idsTrain, ],\n                    graphOnto = mygraphGO, kernelSVM = \"radial\")\n\n# Calculate reliability (variance) for each GO term\nrootGO <- leaves(mygraphGO, \"in\")\nvarianceGOs <- varianceOnto(tableOntoTerms = CfData[[\"tableCfGO\"]][idsTrain, ],\n                            dxCharacterized = CfData[[\"dxCf\"]][idsTrain, ],\n                            kFold = 5, graphOnto = mygraphGO, \n                            rootNode = rootGO, kernelSVM = \"radial\")\n```\n\n### 4. Prediction and Message Passing\nGenerate raw predictions and then apply the message-passing algorithm to ensure hierarchical consistency.\n```r\n# Flat prediction (SVM scores)\ndxTest <- CfData[[\"dxCf\"]][CfData$indexGO[[\"indexTest\"]][1:50], ]\nmatrixGOTest <- svmOnto(svmMoldel = modelSVMs,\n                        dxCharacterized = dxTest,\n                        rootNode = rootGO,\n                        varianceSVM = varianceGOs)\n\n# Hierarchical refinement via Message Passing\nmatrixFGGATest <- t(apply(matrixGOTest, MARGIN = 1, FUN = msgFGGA,\n                          matrixFGGA = modelFGGA, graphOnto = mygraphGO,\n                          tmax = 50, epsilon = 0.001))\n```\n\n### 5. Performance Evaluation\nEvaluate results using hierarchical metrics (Precision, Recall, F-score) or standard AUC.\n```r\n# Hierarchical measures\nperf <- fHierarchicalMeasures(CfData$tableCfGO[rownames(matrixFGGATest), ],\n                              matrixFGGATest, mygraphGO)\n# perf$HP (Precision), perf$HR (Recall), perf$HF (F-score)\n```\n\n## Key Functions\n- `preCoreFG`: Builds a graph respecting GO constraints across subdomains.\n- `fgga2bipartite`: Converts a GO-DAG into the factor graph format required for inference.\n- `svmTrain` / `svmOnto`: Wrapper functions for training and applying base SVM classifiers.\n- `msgFGGA`: The core iterative message-passing algorithm to compute marginal probabilities.\n- `fHierarchicalMeasures`: Calculates metrics specifically designed for hierarchical classification.\n\n## Tips\n- **Annotation Density**: Ensure at least 50 annotations per GO term for reliable SVM training.\n- **Normalization**: Use normalized numerical values for sequence characterization to improve SVM efficiency.\n- **Root Nodes**: Always identify the root nodes of your subgraph (using `leaves(graph, \"in\")`) as they are required for the prediction functions.\n\n## Reference documentation\n- [FGGA: Factor Graph GO Annotation](./references/fgga.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fgga",
+    "description": "This package implements a hierarchical ensemble method using factor graphs to predict Gene Ontology annotations while ensuring consistency with the Gene Ontology directed acyclic graph structure. Use when user asks to perform hierarchical gene ontology annotation, train SVM classifiers for GO terms, or reconcile flat predictions using message-passing algorithms.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/fgga.html"
+  }
+}

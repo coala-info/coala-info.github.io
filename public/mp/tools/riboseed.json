@@ -1,0 +1,51 @@
+{
+  "id": "riboseed",
+  "category": "CLI",
+  "name": "riboseed",
+  "description": "riboSeed is a bioinformatics pipeline that uses reference-based subassemblies to resolve identical ribosomal RNA operons in bacterial genome assemblies. Use when user asks to improve bacterial genome assembly, resolve rDNA repeats, or perform iterative subassemblies using a reference genome.",
+  "overview": "riboSeed is a bioinformatics pipeline designed to address the \"repeat problem\" in bacterial genome assembly. Since most prokaryotes have multiple nearly identical copies of the 16S, 23S, and 5S rRNA genes, short reads cannot be uniquely mapped to a specific operon. riboSeed overcomes this by using the unique flanking sequences of each rDNA region from a closely related reference genome to \"seed\" independent subassemblies. This process allows for the reconstruction of specific ribosomal regions, ",
+  "homepage": "https://github.com/nickp60/riboSeed",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/riboseed/overview",
+  "github": "https://github.com/nickp60/riboSeed",
+  "conda_downloads": "63.0K",
+  "conda_downloads_num": 63000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "riboseed_ribo run",
+      "riboseed_ribo score",
+      "riboseed_ribo sketch",
+      "riboseed_ribo snag"
+    ],
+    "description": "Run the riboSeed pipeline of scan, select, and seed, plus any additional stages. Uses a config file to wrangle all the args not available via these commandline args. This can either be run by providing (as minimum) a reference, some reads, and an output directory; or, if you have a completed config file, you can run it with just that.",
+    "docker_image": "quay.io/biocontainers/riboseed:0.4.90--py_0",
+    "homepage": "https://github.com/nickp60/riboSeed",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/riboseed/overview",
+    "github": "https://github.com/nickp60/riboSeed",
+    "conda_downloads": "63.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "riboseed_ribo run.cwl",
+    "riboseed_ribo score.cwl",
+    "riboseed_ribo sketch.cwl",
+    "riboseed_ribo snag.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# riboseed\n\n## Overview\nriboSeed is a bioinformatics pipeline designed to address the \"repeat problem\" in bacterial genome assembly. Since most prokaryotes have multiple nearly identical copies of the 16S, 23S, and 5S rRNA genes, short reads cannot be uniquely mapped to a specific operon. riboSeed overcomes this by using the unique flanking sequences of each rDNA region from a closely related reference genome to \"seed\" independent subassemblies. This process allows for the reconstruction of specific ribosomal regions, which are then used to improve the final global assembly.\n\n## Core Workflow\nThe most efficient way to use the tool is through the `ribo run` orchestrator, which executes the submodules in the correct sequence.\n\n### 1. Reference Selection\nBefore running the pipeline, ensure you have a high-quality reference genome.\n- Use a reference that is closely related to your isolate (ideally >95% ANI).\n- If multiple references are available, tools like `PlentyOfBugs` can help identify the best candidate.\n\n### 2. Standard Execution\nRun the complete pipeline using the `ribo run` command:\n```bash\nribo run -r reference.fasta -F reads_F.fq -R reads_R.fq -o output_dir/\n```\n\n### 3. Key Submodules\nIf you need to run steps manually or troubleshoot, use the individual submodules:\n- `ribo scan`: Annotates rRNAs in the reference genome (uses barrnap).\n- `ribo select`: Identifies and clusters rDNA operons based on proximity.\n- `ribo seed`: Performs the iterative subassembly using a subassembler like SPAdes or SKESA.\n- `ribo score`: Evaluates the quality of the resulting assembly.\n- `ribo snag`: Extracts and visualizes the rDNA regions for manual inspection.\n\n## Expert Tips and Best Practices\n- **Memory Management**: Genome assembly is RAM-intensive. If working on a machine with limited memory (e.g., 4GB), use the `--serialize` flag to run subassemblies in series rather than in parallel.\n- **Subassembler Choice**: While SPAdes is the default, SKESA is supported and may be faster or more robust for certain datasets. Use `-v skesa` to switch.\n- **Handling Linear Genomes**: If your reference is linear rather than circular, ensure you use the `--linear` flag to prevent the tool from attempting to bridge the start and end of the sequence.\n- **Coverage Filtering**: Use the `--min_cov_depth` option (default is 5x) to reject pseudocontigs with poor coverage during iterations, preventing low-quality sequences from being incorporated into the final assembly.\n- **Iterative Refinement**: The `-i` flag controls the number of subassembly iterations. Increasing this can sometimes improve results for divergent references, though it increases computation time.\n\n## Common CLI Patterns\n**Running with Single-End Reads:**\n```bash\nribo run -r ref.fasta -S1 single_reads.fq -o output_dir/\n```\n\n**Specifying rRNA types:**\nIf you only want to target specific subunits (e.g., 16S and 23S):\n```bash\nribo run -r ref.fasta -F R1.fq -R R2.fq -S 16S:23S -o output_dir/\n```\n\n**Testing the Installation:**\nUse the `try` command to run a small toy dataset to ensure all dependencies (BLAST+, BWA, SAMtools, SPAdes) are correctly configured:\n```bash\nribo try\n```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| ribo run | Run the riboSeed pipeline of scan, select, and seed, plus any additional stages. Uses a config file to wrangle all the args not available via these commandline args. This can either be run by providing (as minimum) a reference, some reads, and an output directory; or, if you have a completed config file, you can run it with just that. |\n| ribo score | This does some simple blasting to detect correctness of riboSeed results |\n| ribo sketch | Pretty up the plots generated by mauve contig mover |\n| ribo snag | Use to extract regions of interest based on supplied Locus tags and evaluate the extracted regions |\n\n## Reference documentation\n- [riboSeed GitHub README](./references/github_com_nickp60_riboSeed_blob_master_README.md)\n- [riboSeed Change Log](./references/github_com_nickp60_riboSeed_blob_master_CHANGESLOG.md)\n- [riboSeed Quickstart](./references/github_com_nickp60_riboSeed_blob_master_quickstart.md)",
+  "skill_front_matter": {
+    "name": "riboseed",
+    "description": "riboSeed is a bioinformatics pipeline that uses reference-based subassemblies to resolve identical ribosomal RNA operons in bacterial genome assemblies. Use when user asks to improve bacterial genome assembly, resolve rDNA repeats, or perform iterative subassemblies using a reference genome.",
+    "homepage": "https://github.com/nickp60/riboSeed"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-camutqc",
+  "category": "bioconductor",
+  "name": "bioconductor-camutqc",
+  "description": "CaMutQC performs integrative quality control and filtration of cancer somatic mutations by converting VEP-annotated VCF files into MAF format. Use when user asks to convert VCF to MAF, filter technical artifacts, select high-confidence driver mutations, or calculate tumor mutational burden.",
+  "overview": "CaMutQC is a Bioconductor package designed for the integrative quality control and filtration of cancer somatic mutations. It transforms VEP-annotated VCF files into Mutation Annotation Format (MAF) data frames and provides a suite of functions to eliminate false positives and select high-confidence driver mutations. The package supports common technical filters, cancer-type-specific strategies, and reference-based filtration from published studies.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CaMutQC.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-camutqc/overview",
+  "github": "https://github.com/likelet/CaMutQC",
+  "conda_downloads": "443",
+  "conda_downloads_num": 443,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CaMutQC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CaMutQC.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-camutqc/overview",
+    "github": "https://github.com/likelet/CaMutQC",
+    "conda_downloads": "443",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-camutqc\n\n## Overview\n\nCaMutQC is a Bioconductor package designed for the integrative quality control and filtration of cancer somatic mutations. It transforms VEP-annotated VCF files into Mutation Annotation Format (MAF) data frames and provides a suite of functions to eliminate false positives and select high-confidence driver mutations. The package supports common technical filters, cancer-type-specific strategies, and reference-based filtration from published studies.\n\n## Core Workflow\n\n### 1. Data Input and Conversion\nThe primary input is a VEP-annotated VCF file. CaMutQC converts these to MAF data frames, which are used for all subsequent filtering.\n\n```r\nlibrary(CaMutQC)\n\n# Convert single VCF to MAF\nmaf_data <- vcfToMAF(system.file(\"extdata\", \"sample.vep.vcf\", package=\"CaMutQC\"))\n\n# Convert multiple VCFs (multi-caller or multi-sample) from a directory\nvcf_path <- system.file(\"extdata/Multi-caller\", package=\"CaMutQC\")\nmulti_maf <- vcfToMAF(vcf_path, multiVCF = TRUE)\n```\n\n### 2. Technical Artifact Filtration\nUse `mutFilterTech` or individual sub-functions to flag artifacts. Variants that fail a filter are labeled with specific flags in the `CaTag` column (starting from '0').\n\n*   **`mutFilterQual` (Flag: Q):** Filters by depth (DP), allele depth (AD), and VAF. Supports panels: \"Customized\", \"WES\", \"MSKCC\".\n*   **`mutFilterSB` (Flag: S):** Detects strand bias using SOR (default) or Fisher Strand Test.\n*   **`mutFilterAdj` (Flag: A):** Filters SNVs near indels (misalignment artifacts).\n*   **`mutFilterNormalDP` (Flag: N):** Filters based on normal sample sequencing depth.\n*   **`mutFilterPON` (Flag: P):** Filters variants found in a Panel of Normals.\n\n```r\n# Apply technical filters\nmaf_tech <- mutFilterTech(maf_data, panel = \"WES\", PONfile = \"path/to/pon.txt\")\ntable(maf_tech$CaTag)\n```\n\n### 3. Candidate Variant Selection\nUse `mutSelection` to isolate mutations likely involved in tumorigenesis.\n\n*   **`mutFilterDB` (Flag: D):** Filters common germline variants (ExAC, 1000G, gnomAD) while preserving COSMIC variants.\n*   **`mutFilterType` (Flag: T):** Filters by classification (e.g., keeping only 'nonsynonymous' or 'exonic').\n*   **`mutFilterReg` (Flag: R):** Restricts analysis to specific genomic regions (BED file).\n\n```r\n# Select candidate variants\nmaf_selec <- mutSelection(maf_data, keepType = 'nonsynonymous', dbVAF = 0.01)\n```\n\n### 4. Integrated and Customized Filtration\nThe `mutFilterCom` function combines technical and selection filters into one step and can generate a detailed HTML report.\n\n```r\n# Comprehensive filtration\nfinal_maf <- mutFilterCom(maf_data, panel = \"WES\", report = TRUE, TMB = TRUE)\n\n# Cancer-type specific (e.g., LAML, BRCA, COADREAD)\nmaf_laml <- mutFilterCan(maf_data, cancerType = 'LAML')\n\n# Reference-based (matching specific published study criteria)\nmaf_ref <- mutFilterRef(maf_data, reference = \"Zhu_et_al-Nat_Commun-2020-KIRP\")\n```\n\n### 5. Tumor Mutational Burden (TMB)\nCalculate TMB (mutations/Mb) using various assay standards.\n\n```r\n# Calculate TMB using MSK-IMPACT or WES standards\ntmb_val <- calTMB(maf_data, assay = 'WES')\n# Or customized BED\ntmb_custom <- calTMB(maf_data, assay = 'Customized', bedFile = \"target_regions.rds\")\n```\n\n### 6. Multi-Caller Union Strategy\nTo improve sensitivity and reduce single-caller bias, filter outputs from multiple callers (e.g., MuTect2, VarScan2, MuSE) and take their union.\n\n```r\n# Combine filtered MAFs from different callers\nmaf_list <- list(maf_mutect2_f, maf_muse_f, maf_varscan2_f)\nunion_maf <- processMut(maf_list, processMethod = \"union\")\n```\n\n## Interpretation of Results\n*   **CaTag Column:** A value of `0` indicates the variant passed all applied filters. Any other string (e.g., `0QS`) indicates the specific filters failed (Q = Quality, S = Strand Bias).\n*   **Filter Report:** If `report = TRUE` in `mutFilterCom`, an HTML file is generated providing summary statistics and visualization of the filtering process.\n\n## Reference documentation\n- [CaMutQC: Cancer Somatic Mutation Quality Control](./references/CaMutQC-manual.md)\n- [CaMutQC Manual (RMarkdown Source)](./references/CaMutQC-manual.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-camutqc",
+    "description": "CaMutQC performs integrative quality control and filtration of cancer somatic mutations by converting VEP-annotated VCF files into MAF format. Use when user asks to convert VCF to MAF, filter technical artifacts, select high-confidence driver mutations, or calculate tumor mutational burden.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CaMutQC.html"
+  }
+}

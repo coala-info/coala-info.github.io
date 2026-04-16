@@ -1,0 +1,47 @@
+{
+  "id": "rdrpcatch",
+  "category": "CLI",
+  "name": "rdrpcatch",
+  "description": "RdRpCATCH is a bioinformatic pipeline designed to discover and characterize RNA viruses by searching sequences against multiple profile Hidden Markov Model databases. Use when user asks to identify divergent viral sequences, scan metatranscriptomic data for RdRp signatures, or perform taxonomic assignment of viral hits.",
+  "overview": "RdRpCATCH (RNA-dependent RNA polymerase Collaborative Analysis Tool with Collections of pHMMs) is a specialized bioinformatic pipeline designed for the discovery and characterization of RNA viruses. It streamlines the process of searching sequences against an aggregate of major public pHMM databases (such as NeoRdRp, RVMT, and RdRp-Scan).",
+  "homepage": "https://github.com/dimitris-karapliafis/RdRpCATCH",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/rdrpcatch/overview",
+  "github": "https://github.com/dimitris-karapliafis/RdRpCATCH",
+  "conda_downloads": "2.0K",
+  "conda_downloads_num": 2000,
+  "last_updated": "2026-02-16",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rdrpcatch_databases",
+      "rdrpcatch_scan"
+    ],
+    "description": "Download & update RdRpCATCH databases. If databases are already installed in the specified directory, it will check for updates and download the latest version if available.",
+    "docker_image": "quay.io/biocontainers/rdrpcatch:1.0.1.post1--pyhdfd78af_0",
+    "homepage": "https://github.com/dimitris-karapliafis/RdRpCATCH",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/rdrpcatch/overview",
+    "github": "https://github.com/dimitris-karapliafis/RdRpCATCH",
+    "conda_downloads": "2.0K",
+    "last_updated": "2026-02-16",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "rdrpcatch_databases.cwl",
+    "rdrpcatch_scan.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# rdrpcatch\n\n## Overview\n\nRdRpCATCH (RNA-dependent RNA polymerase Collaborative Analysis Tool with Collections of pHMMs) is a specialized bioinformatic pipeline designed for the discovery and characterization of RNA viruses. It streamlines the process of searching sequences against an aggregate of major public pHMM databases (such as NeoRdRp, RVMT, and RdRp-Scan). \n\nThe tool is particularly useful for researchers working with metatranscriptomic data who need to identify highly divergent viral sequences that might be missed by standard BLAST searches. It provides a unified output containing the best hits across all databases, taxonomic assignments via MMseqs2, and profile coverage information.\n\n## Installation and Setup\n\nRdRpCATCH is available via Bioconda. It requires Python 3.12+ and external dependencies `mmseqs2` and `seqkit`.\n\n```bash\n# Recommended installation via Conda\nconda create -n rdrpcatch -c bioconda rdrpcatch\nconda activate rdrpcatch\n```\n\n### Database Initialization\nBefore scanning, you must download the pre-compiled pHMM and taxonomy databases. These are approximately 3GB.\n\n```bash\nrdrpcatch databases --destination-dir path/to/db_folder\n```\n*Note: If you encounter sporadic SSL errors during download, re-initiating the command usually resolves the issue.*\n\n## Core CLI Usage\n\n### Basic Scanning\nThe `scan` command is the primary entry point for analysis. It accepts both nucleotide (nt) and amino acid (aa) sequences in multi-FASTA format.\n\n```bash\nrdrpcatch scan -i input.fasta -o output_dir -db-dir path/to/db_folder\n```\n\n### Database Selection\nBy default, RdRpCATCH searches all supported databases. You can limit the search to specific collections using `--db-options`.\n\n**Supported Database Keys:**\n- `NeoRdRp` / `NeoRdRp2`\n- `RVMT`\n- `RdRp-Scan`\n- `Olendraite_fam` / `Olendraite_gen`\n- `LucaProt_HMM`\n- `Zayed_HMM`\n\n```bash\n# Example: Search only NeoRdRp2 and RVMT\nrdrpcatch scan -i input.fasta -o out -db-dir db/ --db-options NeoRdRp2 RVMT\n```\n\n### Working with Custom Databases\nYou can integrate your own pHMMs into the workflow.\n\n1. **Add the database:**\n   ```bash\n   rdrpcatch databases --add-custom-db path/to/my_models.hmm --db-name MyCustomDB\n   ```\n2. **Search only custom models:**\n   ```bash\n   rdrpcatch scan -i input.fasta -o out -db-dir db/ --db-options none --custom-dbs MyCustomDB\n   ```\n\n## Expert Tips and Best Practices\n\n### Sensitivity and Thresholds\n- **Default HMMER Params:** Use the `--default-hmmsearch-params` flag to override tool-specific heuristics and use standard HMMER thresholds (E=10.0, domE=10.0). This is useful for maximum sensitivity when looking for extremely divergent viruses.\n- **Z-Value:** Use `--zvalue` to manually set the search space size for E-value calculations if you are comparing results across different dataset sizes.\n\n### Output Optimization\n- **Extended Output:** Always use the `--extended-output` flag if you plan to perform downstream statistical filtering, as it preserves additional HMM score columns that are otherwise truncated.\n- **Taxonomy:** If you have a specific local taxonomy database, use `--alt-mmseqs-tax-db` to point to a custom MMseqs2-formatted database instead of the default RefSeq Riboviria set.\n\n### Performance\n- RdRpCATCH uses `pyHMMER`, which is significantly faster than standard HMMER3. However, for very large metatranscriptomes, ensure you have sufficient RAM (at least 8GB-16GB) to load the larger pHMM collections like NeoRdRp2.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| rdrpcatch databases | Download & update RdRpCATCH databases. If databases are already installed in the specified directory, it will check for updates and download the latest version if available. |\n| rdrpcatch_scan | Scan sequences for RdRps. |\n\n## Reference documentation\n- [RdRpCATCH README](./references/github_com_dimitris-karapliafis_RdRpCATCH_blob_main_README.md)\n- [Bioconda Package Metadata](./references/github_com_dimitris-karapliafis_RdRpCATCH_blob_main_meta.yaml.md)",
+  "skill_front_matter": {
+    "name": "rdrpcatch",
+    "description": "RdRpCATCH is a bioinformatic pipeline designed to discover and characterize RNA viruses by searching sequences against multiple profile Hidden Markov Model databases. Use when user asks to identify divergent viral sequences, scan metatranscriptomic data for RdRp signatures, or perform taxonomic assignment of viral hits.",
+    "homepage": "https://github.com/dimitris-karapliafis/RdRpCATCH"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "id": "pandora",
+  "category": "CLI",
+  "name": "pandora",
+  "description": "Pandora performs nucleotide-resolution bacterial pangenomics by mapping reads to a pangenome reference graph to identify loci and call variants. Use when user asks to index a pangenome reference graph, map long or short reads to a graph, compare multiple samples to generate a pangenome matrix, or discover novel variants.",
+  "overview": "Pandora is a specialized bioinformatics tool designed for nucleotide-resolution bacterial pangenomics. Unlike traditional mappers that align reads to a single linear reference, Pandora uses a Pangenome Reference Graph (PanRG)—a collection of local graphs representing orthologous regions (genes, intergenic regions, etc.). This approach mitigates reference bias and allows for more accurate genotyping in highly diverse bacterial populations.",
+  "homepage": "https://github.com/rmcolq/pandora",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pandora/overview",
+  "github": "https://github.com/rmcolq/pandora",
+  "conda_downloads": "4.6K",
+  "conda_downloads_num": 4600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pandora_index",
+      "pandora_map",
+      "pandora_compare",
+      "pandora_discover",
+      "pandora_walk",
+      "pandora_seq2path",
+      "pandora_get_vcf_ref",
+      "pandora_random",
+      "pandora_merge_index"
+    ],
+    "description": "Index population reference graph (PRG) sequences.",
+    "docker_image": "quay.io/biocontainers/pandora:0.9.2--h4ac6f70_0",
+    "homepage": "https://github.com/rmcolq/pandora",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pandora/overview",
+    "github": "https://github.com/rmcolq/pandora",
+    "conda_downloads": "4.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pandora_compare.cwl",
+    "pandora_discover.cwl",
+    "pandora_get_vcf_ref.cwl",
+    "pandora_index.cwl",
+    "pandora_map.cwl",
+    "pandora_merge_index.cwl",
+    "pandora_random.cwl",
+    "pandora_seq2path.cwl",
+    "pandora_walk.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pandora\n\n## Overview\n\nPandora is a specialized bioinformatics tool designed for nucleotide-resolution bacterial pangenomics. Unlike traditional mappers that align reads to a single linear reference, Pandora uses a Pangenome Reference Graph (PanRG)—a collection of local graphs representing orthologous regions (genes, intergenic regions, etc.). This approach mitigates reference bias and allows for more accurate genotyping in highly diverse bacterial populations.\n\n## Core Workflows\n\n### 1. Indexing the PanRG\nBefore mapping, you must index the PanRG file (typically a fasta-like file containing graph markers).\n```bash\npandora index -t <threads> <panrg.fa>\n```\n*Note: This generates a `.zip` index and a directory of GFA files in the same location as the input.*\n\n### 2. Single Sample Analysis (map)\nUse `map` to identify which loci are present and infer their sequences.\n```bash\n# For Nanopore reads\npandora map <panidx.zip> <reads.fq.gz>\n\n# For Illumina reads (genotyping enabled)\npandora map --genotype --illumina <panidx.zip> <reads.fq.gz>\n```\n\n### 3. Multi-sample Comparison (compare)\nUse `compare` to generate a pangenome matrix and a multisample VCF.\n```bash\n# Requires a tab-delimited read_index.tab (SampleID\\tPathToReads)\npandora compare --genotype --illumina --max-covg 30 <panidx.zip> <read_index.tab>\n```\n\n### 4. Novel Variant Discovery (discover)\nUse `discover` to find variation not present in the initial PanRG by using Racon to polish inferred sequences.\n```bash\npandora discover <panidx.zip> <reads.fq.gz>\n```\n\n## Expert Tips and Best Practices\n\n- **Input Preparation**: Pandora does not have a native paired-end mode for Illumina. Concatenate `R1` and `R2` files into a single fastq before processing.\n- **Coverage Limits**: Pandora stops reading input files once a global coverage threshold is reached (default 300X). If your fastq is sorted by genomic position, this may result in missing data at the end of the genome. Ensure reads are randomized or adjust `--max-covg`.\n- **VCF Reference**: The VCF output is relative to an \"inferred\" reference path through the graph (found in `*_multisample.vcf_ref.fa`) designed to minimize the distance to your samples. Do not assume it matches a standard NCBI reference.\n- **GAPS Field**: In Pandora VCFs, the `GAPS` field indicates the fraction of kmers covering an allele that had zero coverage. High GAPS values suggest the called allele may be incorrect or absent.\n- **Memory/Performance**: Use the `-t` flag to specify threads during indexing and mapping. For large pangenomes, ensure sufficient RAM is available for the graph structures.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| /usr/local/bin/pandora compare | Quasi-map reads from multiple samples to an indexed PRG, infer the sequence of present loci in each sample, and call variants between the samples. |\n| /usr/local/bin/pandora discover | Quasi-map reads to an indexed PRG, infer the sequence of present loci in the sample and discover novel variants. |\n| /usr/local/bin/pandora random | Outputs a fasta of random paths through the PRGs |\n| /usr/local/bin/pandora walk | Outputs a path through the nodes in a PRG corresponding to the either an input sequence (if it exists) or the top/bottom path |\n| pandora get_vcf_ref | Outputs a fasta suitable for use as the VCF reference using input sequences |\n| pandora index | Index population reference graph (PRG) sequences. |\n| pandora map | Quasi-map reads to an indexed PRG, infer the sequence of present loci in the sample, and optionally genotype variants. |\n| pandora merge_index | Allows multiple indices to be merged (no compatibility check) |\n| pandora seq2path | For each sequence, return the path through the PRG |\n\n## Reference documentation\n- [Usage Guide](./references/github_com_iqbal-lab-org_pandora_wiki_Usage.md)\n- [FAQ](./references/github_com_iqbal-lab-org_pandora_wiki_FAQ.md)\n- [Exploring Output Files](./references/github_com_iqbal-lab-org_pandora_wiki_Exploring-pandora-extra-files.md)",
+  "skill_front_matter": {
+    "name": "pandora",
+    "description": "Pandora performs nucleotide-resolution bacterial pangenomics by mapping reads to a pangenome reference graph to identify loci and call variants. Use when user asks to index a pangenome reference graph, map long or short reads to a graph, compare multiple samples to generate a pangenome matrix, or discover novel variants.",
+    "homepage": "https://github.com/rmcolq/pandora"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-multigsea",
+  "category": "bioconductor",
+  "name": "bioconductor-multigsea",
+  "description": "The multiGSEA package performs integrated pathway enrichment analysis across multiple omics layers by aggregating independent enrichment scores. Use when user asks to calculate multi-omics enrichment, aggregate p-values from different omics layers, or identify pathways altered across transcriptome, proteome, and metabolome data.",
+  "overview": "The `multiGSEA` package enables robust GSEA-based pathway enrichment for multiple omics layers. It calculates enrichment for each layer (transcriptome, proteome, metabolome) independently and then aggregates the resulting p-values to identify pathways significantly altered across the entire multi-omics system. It supports 11 model organisms and integrates with `graphite` for pathway definitions and `AnnotationDbi` for feature mapping.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/multiGSEA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/yigbt/multiGSEA",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "multiGSEA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/multiGSEA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/yigbt/multiGSEA",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-multigsea\n\n## Overview\n\nThe `multiGSEA` package enables robust GSEA-based pathway enrichment for multiple omics layers. It calculates enrichment for each layer (transcriptome, proteome, metabolome) independently and then aggregates the resulting p-values to identify pathways significantly altered across the entire multi-omics system. It supports 11 model organisms and integrates with `graphite` for pathway definitions and `AnnotationDbi` for feature mapping.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data for each layer must be a data frame containing feature IDs, log2 fold changes (`logFC`), and p-values (`pValue`).\n\n```r\nlibrary(multiGSEA)\nlibrary(org.Hs.eg.db) # Use appropriate org.db for your organism\n\n# Initialize the nested list structure\nomics_data <- initOmicsDataStructure(layer = c(\"transcriptome\", \"proteome\", \"metabolome\"))\n\n# Rank features using the local statistic: sign(logFC) * -log10(pValue)\nomics_data$transcriptome <- rankFeatures(df_trans$logFC, df_trans$pValue)\nnames(omics_data$transcriptome) <- df_trans$Symbol\n\nomics_data$proteome <- rankFeatures(df_prot$logFC, df_prot$pValue)\nnames(omics_data$proteome) <- df_prot$Symbol\n\n# Note: Metabolite IDs often need prefixing (e.g., HMDB to HMDB00)\nomics_data$metabolome <- rankFeatures(df_metab$logFC, df_metab$pValue)\nnames(omics_data$metabolome) <- gsub(\"HMDB\", \"HMDB00\", df_metab$HMDB)\n```\n\n### 2. Pathway Retrieval and Mapping\nUse `getMultiOmicsFeatures` to download pathway definitions and map them to the IDs used in your ranked lists.\n\n```r\ndatabases <- c(\"kegg\", \"reactome\")\npathways <- getMultiOmicsFeatures(\n  dbs = databases, \n  layer = names(omics_data),\n  returnTranscriptome = \"SYMBOL\",\n  returnProteome = \"SYMBOL\",\n  returnMetabolome = \"HMDB\",\n  useLocal = FALSE\n)\n```\n\n### 3. Enrichment and Aggregation\nCalculate enrichment scores for each layer and combine the results.\n\n```r\n# Run GSEA for all layers\nenrichment_scores <- multiGSEA(pathways, omics_data)\n\n# Extract p-values into a data frame\ndf_res <- extractPvalues(\n  enrichmentScores = enrichment_scores,\n  pathwayNames = names(pathways[[1]])\n)\n\n# Aggregate p-values (default: Stouffer's Z-method)\n# Options for method: \"stouffer\" (default), \"fisher\", or \"edgington\"\ndf_res$combined_pval <- combinePvalues(df_res)\ndf_res$combined_padj <- p.adjust(df_res$combined_pval, method = \"BH\")\n\n# Add pathway names and sort\ndf_res <- cbind(data.frame(pathway = names(pathways[[1]])), df_res)\ndf_res <- df_res[order(df_res$combined_padj), ]\n```\n\n## Key Functions\n\n- `initOmicsDataStructure()`: Creates the required nested list format.\n- `rankFeatures()`: Calculates the ranking metric for GSEA.\n- `getMultiOmicsFeatures()`: Downloads and maps pathway features from `graphite`.\n- `multiGSEA()`: Wrapper to run `fgsea` on all omics layers.\n- `extractPvalues()`: Formats results for p-value combination.\n- `combinePvalues()`: Aggregates p-values using various statistical methods.\n\n## Tips and Best Practices\n\n- **Organism Support**: Use `getOrganisms()` to see supported species abbreviations (e.g., \"hsapiens\", \"mmusculus\").\n- **ID Consistency**: Ensure the `returnXXX` arguments in `getMultiOmicsFeatures` match the names assigned to your `omics_data` lists.\n- **Metabolome IDs**: Metabolite mapping is sensitive. Ensure HMDB IDs follow the 11-character format (e.g., \"HMDB0000001\").\n- **Custom Gene Sets**: You can provide custom lists to the `pathways` object. Ensure the list structure and names match across all layers.\n- **P-value Combination**: Since Bioconductor 3.18, `multiGSEA` combines raw p-values rather than adjusted p-values to satisfy statistical assumptions of the Fisher and Stouffer methods.\n\n## Reference documentation\n\n- [multiGSEA](./references/multiGSEA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-multigsea",
+    "description": "The multiGSEA package performs integrated pathway enrichment analysis across multiple omics layers by aggregating independent enrichment scores. Use when user asks to calculate multi-omics enrichment, aggregate p-values from different omics layers, or identify pathways altered across transcriptome, proteome, and metabolome data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/multiGSEA.html"
+  }
+}

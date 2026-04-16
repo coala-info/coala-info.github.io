@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-factdesign",
+  "category": "bioconductor",
+  "name": "bioconductor-factdesign",
+  "description": "This tool analyzes factorial designed microarray experiments using linear models to identify genes affected by experimental factors and their interactions. Use when user asks to detect outliers in small factorial designs, fit linear models to microarray data, identify interaction effects between factors, or perform contrast tests for complex experimental conditions.",
+  "overview": "The `factDesign` package provides tools for the analysis of factorial designed microarray experiments. It leverages linear modeling to disentangle effects from multiple factors (e.g., a 2x2 design with \"Treatment\" and \"Time\"). Unlike simple fold-change methods, `factDesign` accounts for variability between replicates and allows for the testing of specific biological hypotheses through linear contrasts. It is particularly useful for identifying interaction effects where the impact of one factor d",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/factDesign.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-factdesign/overview",
+  "github": "N/A",
+  "conda_downloads": "25.3K",
+  "conda_downloads_num": 25300,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "factDesign"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/factDesign.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-factdesign/overview",
+    "github": "N/A",
+    "conda_downloads": "25.3K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-factdesign\n\nname: bioconductor-factdesign\ndescription: Analysis of factorial designed microarray experiments using linear models. Use this skill to identify genes affected by specific experimental factors (e.g., treatment, time) and their interactions, perform outlier detection in small factorial designs, and execute contrast tests to calculate fold changes and statistical significance for complex experimental conditions.\n\n# bioconductor-factdesign\n\n## Overview\n\nThe `factDesign` package provides tools for the analysis of factorial designed microarray experiments. It leverages linear modeling to disentangle effects from multiple factors (e.g., a 2x2 design with \"Treatment\" and \"Time\"). Unlike simple fold-change methods, `factDesign` accounts for variability between replicates and allows for the testing of specific biological hypotheses through linear contrasts. It is particularly useful for identifying interaction effects where the impact of one factor depends on the level of another.\n\n## Core Workflow\n\n### 1. Data Preparation and Outlier Detection\nBefore modeling, identify potential outliers in small factorial designs based on replicate differences.\n\n```r\nlibrary(factDesign)\ndata(estrogen) # Example ExpressionSet\n\n# Identify outlier pairs for a specific probe\n# INDEX should be the phenoData or a factor representing experimental conditions\nop <- outlierPair(exprs(estrogen)[\"33379_at\", ], INDEX = pData(estrogen), p = 0.05)\n\n# Check if an outlier was found and which pair\nop$test      # TRUE if outlier detected\nop$whichPair # Indices of the replicate pair\n\n# Filter using Median Absolute Deviation to identify the single outlier index\nso <- madOutPair(exprs(estrogen)[\"33379_at\", ], op$whichPair)\n# If !is.na(so), that specific observation can be set to NA\n```\n\n### 2. Defining and Fitting Linear Models\nFit models to every gene in an `ExpressionSet` using `esApply`.\n\n```r\n# Define functions for full and reduced models\n# Full: includes factors and interaction\nlm.full <- function(y) lm(y ~ ES + TIME + ES:TIME)\n# Reduced: e.g., only time effect\nlm.time <- function(y) lm(y ~ TIME)\n\n# Apply to ExpressionSet\nlm.f <- esApply(estrogen, 1, lm.full)\nlm.t <- esApply(estrogen, 1, lm.time)\n```\n\n### 3. Selecting Genes via ANOVA\nCompare models to find genes affected by the factor of interest (e.g., Estrogen).\n\n```r\n# Calculate F-test p-values comparing full vs reduced\nFpvals <- sapply(1:length(lm.f), function(i) anova(lm.t[[i]], lm.f[[i]])$P[2])\n\n# Adjust for multiple comparisons (using multtest package)\nlibrary(multtest)\nF.res <- mt.rawp2adjp(Fpvals, \"BH\")\nF.adjps <- F.res$adjp[order(F.res$index), ]\nFsub <- which(F.adjps[, \"BH\"] < 0.15)\n\n# Subset the data\nestrogen.Fsub <- estrogen[Fsub]\nlm.f.Fsub <- lm.f[Fsub]\n```\n\n### 4. Contrast Testing\nUse contrasts to test specific hypotheses, such as the effect of a treatment at a specific time point.\n\n```r\n# Get coefficient names from the model\nbetaNames <- names(coef(lm.f[[1]]))\n\n# Create a lambda matrix for a contrast (e.g., Main Estrogen Effect)\n# par2lambda(names, coefficients_to_include, weights)\nlambda <- par2lambda(betaNames, c(\"ESP\"), c(1))\n\n# Test the contrast\nmainES <- function(x) contrastTest(x, lambda, p = 0.05)[[1]]\nresults <- sapply(lm.f.Fsub, mainES) # Returns \"REJECT\" or \"FAIL TO REJECT\"\n\n# Complex Contrast: Estrogen effect at 48h (Main effect + Interaction)\n# H0: beta_ES + beta_ES:TIME = 0\nlambdaEST <- par2lambda(betaNames, list(c(\"ESP\", \"ESP:TIME48h\")), list(c(1, 1)))\nESTresults <- sapply(lm.f.Fsub, function(x) contrastTest(x, lambdaEST, p = 0.10)[[1]])\n```\n\n### 5. Calculating Fold Change from Models\nCalculate biologically relevant fold changes for specific contrasts.\n\n```r\n# Define Numerator (Intercept + Estrogen) and Denominator (Intercept)\nlNum <- par2lambda(betaNames, list(c(\"(Intercept)\", \"ESP\")), list(c(1, 1)))\nlDenom <- par2lambda(betaNames, list(c(\"(Intercept)\")), list(c(1)))\n\n# Find Fold Change for a specific gene\nfc <- findFC(lm.f.Fsub[[1]], lNum, lDenom, logbase = 2)\n```\n\n## Tips for Success\n- **Log Scale**: Ensure expression data is in log base 2 scale (standard for `rma` output) before fitting linear models.\n- **Interaction Terms**: Always include the interaction term (`FactorA:FactorB`) if you suspect the response to one factor changes depending on the other.\n- **Visualization**: Use `heatmap()` on the `exprs()` of subsetted `ExpressionSet` objects to visualize the patterns of genes that rejected specific null hypotheses.\n- **Filtering**: Combine statistical significance (p-values from `contrastTest`) with biological significance (thresholds from `findFC`) to reduce false positives.\n\n## Reference documentation\n- [factDesign](./references/factDesign.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-factdesign",
+    "description": "This tool analyzes factorial designed microarray experiments using linear models to identify genes affected by experimental factors and their interactions. Use when user asks to detect outliers in small factorial designs, fit linear models to microarray data, identify interaction effects between factors, or perform contrast tests for complex experimental conditions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/factDesign.html"
+  }
+}

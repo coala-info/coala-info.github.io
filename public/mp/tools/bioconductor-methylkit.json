@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-methylkit",
+  "category": "bioconductor",
+  "name": "bioconductor-methylkit",
+  "description": "bioconductor-methylkit is an R package for the analysis and annotation of DNA methylation data from bisulfite sequencing experiments. Use when user asks to read methylation calls, perform quality control on coverage, cluster samples, or identify differentially methylated regions.",
+  "overview": "The `methylKit` package is a comprehensive R-based solution for analyzing DNA methylation at base-pair resolution. It is optimized for Reduced Representation Bisulfite Sequencing (RRBS) but supports Whole Genome Bisulfite Sequencing (WGBS) and 5hmC data (oxBS-Seq/TAB-Seq). The package provides a complete workflow from reading Bismark alignments to identifying differentially methylated regions (DMRs) and annotating them with gene or CpG island features.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/methylKit.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/al2na/methylKit",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "methylKit"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylKit.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/al2na/methylKit",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-methylkit\n\n## Overview\nThe `methylKit` package is a comprehensive R-based solution for analyzing DNA methylation at base-pair resolution. It is optimized for Reduced Representation Bisulfite Sequencing (RRBS) but supports Whole Genome Bisulfite Sequencing (WGBS) and 5hmC data (oxBS-Seq/TAB-Seq). The package provides a complete workflow from reading Bismark alignments to identifying differentially methylated regions (DMRs) and annotating them with gene or CpG island features.\n\n## Core Workflow\n\n### 1. Data Input and Object Creation\nMethylation calls can be read from text files or directly from Bismark-aligned BAM/SAM files.\n\n```r\nlibrary(methylKit)\n\n# Define file list and metadata\nfile.list <- list(\"test1.txt\", \"test2.txt\", \"ctrl1.txt\", \"ctrl2.txt\")\nsample.ids <- list(\"test1\", \"test2\", \"ctrl1\", \"ctrl2\")\ntreatment <- c(1, 1, 0, 0) # 1 for test, 0 for control\n\n# Read methylation calls (returns methylRawList)\nmyobj <- methRead(file.list,\n                  sample.id = sample.ids,\n                  assembly = \"hg38\",\n                  treatment = treatment,\n                  context = \"CpG\",\n                  mincov = 10)\n\n# Alternatively, process Bismark BAM files directly\n# myobj <- processBismarkAln(location = \"sample.bam\", sample.id = \"s1\", assembly = \"hg38\")\n```\n\n### 2. Quality Control and Filtering\nCheck coverage and methylation statistics to identify biases or PCR duplication.\n\n```r\n# Plot statistics for a specific sample\ngetMethylationStats(myobj[[1]], plot = TRUE, both.strands = FALSE)\ngetCoverageStats(myobj[[1]], plot = TRUE, both.strands = FALSE)\n\n# Filter by coverage (e.g., min 10x, remove top 0.1% to avoid PCR bias)\nfiltered.obj <- filterByCoverage(myobj, lo.count = 10, hi.perc = 99.9)\n\n# Normalize coverage between samples\nnormalized.obj <- normalizeCoverage(filtered.obj)\n```\n\n### 3. Comparative Analysis\nMerge samples to find common bases and perform clustering/PCA.\n\n```r\n# Unite samples (returns methylBase)\n# destrand=TRUE merges CpG on both strands for higher coverage\nmeth <- unite(normalized.obj, destrand = FALSE)\n\n# Correlation and Clustering\ngetCorrelation(meth, plot = TRUE)\nclusterSamples(meth, dist = \"correlation\", method = \"ward\", plot = TRUE)\nPCASamples(meth)\n```\n\n### 4. Differential Methylation\nCalculate differences using Fisher's Exact Test (no replicates) or Logistic Regression (with replicates).\n\n```r\n# Calculate differential methylation\nmyDiff <- calculateDiffMeth(meth)\n\n# Get hyper/hypo methylated bases (e.g., >25% diff, q-value < 0.01)\ndiff25p <- getMethylDiff(myDiff, difference = 25, qvalue = 0.01)\nhyper <- getMethylDiff(myDiff, difference = 25, qvalue = 0.01, type = \"hyper\")\nhypo <- getMethylDiff(myDiff, difference = 25, qvalue = 0.01, type = \"hypo\")\n```\n\n### 5. Tiling Windows and Regional Analysis\nSummarize methylation over genomic windows or specific regions (e.g., promoters).\n\n```r\n# Tiling windows (e.g., 1kb windows)\ntiles <- tileMethylCounts(myobj, win.size = 1000, step.size = 1000)\n\n# Regional counts (requires GRanges object, e.g., from genomation)\n# promoters <- regionCounts(myobj, promoter.granges)\n```\n\n## Advanced Features\n\n### Handling Large Datasets (methylDB)\nFor large-scale WGBS, use `dbtype = \"tabix\"` in `methRead` to store data on disk rather than in memory. This creates `methylRawListDB` objects.\n\n### Batch Effect Correction\nUse `assocComp` to check if principal components correlate with batch variables, and `removeComp` to remove them.\n\n```r\nsampleAnnotation <- data.frame(batch = c(\"A\", \"A\", \"B\", \"B\"))\nas <- assocComp(mBase = meth, sampleAnnotation)\nnewObj <- removeComp(meth, comp = 1)\n```\n\n### Annotation\nIntegrate with the `genomation` package to annotate DMRs.\n\n```r\nlibrary(genomation)\ngene.parts <- readTranscriptFeatures(\"refseq.bed\")\nannotated <- annotateWithGeneParts(as(diff25p, \"GRanges\"), gene.parts)\nplotTargetAnnotation(annotated)\n```\n\n## Tips for Success\n- **Context Matters**: Always specify `context` (\"CpG\", \"CHG\", or \"CHH\"). `destrand = TRUE` is only valid for CpG context.\n- **Replicates**: If you have replicates, `calculateDiffMeth` automatically uses Logistic Regression. To use Fisher's test with replicates, you must first use `pool(meth)`.\n- **Overdispersion**: For logistic regression, consider setting `overdispersion = \"MN\"` in `calculateDiffMeth` to account for higher-than-expected variance.\n- **Coercion**: Use `as(obj, \"GRanges\")` to export methylKit objects for use with other Bioconductor packages.\n\n## Reference documentation\n- [methylKit: User Guide](./references/methylKit.Rmd)\n- [methylKit: User Guide (Markdown)](./references/methylKit.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-methylkit",
+    "description": "bioconductor-methylkit is an R package for the analysis and annotation of DNA methylation data from bisulfite sequencing experiments. Use when user asks to read methylation calls, perform quality control on coverage, cluster samples, or identify differentially methylated regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/methylKit.html"
+  }
+}

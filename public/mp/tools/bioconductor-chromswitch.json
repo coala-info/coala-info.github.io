@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chromswitch",
+  "category": "bioconductor",
+  "name": "bioconductor-chromswitch",
+  "description": "This tool detects chromatin state switches in genomic regions between two biological conditions using epigenomic data such as ChIP-seq or DNase-seq. Use when user asks to identify differences in chromatin states, perform hierarchical clustering of samples based on peak features, or score the similarity between sample clusters and biological groups.",
+  "overview": "The `chromswitch` package identifies genomic regions where chromatin states differ significantly between two groups of samples. It transforms epigenomic features (like peaks) into a sample-by-feature matrix using either a **Summary** strategy (using statistics like mean/max signal) or a **Binary** strategy (presence/absence of unique peaks). It then uses hierarchical clustering and external validity measures (Consensus score) to predict switches.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/chromswitch.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chromswitch/overview",
+  "github": "https://github.com/sjessa/chromswitch",
+  "conda_downloads": "23.6K",
+  "conda_downloads_num": 23600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "chromswitch"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/chromswitch.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chromswitch/overview",
+    "github": "https://github.com/sjessa/chromswitch",
+    "conda_downloads": "23.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chromswitch\n\nname: bioconductor-chromswitch\ndescription: Detect chromatin state switches in genomic regions between two biological conditions using epigenomic data (ChIP-seq, DNase-seq, ChromHMM). Use this skill to perform hierarchical clustering of samples based on peak features and score the similarity between clusters and biological groups.\n\n## Overview\n\nThe `chromswitch` package identifies genomic regions where chromatin states differ significantly between two groups of samples. It transforms epigenomic features (like peaks) into a sample-by-feature matrix using either a **Summary** strategy (using statistics like mean/max signal) or a **Binary** strategy (presence/absence of unique peaks). It then uses hierarchical clustering and external validity measures (Consensus score) to predict switches.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nThe package requires three main inputs:\n- **Query Regions**: A `GRanges` object of regions to test.\n- **Metadata**: A `data.frame` with `Sample` and `Condition` columns (Condition must have exactly two levels).\n- **Features**: A named list of `GRanges` objects (one per sample) containing peaks or states.\n\n```r\nlibrary(chromswitch)\nlibrary(rtracklayer)\n\n# 1. Query regions\nquery <- import(\"query.bed\", format = \"BED\")\n\n# 2. Metadata\nmetadata <- read.delim(\"metadata.tsv\")\n\n# 3. Peaks (ENCODE narrowPeak format helper)\npeak_paths <- list.files(pattern = \"\\\\.bed$\")\npeaks <- readNarrowPeak(paths = peak_paths, metadata = metadata)\nnames(peaks) <- metadata$Sample\n```\n\n### 2. Detecting Switches (Wrapper Functions)\n\n#### Summary Strategy\nBest when quantitative signal (e.g., fold change, q-value) is informative.\n```r\nresults_summary <- callSummary(\n  query = query,\n  metadata = metadata,\n  peaks = peaks,\n  summarize_columns = c(\"qValue\", \"signalValue\"),\n  normalize = TRUE, # Recommended\n  filter = TRUE,\n  filter_thresholds = c(10, 4)\n)\n```\n\n#### Binary Strategy\nBest for identifying the presence/absence of specific peak architectures.\n```r\nresults_binary <- callBinary(\n  query = query,\n  metadata = metadata,\n  peaks = peaks,\n  reduce = TRUE, # Merge nearby peaks\n  gap = 300,     # Max distance to merge\n  p = 0.4        # Reciprocal overlap for \"same\" peak\n)\n```\n\n### 3. Interpreting Results\n\nThe output is a `data.frame` with the following key columns:\n- **Consensus**: The primary score (range -1 to 1). A value near 1 indicates a strong chromatin state switch matching the biological conditions.\n- **Average_Silhouette**: Measures cluster separation/quality.\n- **K**: The number of clusters identified.\n- **Sample Columns**: Cluster assignments for each individual sample.\n\n```r\n# Filter for high-confidence switches\nswitches <- results_summary[results_summary$Consensus >= 0.75, ]\n```\n\n## Step-by-Step Modular Analysis\n\nFor finer control, you can run the pipeline manually:\n\n1.  **Filter & Normalize**: `filterPeaks()` and `normalizePeaks()` to handle outliers and scale signal.\n2.  **Retrieve**: `retrievePeaks()` to extract peaks overlapping a specific query region.\n3.  **Matrix Construction**: \n    - `summarizePeaks()`: Creates a matrix of mean/median/max stats.\n    - `binarizePeaks()`: Creates a 1/0 matrix of peak presence.\n4.  **Cluster**: `cluster()` to perform the final analysis and optionally generate heatmaps.\n\n```r\n# Example of manual clustering for one region\nlp <- retrievePeaks(peaks = peaks_norm, metadata = metadata, region = query[1])\nft_mat <- summarizePeaks(lp, mark = \"H3K4me3\", fraction = TRUE)\nres <- cluster(ft_mat, query = query[1], metadata = metadata, heatmap = TRUE)\n```\n\n## Tips for Success\n\n- **Normalization**: Always set `normalize = TRUE` when using `callSummary` to prevent high-signal samples from dominating the clustering.\n- **Column Names**: Ensure `summarize_columns` or `filter_columns` match the metadata column names in your `GRanges` objects exactly (case-sensitive).\n- **Parallelization**: Use the `BPPARAM` argument (e.g., `BiocParallel::MulticoreParam()`) to speed up analysis across many query regions.\n\n## Reference documentation\n\n- [An introduction to chromswitch for detecting chromatin state switches](./references/chromswitch_intro.Rmd)\n- [An introduction to chromswitch for detecting chromatin state switches (Markdown)](./references/chromswitch_intro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chromswitch",
+    "description": "This tool detects chromatin state switches in genomic regions between two biological conditions using epigenomic data such as ChIP-seq or DNase-seq. Use when user asks to identify differences in chromatin states, perform hierarchical clustering of samples based on peak features, or score the similarity between sample clusters and biological groups.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/chromswitch.html"
+  }
+}

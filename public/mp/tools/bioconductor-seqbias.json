@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-seqbias",
+  "category": "bioconductor",
+  "name": "bioconductor-seqbias",
+  "description": "This tool models and corrects for technical nucleotide sequence bias in high-throughput sequencing data using a Bayesian network. Use when user asks to assess sequence-specific bias, visualize k-mer frequencies near read starts, or normalize BAM read counts based on genomic sequence context.",
+  "overview": "The `seqbias` package addresses the issue of non-uniform read distribution in high-throughput sequencing caused by protocol-specific biases (e.g., random hexamer priming). It uses a Bayesian network to model the relationship between the genomic sequence surrounding a read's start position and the probability of a read being sequenced. This allows for the calculation of a \"bias factor\" that can be used to normalize read counts, leading to more accurate quantification.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/seqbias.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "seqbias"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/seqbias.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-seqbias\n\nname: bioconductor-seqbias\ndescription: Assess and adjust for technical nucleotide sequence bias in high-throughput sequencing data (specifically RNA-Seq). Use this skill when you need to model how surrounding genomic sequences affect read distribution, visualize k-mer frequencies relative to read starts, or normalize BAM read counts based on a trained Bayesian network classifier.\n\n# bioconductor-seqbias\n\n## Overview\n\nThe `seqbias` package addresses the issue of non-uniform read distribution in high-throughput sequencing caused by protocol-specific biases (e.g., random hexamer priming). It uses a Bayesian network to model the relationship between the genomic sequence surrounding a read's start position and the probability of a read being sequenced. This allows for the calculation of a \"bias factor\" that can be used to normalize read counts, leading to more accurate quantification.\n\n## Workflow: Assessment\n\nBefore correcting data, you should assess if a significant sequence bias exists in your BAM files.\n\n1.  **Load Libraries and Data**:\n    ```r\n    library(seqbias)\n    library(Rsamtools)\n\n    ref_fn <- \"path/to/genome.fa\"\n    reads_fn <- \"path/to/reads.bam\"\n    ref_f <- FaFile(ref_fn)\n    open(ref_f)\n    ```\n\n2.  **Generate Random Intervals**:\n    Sample the genome to get a representative set of sequences.\n    ```r\n    ref_seqs <- scanFaIndex(ref_f)\n    # Generate 5 intervals of 100kb each\n    I <- random.intervals(ref_seqs, n = 5, m = 100000)\n    ```\n\n3.  **Extract Sequences and Counts**:\n    ```r\n    seqs <- scanFa(ref_f, I)\n    # Handle strand manually for scanFa\n    neg_idx <- as.logical(I@strand == '-')\n    seqs[neg_idx] <- reverseComplement(seqs[neg_idx])\n\n    # Get binary counts (0 or 1) to avoid outlier dominance\n    counts <- count.reads(reads_fn, I, binary = TRUE)\n    ```\n\n4.  **Compute and Plot Frequencies**:\n    ```r\n    freqs <- kmer.freq(seqs, counts)\n\n    # Plotting with ggplot2\n    library(ggplot2)\n    ggplot(freqs, aes(x = pos, y = freq, color = seq)) +\n      geom_line() +\n      facet_grid(seq ~ .) +\n      theme_bw()\n    ```\n    *Note: A flat line indicates no bias. Peaks or dips near position 0 indicate sequence-specific bias.*\n\n## Workflow: Compensation (Correction)\n\nIf bias is detected, follow these steps to train a model and adjust counts.\n\n1.  **Train the Model**:\n    ```r\n    # L and R define the window size to the left and right of the read start\n    sb <- seqbias.fit(ref_fn, reads_fn, L = 5, R = 15)\n    ```\n\n2.  **Predict Bias**:\n    Calculate the bias for specific intervals.\n    ```r\n    bias <- seqbias.predict(sb, I)\n    ```\n\n3.  **Adjust Counts**:\n    Divide the observed counts by the predicted bias.\n    ```r\n    # counts and bias are typically lists of vectors\n    counts.adj <- mapply(FUN = `/`, counts, bias, SIMPLIFY = FALSE)\n    ```\n\n## Model Persistence\n\nTraining on large datasets can be slow. Save the model to a YAML file for future use.\n\n```r\n# Save\nseqbias.save(sb, \"model.yml\")\n\n# Load (requires the original reference FASTA)\nsb <- seqbias.load(ref_fn, \"model.yml\")\n```\n\n## Key Functions\n\n- `random.intervals(ref_lengths, n, m)`: Generates random genomic intervals.\n- `count.reads(bam_fn, intervals, binary)`: Extracts read counts per position.\n- `kmer.freq(sequences, counts, k)`: Calculates k-mer frequencies relative to read starts.\n- `seqbias.fit(ref_fn, bam_fn, L, R)`: Fits the Bayesian network bias model.\n- `seqbias.predict(model, intervals)`: Predicts bias factors for given intervals.\n\n## Reference documentation\n\n- [seqbias Overview](./references/overview.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-seqbias",
+    "description": "This tool models and corrects for technical nucleotide sequence bias in high-throughput sequencing data using a Bayesian network. Use when user asks to assess sequence-specific bias, visualize k-mer frequencies near read starts, or normalize BAM read counts based on genomic sequence context.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/seqbias.html"
+  }
+}

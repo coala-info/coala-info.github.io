@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-blima",
+  "category": "bioconductor",
+  "name": "bioconductor-blima",
+  "description": "This tool performs preprocessing and analysis of Illumina microarray data at the bead level. Use when user asks to perform background correction, variance stabilization, quantile normalization of unequal vectors, or differential expression testing on bead and probe level data.",
+  "overview": "The `blima` package provides tools for the low-level analysis of Illumina microarrays. Unlike many packages that work on summarized probe-level data, `blima` operates on the detector (bead) level. It integrates with the `beadarray` package's `beadLevelData` objects. Key features include a novel approach to quantile normalization for vectors of unequal lengths and the implementation of variance stabilization and T-tests directly on bead-level observations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/blima.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-blima/overview",
+  "github": "N/A",
+  "conda_downloads": "48.4K",
+  "conda_downloads_num": 48400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "blima"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/blima.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-blima/overview",
+    "github": "N/A",
+    "conda_downloads": "48.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-blima\n\nname: bioconductor-blima\ndescription: Preprocessing and analysis of Illumina microarray data at the bead (detector) level. Use this skill for background correction (outlier removal or Xie convolution), variance stabilizing transformation (VST), quantile normalization of unequal vectors, and differential expression testing (T-tests) on both bead and probe levels.\n\n## Overview\n\nThe `blima` package provides tools for the low-level analysis of Illumina microarrays. Unlike many packages that work on summarized probe-level data, `blima` operates on the detector (bead) level. It integrates with the `beadarray` package's `beadLevelData` objects. Key features include a novel approach to quantile normalization for vectors of unequal lengths and the implementation of variance stabilization and T-tests directly on bead-level observations.\n\n## Core Workflow\n\nA typical `blima` analysis pipeline involves background correction, variance stabilization, normalization, and statistical testing.\n\n### 1. Background Correction and Filtering\n\n`blima` offers multiple methods for background handling:\n\n*   **Outlier Removal:** `bacgroundCorrect` identifies and excludes beads with background intensity significantly different from the mean (e.g., $|I_b - \\text{mean}| > k \\cdot SD$).\n*   **Xie Correction:** `xieBacgroundCorrect` implements a non-parametric estimator (RMA-like convolution) for background correction.\n*   **Non-positive Correction:** `nonPositiveCorrect` ensures data is suitable for log transformation by handling values $\\le 0$.\n\n```r\n# Example: Background outlier removal\n# normalizationMod is a logical vector indicating which arrays to process\nblimatesting = bacgroundCorrect(blimatesting, normalizationMod=c, channelBackgroundFilter=\"bgf\")\n\n# Ensure values are positive for subsequent log-based steps\nblimatesting = nonPositiveCorrect(blimatesting, normalizationMod=c, channelCorrect=\"GrnF\", \n                                 channelBackgroundFilter=\"bgf\", channelAndVector=\"bgf\")\n```\n\n### 2. Variance Stabilization (VST)\n\nThe `varianceBeadStabilise` function performs VST on the bead level, which is often necessary to stabilize the variance across the intensity range before normalization.\n\n```r\nblimatesting = varianceBeadStabilise(blimatesting, normalizationMod = processingMod,\n                                     quality=\"GrnF\", channelInclude=\"bgf\", channelOutput=\"vst\")\n```\n\n### 3. Quantile Normalization\n\n`quantileNormalize` handles the specific challenge of Illumina data where different arrays or spots may have different numbers of beads.\n\n```r\nblimatesting = quantileNormalize(blimatesting, normalizationMod = processingMod,\n                                 channelNormalize=\"vst\", channelOutput=\"qua\", channelInclude=\"bgf\")\n```\n\n### 4. Differential Expression Testing\n\nYou can perform T-tests at two levels:\n*   **Bead Level (`doTTests`):** Uses individual bead intensities.\n*   **Probe Level (`doProbeTTests`):** Aggregates bead data to the probe level before testing.\n\n```r\n# T-test on bead level\nbeadTest = doTTests(blimatesting, groups1Mod, groups2Mod, \"qua\", \"bgf\")\n\n# T-test on probe level\nprobeTest = doProbeTTests(blimatesting, groups1Mod, groups2Mod, \"qua\", \"bgf\")\n```\n\n## Quality Control and Summarization\n\n*   **Statistics:** Use `chipArrayStatistics` to get bead counts, mean intensities, and standard deviations for each array spot.\n*   **Visualization:** Use `plotBackgroundImageBeforeCorrection` and `plotBackgroundImageAfterCorrection` to inspect the relationship between foreground and background intensities.\n*   **Summarization:** `createSummarizedMatrix` produces a standard expression matrix (probes x samples) from the bead-level data.\n\n```r\n# Create a summarized matrix for downstream tools\nexpMatrix = createSummarizedMatrix(blimatesting, quality=\"qua\", channelInclude=\"bgf\", \n                                   annotationTag=\"Name\")\n```\n\n## Tips for Effective Usage\n\n*   **Logical Vectors:** Most functions require `normalizationMod`, `c1`, or `c2` arguments. These are typically lists of logical vectors where each list element corresponds to a `beadLevelData` object, and the vector indicates which arrays (chips) within that object to include.\n*   **Channel Management:** `blima` works by creating new \"channels\" (slots) within the `beadLevelData` object. Always keep track of your `channelOutput` names (e.g., \"vst\", \"qua\") to ensure you are passing the correct data to the next function.\n*   **Transformations:** When performing T-tests, consider using `transformation = log2TransformPositive` within the test function if the data has not been log-transformed during VST.\n\n## Reference documentation\n\n- [blima Reference Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-blima",
+    "description": "This tool performs preprocessing and analysis of Illumina microarray data at the bead level. Use when user asks to perform background correction, variance stabilization, quantile normalization of unequal vectors, or differential expression testing on bead and probe level data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/blima.html"
+  }
+}

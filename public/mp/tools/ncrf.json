@@ -1,0 +1,52 @@
+{
+  "id": "ncrf",
+  "category": "CLI",
+  "name": "ncrf",
+  "description": "Noise Cancelling Repeat Finder identifies tandem repeats within high-error long-read sequencing data by aligning reads to specific motifs. Use when user asks to locate tandem repeats in noisy reads, align sequences to repeat motifs, or filter genomic data for specific repeat patterns.",
+  "overview": "Noise Cancelling Repeat Finder (NCRF) is a specialized alignment tool designed to identify tandem repeats within high-error sequencing data. Unlike general-purpose aligners, NCRF is optimized for the specific error profiles (noise) characteristic of long-read technologies. It allows users to align segments of DNA sequences to repeated copies of known motifs (e.g., \"GGCAT\"). Use this skill when you need to locate, quantify, or filter specific repeat motifs in genomic reads where traditional metho",
+  "homepage": "https://github.com/makovalab-psu/NoiseCancellingRepeatFinder",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/ncrf/overview",
+  "github": "https://github.com/makovalab-psu/NoiseCancellingRepeatFinder",
+  "conda_downloads": "16.2K",
+  "conda_downloads_num": 16200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ncrf_NCRF",
+      "ncrf_ncrf_cat.py",
+      "ncrf_ncrf_consensus_filter.py",
+      "ncrf_ncrf_resolve_overlaps.py",
+      "ncrf_ncrf_to_bed.py"
+    ],
+    "description": "Noise Cancelling Repeat Finder, to find tandem repeats in noisy reads",
+    "docker_image": "quay.io/biocontainers/ncrf:1.01.02--h7b50bb2_6",
+    "homepage": "https://github.com/makovalab-psu/NoiseCancellingRepeatFinder",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/ncrf/overview",
+    "github": "https://github.com/makovalab-psu/NoiseCancellingRepeatFinder",
+    "conda_downloads": "16.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "ncrf_NCRF.cwl",
+    "ncrf_ncrf_cat.py.cwl",
+    "ncrf_ncrf_resolve_overlaps.py.cwl",
+    "ncrf_ncrf_to_bed.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# ncrf\n\n## Overview\n\nNoise Cancelling Repeat Finder (NCRF) is a specialized alignment tool designed to identify tandem repeats within high-error sequencing data. Unlike general-purpose aligners, NCRF is optimized for the specific error profiles (noise) characteristic of long-read technologies. It allows users to align segments of DNA sequences to repeated copies of known motifs (e.g., \"GGCAT\"). Use this skill when you need to locate, quantify, or filter specific repeat motifs in genomic reads where traditional methods might fail due to high indel or substitution rates.\n\n## Core Usage Patterns\n\n### Basic Search\nThe primary command reads FASTA data from standard input and requires at least one motif.\n```bash\ncat reads.fa | NCRF GGCAT > results.ncrf\n```\n\n### Searching Multiple Motifs\nYou can search for multiple motifs simultaneously by listing them or providing names.\n```bash\ncat reads.fa | NCRF GGCAT CCAT TTAGGG > results.ncrf\n# With names\ncat reads.fa | NCRF telomere:TTAGGG centromere:GGCAT > results.ncrf\n```\n\n### Technology-Specific Scoring\nNCRF includes optimized scoring matrices for major long-read platforms.\n*   **PacBio**: `--scoring=pacbio` (M=10, MM=35, IO=33, IX=21, DO=6, DX=28)\n*   **Nanopore**: `--scoring=nanopore` (M=10, MM=63, IO=51, IX=98, DO=27, DX=34)\n\n## Filtering and Thresholds\n\nTo reduce false positives and manage output size, apply length and noise filters:\n\n*   **Match Ratio**: Use `--minmratio` (e.g., `0.85` or `85%`) to discard alignments with low match frequency.\n*   **Noise Level**: Use `--maxnoise` as an alternative to match ratio (MaxNoise = 1 - MinMRatio).\n*   **Minimum Length**: Use `--minlength` to set the minimum repeat length in base pairs (default is 500bp).\n*   **Minimum Score**: Use `--minscore` to filter by the alignment score.\n\nExample of a strict filter for Nanopore data:\n```bash\ncat reads.fa | NCRF GGCAT --scoring=nanopore --minmratio=0.80 --minlength=1000 > filtered.ncrf\n```\n\n## Post-Processing Workflow\n\nNCRF output is often processed through a pipeline of helper scripts:\n\n1.  **Concatenation**: Use `ncrf_cat.py` instead of standard `cat` to merge results while maintaining proper end-of-file markers.\n    ```bash\n    ncrf_cat.py run1.ncrf run2.ncrf > combined.ncrf\n    ```\n2.  **Consensus Filtering**: Use `ncrf_consensus_filter.py` to discard alignments where the consensus sequence does not match the intended motif.\n    ```bash\n    cat results.ncrf | ncrf_consensus_filter.py > validated.ncrf\n    ```\n3.  **Summary Statistics**: Generate a summary of the findings.\n    ```bash\n    cat results.ncrf | ncrf_summary.py\n    ```\n\n## Expert Tips\n\n*   **Positional Events**: Use the `--positionalevents` flag to see match/mismatch/indel counts for each position within the motif. This is highly effective for distinguishing truly perfect repeats from those containing systematic biological variations.\n*   **Memory Constraints**: NCRF is optimized for sequences up to ~500kbp and motifs up to ~200bp. Performance may degrade significantly if these limits are exceeded.\n*   **Scoring Overflow**: If manually adjusting scores with `--match` or `--mismatch`, ensure the match reward (M) does not exceed 100. Alignments longer than $2^{31}/M$ may cause numerical overflow.\n*   **Symbolic Links**: After installation, run `./make_symbolic_links.sh` in the NCRF directory to use the Python helper scripts without the `.py` extension.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| NCRF | Noise Cancelling Repeat Finder, to find tandem repeats in noisy reads |\n| ncrf_ncrf_cat.py | Concatenate several output files from Noise Cancelling Repeat Finder. This is little more than copying the files and adding a blank line between the files. |\n| ncrf_resolve_overlaps | Resolves overlaps in alignment summaries. |\n| ncrf_to_bed | Converts NCRF output to BED format. |\n\n## Reference documentation\n- [Noise Cancelling Repeat Finder README](./references/github_com_makovalab-psu_NoiseCancellingRepeatFinder_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "ncrf",
+    "description": "Noise Cancelling Repeat Finder identifies tandem repeats within high-error long-read sequencing data by aligning reads to specific motifs. Use when user asks to locate tandem repeats in noisy reads, align sequences to repeat motifs, or filter genomic data for specific repeat patterns.",
+    "homepage": "https://github.com/makovalab-psu/NoiseCancellingRepeatFinder"
+  }
+}

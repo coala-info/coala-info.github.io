@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mtseeker",
+  "category": "bioconductor",
+  "name": "bioconductor-mtseeker",
+  "description": "MTseeker analyzes mitochondrial genomes by extracting reads from sequencing data, calling variants with high sensitivity to heteroplasmy, and estimating copy number. Use when user asks to extract mitochondrial reads from BAM files, call mitochondrial variants, filter nuclear mitochondrial sequences, or visualize the functional impact of mutations on the electron transport chain.",
+  "overview": "MTseeker is a Bioconductor package designed for the specialized analysis of mitochondrial genomes. It provides tools for extracting mitochondrial reads from whole-exome or whole-genome sequencing BAM files, calling variants with high sensitivity to heteroplasmy, and performing functional annotation. It is particularly effective for studying mitochondrial enrichment or depletion (copy number) and the metabolic implications of mtDNA mutations.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MTseeker.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MTseeker"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MTseeker.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mtseeker\n\n## Overview\n\nMTseeker is a Bioconductor package designed for the specialized analysis of mitochondrial genomes. It provides tools for extracting mitochondrial reads from whole-exome or whole-genome sequencing BAM files, calling variants with high sensitivity to heteroplasmy, and performing functional annotation. It is particularly effective for studying mitochondrial enrichment or depletion (copy number) and the metabolic implications of mtDNA mutations.\n\n## Core Workflows\n\n### 1. Data Loading and Preprocessing\nMTseeker typically starts with BAM files aligned to a reference genome containing the mitochondrial contig (rCRS/chrM).\n\n```r\nlibrary(MTseeker)\nlibrary(MTseekerData)\n\n# Extract mitochondrial reads from BAM files\n# filter=FALSE preserves all reads for manual inspection\nMTreads <- getMT(BAMdf, filter=FALSE) \n\n# MTseekerData provides example objects:\n# RONKSreads: MAlignments object (aligned reads)\n# RONKSvariants: MVRangesList object (called variants)\ndata(RONKSreads, package=\"MTseekerData\")\n```\n\n### 2. Mitochondrial Copy Number Analysis\nCalculate the ratio of mitochondrial reads to nuclear reads to estimate relative copy number changes between samples (e.g., Tumor vs. Normal).\n\n```r\n# Summarize read counts\nstats <- Summary(RONKSreads)\nmVn <- stats$mitoVsNuclear\n\n# Calculate Tumor/Normal ratio\n# Assuming interleaved samples (Normal1, Tumor1, Normal2, Tumor2...)\nCN_ratio <- mVn[seq(2,22,2)] / mVn[seq(1,21,2)]\n```\n\n### 3. Variant Calling\nMTseeker uses `gmapR` for sensitive variant calling. Note that this requires the original BAM files and a compatible genome GmapGenome object.\n\n```r\n# Call variants from MAlignments\n# This produces an MVRangesList object\nvariants <- callMT(MTreads)\n\n# For a simpler example without full BAMs:\n# ?callMT\n```\n\n### 4. Filtering and Annotation\nMitochondrial analysis requires specific filters to remove Nuclear Mitochondrial sequences (NuMTs) and artifacts in homopolymeric regions.\n\n```r\n# filterMT performs several key tasks:\n# 1. Drops low depth samples (<20x)\n# 2. fpFilter=TRUE: removes variants in homopolymeric regions\n# 3. NuMT=TRUE: filters variants with VAF < 0.03 (likely nuclear inserts)\nfiltered_vars <- filterMT(variants, fpFilter=TRUE, NuMT=TRUE)\n\n# Aggregate variants into GenomicRanges for overlap analysis\ngr_vars <- granges(filtered_vars)\n\n# Subset to coding regions only\ncoding_vars <- encoding(filtered_vars)\n```\n\n### 5. Visualization\nMTseeker provides circular plots for variant distribution and functional diagrams for the Electron Transport Chain (ETC).\n\n```r\n# Circular plot of variants across samples\nplot(coding_vars)\n\n# Functional impact diagram (SVG)\n# Visualizes which complexes (I-V) are affected by nonsynonymous variants\nMTseeker::MTcomplex(variants[[1]])\n```\n\n## Key Data Structures\n\n- **MAlignments**: A container for mitochondrial read alignments.\n- **MVRanges / MVRangesList**: Specialized GenomicRanges objects for mitochondrial variants, containing metadata for heteroplasmy (VAF), read depth, and filter status.\n\n## Tips for Success\n\n- **Reference Genomes**: Ensure your BAMs are aligned to rCRS (canonical mitochondrial reference). MTseeker is designed to handle hg19/GRCh37/GRCh38 contig naming conventions.\n- **Heteroplasmy**: Pay close attention to the Variant Allele Frequency (VAF). Low VAF variants (<3%) are often NuMTs unless sequencing depth is extremely high and the sample is highly purified.\n- **Functional Impact**: Use `MTcomplex()` to generate SVG representations of the mitochondria's respiratory chain to identify if specific complexes (like Complex I) are preferentially hit by mutations.\n\n## Reference documentation\n\n- [MTseeker example: Renal Oncocytomas](./references/oncocytomas.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mtseeker",
+    "description": "MTseeker analyzes mitochondrial genomes by extracting reads from sequencing data, calling variants with high sensitivity to heteroplasmy, and estimating copy number. Use when user asks to extract mitochondrial reads from BAM files, call mitochondrial variants, filter nuclear mitochondrial sequences, or visualize the functional impact of mutations on the electron transport chain.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MTseeker.html"
+  }
+}

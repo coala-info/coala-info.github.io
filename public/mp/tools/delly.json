@@ -1,0 +1,49 @@
+{
+  "id": "delly",
+  "category": "CLI",
+  "name": "delly",
+  "description": "Delly is an integrated structural variant discovery tool that identifies genomic rearrangements using paired-end mapping, split-read analysis, and read-depth information. Use when user asks to discover germline structural variants, identify somatic mutations in tumor-normal pairs, call long-read variants, or detect copy-number variations.",
+  "overview": "Delly is an integrated structural variant discovery tool that leverages paired-end mapping, split-read analysis, and read-depth information to identify genomic rearrangements at single-nucleotide resolution. It is designed to process high-throughput sequencing data to delineate complex variants across the genome. Use this skill to execute standard workflows for germline SV calling, somatic mutation discovery in tumor-normal pairs, and long-read SV detection.",
+  "homepage": "https://github.com/dellytools/delly",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/delly/overview",
+  "github": "https://github.com/dellytools/delly",
+  "conda_downloads": "144.7K",
+  "conda_downloads_num": 144700,
+  "last_updated": "2025-11-06",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "delly_call",
+      "delly_merge",
+      "delly_filter"
+    ],
+    "description": "Compute structural variants",
+    "docker_image": "quay.io/biocontainers/delly:1.7.2--h4d20210_0",
+    "homepage": "https://github.com/dellytools/delly",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/delly/overview",
+    "github": "https://github.com/dellytools/delly",
+    "conda_downloads": "144.7K",
+    "last_updated": "2025-11-06",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "delly_call.cwl",
+    "delly_filter.cwl",
+    "delly_merge.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# delly\n\n## Overview\n\nDelly is an integrated structural variant discovery tool that leverages paired-end mapping, split-read analysis, and read-depth information to identify genomic rearrangements at single-nucleotide resolution. It is designed to process high-throughput sequencing data to delineate complex variants across the genome. Use this skill to execute standard workflows for germline SV calling, somatic mutation discovery in tumor-normal pairs, and long-read SV detection.\n\n## General Requirements\n\n*   **Input Files**: Requires sorted, indexed, and duplicate-marked BAM or CRAM files.\n*   **Reference**: An indexed FASTA reference genome is mandatory for split-read analysis.\n*   **Output Format**: Prefers BCF (Binary Variant Call Format) for performance, though VCF is supported.\n\n## Common CLI Patterns\n\n### Basic SV Calling\nTo discover SVs in a single sample:\n```bash\ndelly call -g reference.fa -o output.bcf input.bam\n```\n\n### Somatic SV Workflow\nSomatic calling requires a tumor sample and a matched control.\n\n1.  **Discovery**:\n    ```bash\n    delly call -x hg38.excl -g hg38.fa -o tumor_discovery.bcf tumor.bam control.bam\n    ```\n2.  **Pre-filter**:\n    Requires a `samples.tsv` (Column 1: Sample ID, Column 2: \"tumor\" or \"control\").\n    ```bash\n    delly filter -f somatic -o filtered.bcf -s samples.tsv tumor_discovery.bcf\n    ```\n3.  **Genotype**:\n    Genotype the filtered sites across the tumor and control (and optionally a panel of normals).\n    ```bash\n    delly call -g hg38.fa -v filtered.bcf -o genotyped.bcf tumor.bam control.bam\n    ```\n4.  **Post-filter**:\n    ```bash\n    delly filter -f somatic -o final_somatic.bcf -s samples.tsv genotyped.bcf\n    ```\n\n### Germline SV Workflow (Multi-sample)\n1.  **Call**: Run `delly call` on each sample individually.\n2.  **Merge**: Combine sites from all samples.\n    ```bash\n    delly merge -o merged_sites.bcf sample1.bcf sample2.bcf sampleN.bcf\n    ```\n3.  **Genotype**: Re-run `delly call` using the merged sites as a template (`-v`).\n    ```bash\n    delly call -g ref.fa -v merged_sites.bcf -o sample1.geno.bcf sample1.bam\n    ```\n4.  **Filter**: Merge genotyped files with `bcftools merge` and apply the germline filter.\n    ```bash\n    delly filter -f germline -o final_germline.bcf merged_samples.bcf\n    ```\n\n### Long-Read SV Calling (PacBio/ONT)\nUse the `lr` command specifically for long-read data.\n```bash\n# For Oxford Nanopore\ndelly lr -y ont -g ref.fa -o output.bcf input.bam\n\n# For PacBio\ndelly lr -y pb -g ref.fa -o output.bcf input.bam\n```\n\n### Copy-Number Variant (CNV) Calling\nRequires a mappability map.\n```bash\ndelly cnv -g ref.fa -m mappability.map -c coverage.cov.gz -o cnv_calls.bcf input.bam\n```\n\n## Expert Tips and Best Practices\n\n*   **Exclusion Regions**: Always use the `-x` (or `--exclude`) flag with a BED file of telomeric, centromeric, and heterochromatic regions to reduce false positives and improve runtime.\n*   **BCF vs VCF**: Always output to BCF (`-o file.bcf`) for multi-step workflows. Use `bcftools view` only when a human-readable VCF is needed for final inspection.\n*   **Translocations**: Delly uses the `CHR2` INFO tag for the second chromosome in inter-chromosomal translocations. To convert these to standard BND (breakend) format, use the provided `delly2bnd.py` script in the Delly scripts directory.\n*   **Filtering**: For germline SVs, the `delly filter -f germline` command typically requires at least 20 unrelated samples to be effective at frequency-based filtering.\n*   **Memory Management**: For very high-coverage samples, consider using the `-m` flag in `delly cnv` to adjust the window size if memory usage becomes an issue.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| delly call | Compute structural variants |\n| delly filter | Filter SV calls in a BCF file |\n| delly merge | Merge SV BCF files |\n\n## Reference documentation\n- [Delly GitHub Repository](./references/github_com_dellytools_delly.md)",
+  "skill_front_matter": {
+    "name": "delly",
+    "description": "Delly is an integrated structural variant discovery tool that identifies genomic rearrangements using paired-end mapping, split-read analysis, and read-depth information. Use when user asks to discover germline structural variants, identify somatic mutations in tumor-normal pairs, call long-read variants, or detect copy-number variations.",
+    "homepage": "https://github.com/dellytools/delly"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pga",
+  "category": "bioconductor",
+  "name": "bioconductor-pga",
+  "description": "This package provides an automated pipeline for proteogenomics by constructing customized protein databases from RNA-Seq data and performing MS/MS searches. Use when user asks to build customized protein databases from genomic variants or de novo assemblies, perform MS/MS database searches, and identify novel peptides through proteogenomics analysis.",
+  "overview": "The PGA (Phylogenomics Analysis) package provides an automated pipeline for proteogenomics. It bridges the gap between transcriptomics and proteomics by generating customized protein databases that include novel sequences (SNVs, Indels, alternative splicing, and novel transcripts) derived from RNA-Seq data. It integrates database construction, MS/MS searching via rTANDEM, and result validation.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/PGA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PGA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/PGA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pga\n\nname: bioconductor-pga\ndescription: Construction of customized protein databases from RNA-Seq data and MS/MS proteomics data searching. Use this skill when you need to perform proteogenomics analysis, including: (1) Building customized FASTA databases from VCF (SNVs/Indels), BED (junctions), or GTF (novel transcripts) files; (2) Creating protein databases from de novo RNA-Seq assemblies (e.g., Trinity); (3) Running MS/MS database searches using X!Tandem; (4) Post-processing search results (q-value calculation, protein inference); and (5) Generating HTML reports for novel peptide identification.\n\n## Overview\n\nThe PGA (Phylogenomics Analysis) package provides an automated pipeline for proteogenomics. It bridges the gap between transcriptomics and proteomics by generating customized protein databases that include novel sequences (SNVs, Indels, alternative splicing, and novel transcripts) derived from RNA-Seq data. It integrates database construction, MS/MS searching via rTANDEM, and result validation.\n\n## Core Workflows\n\n### 1. Database Construction (Reference-based)\nTo build a database from genomic coordinates, you need VCF, BED, and GTF files along with a BSgenome object.\n\n```r\nlibrary(PGA)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Define input files\nvcffile <- \"path/to/variants.vcf\"\nbedfile <- \"path/to/junctions.bed\"\ngtffile <- \"path/to/transcripts.gtf\"\nannotation <- \"path/to/annotation_folder\"\n\n# Create the database\ndbfile <- dbCreator(gtfFile=gtffile, \n                    vcfFile=vcffile, \n                    bedFile=bedfile,\n                    annotation_path=annotation, \n                    outfile_name=\"custom_db\",\n                    genome=Hsapiens, \n                    outdir=\"db_output\",\n                    make_decoy=TRUE)\n```\n\n### 2. Database Construction (De Novo)\nFor non-model organisms without a reference genome, use FASTA files from de novo assembly (e.g., Trinity).\n\n```r\ntranscript_fasta <- \"Trinity.fasta\"\noutdb <- createProDB4DenovoRNASeq(infa=transcript_fasta, \n                                  outfile_name = \"denovo_db\")\n```\n\n### 3. MS/MS Searching\nPGA uses the `rTANDEM` package to interface with X!Tandem.\n\n```r\nmsfile <- \"data.mgf\"\nidfile <- runTandem(spectra = msfile, \n                    fasta = dbfile, \n                    outdir = \"./search_results\", \n                    cpu = 6,\n                    enzyme = \"[KR]|[X]\", \n                    varmod = \"15.994915@M\", \n                    fixmod = \"57.021464@C\", \n                    tol = 10, tolu = \"ppm\",\n                    miss = 2)\n```\n\n### 4. Post-processing and Parsing\nThis step calculates q-values and performs protein inference using the Occam's razor approach.\n\n```r\n# Parse X!Tandem results\nparserGear(file = idfile, \n           db = dbfile, \n           decoyPrefix=\"#REV#\", \n           xmx=2, # Java heap size in GB\n           thread=8,\n           outdir = \"parser_results\")\n\n# Supports other formats: Mascot (.dat) or mzIdentML (.mzid)\n# parserGear(file = \"mascot.dat\", db = dbfile, ...)\n```\n\n### 5. Report Generation\nGenerates an interactive HTML report summarizing identified novel peptides.\n\n```r\nreportGear(parser_dir = \"parser_results\", \n           tab_dir = \"db_output\", \n           report_dir = \"html_report\")\n```\n\n## Integrated Pipeline\nThe `easyRun` function executes all steps (Database -> Search -> Post-process -> Report) in a single call.\n\n```r\neasyRun(gtfFile=gtffile, vcfFile=vcffile, bedFile=bedfile, \n        spectra=msfile, annotation_path=annotation, \n        genome=Hsapiens, cpu=6, enzyme=\"[KR]|[X]\", \n        varmod=\"15.994915@M\", fixmod=\"57.021464@C\")\n```\n\n## Tips and Best Practices\n- **Annotation Files**: Use `PrepareAnnotationRefseq2` or `PrepareAnnotationEnsembl2` to generate the required annotation objects before running `dbCreator`.\n- **Memory Management**: The `parserGear` function uses Java. Adjust the `xmx` parameter (e.g., `xmx=2` for 2GB) based on your system's RAM and the size of the MS/MS data.\n- **Decoy Sequences**: Always ensure `make_decoy=TRUE` (default) during database creation to allow for False Discovery Rate (FDR) estimation during the parsing stage.\n- **External Search Engines**: While PGA provides a wrapper for X!Tandem, you can import results from Mascot, MS-GF+, MyriMatch, or OMSSA as long as they are in `.dat` or `.mzid` formats.\n\n## Reference documentation\n- [PGA](./references/PGA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pga",
+    "description": "This package provides an automated pipeline for proteogenomics by constructing customized protein databases from RNA-Seq data and performing MS/MS searches. Use when user asks to build customized protein databases from genomic variants or de novo assemblies, perform MS/MS database searches, and identify novel peptides through proteogenomics analysis.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/PGA.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-degraph",
+  "category": "bioconductor",
+  "name": "bioconductor-degraph",
+  "description": "DEGraph performs differential expression testing on gene networks by incorporating graph topology and multivariate statistics. Use when user asks to perform pathway analysis that accounts for network structure, test if a gene network is differentially expressed between two conditions, or visualize expression statistics on gene network graphs.",
+  "overview": "DEGraph implements multivariate hypothesis testing methods to determine if a gene network (graph) is differentially expressed between two conditions. Unlike standard enrichment analysis which treats gene sets as unordered lists, DEGraph utilizes the network topology to improve statistical power. It specifically uses a Hotelling $T^2$ test in a lower-dimensional space defined by the graph Laplacian (Fourier components), which is particularly effective when expression shifts are coherent with the ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DEGraph.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-degraph/overview",
+  "github": "N/A",
+  "conda_downloads": "33.5K",
+  "conda_downloads_num": 33500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DEGraph"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEGraph.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-degraph/overview",
+    "github": "N/A",
+    "conda_downloads": "33.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-degraph\n\nname: bioconductor-degraph\ndescription: Differential expression testing for gene networks using multivariate statistics and graph topology. Use this skill when you need to perform pathway analysis that accounts for network structure (e.g., KEGG pathways) rather than simple gene-set enrichment, or when you want to visualize differential expression on gene network graphs.\n\n# bioconductor-degraph\n\n## Overview\n\nDEGraph implements multivariate hypothesis testing methods to determine if a gene network (graph) is differentially expressed between two conditions. Unlike standard enrichment analysis which treats gene sets as unordered lists, DEGraph utilizes the network topology to improve statistical power. It specifically uses a Hotelling $T^2$ test in a lower-dimensional space defined by the graph Laplacian (Fourier components), which is particularly effective when expression shifts are coherent with the network structure.\n\n## Typical Workflow\n\n### 1. Data Preparation\nEnsure your expression data is a matrix with genes as rows and samples as columns. You also need a class vector (0/1 or factor) defining the two groups.\n\n```r\nlibrary(DEGraph)\nlibrary(KEGGgraph)\n\n# Load example data\ndata(\"Loi2008_DEGraphVignette\", package=\"DEGraph\")\nexprData <- exprLoi2008\nclassData <- classLoi2008\nannData <- annLoi2008\ngrList <- grListKEGG # List of graph objects\n```\n\n### 2. Testing a Single Graph\nThe `testOneGraph` function is the primary interface for testing a specific network.\n\n```r\n# prop: fraction of Fourier components to retain (e.g., 0.2 for 20%)\nres <- testOneGraph(grList[[1]], exprData, classData, prop=0.2)\n\n# Access results\np_value <- res[[1]]$p.value\nk_dims <- res[[1]]$k # Number of dimensions used\n```\n\n### 3. Testing Multiple Pathways\nTo test a collection of KEGG pathways, iterate through a list of graph objects. Note that `testOneGraph` returns a list of results for each connected component of the graph.\n\n```r\nresList <- lapply(grList, function(gr) {\n  testOneGraph(gr, exprData, classData, prop=0.2)\n})\n\n# Filter out NULL results (components too small to test)\nresList <- resList[!sapply(resList, is.null)]\n```\n\n### 4. Visualization\nDEGraph provides `plotValuedGraph` to overlay statistics (like t-scores or log-fold changes) onto the network structure.\n\n```r\n# Calculate individual t-statistics for visualization\n# (Assuming X1 and X2 are matrices for the two groups)\nt_stats <- apply(exprData, 1, function(x) t.test(x ~ classData)$statistic)\n\n# Map IDs if necessary (e.g., to KEGG IDs)\nnames(t_stats) <- translateGeneID2KEGGID(names(t_stats))\n\n# Plot the graph\nplotValuedGraph(grList[[1]], \n                values=t_stats, \n                nodeLabels=annData[nodes(grList[[1]]), \"NCBI.gene.symbol\"],\n                colorPalette=heat.colors(100))\n```\n\n## Key Functions\n\n- `testOneGraph`: Performs multivariate tests on connected components of a graph. It compares a standard Hotelling $T^2$ test against a \"Fourier\" $T^2$ test using network topology.\n- `plotValuedGraph`: Renders a graph where node colors represent quantitative values (e.g., differential expression levels).\n- `translateGeneID2KEGGID` / `translateKEGGID2GeneID`: Utility functions for converting between standard Entrez/NCBI IDs and KEGG-specific identifiers.\n\n## Tips for Success\n\n- **Connected Components**: `testOneGraph` automatically splits a graph into its connected components and tests them individually. If a component is too small (e.g., only 1 node), it will return `NULL`.\n- **Dimension Reduction (`prop`)**: The `prop` argument (defaulting to 0.2) is crucial. It determines how many low-frequency components of the graph Laplacian are used. Smaller values focus on \"smooth\" expression changes across the network.\n- **Data Matching**: Ensure the node names in your graph objects match the row names (gene IDs) of your expression matrix. Use the translation utilities if there is a mismatch between NCBI and KEGG naming conventions.\n\n## Reference documentation\n\n- [DEGraph: differential expression testing for gene networks](./references/DEGraph.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-degraph",
+    "description": "DEGraph performs differential expression testing on gene networks by incorporating graph topology and multivariate statistics. Use when user asks to perform pathway analysis that accounts for network structure, test if a gene network is differentially expressed between two conditions, or visualize expression statistics on gene network graphs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DEGraph.html"
+  }
+}

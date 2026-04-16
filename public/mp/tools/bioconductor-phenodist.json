@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-phenodist",
+  "category": "bioconductor",
+  "name": "bioconductor-phenodist",
+  "description": "This package calculates phenotypic distances and performs functional clustering for image-based high-throughput screening data. Use when user asks to measure phenotypic similarity between treatments, identify phenotypes relative to negative controls, assess replicate reproducibility, or perform gene enrichment analysis on phenotypic clusters.",
+  "overview": "The `phenoDist` package provides tools for measuring phenotypic similarity in high-content screening data. It bridges the gap between image quantification (via `imageHTS`) and biological interpretation. Key capabilities include calculating distance matrices using various methods (PCA, SVM accuracy, Factor Analysis), assessing replicate reproducibility, and performing gene enrichment analysis on phenotypic clusters.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/phenoDist.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "phenoDist"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/phenoDist.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-phenodist\n\nname: bioconductor-phenodist\ndescription: Analysis of phenotypic distance in image-based high-throughput screening (HTS). Use this skill to calculate distances between treatments (RNAi, small molecules), identify phenotypes relative to negative controls, and perform functional clustering of genes based on image features.\n\n## Overview\n\nThe `phenoDist` package provides tools for measuring phenotypic similarity in high-content screening data. It bridges the gap between image quantification (via `imageHTS`) and biological interpretation. Key capabilities include calculating distance matrices using various methods (PCA, SVM accuracy, Factor Analysis), assessing replicate reproducibility, and performing gene enrichment analysis on phenotypic clusters.\n\n## Core Workflow\n\n### 1. Data Preparation\n`phenoDist` typically operates on `imageHTS` objects. Ensure the screen is configured and features are extracted before starting.\n\n```R\nlibrary(phenoDist)\nlibrary(imageHTS)\n\n# Assuming 'x' is a configured imageHTS object and 'unames' are well identifiers\nprofiles <- summarizeWells(x, unames, \"conf/featurepar.txt\")\n```\n\n### 2. Calculating Phenotypic Distance\nDistance measures quantify how similar two treatments are. Two primary methods are Euclidean distance (on PCA-transformed data) and SVM classification accuracy.\n\n**PCA and Euclidean Distance:**\n```R\n# selectedWellFtrs is a vector of feature names\npcaPDM <- PDMByWellAvg(profiles, \n                       selectedWellFtrs = selectedWellFtrs, \n                       transformMethod = \"PCA\", \n                       distMethod = \"euclidean\", \n                       nPCA = 30)\n```\n\n**SVM Classification Accuracy:**\nThis method measures how well a classifier can distinguish between two cell populations.\n```R\nsvmAccPDM <- PDMBySvmAccuracy(x, unames, \n                              selectedCellFtrs = selectedCellFtrs, \n                              cross = 5, cost = 1, \n                              gamma = 2^-5, kernel = \"radial\")\n```\n\n### 3. Quality Control and Reproducibility\nAssess the reliability of the screen by checking if technical replicates are more similar to each other than to other wells.\n\n```R\n# Rank 1 indicates perfect reproducibility\nranking <- repDistRank(x, distMatrix = svmAccPDM)\nsummary(ranking)\n```\n\n### 4. Phenotype Identification\nCalculate the distance of each treatment from the negative control (e.g., 'rluc') to determine the strength of the phenotype.\n\n```R\n# Calculate distance to negative control\npheno <- distToNeg(x, distMatrix = svmAccPDM, neg = \"rluc\")\n\n# Calculate Z'-factor for separation between positive and negative controls\nzFactor <- ctlSeparatn(x, pheno, neg = \"rluc\", pos = \"ubc\", method = \"robust\")\n\n# Calculate replicate correlation\ncorrelation <- repCorr(x, pheno)\n```\n\n### 5. Clustering and Enrichment\nGroup treatments with similar phenotypes to identify functional relationships.\n\n```R\n# Hierarchical clustering\nphenoCluster <- clusterDist(x, distMatrix = svmAccPDM, \n                            clusterFun = \"hclust\", \n                            method = \"ward\")\n\n# GO Enrichment on clusters (requires GOstats)\nlibrary(GOstats)\nGOEnrich <- enrichAnalysis(x, cl = cutree(phenoCluster, k = 5), \n                           ontology = \"BP\", \n                           annotation = \"org.Hs.eg.db\")\n```\n\n## Tips for Success\n- **Feature Selection**: The choice of `selectedWellFtrs` or `selectedCellFtrs` significantly impacts distance calculations. Use pre-validated feature sets when available.\n- **SVM Performance**: `PDMBySvmAccuracy` is computationally intensive. For large screens, consider running on a subset or using PCA-based methods for initial exploration.\n- **Symmetry**: SVM-based distance matrices may not be perfectly symmetric due to random sampling in cross-validation; this is normal and usually negligible.\n\n## Reference documentation\n- [phenoDist](./references/phenoDist.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-phenodist",
+    "description": "This package calculates phenotypic distances and performs functional clustering for image-based high-throughput screening data. Use when user asks to measure phenotypic similarity between treatments, identify phenotypes relative to negative controls, assess replicate reproducibility, or perform gene enrichment analysis on phenotypic clusters.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/phenoDist.html"
+  }
+}

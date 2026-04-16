@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-decoupler",
+  "category": "bioconductor",
+  "name": "bioconductor-decoupler",
+  "description": "This tool performs biological activity inference from omics data by integrating gene expression matrices with prior knowledge networks. Use when user asks to infer transcription factor or pathway activities, access curated regulatory networks via OmniPath, run consensus enrichment analysis, or visualize activity scores.",
+  "overview": "The `decoupleR` package provides a unified framework for inferring biological activities (e.g., transcription factor or pathway activity) from omics data using prior knowledge. It decouples the statistical method from the biological resource, allowing users to apply various algorithms (Univariate Linear Models, Multivariate Linear Models, GSEA, etc.) to the same data and network.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/decoupleR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-decoupler/overview",
+  "github": "https://github.com/saezlab/decoupleR",
+  "conda_downloads": "13.0K",
+  "conda_downloads_num": 13000,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "decoupleR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/decoupleR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-decoupler/overview",
+    "github": "https://github.com/saezlab/decoupleR",
+    "conda_downloads": "13.0K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-decoupler\n\nname: bioconductor-decoupler\ndescription: Use this skill to perform biological activity inference from omics data (bulk RNA-seq, scRNA-seq) using the decoupleR R package. It supports various statistical methods (MLM, ULM, GSEA, etc.) and integrates with prior knowledge networks like CollecTRI (TFs) and PROGENy (Pathways). Use this skill when you need to: (1) Infer transcription factor or pathway activities from gene expression matrices or differential expression results, (2) Access curated regulatory networks via OmniPath, (3) Run consensus analysis across multiple enrichment methods, or (4) Visualize activity scores in heatmaps or volcano plots.\n\n# bioconductor-decoupler\n\n## Overview\nThe `decoupleR` package provides a unified framework for inferring biological activities (e.g., transcription factor or pathway activity) from omics data using prior knowledge. It decouples the statistical method from the biological resource, allowing users to apply various algorithms (Univariate Linear Models, Multivariate Linear Models, GSEA, etc.) to the same data and network.\n\n## Installation\nInstall the package via BiocManager:\n```r\nif (!require(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"decoupleR\")\n```\n\n## Core Workflow\n\n### 1. Prepare Input Data\n`decoupleR` requires two main inputs:\n- **Matrix (`mat`)**: A matrix of molecular readouts (e.g., normalized counts, logFC, or t-statistics). Rows are features (genes) and columns are samples/conditions.\n- **Network (`net`)**: A data frame relating \"sources\" (TFs, pathways) to \"targets\" (genes). It must contain columns for `.source` and `.target`, and optionally `.mor` (mode of regulation/weights).\n\n### 2. Retrieve Prior Knowledge\nUse built-in functions to fetch curated networks:\n```r\n# Get Transcription Factor network (CollecTRI)\nnet_tf <- get_collectri(organism = 'human')\n\n# Get Pathway network (PROGENy)\nnet_pw <- get_progeny(organism = 'human', top = 500)\n```\n\n### 3. Run Inference Methods\nMethods follow a consistent naming convention: `run_[method]`.\n\n**Univariate Linear Model (ULM):**\nBest for networks with weights (MoR). Fits a linear model for each source.\n```r\nres_ulm <- run_ulm(mat = mat, net = net_tf, .source = 'source', .target = 'target', .mor = 'mor')\n```\n\n**Multivariate Linear Model (MLM):**\nFits one model per sample using all sources simultaneously. Effective for pathways with overlapping targets.\n```r\nres_mlm <- run_mlm(mat = mat, net = net_pw, .source = 'source', .target = 'target', .mor = 'weight')\n```\n\n**Consensus Score:**\nRuns the top-performing methods (`mlm`, `ulm`, `wsum`) and calculates a consensus.\n```r\nres_consensus <- decouple(mat = mat, network = net_tf, .source = 'source', .target = 'target', .mor = 'mor')\n```\n\n### 4. Process and Visualize Results\nResults are returned in a long-format tibble. Use `pivot_wider_profile` to convert to a matrix for heatmaps.\n\n```r\n# Convert to matrix for pheatmap\nact_mat <- res_ulm %>%\n  filter(statistic == 'ulm') %>%\n  pivot_wider_profile(id_cols = source, names_from = condition, values_from = score) %>%\n  as.matrix()\n\npheatmap::pheatmap(act_mat)\n```\n\n## Integration with Single-Cell (Seurat)\nFor scRNA-seq, extract the data from the assay and store results back as a new assay.\n```r\n# Extract counts\nmat <- as.matrix(seurat_obj@assays$RNA@data)\n\n# Run method\nacts <- run_mlm(mat = mat, net = net_pw, .source = 'source', .target = 'target', .mor = 'weight')\n\n# Add back to Seurat\nseurat_obj[['pathways']] <- acts %>%\n  pivot_wider(id_cols = 'source', names_from = 'condition', values_from = 'score') %>%\n  column_to_rownames('source') %>%\n  CreateAssayObject()\n```\n\n## Tips for Success\n- **Statistic Selection**: For differential expression, use t-values or a weighted statistic like `-log10(p-value) * logFC`.\n- **minsize**: Use the `minsize` argument (default 5) to filter out sources with too few targets, which prevents noisy activity estimates.\n- **Directionality**: Positive scores indicate activation; negative scores indicate inhibition (provided the network has correct `.mor` weights).\n\n## Reference documentation\n- [Introduction](./references/decoupleR.md)\n- [Pathway activity inference in bulk RNA-seq](./references/pw_bk.md)\n- [Pathway activity inference from scRNA-seq](./references/pw_sc.md)\n- [Transcription factor activity inference in bulk RNA-seq](./references/tf_bk.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-decoupler",
+    "description": "This tool performs biological activity inference from omics data by integrating gene expression matrices with prior knowledge networks. Use when user asks to infer transcription factor or pathway activities, access curated regulatory networks via OmniPath, run consensus enrichment analysis, or visualize activity scores.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/decoupleR.html"
+  }
+}

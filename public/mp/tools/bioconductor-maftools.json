@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-maftools",
+  "category": "bioconductor",
+  "name": "bioconductor-maftools",
+  "description": "Bioconductor-maftools provides comprehensive analysis and visualization of Mutation Annotation Format files from cancer genomics studies. Use when user asks to read, summarize, and visualize somatic variants, perform copy-number analysis, extract mutational signatures, or conduct clinical enrichment and survival analysis.",
+  "overview": "The `maftools` package is a versatile Bioconductor tool designed to process Mutation Annotation Format (MAF) files, commonly used in large-scale cancer studies like TCGA. It provides an efficient workflow for summarizing somatic variants and generating publication-quality visualizations (oncoplots, lollipop plots, rainfall plots) without requiring complex data manipulation. Beyond visualization, it supports advanced statistical analyses including mutational signature extraction, detecting mutual",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/maftools.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/PoisonAlien/maftools",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maftools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maftools.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/PoisonAlien/maftools",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-maftools\n\nname: bioconductor-maftools\ndescription: Comprehensive analysis and visualization of Mutation Annotation Format (MAF) files from cancer genomics studies. Use this skill to read, summarize, and visualize somatic variants, perform copy-number analysis, extract mutational signatures, and conduct clinical enrichment or survival analysis using the maftools R package.\n\n# bioconductor-maftools\n\n## Overview\nThe `maftools` package is a versatile Bioconductor tool designed to process Mutation Annotation Format (MAF) files, commonly used in large-scale cancer studies like TCGA. It provides an efficient workflow for summarizing somatic variants and generating publication-quality visualizations (oncoplots, lollipop plots, rainfall plots) without requiring complex data manipulation. Beyond visualization, it supports advanced statistical analyses including mutational signature extraction, detecting mutually exclusive mutations, and identifying cancer driver genes.\n\n## Core Workflow\n\n### 1. Loading Data\nThe primary entry point is the `read.maf` function, which creates a centralized MAF object.\n\n```r\nlibrary(maftools)\n\n# Required: MAF file. Optional: Clinical data and Copy Number data.\nlaml.maf <- system.file('extdata', 'tcga_laml.maf.gz', package = 'maftools')\nlaml.clin <- system.file('extdata', 'tcga_laml_annot.tsv', package = 'maftools')\n\n# Load the data\nlaml <- read.maf(maf = laml.maf, clinicalData = laml.clin)\n\n# Access summaries\ngetSampleSummary(laml)\ngetGeneSummary(laml)\ngetClinicalData(laml)\n```\n\n### 2. Essential Visualizations\nOnce the MAF object is created, use these functions for rapid data exploration:\n\n*   **Summary Plot**: `plotmafSummary(maf = laml)` - Displays variant classifications and mutation load.\n*   **Oncoplots (Waterfall)**: `oncoplot(maf = laml, top = 10)` - Visualizes the mutation matrix for top genes.\n*   **Lollipop Plots**: `lollipopPlot(maf = laml, gene = 'DNMT3A', AACol = 'Protein_Change')` - Shows mutation distribution along protein domains.\n*   **Rainfall Plots**: `rainfallPlot(maf = brca)` - Visualizes hypermutated regions (Kataegis).\n*   **VAF Distribution**: `plotVaf(maf = laml, vafCol = 'i_TumorVAF_WU')` - Inspects variant allele frequencies.\n\n### 3. Statistical Analysis\n*   **Somatic Interactions**: `somaticInteractions(maf = laml, top = 25)` - Performs Fisher's exact test to find co-occurring or mutually exclusive gene pairs.\n*   **Driver Gene Detection**: `oncodrive(maf = laml, AACol = 'Protein_Change')` - Identifies drivers based on positional clustering (OncodriveCLUST).\n*   **Survival Analysis**: `mafSurvival(maf = laml, genes = 'DNMT3A', time = 'days_to_last_followup', Status = 'Overall_Survival_Status')`.\n*   **Cohort Comparison**: `mafCompare(m1 = primary, m2 = relapse)` - Identifies differentially mutated genes between two groups.\n\n### 4. Mutational Signatures\nExtract mutational signatures to understand underlying carcinogenic processes:\n\n```r\n# 1. Create trinucleotide matrix (requires BSgenome)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\ntnm <- trinucleotideMatrix(maf = laml, ref_genome = \"BSgenome.Hsapiens.UCSC.hg19\")\n\n# 2. Estimate optimal number of signatures\nsign_est <- estimateSignatures(mat = tnm, nTry = 6)\nplotCophenetic(sign_est)\n\n# 3. Extract and compare to COSMIC\nextracted <- extractSignatures(mat = tnm, n = 3)\ncomparison <- compareSignatures(nmfRes = extracted, sig_db = \"SBS\")\nplotSignatures(extracted)\n```\n\n### 5. Copy Number Analysis\n`maftools` can process GISTIC2.0 output or raw segmentation files:\n*   **GISTIC**: `readGistic(gisticDir = \"path/to/gistic_results\")` followed by `gisticOncoPlot()` or `gisticChromPlot()`.\n*   **ASCAT/BAM**: Use `gtMarkers()` and `prepAscat()` to prepare files for Allele-specific Copy Number Analysis.\n*   **Mosdepth**: Use `plotMosdepth()` to visualize coverage-based CNV from BED files.\n\n## Tips for Success\n*   **Field Names**: Ensure your MAF has the mandatory columns: `Hugo_Symbol`, `Chromosome`, `Start_Position`, `End_Position`, `Reference_Allele`, `Tumor_Seq_Allele2`, `Variant_Classification`, `Variant_Type`, and `Tumor_Sample_Barcode`.\n*   **Amino Acid Changes**: If `lollipopPlot` fails to find protein changes, check your column names and specify them using the `AACol` argument.\n*   **TCGA Data**: Use `tcgaLoad(study = \"LAML\")` to quickly pull curated TCGA datasets directly into your session.\n*   **Subsetting**: Use `subsetMaf(maf = laml, query = \"Variant_Classification == 'Splice_Site'\")` to create filtered MAF objects for specific analyses.\n\n## Reference documentation\n- [Summarize, Analyze, and Visualize MAF Files](./references/maftools.md)\n- [Customizing Oncoplots](./references/oncoplots.md)\n- [Copy Number Analysis](./references/cnv_analysis.md)\n- [Personalized Cancer Report and Hotspots](./references/cancer_hotspots.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-maftools",
+    "description": "Bioconductor-maftools provides comprehensive analysis and visualization of Mutation Annotation Format files from cancer genomics studies. Use when user asks to read, summarize, and visualize somatic variants, perform copy-number analysis, extract mutational signatures, or conduct clinical enrichment and survival analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maftools.html"
+  }
+}

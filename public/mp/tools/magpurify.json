@@ -1,0 +1,59 @@
+{
+  "id": "magpurify",
+  "category": "CLI",
+  "name": "magpurify",
+  "description": "MAGpurify is a modular pipeline designed to improve the quality of metagenomic bins by identifying and removing contaminating contigs. Use when user asks to clean metagenomic bins, identify taxonomic discordance, detect sequence composition outliers, or filter contigs based on inconsistent coverage profiles.",
+  "overview": "MAGpurify is a modular pipeline designed to improve the quality of metagenomic bins. It defines contamination as contigs belonging to a species other than the primary organism represented in the MAG. The tool is built on a \"high specificity\" philosophy, meaning it aims to minimize the accidental removal of correct contigs while identifying clear outliers. It employs a multi-pronged approach—checking for taxonomic discordance, sequence composition outliers (GC and tetranucleotide frequency), and ",
+  "homepage": "https://github.com/snayfach/MAGpurify",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/magpurify/overview",
+  "github": "https://github.com/snayfach/MAGpurify",
+  "conda_downloads": "21.6K",
+  "conda_downloads_num": 21600,
+  "last_updated": "2025-08-14",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "magpurify_phylo-markers",
+      "magpurify_clade-markers",
+      "magpurify_conspecific",
+      "magpurify_tetra-freq",
+      "magpurify_gc-content",
+      "magpurify_coverage",
+      "magpurify_known-contam",
+      "magpurify_clean-bin"
+    ],
+    "description": "Find taxonomic discordant contigs using a database of phylogenetic marker genes.",
+    "docker_image": "quay.io/biocontainers/magpurify:2.1.2--pyhdfd78af_2",
+    "homepage": "https://github.com/snayfach/MAGpurify",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/magpurify/overview",
+    "github": "https://github.com/snayfach/MAGpurify",
+    "conda_downloads": "21.6K",
+    "last_updated": "2025-08-14",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "magpurify_clade-markers.cwl",
+    "magpurify_clean-bin.cwl",
+    "magpurify_conspecific.cwl",
+    "magpurify_coverage.cwl",
+    "magpurify_gc-content.cwl",
+    "magpurify_known-contam.cwl",
+    "magpurify_phylo-markers.cwl",
+    "magpurify_tetra-freq.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# magpurify\n\n## Overview\n\nMAGpurify is a modular pipeline designed to improve the quality of metagenomic bins. It defines contamination as contigs belonging to a species other than the primary organism represented in the MAG. The tool is built on a \"high specificity\" philosophy, meaning it aims to minimize the accidental removal of correct contigs while identifying clear outliers. It employs a multi-pronged approach—checking for taxonomic discordance, sequence composition outliers (GC and tetranucleotide frequency), and inconsistent coverage profiles across samples.\n\n## Installation and Database Setup\n\nBefore running the modules, ensure the environment is configured:\n\n1.  **Database**: Download and unpack the MAGpurify reference database (v1.0).\n2.  **Environment Variable**: Set the path to the database to avoid using the `--db` flag in every command:\n    `export MAGPURIFYDB=/path/to/MAGpurify-db-v1.0`\n\n## Core Workflow\n\nThe standard workflow involves running individual detection modules followed by a final cleaning step.\n\n### 1. Run Detection Modules\nExecute the desired modules against your input MAG. Each module populates the specified output directory with flagged contig information.\n\n```bash\n# Taxonomic discordance modules (Requires Database)\nmagpurify phylo-markers input.fna output_dir/\nmagpurify clade-markers input.fna output_dir/\nmagpurify known-contam input.fna output_dir/\n\n# Sequence composition modules (No external data required)\nmagpurify tetra-freq input.fna output_dir/\nmagpurify gc-content input.fna output_dir/\n\n# Coverage-based detection (Requires sorted BAM files)\nmagpurify coverage input.fna output_dir/ sample1.bam sample2.bam\n```\n\n### 2. Conspecific Alignment (Advanced)\nTo find contigs that fail to align to closely related genomes, you must first build a Mash sketch of reference genomes:\n\n```bash\n# Create the reference sketch\nmash sketch -l ref_genomes.list -o ref_genomes_sketch\n\n# Run the module\nmagpurify conspecific input.fna output_dir/ ref_genomes_sketch.msh\n```\n\n### 3. Clean the Bin\nAfter running the detection modules, use `clean-bin` to generate the final purified FASTA file. This module aggregates all flags found in the output directory.\n\n```bash\nmagpurify clean-bin input.fna output_dir/ cleaned_mag.fna\n```\n\n## Expert Tips and Best Practices\n\n*   **Sequential Execution**: Modules are independent and can be run in any order or in parallel, provided they share the same output directory for the final `clean-bin` step.\n*   **Specificity vs. Sensitivity**: The default parameters are tuned for high specificity. If you suspect significant remaining contamination, consider lowering the thresholds for `gc-content` or `tetra-freq` modules.\n*   **Coverage Module Selection**: When providing multiple BAM files to the `coverage` module, MAGpurify automatically selects the sample with the highest average contig coverage for outlier detection.\n*   **Resource Management**: For large MAGs or many bins, ensure `prodigal`, `hmmer`, and `blast` are in your PATH, as these are the primary computational bottlenecks for the marker-based modules.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| magpurify clade-markers | Find taxonomic discordant contigs using a database of clade-specific marker genes. |\n| magpurify clean-bin | Remove putative contaminant contigs from bin. |\n| magpurify conspecific | Find contigs that fail to align to closely related genomes. |\n| magpurify gc-content | Find contigs with outlier GC content. |\n| magpurify known-contam | Find contigs that match a database of known contaminants. |\n| magpurify phylo-markers | Find taxonomic discordant contigs using a database of phylogenetic marker genes. |\n| magpurify tetra-freq | Find contigs with outlier tetranucleotide frequency. |\n| magpurify_coverage | Find contigs with outlier coverage profile. |\n\n## Reference documentation\n- [MAGpurify GitHub Repository](./references/github_com_snayfach_MAGpurify_blob_master_README.md)\n- [MAGpurify Overview](./references/anaconda_org_channels_bioconda_packages_magpurify_overview.md)",
+  "skill_front_matter": {
+    "name": "magpurify",
+    "description": "MAGpurify is a modular pipeline designed to improve the quality of metagenomic bins by identifying and removing contaminating contigs. Use when user asks to clean metagenomic bins, identify taxonomic discordance, detect sequence composition outliers, or filter contigs based on inconsistent coverage profiles.",
+    "homepage": "https://github.com/snayfach/MAGpurify"
+  }
+}

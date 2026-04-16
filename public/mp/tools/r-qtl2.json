@@ -1,0 +1,41 @@
+{
+  "id": "r-qtl2",
+  "category": "R",
+  "name": "r-qtl2",
+  "description": "The r-qtl2 tool performs Quantitative Trait Locus (QTL) analysis for high-dimensional genomic data and complex experimental crosses. Use when user asks to calculate genotype probabilities, perform genome scans with linear mixed models, identify QTL peaks, or conduct SNP association mapping.",
+  "overview": "The `qtl2` package is a reimplementation of R/qtl designed to handle high-dimensional data and complex cross designs. It utilizes a \"control file\" (YAML or JSON) to link genotypes, phenotypes, and maps. The workflow typically moves from calculating genotype probabilities to performing genome scans and identifying peaks.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-qtl2\n\nname: r-qtl2\ndescription: Perform Quantitative Trait Locus (QTL) analysis in experimental crosses using the qtl2 R package. Use this skill when analyzing high-dimensional genomic data, complex cross designs (e.g., Diversity Outbred, Collaborative Cross, multi-parent RILs), or performing genome scans with linear mixed models (LMM) to account for population structure.\n\n# r-qtl2\n\n## Overview\nThe `qtl2` package is a reimplementation of R/qtl designed to handle high-dimensional data and complex cross designs. It utilizes a \"control file\" (YAML or JSON) to link genotypes, phenotypes, and maps. The workflow typically moves from calculating genotype probabilities to performing genome scans and identifying peaks.\n\n## Installation\ninstall.packages(\"qtl2\")\n\n## Core Workflow\n\n1. **Load Data**\n   Use `read_cross2()` to load a zipped data set.\n   iron <- read_cross2(system.file(\"extdata\", \"iron.zip\", package=\"qtl2\"))\n\n2. **Prepare Map and Probabilities**\n   Insert pseudomarkers to create a grid for the scan, then calculate genotype probabilities.\n   map <- insert_pseudomarkers(iron$gmap, step=1)\n   probs <- calc_genoprob(iron, map, error_prob=0.002)\n\n3. **Calculate Kinship (Optional but Recommended)**\n   For complex crosses, use the Leave-One-Chromosome-Out (LOCO) method to account for population structure.\n   kinship <- calc_kinship(probs, \"loco\")\n\n4. **Perform Genome Scan**\n   Run the scan using `scan1()`. Provide covariates via `addcovar`.\n   Xcovar <- get_x_covar(iron)\n   out <- scan1(probs, iron$pheno, kinship=kinship, Xcovar=Xcovar)\n\n5. **Determine Significance**\n   Run permutations to find LOD thresholds.\n   operm <- scan1perm(probs, iron$pheno, n_perm=1000)\n   threshold <- summary(operm, alpha=0.05)\n\n6. **Find and Plot Peaks**\n   Identify QTL peaks and visualize results.\n   peaks <- find_peaks(out, map, threshold=3, drop=1.5)\n   plot(out, map, lodcolumn=1)\n   add_threshold(map, threshold)\n\n## Specialized Analysis\n\n### Multi-parent Allele Effects\nFor multi-parent crosses (e.g., DO mice), convert genotype probabilities to allele probabilities to simplify the model.\nA_probs <- genoprob_to_alleleprob(probs)\nout_coef <- scan1coef(A_probs[,\"7\"], iron$pheno[,\"liver\"], kinship=kinship[[\"7\"]])\nplot_coef(out_coef, map[[\"7\"]], columns=1:8)\n\n### SNP Association Mapping\nIf founder genotypes are available, perform SNP association mapping by interpolating founder SNPs onto the study individuals.\nsnpinfo <- index_snps(iron$pmap, snpinfo_table)\nsnpprobs <- genoprob_to_snpprob(probs, snpinfo)\nout_snps <- scan1(snpprobs, iron$pheno)\n\n## Tips and Best Practices\n- **Memory Management**: For very large datasets, use `lowmem=TRUE` in `calc_genoprob()`.\n- **LOCO**: Always use `type=\"loco\"` in `calc_kinship()` when performing scans with kinship to avoid proximal contamination (inflated LOD scores near the QTL).\n- **X Chromosome**: Use `get_x_covar()` to automatically generate the necessary sex and direction covariates for the X chromosome scan.\n- **Data Integrity**: Run `check_cross2(cross_obj)` after loading to ensure the data structure is valid.\n\n## Reference documentation\n- [Package Manual](./references/reference_manual.md)",
+  "skill_front_matter": {
+    "name": "r-qtl2",
+    "description": "The r-qtl2 tool performs Quantitative Trait Locus (QTL) analysis for high-dimensional genomic data and complex experimental crosses. Use when user asks to calculate genotype probabilities, perform genome scans with linear mixed models, identify QTL peaks, or conduct SNP association mapping.",
+    "homepage": "https://cran.r-project.org/web/packages/qtl2/index.html"
+  }
+}

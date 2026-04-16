@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-timeomics",
+  "category": "bioconductor",
+  "name": "bioconductor-timeomics",
+  "description": "bioconductor-timeomics provides a multivariate framework for the analysis, integration, and clustering of longitudinal multi-omics data. Use when user asks to model temporal feature expression, cluster features with similar time profiles, or integrate multiple time-course omics datasets.",
+  "overview": "The `timeOmics` package provides a multivariate framework for the analysis and integration of longitudinal omics data. It handles the complexity of time-course experiments by modeling feature expression as a function of time, clustering features with similar temporal profiles, and integrating multiple omics datasets (e.g., transcriptomics and metabolomics) measured on the same samples.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/timeOmics.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/abodein/timeOmics",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "timeOmics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/timeOmics.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/abodein/timeOmics",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-timeomics\n\n## Overview\n\nThe `timeOmics` package provides a multivariate framework for the analysis and integration of longitudinal omics data. It handles the complexity of time-course experiments by modeling feature expression as a function of time, clustering features with similar temporal profiles, and integrating multiple omics datasets (e.g., transcriptomics and metabolomics) measured on the same samples.\n\n## Typical Workflow\n\n### 1. Data Preprocessing\nData should be in a matrix or data frame with samples in **rows** and features in **columns**.\n*   **Platform-specific:** Apply standard normalization (log, scale, CLR for microbiome).\n*   **Time-specific:** Filter features with low variation over time using a coefficient of variation (CV) threshold.\n\n```r\n# Example CV filtering\nremove.low.cv <- function(X, cutoff = 0.5){\n  cv <- unlist(lapply(as.data.frame(X), function(x) abs(sd(x)/mean(x))))\n  return(X[, cv > cutoff])\n}\ndata.filtered <- remove.low.cv(your_data, 0.5)\n```\n\n### 2. Time Modeling (LMMS)\nModel each feature using Linear Mixed Model Splines to account for inter-individual variability and summarize features into unique time profiles.\n*   **Note:** Requires the `lmms` package (available via GitHub `cran/lmms`).\n*   **Filtering:** Use `lmms.filter.lines` to remove noisy profiles based on homoscedasticity (Breusch-Pagan test) and Mean Squared Error (MSE).\n\n```r\n# Modeling\nlmms.output <- lmms::lmmSpline(data = data.filtered, time = time_vector,\n                               sampleID = rownames(data.filtered), \n                               timePredict = unique_time_points)\nmodelled.data <- t(slot(lmms.output, 'predSpline'))\n\n# Filtering noisy profiles\nfilter.res <- lmms.filter.lines(data = data.filtered, lmms.obj = lmms.output, time = time_vector)\nprofile.filtered <- filter.res$filtered\n```\n\n### 3. Longitudinal Clustering\nGroup features using multivariate methods from `mixOmics`.\n*   **Single-Omic:** Use `pca`.\n*   **Two-Omics:** Use `pls`.\n*   **Multi-Omics (3+):** Use `block.pls`.\n\n**Optimization:** Use `getNcomp` to determine the number of components (clusters) based on the silhouette coefficient.\n\n```r\n# PCA Example\npca.res <- mixOmics::pca(X = profile.filtered, ncomp = 2, scale = FALSE, center = FALSE)\npca.cluster <- getCluster(pca.res)\n\n# Visualization\nplotLong(pca.res, title = \"Longitudinal Clustering\")\n```\n\n### 4. Feature Selection (Signatures)\nUse \"sparse\" versions of the methods (`spca`, `spls`, `block.spls`) to identify a minimal signature of features for each cluster.\n*   Use `tuneCluster.spca` or `tuneCluster.spls` to optimize the number of features (`keepX`) to retain.\n\n```r\ntune.spca <- tuneCluster.spca(X = profile.filtered, ncomp = 2, test.keepX = c(2:10))\nspca.res <- mixOmics::spca(X = profile.filtered, ncomp = 2, \n                           keepX = tune.spca$choice.keepX, scale = FALSE)\n```\n\n### 5. Post-hoc Evaluation\nValidate clustering quality using proportionality distances. A good cluster should have significantly lower intra-cluster distance compared to the background.\n\n```r\nres.prop <- proportionality(pca.res)\nplot(res.prop) # Visualizes inside vs outside distances\n# Check res.prop$pvalue for Wilcoxon test results\n```\n\n## Key Functions\n*   `lmms.filter.lines()`: Filters out features that do not follow a clear temporal trend.\n*   `getNcomp()`: Tunes the number of components for PCA/PLS models using silhouette scores.\n*   `getCluster()`: Extracts cluster assignments (positive/negative contribution per component).\n*   `plotLong()`: Specialized plotting function for longitudinal clusters.\n*   `proportionality()`: Calculates association measures to validate clusters a posteriori.\n\n## Reference documentation\n- [timeOmics Vignette (Rmd)](./references/vignette.Rmd)\n- [timeOmics Vignette (Markdown)](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-timeomics",
+    "description": "bioconductor-timeomics provides a multivariate framework for the analysis, integration, and clustering of longitudinal multi-omics data. Use when user asks to model temporal feature expression, cluster features with similar time profiles, or integrate multiple time-course omics datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/timeOmics.html"
+  }
+}

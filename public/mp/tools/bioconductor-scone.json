@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scone",
+  "category": "bioconductor",
+  "name": "bioconductor-scone",
+  "description": "bioconductor-scone provides a comprehensive framework for normalizing and evaluating single-cell RNA-seq data using multiple workflows. Use when user asks to compare normalization methods, filter poor-quality libraries, perform data imputation, or apply scaling and regression-based adjustments to scRNA-seq count data.",
+  "overview": "The `scone` package provides a data-driven framework for assessing the efficacy of various normalization workflows. Instead of relying on a single method, `scone` allows users to run many combinations of imputation, scaling, and regression-based adjustments in parallel. It then ranks these workflows using eight performance metrics (e.g., preservation of biological signal, removal of batch effects, and reduction of technical artifacts) to help select the optimal strategy for downstream analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scone.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/YosefLab/scone",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scone"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scone.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/YosefLab/scone",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scone\n\nname: bioconductor-scone\ndescription: Comprehensive framework for single-cell RNA-seq data normalization and evaluation. Use when you need to compare multiple normalization workflows, filter poor-quality libraries, perform data imputation, or apply scaling methods (TMM, DESeq, Upper Quartile, PsiNorm) and regression-based adjustments (RUVg, Quality PCs) to scRNA-seq count data.\n\n## Overview\n\nThe `scone` package provides a data-driven framework for assessing the efficacy of various normalization workflows. Instead of relying on a single method, `scone` allows users to run many combinations of imputation, scaling, and regression-based adjustments in parallel. It then ranks these workflows using eight performance metrics (e.g., preservation of biological signal, removal of batch effects, and reduction of technical artifacts) to help select the optimal strategy for downstream analysis.\n\n## Core Workflow\n\n### 1. Data Preparation and Quality Control\n\nLoad your data into a `SingleCellExperiment` object and identify quality control (QC) metrics.\n\n```r\nlibrary(scone)\nlibrary(scRNAseq)\n\n# Example: Load data and extract counts\nfluidigm <- ReprocessedFluidigmData(assays = \"rsem_counts\")\nexpr <- as.matrix(assay(fluidigm))\n\n# Extract QC metrics (e.g., alignment rate, total reads)\nqc <- colData(fluidigm)[, metadata(fluidigm)$which_qc]\nppq <- scale(qc[, apply(qc, 2, sd) > 0]) # Scale for PCA\n```\n\n### 2. Sample Filtering\n\nUse `metric_sample_filter` to identify and remove low-quality libraries based on read counts, alignment rates, and gene detection breadth.\n\n```r\n# Identify common genes for breadth calculation\nis_common <- rowSums(expr >= 10) >= (0.25 * ncol(expr))\n\nmfilt <- metric_sample_filter(expr,\n                              nreads = colData(fluidigm)$NREADS,\n                              ralign = colData(fluidigm)$RALIGN,\n                              gene_filter = is_common,\n                              zcut = 3, \n                              plot = TRUE)\n\n# Apply filter\nis_good <- !apply(simplify2array(mfilt[!is.na(mfilt)]), 1, any)\nexpr_filtered <- expr[, is_good]\n```\n\n### 3. Defining the SconeExperiment\n\nInitialize the `SconeExperiment` object with expression data, biological factors to preserve, and QC metrics to remove.\n\n```r\n# Define control genes (e.g., Housekeeping genes for negative controls)\nnegcon <- rownames(expr_filtered) %in% housekeeping_list\n\nmy_scone <- SconeExperiment(expr_filtered,\n                            qc = ppq[is_good, ], \n                            bio = factor(colData(fluidigm)$Biological_Condition[is_good]),\n                            negcon_ruv = negcon)\n```\n\n### 4. Running Normalization Workflows\n\nDefine scaling methods and run the evaluation. `scone` will test combinations of the provided modules.\n\n```r\n# Define scaling functions\nscaling <- list(none = identity, \n                uq = UQ_FN, \n                tmm = TMM_FN, \n                psi = PSINORM_FN, \n                deseq = DESEQ_FN)\n\n# Run scone evaluation\nmy_scone <- scone(my_scone,\n                  scaling = scaling,\n                  k_qc = 3, k_ruv = 3, # Factors for regression\n                  run = TRUE,\n                  return_norm = \"in_memory\",\n                  zero = \"postadjust\")\n```\n\n### 5. Evaluating and Extracting Results\n\nRank methods by their mean score and extract the best-performing normalized matrix.\n\n```r\n# View top-ranked methods\nhead(get_score_ranks(my_scone))\n\n# Extract the best normalized data\nbest_method <- rownames(get_params(my_scone))[1]\nnorm_data <- get_normalized(my_scone, method = best_method)\n\n# Visualize trade-offs with a biplot\npc_obj <- prcomp(apply(t(get_scores(my_scone)), 1, rank))\nbiplot_color(pc_obj, y = -get_score_ranks(my_scone))\n```\n\n## Specialized Normalization: PsiNorm\n\n`PsiNorm` is a scalable normalization based on the Pareto distribution, particularly effective for aligning high-expression gene distributions.\n\n```r\n# Direct usage on SingleCellExperiment\nlibrary(SingleCellExperiment)\nsce <- PsiNorm(sce)\nsce <- scuttle::logNormCounts(sce) # Uses PsiNorm size factors\n```\n\n## Tips for Success\n\n- **Control Genes**: Providing high-quality positive (DE) and negative (housekeeping) control genes significantly improves the reliability of the evaluation metrics.\n- **Imputation**: Imputation (e.g., via `estimate_ziber`) is computationally expensive. Consider running it only if drop-out effects are a primary concern.\n- **Batch Effects**: If biological origin and batch are confounded, `scone` cannot directly \"fix\" the batch effect without risking biological signal loss; use the evaluation metrics to find the best compromise.\n- **HDF5 Support**: `PsiNorm` and `scone` support `DelayedArray` and HDF5-backed matrices for large-scale datasets.\n\n## Reference documentation\n\n- [PsiNorm normalization](./references/PsiNorm.md)\n- [PsiNorm normalization (RMarkdown source)](./references/PsiNorm.Rmd)\n- [Introduction to SCONE](./references/sconeTutorial.md)\n- [Introduction to SCONE (RMarkdown source)](./references/sconeTutorial.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-scone",
+    "description": "bioconductor-scone provides a comprehensive framework for normalizing and evaluating single-cell RNA-seq data using multiple workflows. Use when user asks to compare normalization methods, filter poor-quality libraries, perform data imputation, or apply scaling and regression-based adjustments to scRNA-seq count data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scone.html"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "metawrap",
+  "category": "CLI",
+  "name": "metawrap",
+  "description": "metaWRAP is a comprehensive wrapper suite that streamlines metagenomic workflows from raw read processing and assembly to bin refinement and reassembly. Use when user asks to process metagenomic reads, assemble contigs, perform taxonomic profiling, run multiple binning algorithms, or refine and reassemble genomic bins.",
+  "overview": "metaWRAP is a comprehensive wrapper suite designed to streamline the transition from raw metagenomic sequencing data to refined, annotated draft genomes. It organizes complex bioinformatic workflows into standalone modules for read processing, assembly, binning, and visualization.",
+  "homepage": "https://github.com/bxlab/metaWRAP",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/metawrap/overview",
+  "github": "https://github.com/bxlab/metaWRAP",
+  "conda_downloads": "14.9K",
+  "conda_downloads_num": 14900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metawrap_read_qc",
+      "metawrap_assembly",
+      "metawrap_kraken",
+      "metawrap_blobology",
+      "metawrap_binning",
+      "metawrap_bin_refinement",
+      "metawrap_reassemble_bins",
+      "metawrap_quant_bins",
+      "metawrap_classify_bins",
+      "metawrap_annotate_bins"
+    ],
+    "description": "Performs quality control on raw sequencing reads.",
+    "docker_image": "quay.io/biocontainers/metawrap:1.2--0",
+    "homepage": "https://github.com/bxlab/metaWRAP",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/metawrap/overview",
+    "github": "https://github.com/bxlab/metaWRAP",
+    "conda_downloads": "14.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "metawrap_annotate_bins.cwl",
+    "metawrap_assembly.cwl",
+    "metawrap_bin_refinement.cwl",
+    "metawrap_binning.cwl",
+    "metawrap_blobology.cwl",
+    "metawrap_classify_bins.cwl",
+    "metawrap_kraken.cwl",
+    "metawrap_quant_bins.cwl",
+    "metawrap_read_qc.cwl",
+    "metawrap_reassemble_bins.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# metawrap\n\n## Overview\n\nmetaWRAP is a comprehensive wrapper suite designed to streamline the transition from raw metagenomic sequencing data to refined, annotated draft genomes. It organizes complex bioinformatic workflows into standalone modules for read processing, assembly, binning, and visualization. \n\nThe core strength of metaWRAP lies in its \"bin refinement\" and \"reassemble bins\" modules. Unlike standard pipelines that rely on a single binning algorithm, metaWRAP utilizes a hybrid approach to consolidate predictions from multiple binners (like metaBAT2, MaxBin2, and CONCOCT), significantly improving the completion and purity of the resulting genomic bins.\n\n## Core Workflows and CLI Patterns\n\n### 1. Read Pre-processing (read_qc)\nUse this module to trim adapters and remove host contamination (e.g., human reads).\n```bash\nmetawrap read_qc -1 raw_1.fastq -2 raw_2.fastq -t 24 -o READ_QC_DIR\n```\n*   **Tip**: Use `-x` to specify a non-human host genome index if working with other model organisms.\n*   **Tip**: Use `--skip-bmtagger` if you only require quality trimming and not host removal.\n\n### 2. Metagenomic Assembly (assembly)\nSupports metaSPAdes and MegaHit.\n```bash\nmetawrap assembly -1 reads_1.fastq -2 reads_2.fastq -m 200 -t 96 --use-metaspades -o ASSEMBLY_DIR\n```\n*   **Expert Tip**: Use `--use-metaspades` for higher quality assemblies in most environments. Switch to `--use-megahit` for extremely large datasets where memory efficiency is critical.\n\n### 3. Taxonomic Profiling (kraken)\nProvides a quick overview of community composition using Kraken/Kraken2 and Krona.\n```bash\nmetawrap kraken -o KRAKEN_DIR -t 96 -s 1000000 reads_1.fastq reads_2.fastq assembly.fasta\n```\n*   **Tip**: The `-s` flag subsets reads to speed up the run; 1 million reads is usually sufficient for a representative profile.\n\n### 4. Genomic Binning (binning)\nRuns multiple binning algorithms simultaneously to prepare for refinement.\n```bash\nmetawrap binning -a assembly.fasta -o BINNING_DIR -t 48 --metabat2 --maxbin2 --concoct reads_*.fastq\n```\n*   **Note**: Providing reads from multiple samples improves binning performance by utilizing differential coverage.\n\n### 5. Bin Refinement (bin_refinement)\nThe most critical step for high-quality MAGs. It compares and merges bin sets.\n```bash\nmetawrap bin_refinement -o REFINED_DIR -t 48 -A BINNING_DIR/metabat2_bins -B BINNING_DIR/maxbin2_bins -C BINNING_DIR/concoct_bins -c 50 -x 10\n```\n*   **Parameters**: `-c 50` sets minimum completion (%); `-x 10` sets maximum contamination (%).\n*   **Scoring**: metaWRAP uses the formula `Score = Completion - 5*Contamination` to pick the best version of a bin.\n\n### 6. Bin Reassembly (reassemble_bins)\nImproves N50 and completion by reassembling reads belonging to specific bins.\n```bash\nmetawrap reassemble_bins -o REASSEMBLED_DIR -1 reads_1.fastq -2 reads_2.fastq -t 48 -b REFINED_DIR/metawrap_50_10_bins\n```\n\n## Expert Tips and Best Practices\n\n*   **System Resources**: Metagenomic assembly and Kraken profiling are memory-intensive. Ensure at least 64GB of RAM is available; 128GB+ is recommended for large co-assemblies.\n*   **Co-assembly vs. Single-sample**: For analyzing communities across multiple samples, co-assemble the reads (concatenate them first) to recover low-abundance organisms that might not assemble in a single sample.\n*   **Database Configuration**: Ensure the `config-metawrap` file is correctly edited to point to your local databases (CheckM, NCBI_nt, Kraken, etc.) before running downstream analysis modules.\n*   **Mamba for Speed**: When installing or updating dependencies, use `mamba` instead of `conda` to resolve environments significantly faster.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| metawrap annotate_bins | Annotates metagenomic bins. |\n| metawrap assembly | Assemble reads into contigs |\n| metawrap bin_refinement | Refine metagenomic bins from multiple sources. |\n| metawrap binning | Binning module for metagenomic assemblies |\n| metawrap blobology | Run blobology on assembly and reads |\n| metawrap classify_bins | Classify bins |\n| metawrap kraken | Run on any number of fasta assembly files and/or or paired-end reads. |\n| metawrap quant_bins | Quantify abundance of bins in metagenomic datasets |\n| metawrap read_qc | Performs quality control on raw sequencing reads. |\n| metawrap reassemble_bins | Reassemble metagenomic bins using provided reads. |\n\n## Reference documentation\n- [MetaWRAP Module Descriptions](./references/github_com_bxlab_metaWRAP_blob_master_Module_descriptions.md)\n- [MetaWRAP Usage Tutorial](./references/github_com_bxlab_metaWRAP_blob_master_Usage_tutorial.md)\n- [MetaWRAP README](./references/github_com_bxlab_metaWRAP_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "metawrap",
+    "description": "metaWRAP is a comprehensive wrapper suite that streamlines metagenomic workflows from raw read processing and assembly to bin refinement and reassembly. Use when user asks to process metagenomic reads, assemble contigs, perform taxonomic profiling, run multiple binning algorithms, or refine and reassemble genomic bins.",
+    "homepage": "https://github.com/bxlab/metaWRAP"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-missmethyl",
+  "category": "bioconductor",
+  "name": "bioconductor-missmethyl",
+  "description": "This tool provides specialized functions for analyzing Illumina HumanMethylation450 and MethylationEPIC beadchip data. Use when user asks to perform SWAN normalization, remove unwanted variation using RUVm, conduct differential variability analysis, or run gene set enrichment analysis that accounts for probe number bias.",
+  "overview": "The `missMethyl` package provides specialized tools for analyzing Illumina methylation arrays (450k, EPIC, and EPIC v2.0). It addresses technical challenges unique to these platforms, such as the bias between Infinium I and II probe designs and the inherent bias in gene set testing caused by varying numbers of probes per gene.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/missMethyl.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "missMethyl"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/missMethyl.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-missmethyl\n\nname: bioconductor-missmethyl\ndescription: Analysis of Illumina HumanMethylation450 and MethylationEPIC beadchip data. Use this skill for SWAN normalization, differential methylation analysis using RUVm to remove unwanted variation, differential variability analysis (DiffVar), and gene set enrichment analysis (GSEA) that accounts for probe number and multi-gene bias.\n\n## Overview\nThe `missMethyl` package provides specialized tools for analyzing Illumina methylation arrays (450k, EPIC, and EPIC v2.0). It addresses technical challenges unique to these platforms, such as the bias between Infinium I and II probe designs and the inherent bias in gene set testing caused by varying numbers of probes per gene.\n\n## Core Workflows\n\n### 1. Normalization with SWAN\nSubset-quantile within array normalization (SWAN) reduces technical variability between Infinium I and II assays.\n```R\nlibrary(missMethyl)\nlibrary(minfi)\n\n# Assuming rgSet is an RGChannelSet from minfi\nmSet <- preprocessRaw(rgSet)\nset.seed(10) # SWAN uses random sampling\nmSetSw <- SWAN(mSet, verbose=TRUE)\n```\n\n### 2. Differential Methylation with RUVm\nRUVm (Removing Unwanted Variation for methylation) uses negative control probes to estimate and remove technical noise/batch effects.\n\n**Stage 1: Empirical Control Probe (ECP) Identification**\n```R\n# Extract Illumina Negative Controls (INCs)\nINCs <- getINCs(rgSet)\nMc <- rbind(Mval, INCs)\nctl1 <- rownames(Mc) %in% rownames(INCs)\n\n# Initial fit to find non-significant probes\nrfit1 <- RUVfit(Y = Mc, X = group_factor, ctl = ctl1)\nrfit2 <- RUVadj(Y = Mc, fit = rfit1)\ntop1 <- topRUV(rfit2, num=Inf)\n\n# Define ECPs (e.g., p > 0.5)\nctl2 <- rownames(Mval) %in% rownames(top1[top1$p.BH_X1.1 > 0.5,])\n```\n\n**Stage 2: Final Adjustment**\n```R\nrfit3 <- RUVfit(Y = Mval, X = group_factor, ctl = ctl2)\nrfit4 <- RUVadj(Y = Mval, fit = rfit3)\nresults <- topRUV(rfit4)\n```\n\n### 3. Differential Variability (DiffVar)\nTests for differences in variance between groups rather than means.\n```R\n# coef should include intercept and group of interest\nfitvar <- varFit(Mval, design = design, coef = c(1, 4))\ntopDV <- topVar(fitvar, coef = 4)\n```\n*Note: For RNA-Seq data, `varFit` accepts a `DGEList` and applies a voom transformation automatically.*\n\n### 4. Gene Set Enrichment Analysis\n`gometh` and `goregion` account for \"probe number bias\" (genes with more probes are more likely to be flagged) and \"multi-gene bias\".\n\n**CpG Level (GO/KEGG):**\n```R\n# sig.cpg: vector of significant CpG IDs\n# all.cpg: background vector of all tested CpGs\ngst <- gometh(sig.cpg = sigCpGs, all.cpg = allCpGs, collection = \"GO\", plot.bias = TRUE)\ntopGSA(gst, n = 10)\n```\n\n**Region Level (DMRs):**\n```R\n# results.ranges: GRanges object from DMRcate or similar\ngst.region <- goregion(results.ranges, all.cpg = allCpGs, collection = \"KEGG\")\n```\n\n## EPIC v2.0 Specifics\nWhen using the MethylationEPIC v2.0 array:\n1. Manually set annotation: `annotation(rgSet) <- c(array = \"IlluminaHumanMethylationEPICv2\", annotation = \"20a1.hg38\")`.\n2. Filter replicate probes (using `DMRcate`) and non-cg probes (`grepl(\"^cg\", rownames(Mval))`) before analysis.\n\n## Tips\n- **M-values vs. Beta-values**: Use M-values for statistical testing (limma, RUVm, DiffVar) and Beta-values for visualization and calculating Delta-Beta.\n- **Visualizing RUVm**: Use `getAdj(Mval, rfit)` to get adjusted values for MDS plots to verify batch effect removal. Do not use these adjusted values for downstream statistical testing.\n- **Genomic Features**: In `gometh`, use the `genomic.features` argument (e.g., `c(\"TSS200\", \"TSS1500\")`) to restrict GSEA to specific gene regions like promoters.\n\n## Reference documentation\n- [missMethyl: Analysing Illumina HumanMethylation BeadChip Data](./references/missMethyl.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-missmethyl",
+    "description": "This tool provides specialized functions for analyzing Illumina HumanMethylation450 and MethylationEPIC beadchip data. Use when user asks to perform SWAN normalization, remove unwanted variation using RUVm, conduct differential variability analysis, or run gene set enrichment analysis that accounts for probe number bias.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/missMethyl.html"
+  }
+}

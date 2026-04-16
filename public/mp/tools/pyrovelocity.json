@@ -1,0 +1,43 @@
+{
+  "id": "pyrovelocity",
+  "category": "library",
+  "name": "pyrovelocity",
+  "description": "Pyro-Velocity is a Bayesian generative framework that estimates RNA velocity and cell state transitions while quantifying prediction uncertainty. Use when user asks to estimate future cell states, model spliced and unspliced sequencing counts, or visualize vector field uncertainty in single-cell trajectories.",
+  "overview": "Pyro-Velocity is a Bayesian generative framework designed to estimate the future states of cells while providing a rigorous measure of uncertainty. By modeling raw spliced and unspliced sequencing counts and estimating a synchronized cell time across all genes, it moves beyond deterministic velocity estimates. This tool is particularly useful for identifying branching points in cell differentiation where trajectory predictions may be less certain.",
+  "homepage": "https://github.com/pinellolab/pyrovelocity",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pyrovelocity/overview",
+  "github": "https://github.com/pinellolab/pyrovelocity",
+  "conda_downloads": "2.3K",
+  "conda_downloads_num": 2300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pyrovelocity"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/pyrovelocity:0.1.0--pyhdfd78af_1",
+    "homepage": "https://github.com/pinellolab/pyrovelocity",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pyrovelocity/overview",
+    "github": "https://github.com/pinellolab/pyrovelocity",
+    "conda_downloads": "2.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pyrovelocity\n\n## Overview\nPyro-Velocity is a Bayesian generative framework designed to estimate the future states of cells while providing a rigorous measure of uncertainty. By modeling raw spliced and unspliced sequencing counts and estimating a synchronized cell time across all genes, it moves beyond deterministic velocity estimates. This tool is particularly useful for identifying branching points in cell differentiation where trajectory predictions may be less certain.\n\n## Installation and Environment\nThe tool requires specific versions of PyTorch and Pyro. It is recommended to use a dedicated Conda environment.\n\n```bash\n# Recommended environment setup\nmamba create -n pyrovelocity_release python==3.8.8\nconda activate pyrovelocity_release\npip install pyro-ppl==1.6.0 scvelo scvi-tools==0.13.0 pytorch_lightning==1.3.0\npip install torch==1.8.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html\npip install git+https://github.com/pinellolab/pyrovelocity.git\n```\n\n## Core Workflow\n\n### 1. Data Preprocessing\nPyro-Velocity expects an `AnnData` object with `spliced` and `unspliced` layers. You must preserve raw counts before normalization.\n\n```python\nimport scvelo as scv\nimport pyrovelocity as pv\n\nadata = scv.read(\"data.h5ad\")\n\n# Preserve raw counts for the model\nadata.layers['raw_spliced'] = adata.layers['spliced'].copy()\nadata.layers['raw_unspliced'] = adata.layers['unspliced'].copy()\n\n# Standard scVelo preprocessing for feature selection\nscv.pp.filter_and_normalize(adata, min_shared_counts=30, n_top_genes=2000)\nscv.pp.moments(adata, n_pcs=30, n_neighbors=30)\n```\n\n### 2. Model Training\nThe `train_model` function is the primary interface. There are two common configurations:\n\n*   **Model 1 (Constraint-based):** Uses `guide_type='auto_t0_constraint'`. Good for standard developmental trajectories.\n*   **Model 2 (Flexible):** Uses `guide_type='auto'` and `offset=True`. Better for complex datasets with varying kinetics.\n\n```python\nfrom pyrovelocity.api import train_model\n\n# Training parameters\nnum_epochs = 4000 # Use ~1000 for large datasets, ~4000 for small\nbatch_size = 4000\n\nadata_model_pos = train_model(\n    adata,\n    max_epochs=num_epochs,\n    svi_train=True,\n    batch_size=batch_size,\n    use_gpu=0, # Set to GPU index if available\n    model_type='auto',\n    guide_type='auto_t0_constraint',\n    train_size=1.0\n)\n\n# adata_model_pos[0] is the trained model\n# adata_model_pos[1] contains posterior samples\n```\n\n### 3. Uncertainty Estimation and Visualization\nThe power of Pyro-Velocity lies in its ability to project vector field uncertainty onto embeddings (UMAP/t-SNE).\n\n```python\nfrom pyrovelocity.plot import vector_field_uncertainty, plot_vector_field_uncertain\n\n# Calculate vector field uncertainty using Rayleigh test\nv_map_all, embeds_radian, fdri = vector_field_uncertainty(\n    adata, \n    adata_model_pos[1], \n    basis='umap', \n    n_jobs=16\n)\n\n# Plotting the uncertainty\nimport matplotlib.pyplot as plt\nfig, ax = plt.subplots(1, 2, figsize=(12, 5))\nplot_vector_field_uncertain(\n    adata, \n    embed_mean, # Posterior mean of vector field\n    embeds_radian, \n    ax=ax, \n    basis='umap'\n)\n```\n\n## Best Practices\n- **Library Size:** Ensure `library_size=True` is set in `train_model` to account for sequencing depth variation across cells.\n- **GPU Usage:** For datasets exceeding 10,000 cells, always use `use_gpu=True` to keep training times manageable.\n- **Persistence:** Always save the posterior samples (`adata_model_pos[1]`) using `pickle`, as re-generating them is computationally expensive.\n- **Gene Selection:** While the model is multivariate, using the top 2,000 highly variable genes (HVGs) is typically sufficient for capturing the primary developmental signal.\n\n## Reference documentation\n- [GitHub Repository Overview](./references/github_com_pinellolab_pyrovelocity.md)\n- [Bioconda Package Details](./references/anaconda_org_channels_bioconda_packages_pyrovelocity_overview.md)",
+  "skill_front_matter": {
+    "name": "pyrovelocity",
+    "description": "Pyro-Velocity is a Bayesian generative framework that estimates RNA velocity and cell state transitions while quantifying prediction uncertainty. Use when user asks to estimate future cell states, model spliced and unspliced sequencing counts, or visualize vector field uncertainty in single-cell trajectories.",
+    "homepage": "https://github.com/pinellolab/pyrovelocity"
+  }
+}

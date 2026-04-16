@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnpbayes",
+  "category": "bioconductor",
+  "name": "bioconductor-cnpbayes",
+  "description": "This tool performs Bayesian hierarchical Gaussian mixture modeling for copy number estimation and batch effect identification. Use when user asks to fit finite mixture models to genomic data, identify latent batch effects, map mixture components to integer copy number states, or integrate copy number uncertainty into association models.",
+  "overview": "CNPBayes is designed for the analysis of copy number polymorphisms (CNPs) in large-scale studies. It uses a hierarchical Bayesian Gaussian mixture model to account for technical variation (batch effects) that can otherwise lead to false positives or poor separation of copy number states. The package supports four model types:\n- **SB (Single Batch)**: Standard mixture model.\n- **MB (Multi-Batch)**: Batch-specific means and variances.\n- **SBP (Single Batch Pooled)**: Pooled variance across compone",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CNPBayes.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/scristia/CNPBayes",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNPBayes"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CNPBayes.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/scristia/CNPBayes",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnpbayes\n\nname: bioconductor-cnpbayes\ndescription: Bayesian hierarchical Gaussian mixture modeling for copy number estimation. Use this skill to identify latent batch effects, fit finite mixture models (SB, MB, SBP, MBP), map mixture components to integer copy number states, and integrate copy number uncertainty into association models.\n\n# bioconductor-cnpbayes\n\n## Overview\nCNPBayes is designed for the analysis of copy number polymorphisms (CNPs) in large-scale studies. It uses a hierarchical Bayesian Gaussian mixture model to account for technical variation (batch effects) that can otherwise lead to false positives or poor separation of copy number states. The package supports four model types:\n- **SB (Single Batch)**: Standard mixture model.\n- **MB (Multi-Batch)**: Batch-specific means and variances.\n- **SBP (Single Batch Pooled)**: Pooled variance across components.\n- **MBP (Multi-Batch Pooled)**: Batch-specific variances pooled across components.\n\n## Core Workflow\n\n### 1. Data Preparation\nSummarize genomic data (e.g., log R ratios from SNP arrays) into a single value per sample per region, typically using the median.\n\n```r\nlibrary(CNPBayes)\n# med.summary is a numeric vector of median log R ratios\n# provisional_batch is a vector of batch surrogates (e.g., plate IDs)\n```\n\n### 2. Identifying Batches\nUse `kolmogorov_batches` to group provisional batches with similar distributions to reduce model complexity.\n\n```r\n# Combine plates with similar eCDFs\nbatches <- kolmogorov_batches(dat = med.summary, batch = provisional_batch, alpha = 1e-6)\n```\n\n### 3. Model Fitting with `gibbs`\nThe `gibbs` function is the primary interface for fitting models. It automatically handles burn-in, thinning, and convergence diagnostics.\n\n```r\nmp <- McmcParams(nStarts = 5, burnin = 500, iter = 1000, thin = 1)\n\n# Fit models across a range of components (k)\nmodel.list <- gibbs(model = \"MBP\", \n                    dat = med.summary, \n                    batches = batches, \n                    k_range = c(1, 4), \n                    mp = mp)\n\n# Models are sorted by marginal likelihood\nbest.model <- model.list[[1]]\n```\n\n### 4. Convergence and Goodness of Fit\nAssess convergence using Gelman-Rubin diagnostics and visual inspection of chains.\n\n```r\n# Visual inspection of MCMC chains\nchains <- ggChains(best.model)\nprint(chains[[1]]) # theta\nprint(chains[[2]]) # sigma\n\n# Posterior predictive check\nggMixture(best.model)\n```\n\n### 5. Mapping to Copy Number\nMixture components do not always have a 1:1 mapping to copy number. Use `CopyNumberModel` to automate the mapping based on component overlap.\n\n```r\ncn.model <- CopyNumberModel(best.model)\n\n# View mapping\nmapping(cn.model)\n\n# Get posterior probabilities for copy number states\nprobs <- probCopyNumber(cn.model)\n```\n\n## Advanced Features\n\n### Handling Rare Homozygous Deletions\nFor rare variants, use `homdeldup_model` which employs data augmentation to ensure components are correctly assigned even in batches where the variant is absent.\n\n```r\n# Automated workflow for deletion/duplication polymorphisms\nbayes.model <- homdeldup_model(multi_batch_object, mp)\n```\n\n### Big Data Downsampling\nFor very large datasets, fit the model on a representative subset and upsample to the full population.\n\n```r\n# Downsample\npartial.data <- downSample(full.data, size = 1000)\n\n# Fit model on partial.data...\n\n# Upsample to full population\nmodel.full <- upSample2(full.data, best.model)\n```\n\n## Reference documentation\n- [Inspecting Convergence of a Model](./references/Convergence.md)\n- [Implementation of Bayesian mixture models for copy number estimation](./references/Implementation.md)\n- [Overview of CNPBayes package](./references/Overview.md)\n- [CNPBayes: Bayesian copy number estimation and association in large-scale studies (Rmd)](./references/cnpbayes.Rmd)\n- [CNPBayes: Bayesian copy number estimation and association in large-scale studies (md)](./references/cnpbayes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnpbayes",
+    "description": "This tool performs Bayesian hierarchical Gaussian mixture modeling for copy number estimation and batch effect identification. Use when user asks to fit finite mixture models to genomic data, identify latent batch effects, map mixture components to integer copy number states, or integrate copy number uncertainty into association models.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/CNPBayes.html"
+  }
+}

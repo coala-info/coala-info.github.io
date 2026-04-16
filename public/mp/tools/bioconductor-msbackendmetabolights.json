@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msbackendmetabolights",
+  "category": "bioconductor",
+  "name": "bioconductor-msbackendmetabolights",
+  "description": "This tool retrieves and processes mass spectrometry data from the MetaboLights repository using the Spectra framework in R. Use when user asks to download metabolomics data sets, list files from a MetaboLights study, or load raw spectral data into a Spectra object for analysis.",
+  "overview": "The `MsBackendMetaboLights` package provides a backend for the `Spectra` package, enabling seamless integration with the [MetaboLights](https://www.ebi.ac.uk/metabolights/) repository. It allows users to retrieve MS data files directly from the repository, caches them locally using `BiocFileCache` to avoid redundant downloads, and represents them as `Spectra` objects for downstream analysis in R.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MsBackendMetaboLights.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RforMassSpectrometry/MsBackendMetaboLights",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MsBackendMetaboLights"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MsBackendMetaboLights.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RforMassSpectrometry/MsBackendMetaboLights",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msbackendmetabolights\n\nname: bioconductor-msbackendmetabolights\ndescription: Retrieve and analyze Mass Spectrometry (MS) data from the MetaboLights repository. Use this skill when you need to download, cache, and process metabolomics data sets (raw or processed MS files like .mzML, .mzXML, or .cdf) directly from MetaboLights into R using the Spectra framework.\n\n# bioconductor-msbackendmetabolights\n\n## Overview\n\nThe `MsBackendMetaboLights` package provides a backend for the `Spectra` package, enabling seamless integration with the [MetaboLights](https://www.ebi.ac.uk/metabolights/) repository. It allows users to retrieve MS data files directly from the repository, caches them locally using `BiocFileCache` to avoid redundant downloads, and represents them as `Spectra` objects for downstream analysis in R.\n\n## Installation\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\n\nBiocManager::install(\"MsBackendMetaboLights\")\n```\n\n## Typical Workflow\n\n### 1. Explore Study Files\nBefore loading data, identify the available files and metadata for a specific MetaboLights ID (e.g., \"MTBLS39\").\n\n```r\nlibrary(MsBackendMetaboLights)\n\n# List all files in the study\nall_files <- mtbls_list_files(\"MTBLS39\")\n\n# Get the FTP path for manual inspection or metadata reading\nftp_url <- mtbls_ftp_path(\"MTBLS39\")\n```\n\n### 2. Read Assay Metadata\nMetaboLights uses ISA-tab format. Assay files (starting with `a_`) link samples to spectral data files.\n\n```r\n# Identify assay files\nassay_file_name <- grep(\"^a_\", all_files, value = TRUE)\n\n# Read the assay table (use retry() due to FTP rate limits)\nassay_data <- retry(read.table(paste0(ftp_url, assay_file_name),\n                               sep = \"\\t\", header = TRUE, check.names = FALSE),\n                    ntimes = 5)\n\n# Check columns for data file locations\n# Usually \"Derived Spectral Data File\" or \"Raw Spectral Data File\"\ncolnames(assay_data)\n```\n\n### 3. Load MS Data into Spectra\nUse the `Spectra` constructor with `MsBackendMetaboLights()`. You can filter files using `filePattern` or `assayName`.\n\n```r\nlibrary(Spectra)\n\n# Load specific files matching a pattern\ns <- Spectra(\"MTBLS39\", \n             filePattern = \"63A.cdf\", \n             source = MsBackendMetaboLights())\n\n# The data is now a standard Spectra object\ns\n```\n\n### 4. Access MetaboLights Metadata\nThe backend adds specific spectra variables to the object.\n\n```r\n# List available variables\nspectraVariables(s)\n\n# Access MetaboLights-specific info\nspectraData(s, c(\"mtbls_id\", \"mtbls_assay_name\", \"derived_spectral_data_file\"))\n```\n\n## Cache Management\n\nData is cached locally to speed up subsequent loads.\n\n*   **Check Cache**: `mtbls_cached_data_files()` lists all locally stored MetaboLights files.\n*   **Synchronize**: `mtbls_sync(s@backend)` ensures all files for a backend are downloaded.\n*   **Manual Download**: `mtbls_sync_data_files(\"MTBLS39\", fileName = \"sample.cdf\")` caches a specific file.\n*   **Clear Cache**: `mtbls_delete_cache(\"MTBLS39\")` removes local files for a specific study.\n\n## Tips and Best Practices\n\n*   **Rate Limiting**: MetaboLights FTP connections are often rate-limited. Always wrap FTP-based `read.table` calls in the `retry()` function provided by the package.\n*   **File Formats**: The backend supports `mzML`, `mzXML`, and `CDF` formats as it extends `MsBackendMzR`.\n*   **Memory Efficiency**: Like other `Spectra` backends, `MsBackendMetaboLights` is memory-efficient, only loading peak data into memory when requested.\n*   **Data Columns**: If `Spectra()` returns an empty object or error, check the assay file to see if files are listed under \"Raw Spectral Data File\" instead of the default \"Derived Spectral Data File\".\n\n## Reference documentation\n\n- [Retrieve and Use Mass Spectrometry Data from MetaboLights](./references/MsBackendMetaboLights.md)\n- [MsBackendMetaboLights Vignette Source](./references/MsBackendMetaboLights.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-msbackendmetabolights",
+    "description": "This tool retrieves and processes mass spectrometry data from the MetaboLights repository using the Spectra framework in R. Use when user asks to download metabolomics data sets, list files from a MetaboLights study, or load raw spectral data into a Spectra object for analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MsBackendMetaboLights.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cn.farms",
+  "category": "bioconductor",
+  "name": "bioconductor-cn.farms",
+  "description": "This tool detects copy number variations in microarray data using a latent variable model based on the FARMS algorithm. Use when user asks to normalize SNP data, perform single-locus or multi-loci summarization, and identify genomic segments with constant copy number.",
+  "overview": "The `cn.farms` package implements a latent variable model for CNV detection. It adapts the FARMS (Factor Analysis for Robust Microarray Summarization) algorithm to DNA copy number analysis. The workflow typically follows a three-step pipeline:\n1.  **Normalization**: Correcting for cross-hybridization (Sparse Overcomplete Representation - SOR) and array-wide effects.\n2.  **Modeling**: \n    *   *Single-locus modeling*: Summarizing probes targeting the same fragment/locus.\n    *   *Multi-loci model",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cn.farms.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cn.farms"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cn.farms.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cn.farms\n\nname: bioconductor-cn.farms\ndescription: Expert guidance for the cn.farms R package to detect copy number variations (CNV) in microarray data (SNP 6.0, 250K/500K, CytoscanHD). Use this skill when performing CNV analysis pipelines including normalization (SOR), single-locus modeling, multi-loci modeling, and segmentation.\n\n## Overview\n\nThe `cn.farms` package implements a latent variable model for CNV detection. It adapts the FARMS (Factor Analysis for Robust Microarray Summarization) algorithm to DNA copy number analysis. The workflow typically follows a three-step pipeline:\n1.  **Normalization**: Correcting for cross-hybridization (Sparse Overcomplete Representation - SOR) and array-wide effects.\n2.  **Modeling**: \n    *   *Single-locus modeling*: Summarizing probes targeting the same fragment/locus.\n    *   *Multi-loci modeling*: Combining neighboring fragments into \"meta-probes\" to reduce False Discovery Rates (FDR).\n3.  **Segmentation**: Identifying breakpoints using `fastseg` or `DNAcopy`.\n\n## Typical Workflow\n\n### 1. Initialization and Annotation\nSet up the environment and create necessary annotation files from CEL files.\n\n```R\nlibrary(cn.farms)\n# Set up parallel processing and storage\ncores <- 2\nruntype <- \"ff\" # or \"bm\" for persistent storage\nworkDir <- tempdir()\nsetwd(workDir)\n\n# Create annotation (required for SNP 6.0 or 250K/500K)\nfilenames <- dir(path = \"path/to/cels\", full.names = TRUE)\ncreateAnnotation(filenames = filenames)\n```\n\n### 2. Normalization\nUse `normalizeCels` for SNP data and `normalizeNpData` for non-polymorphic (CN) probes.\n\n```R\n# Normalize SNP data\nnormData <- normalizeCels(filenames, method = \"SOR\", cores = cores, alleles = TRUE, runtype = runtype)\n\n# Normalize Non-polymorphic data\nnpData <- normalizeNpData(filenames, cores = cores, runtype = runtype)\n```\n\n### 3. Summarization (Modeling)\nPerform single-locus summarization, combine data types, and then perform multi-loci summarization.\n\n```R\n# Single-locus summarization\nslData <- slSummarization(normData, \n                          summaryMethod = \"Variational\", \n                          summaryParam = list(cyc = 10), \n                          callParam = list(cores = cores, runtype = runtype),\n                          summaryWindow = \"std\")\n\n# Combine SNP and CN probe data\ncombData <- combineData(slData, npData, runtype = runtype)\n\n# Multi-loci summarization (The core CNV detection step)\n# windowSize 5 is default; 3 for high resolution; 10 for low FDR\nmlData <- mlSummarization(combData, \n                          windowMethod = \"std\", \n                          windowParam = list(windowSize = 5, overlap = TRUE),\n                          summaryMethod = \"Variational\",\n                          summaryParam = list(cyc = 20),\n                          callParam = list(cores = cores, runtype = runtype))\n```\n\n### 4. Segmentation\nIdentify genomic segments with constant copy number.\n\n```R\n# Using the internal parallel DNAcopy wrapper\nsegments <- dnaCopySf(x = assayData(mlData)$L_z, \n                      chrom = fData(mlData)$chrom, \n                      maploc = fData(mlData)$start, \n                      cores = cores, \n                      smoothing = FALSE)\n```\n\n## Key Functions and Parameters\n\n*   `cn.farms(filenames)`: Quick-start function for SNP 6.0 arrays (uses CN probes only).\n*   `slSummarization`: Summarizes probe-level data to fragment-level. `summaryWindow=\"fragment\"` summarizes probes on the same DNA fragment.\n*   `mlSummarization`: The \"multi-loci\" step. It uses FARMS to ensure neighboring loci agree on a CNV, significantly reducing false positives.\n*   `I/NI calls`: FARMS provides Informative/Non-Informative calls which indicate the signal-to-noise ratio of the estimated copy number.\n*   `L_z`: The assay data element containing relative copy number values (often used for segmentation).\n\n## Tips for Large Datasets\n*   **Memory Management**: Use `runtype = \"ff\"` (flat-files) or `runtype = \"bm\"` (bigmemory) to handle large datasets that exceed RAM.\n*   **Parallelization**: Always specify the `cores` parameter in `normalizeCels`, `slSummarization`, and `mlSummarization` to utilize multi-core CPUs.\n*   **Window Size**: Adjust `windowParam$windowSize` in `mlSummarization` to balance between detection sensitivity (smaller window) and FDR control (larger window).\n\n## Reference documentation\n- [cn.farms](./references/cn.farms.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cn.farms",
+    "description": "This tool detects copy number variations in microarray data using a latent variable model based on the FARMS algorithm. Use when user asks to normalize SNP data, perform single-locus or multi-loci summarization, and identify genomic segments with constant copy number.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cn.farms.html"
+  }
+}

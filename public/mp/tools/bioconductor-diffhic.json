@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-diffhic",
+  "category": "bioconductor",
+  "name": "bioconductor-diffhic",
+  "description": "This tool detects differential interactions from Hi-C data by counting read pairs into genomic bin pairs and applying edgeR-based statistical frameworks. Use when user asks to process Hi-C data, count read pairs into genomic bins, perform LOESS or CNV-aware normalization, and identify significant changes in interaction intensity between biological conditions.",
+  "overview": "The `diffHic` package provides a comprehensive pipeline for the differential analysis of Hi-C data. It treats Hi-C data as a collection of read pairs that are counted into pairs of genomic bins (interactions). These counts are then analyzed using the `edgeR` framework to identify significant differences between experimental conditions. The package supports various Hi-C flavors, including in situ Hi-C, DNase Hi-C, and Capture Hi-C.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/diffHic.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-diffhic/overview",
+  "github": "N/A",
+  "conda_downloads": "33.5K",
+  "conda_downloads_num": 33500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "diffHic"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/diffHic.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-diffhic/overview",
+    "github": "N/A",
+    "conda_downloads": "33.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-diffhic\n\nname: bioconductor-diffhic\ndescription: Detection of differential interactions from Hi-C data using the diffHic R package. Use this skill when you need to process Hi-C data, count read pairs into genomic bin pairs, perform normalization (LOESS or CNV-aware), and identify significant changes in interaction intensity between biological conditions using edgeR-based statistical frameworks.\n\n# bioconductor-diffhic\n\n## Overview\nThe `diffHic` package provides a comprehensive pipeline for the differential analysis of Hi-C data. It treats Hi-C data as a collection of read pairs that are counted into pairs of genomic bins (interactions). These counts are then analyzed using the `edgeR` framework to identify significant differences between experimental conditions. The package supports various Hi-C flavors, including in situ Hi-C, DNase Hi-C, and Capture Hi-C.\n\n## Core Workflow\n\n### 1. Data Preparation\nConvert BAM files into HDF5 index files. This step matches read pairs to restriction fragments.\n\n```r\nlibrary(diffHic)\nlibrary(BSgenome.Mmusculus.UCSC.mm10)\n\n# 1. Define restriction fragments\nfrags <- cutGenome(BSgenome.Mmusculus.UCSC.mm10, \"AAGCTT\", 4)\nparam <- pairParam(frags)\n\n# 2. Process BAMs to HDF5\n# Note: BAMs should be name-sorted and duplicates marked\npreparePairs(\"sample1.bam\", param, file=\"sample1.h5\")\n\n# 3. Prune artifacts (dangling ends, self-circles)\nprunePairs(\"sample1.h5\", param, file.out=\"sample1_pruned.h5\", \n           max.frag=600, min.inward=1000, min.outward=25000)\n```\n\n### 2. Counting and Filtering\nSummarize read pairs into a count matrix of bin pairs.\n\n```r\n# Count into 1Mbp bins\ninput <- c(\"s1_pruned.h5\", \"s2_pruned.h5\", \"s3_pruned.h5\", \"s4_pruned.h5\")\ndata <- squareCounts(input, param, width=1e6, filter=1)\n\n# Filtering out low-abundance interactions\nlibrary(edgeR)\nave.ab <- aveLogCPM(asDGEList(data))\nkeep <- ave.ab >= aveLogCPM(5, lib.size=mean(data$totals))\ndata <- data[keep,]\n\n# Optional: Filter by distance or peak-calling\n# trended <- filterTrended(data)\n# peak.keep <- filterPeaks(data, enrichment)\n```\n\n### 3. Normalization\nAddress technical biases between libraries.\n\n```r\n# Non-linear (LOESS) normalization for trended biases\ndata <- normOffsets(data, type=\"loess\", se.out=TRUE)\n\n# For datasets with Copy Number Variations (CNV)\n# marg.data <- marginCounts(input, param, width=1e6)\n# cnv.offs <- normalizeCNV(data, marg.data)\n```\n\n### 4. Statistical Analysis\nUse `edgeR`'s quasi-likelihood (QL) framework to model biological variability.\n\n```r\ngroup <- factor(c(\"WT\", \"WT\", \"KO\", \"KO\"))\ndesign <- model.matrix(~group)\ny <- asDGEList(data)\n\n# Estimate dispersion\ny <- estimateDisp(y, design)\nfit <- glmQLFit(y, design, robust=TRUE)\n\n# Test for differential interactions (DI)\nres <- glmQLFTest(fit, coef=2)\n```\n\n### 5. Result Summarization\nCluster adjacent significant bin pairs to reduce redundancy.\n\n```r\n# Cluster significant interactions within 1 bin (tol=1)\nclusters <- diClusters(data, res$table, target=0.05, cluster.args=list(tol=1))\n```\n\n## Key Functions\n- `pairParam()`: Manages parameters for data extraction (fragments, discard regions, caps).\n- `squareCounts()`: Main function for bin-level quantification.\n- `connectCounts()`: Quantifies interactions between specific regions of interest (e.g., gene promoters).\n- `marginCounts()`: Quantifies one-dimensional coverage for CNV normalization.\n- `enrichedPairs()`: Computes neighborhood-based enrichment for peak calling.\n- `correctedContact()`: Implements iterative correction (ICE) for genomic biases.\n\n## Tips for Success\n- **Bin Size**: Start with large bins (1 Mbp) for broad structural changes and smaller bins (20-50 kbp) for specific loops.\n- **DNase Hi-C**: If using DNase Hi-C, pass an empty `GRanges` object to `cutGenome` and use `iter_map.py` for alignment.\n- **Diagnostics**: Use `getPairData()` and strand orientation plots to determine appropriate `min.inward` and `min.outward` thresholds for `prunePairs`.\n- **Memory**: For high-resolution data, use the `filter` argument in `squareCounts` to avoid loading empty or low-count bin pairs into memory.\n\n## Reference documentation\n- [Introducing the diffHic package](./references/diffHic.md)\n- [diffHic: Differential analysis of Hi-C data User's Guide](./references/diffHicUsersGuide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-diffhic",
+    "description": "This tool detects differential interactions from Hi-C data by counting read pairs into genomic bin pairs and applying edgeR-based statistical frameworks. Use when user asks to process Hi-C data, count read pairs into genomic bins, perform LOESS or CNV-aware normalization, and identify significant changes in interaction intensity between biological conditions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/diffHic.html"
+  }
+}

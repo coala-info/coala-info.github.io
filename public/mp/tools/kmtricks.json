@@ -1,0 +1,63 @@
+{
+  "id": "kmtricks",
+  "category": "CLI",
+  "name": "kmtricks",
+  "description": "kmtricks is a bioinformatics suite designed to construct and compare k-mer matrices across large-scale sequencing datasets. Use when user asks to construct k-mer count matrices, build Bloom filters for multiple samples, or aggregate k-mer profiles from a file of files.",
+  "overview": "kmtricks is a specialized bioinformatics suite designed to handle the complexity of comparing k-mer profiles across hundreds or thousands of sequencing samples. Unlike traditional k-mer counters that focus on single files, kmtricks excels at merging count information and constructing large-scale matrices. It is particularly useful for identifying shared k-mers between samples while filtering out noise, thanks to its \"rescue\" mechanism that keeps low-frequency k-mers if they are validated by pres",
+  "homepage": "https://github.com/tlemane/kmtricks",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/kmtricks/overview",
+  "github": "https://github.com/tlemane/kmtricks",
+  "conda_downloads": "3.0K",
+  "conda_downloads_num": 3000,
+  "last_updated": "2025-12-16",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "kmtricks_pipeline",
+      "kmtricks_repart",
+      "kmtricks_superk",
+      "kmtricks_count",
+      "kmtricks_merge",
+      "kmtricks_filter",
+      "kmtricks_dump",
+      "kmtricks_aggregate",
+      "kmtricks_combine",
+      "kmtricks_infos"
+    ],
+    "description": "run all the steps, repart -> superk -> count -> merge",
+    "docker_image": "quay.io/biocontainers/kmtricks:1.5.1--h22625ea_0",
+    "homepage": "https://github.com/tlemane/kmtricks",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/kmtricks/overview",
+    "github": "https://github.com/tlemane/kmtricks",
+    "conda_downloads": "3.0K",
+    "last_updated": "2025-12-16",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "kmtricks_aggregate.cwl",
+    "kmtricks_combine.cwl",
+    "kmtricks_count.cwl",
+    "kmtricks_dump.cwl",
+    "kmtricks_filter.cwl",
+    "kmtricks_infos.cwl",
+    "kmtricks_merge.cwl",
+    "kmtricks_pipeline.cwl",
+    "kmtricks_repart.cwl",
+    "kmtricks_superk.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# kmtricks\n\n## Overview\nkmtricks is a specialized bioinformatics suite designed to handle the complexity of comparing k-mer profiles across hundreds or thousands of sequencing samples. Unlike traditional k-mer counters that focus on single files, kmtricks excels at merging count information and constructing large-scale matrices. It is particularly useful for identifying shared k-mers between samples while filtering out noise, thanks to its \"rescue\" mechanism that keeps low-frequency k-mers if they are validated by presence in other samples.\n\n## Core Workflow\n\n### 1. Preparing Input (FOF)\nkmtricks requires a \"File of Files\" (FOF) to map sample identifiers to their respective sequence files.\nFormat: `SampleName: path/to/reads.fq.gz`\n\nExample `samples.fof`:\n```text\nSample_A: data/reads_1.fastq.gz\nSample_B: data/reads_2.fastq.gz\n```\n\n### 2. Running the Pipeline\nThe `pipeline` command is the primary entry point for matrix construction.\n\n**Constructing a Count Matrix:**\n```bash\nkmtricks pipeline --file samples.fof --run-dir ./output --mode kmer:count:bin --hard-min 1 --soft-min 3 --share-min 1 --cpr\n```\n*   `--mode kmer:count:bin`: Generates a k-mer abundance matrix in binary format.\n*   `--hard-min`: Absolute minimum abundance to consider a k-mer during initial counting.\n*   `--soft-min`: Threshold for \"solid\" k-mers.\n*   `--share-min`: Rescue k-mers with abundance < `soft-min` if they are \"solid\" in at least N other samples.\n*   `--cpr`: Enables compression of the output partitions.\n\n**Constructing Bloom Filters:**\n```bash\nkmtricks pipeline --file samples.fof --run-dir ./bf_output --mode bloom:count:bin --k 31\n```\n\n### 3. Aggregating Results\nAfter the pipeline completes, results are often stored in partitions. Use `aggregate` to create a single output file.\n\n**Convert binary matrix to text:**\n```bash\nkmtricks aggregate --matrix kmer --format text --cpr-in --run-dir ./output > final_matrix.txt\n```\n\n## Expert Tips and Best Practices\n*   **Disk Space:** kmtricks uses significant intermediate disk space (often 20% to 100% of input size). Ensure the `--run-dir` is located on a volume with sufficient quota.\n*   **Single vs. Multi-sample:** Do not use kmtricks for simple k-mer counting of a single file; tools like KMC are faster for that specific task. Use kmtricks only when merging across multiple samples.\n*   **Memory Management:** If the process is killed, it is likely due to RAM exhaustion. Check `kmtricks infos` to see the environment's capabilities and adjust thread counts if necessary.\n*   **Rescue Logic:** To maximize sensitivity for rare variants shared across samples, set a low `--hard-min` (e.g., 1) and a higher `--soft-min` (e.g., 3-5) with `--share-min 1`.\n*   **Debugging:** If a run fails, look for `kmtricks_backtrace.log`. Use the `kmtricks-debug` binary (available in conda) for more verbose error reporting.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| kmtricks | Display build and configuration information for kmtricks. |\n| kmtricks aggregate | Aggregate partition files. |\n| kmtricks combine | Combine kmtricks's matrices (support kmer/hash matrices). |\n| kmtricks count | Count k-mers/hashes in partitions. |\n| kmtricks dump | Dump kmtricks's files in human readable format. |\n| kmtricks filter | Filter existing matrix with a new sample. |\n| kmtricks pipeline | run all the steps, repart -> superk -> count -> merge |\n| kmtricks superk | Compute super-k-mers. |\n| kmtricks_merge | Merge partitions. |\n| kmtricks_repart | Compute minimizer repartition. |\n\n## Reference documentation\n- [kmtricks GitHub Home](./references/github_com_tlemane_kmtricks.md)\n- [Count Matrix Example](./references/github_com_tlemane_kmtricks_wiki_Count-matrix-example.md)\n- [Input Data Specifications](./references/github_com_tlemane_kmtricks_wiki_Input-data.md)\n- [Pipeline Module Details](./references/github_com_tlemane_kmtricks_wiki_kmtricks-pipeline.md)",
+  "skill_front_matter": {
+    "name": "kmtricks",
+    "description": "kmtricks is a bioinformatics suite designed to construct and compare k-mer matrices across large-scale sequencing datasets. Use when user asks to construct k-mer count matrices, build Bloom filters for multiple samples, or aggregate k-mer profiles from a file of files.",
+    "homepage": "https://github.com/tlemane/kmtricks"
+  }
+}

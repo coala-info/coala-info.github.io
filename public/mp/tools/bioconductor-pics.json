@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pics",
+  "category": "bioconductor",
+  "name": "bioconductor-pics",
+  "description": "bioconductor-pics identifies transcription factor binding sites from ChIP-Seq data using a Bayesian hierarchical t-mixture model. Use when user asks to identify binding sites, deconvolute overlapping peaks, estimate fragment lengths, or calculate false discovery rates for ChIP-Seq experiments.",
+  "overview": "The `PICS` package provides a probabilistic framework for analyzing ChIP-Seq data. Unlike simple peak-callers, PICS models the local concentrations of directional reads (forward and reverse) using a t-mixture model. This allows for higher spatial resolution, the ability to deconvolute overlapping binding events, and the estimation of uncertainties in binding site locations.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PICS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PICS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PICS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pics\n\nname: bioconductor-pics\ndescription: Probabilistic Inference for ChIP-Seq (PICS). Use this skill to identify transcription factor binding sites from ChIP-Seq data using a Bayesian hierarchical t-mixture model. It is particularly effective for discriminating closely adjacent binding events, estimating fragment lengths, and adjusting for genome mappability.\n\n# bioconductor-pics\n\n## Overview\n\nThe `PICS` package provides a probabilistic framework for analyzing ChIP-Seq data. Unlike simple peak-callers, PICS models the local concentrations of directional reads (forward and reverse) using a t-mixture model. This allows for higher spatial resolution, the ability to deconvolute overlapping binding events, and the estimation of uncertainties in binding site locations.\n\n## Typical Workflow\n\n### 1. Data Preparation\nConvert aligned reads (IP and Control) into `GRanges` objects. PICS requires sorted reads.\n\n```r\nlibrary(PICS)\nlibrary(GenomicRanges)\n\n# Load IP and Control data (e.g., from BED files)\ndataIP <- as(read.table(\"IP_reads.bed\", header=TRUE), \"GRanges\")\ndataCont <- as(read.table(\"Control_reads.bed\", header=TRUE), \"GRanges\")\n\n# Load Mappability profile (optional but recommended)\n# Mappability profiles are disjoint intervals of non-mappable regions\nmap <- as(read.table(\"mapProfile.bed\", header=TRUE), \"GRanges\")\n```\n\n### 2. Genome Segmentation\nSegment the genome into candidate regions containing a minimum number of reads.\n\n```r\n# minReads: minimum number of forward and reverse reads to define a region\n# A control-to-IP candidate region ratio of ~25% is a good heuristic\nseg <- segmentPICS(dataIP, dataC=dataCont, map=map, minReads=1)\n```\n\n### 3. Parameter Estimation (Peak Calling)\nRun the PICS model on the segmented regions. Use `parallel` to speed up computation.\n\n```r\nlibrary(parallel)\n# dataType=\"TF\" for Transcription Factors; \"H\" for Histone modifications (experimental)\npics <- PICS(seg, nCores=2, dataType=\"TF\")\n```\n\n### 4. FDR Estimation\nTo estimate the False Discovery Rate, repeat the segmentation and PICS steps with swapped IP and Control samples.\n\n```r\n# Swap samples\nsegC <- segmentPICS(dataCont, dataC=dataIP, map=map, minReads=1)\npicsC <- PICS(segC)\n\n# Calculate FDR with filters to remove noisy estimates\n# delta: fragment length, se: standard error, sigmaSq: variance\nmyFilter <- list(delta=c(50, 300), se=c(0, 50), sigmaSqF=c(0, 22500), sigmaSqR=c(0, 22500))\nfdr <- picsFDR(pics, picsC, filter=myFilter)\n```\n\n### 5. Visualizing and Exporting Results\nVisualize the FDR vs. Score relationship to determine a threshold, then export to standard formats.\n\n```r\n# Plot FDR vs Score\nplot(pics, picsC, filter=myFilter, type=\"l\")\n\n# Create RangedData output for BED or WIG\nrdBed <- makeRangedDataOutput(pics, type=\"bed\", filter=c(myFilter, list(score=c(1, Inf))))\n\n# Export using rtracklayer\nlibrary(rtracklayer)\nexport(rdBed, \"enriched_regions.bed\")\n```\n\n## Key Parameters and Tips\n\n- **minReads**: Lowering this increases sensitivity but significantly increases computation time and potential false positives.\n- **Mappability**: Using a mappability profile is highly recommended to compensate for missing reads in repetitive genomic regions.\n- **Filtering**: The `filter` argument in `picsFDR` and `makeRangedDataOutput` is crucial. Typical filters include:\n    - `delta`: Expected fragment length range.\n    - `sigmaSqF`/`sigmaSqR`: Variance of the forward/reverse read distributions (prevents overly broad peaks).\n    - `se`: Standard error of the binding site position.\n\n## Reference documentation\n\n- [PICS: Probabilistic Inference for ChIP-Seq](./references/PICS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pics",
+    "description": "bioconductor-pics identifies transcription factor binding sites from ChIP-Seq data using a Bayesian hierarchical t-mixture model. Use when user asks to identify binding sites, deconvolute overlapping peaks, estimate fragment lengths, or calculate false discovery rates for ChIP-Seq experiments.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/PICS.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-psichomics",
+  "category": "bioconductor",
+  "name": "bioconductor-psichomics",
+  "description": "This tool performs integrative analyses of alternative splicing and gene expression using transcriptomic data. Use when user asks to load data from TCGA or GTEx, quantify Percent Spliced-In values, perform differential splicing analysis, correlate splicing with gene expression, or conduct survival analysis based on splicing events.",
+  "overview": "The `psichomics` package is a powerful R/Bioconductor tool designed for the quantification and analysis of alternative splicing (AS) and gene expression. It facilitates the calculation of Percent Spliced-In (PSI) values from splice junction counts and enables downstream statistical analyses, including PCA, differential splicing, and survival analysis. It is particularly well-integrated with large-scale projects like TCGA and GTEx but supports any user-provided data following specific formats.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/psichomics.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/nuno-agostinho/psichomics",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "psichomics"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/psichomics.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/nuno-agostinho/psichomics",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-psichomics\n\nname: bioconductor-psichomics\ndescription: Expert guidance for the psichomics R package to perform integrative analyses of alternative splicing and gene expression. Use this skill when users need to: (1) Load transcriptomic data from TCGA, GTEx, SRA (via recount), or local files; (2) Quantify alternative splicing (PSI) from junction counts; (3) Perform differential splicing or gene expression analysis; (4) Correlate splicing with gene expression; (5) Conduct survival analysis based on splicing events; or (6) Prepare custom splicing annotations from tools like SUPPA, rMATS, MISO, or VAST-TOOLS.\n\n# bioconductor-psichomics\n\n## Overview\nThe `psichomics` package is a powerful R/Bioconductor tool designed for the quantification and analysis of alternative splicing (AS) and gene expression. It facilitates the calculation of Percent Spliced-In (PSI) values from splice junction counts and enables downstream statistical analyses, including PCA, differential splicing, and survival analysis. It is particularly well-integrated with large-scale projects like TCGA and GTEx but supports any user-provided data following specific formats.\n\n## Core Workflow\n\n### 1. Data Loading\n`psichomics` can automate the retrieval of data from major repositories or load local files.\n\n```r\nlibrary(psichomics)\n\n# Load TCGA data (e.g., Breast Cancer)\nfolder <- getDownloadsFolder()\ndata <- loadFirebrowseData(folder=folder, cohort=\"BRCA\", \n                           data=c(\"clinical\", \"junction_quantification\", \"RSEM_genes\"))\n\n# Extract components\nclinical      <- data[[1]]$`Clinical data`\njunctionQuant <- data[[1]]$`Junction quantification (Illumina HiSeq)`\ngeneExpr      <- data[[1]]$`Gene expression`\n```\n\n### 2. Alternative Splicing Quantification\nTo quantify AS, you need junction quantification data and an annotation object.\n\n```r\n# List and load available annotations (e.g., hg19)\nannotList <- listSplicingAnnotations(assembly=\"hg19\")\nannotation <- loadAnnotation(annotList[[1]])\n\n# Quantify PSI (Percent Spliced-In)\npsi <- quantifySplicing(annotation, junctionQuant, minReads=10)\n```\n\n### 3. Gene Expression Processing\nStandardize gene expression data before correlation or differential expression analyses.\n\n```r\n# Filter and normalize (TMM method)\nfilter <- filterGeneExpr(geneExpr, minCounts=10, minTotalCounts=15)\ngeneExprNorm <- normaliseGeneExpression(geneExpr, geneFilter=filter, method=\"TMM\")\n```\n\n### 4. Grouping and Differential Analysis\nDefine groups based on clinical attributes to compare splicing profiles.\n\n```r\n# Create groups based on sample type\ngroups <- createGroupByAttribute(\"Sample types\", sampleMetadata)\ngroupList <- list(Normal = groups$`Solid Tissue Normal`, \n                  Tumor = groups$`Primary solid Tumor`)\n\n# Differential Splicing Analysis\ndiffSplicing <- diffAnalyses(psi, groupList)\n```\n\n### 5. Correlation and Survival Analysis\nInvestigate the relationship between splicing and gene expression or patient outcomes.\n\n```r\n# Correlate a specific gene (e.g., QKI) with an AS event (e.g., NUMB)\ncorr <- correlateGEandAS(geneExprNorm, psi, \"QKI|9444\", \"SE_14_-_73749067...\")\nplotCorrelation(corr)\n\n# Survival analysis for an event\n# Requires matching samples to subjects in clinical data\neventPSI <- assignValuePerSubject(psi[eventID, ], sampleToSubjectMatch, clinical)\nopt <- optimalSurvivalCutoff(clinical, eventPSI, event=\"days_to_death\")\n```\n\n## Custom Annotations\nIf using external tools, parse their output to create `psichomics` compatible annotations:\n- **SUPPA**: `parseSuppaAnnotation(path)`\n- **rMATS**: `parseMatsAnnotation(path)`\n- **MISO**: `parseMisoAnnotation(path)`\n- **VAST-TOOLS**: `parseVastToolsAnnotation(path)`\n- **Final Step**: Always run `prepareAnnotationFromEvents(parsedData)` to finalize.\n\n## Tips for Success\n- **Memory Management**: TCGA/GTEx datasets are large. Use `filterGeneExpr` and `minReads` in `quantifySplicing` to reduce the data matrix size.\n- **Identifier Matching**: Ensure sample IDs in `junctionQuant`, `geneExpr`, and `clinical` data match exactly. Use `getSubjectFromSample()` to bridge sample-level data to subject-level clinical outcomes.\n- **Visual Interface**: If the CLI becomes complex, the package provides a Shiny app via `psichomics()`.\n\n## Reference documentation\n- [Preparing Alternative Splicing Annotation](./references/AS_events_preparation.md)\n- [Command-Line Interface (CLI) Tutorial](./references/CLI_tutorial.md)\n- [Visual Interface (GUI) Tutorial](./references/GUI_tutorial.md)\n- [Loading User-Provided Data](./references/custom_data.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-psichomics",
+    "description": "This tool performs integrative analyses of alternative splicing and gene expression using transcriptomic data. Use when user asks to load data from TCGA or GTEx, quantify Percent Spliced-In values, perform differential splicing analysis, correlate splicing with gene expression, or conduct survival analysis based on splicing events.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/psichomics.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-segmentseq",
+  "category": "bioconductor",
+  "name": "bioconductor-segmentseq",
+  "description": "This tool performs simultaneous segmentation of high-throughput sequencing data from multiple samples to identify small RNA and cytosine methylation loci. Use when user asks to detect methylation loci, identify small RNA loci, perform consensus segmentation across replicates, or conduct differential methylation and expression analysis.",
+  "overview": "The `segmentSeq` package provides methods for the simultaneous segmentation of high-throughput sequencing data from multiple samples. It is primarily used to identify small RNA (sRNA) loci and cytosine methylation loci. By using empirical Bayesian methods, it accounts for replicate data to create consensus segmentation maps and identifies regions of biological significance that differ from background noise or neighboring regions.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/segmentSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/samgg/segmentSeq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "segmentSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/segmentSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/samgg/segmentSeq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-segmentseq\n\nname: bioconductor-segmentseq\ndescription: Methods for detecting methylation loci and small RNA loci from high-throughput sequencing data. Use this skill to perform simultaneous segmentation of data from multiple samples, identify consensus loci, and conduct differential methylation or expression analysis using empirical Bayesian methods.\n\n# bioconductor-segmentseq\n\n## Overview\nThe `segmentSeq` package provides methods for the simultaneous segmentation of high-throughput sequencing data from multiple samples. It is primarily used to identify small RNA (sRNA) loci and cytosine methylation loci. By using empirical Bayesian methods, it accounts for replicate data to create consensus segmentation maps and identifies regions of biological significance that differ from background noise or neighboring regions.\n\n## Core Workflow\n\n### 1. Data Loading and Preparation\nThe package uses different functions depending on the data type:\n- **Methylation Data:** Use `readMeths` to read YAMA output or similar bisulphite sequencing calls.\n- **Small RNA/Generic Data:** Use `readGeneric` (for tab-delimited files) or `readBAM` (for BAM files).\n\n```r\nlibrary(segmentSeq)\nlibrary(parallel)\n\n# Setup parallel processing (recommended for large datasets)\ncl <- makeCluster(min(8, detectCores()))\n\n# Example: Loading methylation data\nmD <- readMeths(files = files, dir = datadir, libnames = libs, \n                replicates = reps, nonconversion = nc_rates)\n\n# Example: Loading sRNA data\naD <- readGeneric(files = libfiles, dir = datadir, replicates = reps, \n                  libnames = libs, polyLength = 10)\n```\n\n### 2. Processing Alignment Data\nConvert `alignmentData` (or `methData`) into a `segData` object to identify potential segments based on overlapping alignments.\n\n```r\nsD <- processAD(mD, cl = cl)\n```\n\n### 3. Segmentation Methods\nThere are two primary ways to define loci:\n\n- **Heuristic Segmentation (`heuristicSeg`):** A faster method. For methylation, it uses a binomial distribution with a beta prior. For sRNA, it exploits the bimodality of tag densities.\n- **Empirical Bayesian Classification (`classifySeg`):** More computationally intensive but more accurate. It models biological variation within replicates to refine segment boundaries.\n\n```r\n# Heuristic approach\nhS <- heuristicSeg(sD = sD, aD = mD, prop = 0.2, cl = cl)\n\n# Empirical Bayesian approach (often uses heuristic results as a starting point)\ncS <- classifySeg(sD = sD, aD = aD, cD = hS, cl = cl)\n```\n\n### 4. Refinement and Likelihoods\nFor methylation data, use `mergeMethSegs` to join fragments split by unmethylated cytosines and `lociLikelihoods` to assign posterior probabilities. For sRNA, use `selectLoci` to filter by FDR.\n\n```r\n# Methylation refinement\nhS <- mergeMethSegs(hS, mD, gap = 5000, cl = cl)\nhSL <- lociLikelihoods(hS, mD, cl = cl)\n\n# sRNA filtering\nloci <- selectLoci(cS, FDR = 0.05)\n```\n\n## Differential Analysis\n`segmentSeq` integrates with `baySeq` for differential expression/methylation analysis.\n\n1.  **Define Groups:** Specify the models (e.g., Non-Differential Expression vs. Differential Expression).\n2.  **Estimate Priors:** Use `getPriors`.\n3.  **Calculate Likelihoods:** Use `getLikelihoods`.\n\n```r\ngroups(hSL) <- list(NDE = c(1,1,1,1), DE = c(\"A\", \"A\", \"B\", \"B\"))\nhSL <- methObservables(hSL) # Specific to methylation\ndensityFunction(hSL) <- bbNCDist # Beta-binomial with non-conversion\nhSL <- getPriors(hSL, cl = cl)\nhSL <- getLikelihoods(hSL, cl = cl)\n\n# View results\ntopCounts(hSL, \"DE\")\n```\n\n## Visualization\n- `plotMethDistribution`: Visualizes methylation levels across the genome.\n- `plotMeth`: Plots specific methylation loci with coverage and methylation ratios.\n- `plotGenome`: Plots sRNA tag densities and identified segments.\n\n```r\nplotMeth(mD, hSL, chr = \"Chr1\", limits = c(1, 50000), cap = 10)\nplotGenome(aD, cS, chr = \"Chr1\", limits = c(1, 1e5))\n```\n\n## Tips\n- **Parallelization:** Always use a cluster (`cl`) for `processAD`, `heuristicSeg`, and `classifySeg` as these operations are computationally demanding.\n- **Memory:** For very large datasets, use the `largeness` parameter in segmentation functions to manage memory usage.\n- **Non-conversion:** In methylation analysis, providing accurate `nonconversion` rates to `readMeths` is critical for the beta-binomial model.\n\n## Reference documentation\n- [segmentSeq: methods for detecting methylation loci and differential methylation](./references/methylationAnalysis.md)\n- [segmentSeq: methods for identifying small RNA loci from high-throughput sequencing data](./references/segmentSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-segmentseq",
+    "description": "This tool performs simultaneous segmentation of high-throughput sequencing data from multiple samples to identify small RNA and cytosine methylation loci. Use when user asks to detect methylation loci, identify small RNA loci, perform consensus segmentation across replicates, or conduct differential methylation and expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/segmentSeq.html"
+  }
+}

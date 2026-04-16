@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-aspli",
+  "category": "bioconductor",
+  "name": "bioconductor-aspli",
+  "description": "ASpli analyzes alternative splicing in RNA-seq data by integrating subgenic bin signals with junction inclusion indices. Use when user asks to parse genome annotations into bins, count read overlaps, calculate inclusion indices like PSI or PIR, and perform differential splicing analysis using a GLM framework.",
+  "overview": "ASpli is an integrative R package designed to analyze alternative splicing (AS) by combining bin-based signals with junction inclusion indices. It decomposes genome annotations into \"bins\" (maximal sub-genic features) and uses a generalized linear model (GLM) framework to detect differential usage. It supports both annotation-dependent and annotation-independent (novel junction) discovery.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ASpli.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-aspli/overview",
+  "github": "N/A",
+  "conda_downloads": "39.4K",
+  "conda_downloads_num": 39400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ASpli"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ASpli.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-aspli/overview",
+    "github": "N/A",
+    "conda_downloads": "39.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-aspli\n\nname: bioconductor-aspli\ndescription: Analysis of alternative splicing (AS) using RNA-seq data. Use this skill to parse genome annotations into subgenic bins, count read overlaps, calculate inclusion indices (PSI, PIR, PJU), and perform differential splicing analysis using a GLM framework (edgeR-based). Suitable for pairwise comparisons, complex factorial designs, and paired experimental designs.\n\n# bioconductor-aspli\n\n## Overview\n\nASpli is an integrative R package designed to analyze alternative splicing (AS) by combining bin-based signals with junction inclusion indices. It decomposes genome annotations into \"bins\" (maximal sub-genic features) and uses a generalized linear model (GLM) framework to detect differential usage. It supports both annotation-dependent and annotation-independent (novel junction) discovery.\n\n## Core Workflow\n\n### 1. Genome Binning\nThe first step is to convert a `TxDb` object into subgenic features.\n\n```R\nlibrary(ASpli)\nlibrary(GenomicFeatures)\n\n# Create TxDb from GTF\ntxdb <- txdbmaker::makeTxDbFromGFF(\"genes.gtf\")\n\n# Extract features (bins, junctions, genes)\nfeatures <- binGenome(txdb)\n\n# Optional: Add gene symbols\n# symbols <- data.frame(row.names = genes(txdb), symbol = c(...))\n# features <- binGenome(txdb, geneSymbols = symbols)\n```\n\n### 2. Read Counting\nDefine a `targets` data frame containing BAM paths and experimental factors.\n\n```R\ntargets <- data.frame(\n  row.names = c(\"S1\", \"S2\", \"S3\", \"S4\"),\n  bam = c(\"s1.bam\", \"s2.bam\", \"s3.bam\", \"s4.bam\"),\n  genotype = c(\"WT\", \"WT\", \"KO\", \"KO\"),\n  stringsAsFactors = FALSE\n)\n\n# Count reads against features\ngbcounts <- gbCounts(\n  features = features, \n  targets = targets, \n  minReadLength = 100, \n  libType = \"PE\", \n  strandMode = 1\n)\n```\n\n### 3. Junction Analysis and Inclusion Indices\nCalculate PSI (Percent Spliced In), PIR (Percent of Intron Retention), and PJU (Percent Junction Usage).\n\n```R\n# Summarize junctions and calculate indices\nasd <- jCounts(\n  counts = gbcounts, \n  features = features, \n  minReadLength = 100,\n  threshold = 5 # Min reads supporting junction\n)\n\n# Access indices\npir_table <- irPIR(asd)\npsi_table <- esPSI(asd)\n```\n\n### 4. Differential Usage (DU) Reports\nASpli uses `edgeR` logic to test for differential bin and junction usage.\n\n```R\n# Bin-based differential usage\n# contrast: -1 for control, 1 for treatment\ngb_report <- gbDUreport(gbcounts, contrast = c(-1, 1))\n\n# Junction-based differential usage\njdu_report <- jDUreport(asd, contrast = c(-1, 1))\n```\n\n### 5. Integration and Export\nConsolidate signals into a single report and export to interactive HTML.\n\n```R\n# Integrate bin and junction signals\nsr <- splicingReport(gb_report, jdu_report, counts = gbcounts)\n\n# Region-specific summarization\nis <- integrateSignals(sr, asd)\n\n# Export to HTML (requires merged BAMs for coverage plots)\nmBAMs <- data.frame(\n  bam = c(\"WT_merged.bam\", \"KO_merged.bam\"),\n  condition = c(\"WT\", \"KO\")\n)\n\nexportIntegratedSignals(\n  is, \n  sr = sr, \n  output.dir = \"ASpli_Results\",\n  counts = gbcounts, \n  features = features, \n  asd = asd, \n  mergedBams = mBAMs\n)\n```\n\n## Advanced Usage\n\n### Complex Designs\nFor factorial or paired designs, use the `formula` and `coef` arguments in `gbDUreport` and `jDUreport`.\n\n```R\n# Example: Paired design\nform <- formula(~Subject + Treatment)\ngb_paired <- gbDUreport(gbcounts, formula = form, coef = \"Treatment\")\n```\n\n### Uniformity Test\nTo filter false positive Intron Retention (IR) events caused by non-uniform coverage, enable the uniformity test in `jDUreport`.\n\n```R\njdu <- jDUreport(asd, contrast = c(-1, 1), runUniformityTest = TRUE, mergedBams = mBAMs)\n```\n\n## Key Data Classes\n- `ASpliFeatures`: Genomic coordinates for genes, bins, and junctions.\n- `ASpliCounts`: Read counts and densities.\n- `ASpliAS`: Junction inclusion indices (PSI, PIR, PJU).\n- `ASpliDU`: Differential expression (genes) and usage (bins).\n- `ASpliJDU`: Differential junction usage.\n- `ASpliIntegratedSignals`: Final summarized splicing signals per region.\n\n## Reference documentation\n- [ASpli: An integrative R package for analysing alternative splicing using RNA-seq](./references/ASpli.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-aspli",
+    "description": "ASpli analyzes alternative splicing in RNA-seq data by integrating subgenic bin signals with junction inclusion indices. Use when user asks to parse genome annotations into bins, count read overlaps, calculate inclusion indices like PSI or PIR, and perform differential splicing analysis using a GLM framework.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ASpli.html"
+  }
+}

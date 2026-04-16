@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-beer",
+  "category": "bioconductor",
+  "name": "bioconductor-beer",
+  "description": "This tool analyzes Phage immuno-precipitation sequencing (PhIP-seq) data to identify enriched antibody responses. Use when user asks to identify enriched peptides using edgeR or Bayesian models, perform beads-only analysis for false positive estimation, calculate Bayes factors, or visualize PhIP-seq enrichment results.",
+  "overview": "The `beer` package provides tools for identifying enriched antibody responses in PhIP-seq experiments. It implements two primary approaches:\n1. **edgeR**: A fast, frequentist approach based on differential expression pipelines, effective for high fold-change enrichments.\n2. **BEER (Bayesian Estimation Enrichment in R)**: A Bayesian hierarchical model that provides higher sensitivity for peptides in the lower fold-change range, though it requires more computational time.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/beer.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beer/overview",
+  "github": "https://github.com/athchen/beer",
+  "conda_downloads": "2.9K",
+  "conda_downloads_num": 2900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "beer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/beer.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-beer/overview",
+    "github": "https://github.com/athchen/beer",
+    "conda_downloads": "2.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-beer\n\nname: bioconductor-beer\ndescription: Analysis of Phage immuno-precipitation sequencing (PhIP-seq) data to identify enriched antibody responses. Use when Claude needs to: (1) Identify enriched peptides using edgeR or Bayesian (BEER) models, (2) Perform beads-only round-robin analysis for false positive estimation, (3) Calculate Bayes factors or expected read counts for PhIP-seq data, or (4) Visualize enrichment results.\n\n# bioconductor-beer\n\n## Overview\n\nThe `beer` package provides tools for identifying enriched antibody responses in PhIP-seq experiments. It implements two primary approaches:\n1. **edgeR**: A fast, frequentist approach based on differential expression pipelines, effective for high fold-change enrichments.\n2. **BEER (Bayesian Estimation Enrichment in R)**: A Bayesian hierarchical model that provides higher sensitivity for peptides in the lower fold-change range, though it requires more computational time.\n\nThe package utilizes the `PhIPData` object (extending `SummarizedExperiment`) to store counts, metadata, and analysis results.\n\n## Installation and Setup\n\nThe package requires the JAGS (Just Another Gibbs Sampler) library for MCMC modeling.\n\n```r\n# Install JAGS on system (e.g., brew install jags)\n# Then install R dependencies\nBiocManager::install(\"beer\")\nlibrary(beer)\n```\n\n## Core Workflow\n\n### 1. Identify Enrichments with edgeR\n\nUse `runEdgeR()` to establish a baseline of enriched peptides. This function compares serum samples against all beads-only samples.\n\n```r\n# Run edgeR and store results in specific assays\nedgeR_out <- runEdgeR(sim_data, \n                      assay.names = c(logfc = \"edgeR_logfc\", \n                                      prob = \"edgeR_logpval\"))\n\n# Identify hits using BH-adjusted p-values < 0.05\nassay(edgeR_out, \"edgeR_hits\") <- apply(\n  assay(edgeR_out, \"edgeR_logpval\"), 2, \n  function(sample) {\n    pval <- 10^(-sample)\n    p.adjust(pval, method = \"BH\") < 0.05\n  })\n```\n\n### 2. Identify Enrichments with BEER\n\nUse `brew()` to run the Bayesian model. It estimates posterior probabilities of enrichment and fold-changes.\n\n```r\n# Define where to store MCMC summarized output\nassay_locations <- c(\n  phi = \"beer_fc_marg\",   # Marginal fold-change\n  phi_Z = \"beer_fc_cond\", # Conditional fold-change\n  Z = \"beer_prob\",        # Posterior probability\n  c = \"sampleInfo\",       # Attenuation constant\n  pi = \"sampleInfo\"       # Proportion of enriched peptides\n)\n\n# Run the Bayesian model\nbeer_out <- brew(edgeR_out, assay.names = assay_locations)\n```\n\n### 3. Define BEER Hits\n\nBEER hits include peptides with high posterior probability (> 0.5) and \"super-enriched\" peptides (those with extremely high fold-changes that were excluded from MCMC to save time).\n\n```r\n# Identify super-enriched (SE) peptides (missing prob but were run)\nwas_run <- matrix(rep(beer_out$group != \"beads\", each = nrow(beer_out)), \n                  nrow = nrow(beer_out))\nare_se <- was_run & is.na(assay(beer_out, \"beer_prob\"))\n\n# Combine criteria for final hits\nassay(beer_out, \"beer_hits\") <- assay(beer_out, \"beer_prob\") > 0.5 | are_se\n```\n\n## Advanced Procedures\n\n### Beads-only Round Robin\n\nTo estimate false positive rates, run beads-only samples against each other.\n\n```r\n# Integrated into brew or runEdgeR\nbeer_beadsRR <- brew(sim_data, beadsRR = TRUE)\n\n# Or run separately\nbeads_only_results <- beadsRR(sim_data, method = \"beer\")\n```\n\n### Parallelization\n\nUse `BiocParallel` to speed up `brew()` or `runEdgeR()`.\n\n```r\nlibrary(BiocParallel)\nbeer_out <- brew(sim_data, BPPARAM = MulticoreParam(workers = 4))\n```\n\n### Plotting Helpers\n\nUse helper functions to prepare data for visualization.\n\n*   **`getExpected()`**: Calculates expected read counts/proportions based on beads-only averages.\n*   **`getBF()`**: Calculates Bayes factors for peptide enrichment.\n\n```r\n# Add expected counts and Bayes factors to the object\nbeer_out <- getExpected(beer_out)\nbeer_out <- getBF(beer_out)\n\n# Convert to DataFrame for ggplot2\ndf <- as(beer_out, \"DataFrame\")\n```\n\n## Reference documentation\n\n- [Estimating Enrichment in PhIP-Seq Experiments with BEER](./references/beer.Rmd)\n- [Estimating Enrichment in PhIP-Seq Experiments with BEER](./references/beer.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-beer",
+    "description": "This tool analyzes Phage immuno-precipitation sequencing (PhIP-seq) data to identify enriched antibody responses. Use when user asks to identify enriched peptides using edgeR or Bayesian models, perform beads-only analysis for false positive estimation, calculate Bayes factors, or visualize PhIP-seq enrichment results.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/beer.html"
+  }
+}

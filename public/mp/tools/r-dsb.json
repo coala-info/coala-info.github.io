@@ -1,0 +1,41 @@
+{
+  "id": "r-dsb",
+  "category": "R",
+  "name": "r-dsb",
+  "description": "This tool normalizes and denoises protein expression data from droplet-based single-cell experiments by removing ambient and technical noise. Use when user asks to normalize ADT counts, remove ambient protein noise using empty droplets, or denoise CITE-seq data using isotype controls.",
+  "overview": "The `dsb` (Denoised and Scaled by Background) package provides a method for normalizing and denoising protein expression data from droplet-based single-cell experiments. It addresses two major noise components:\n1. **Ambient Noise**: Protein-specific noise from unbound antibodies in droplets, inferred from empty droplets.\n2. **Technical Noise**: Cell-specific noise revealed by shared variance across isotype controls and background protein counts.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-dsb\n\n## Overview\nThe `dsb` (Denoised and Scaled by Background) package provides a method for normalizing and denoising protein expression data from droplet-based single-cell experiments. It addresses two major noise components:\n1. **Ambient Noise**: Protein-specific noise from unbound antibodies in droplets, inferred from empty droplets.\n2. **Technical Noise**: Cell-specific noise revealed by shared variance across isotype controls and background protein counts.\n\n## Installation\n```R\ninstall.packages(\"dsb\")\nlibrary(dsb)\n```\n\n## Core Workflow: DSBNormalizeProtein\nThe primary function is `DSBNormalizeProtein()`. It requires a raw ADT count matrix for cells and a raw ADT count matrix for empty droplets.\n\n### Standard Usage\n```R\n# cell_protein_matrix: matrix of raw ADT counts (rows=proteins, cols=cells)\n# empty_drop_matrix: matrix of raw ADT counts from empty droplets\n# isotype.control.name.vec: vector of rownames corresponding to isotype controls\n\nnormalized_matrix <- DSBNormalizeProtein(\n  cell_protein_matrix = cell_adt_raw,\n  empty_drop_matrix = empty_drop_adt_raw,\n  denoise.counts = TRUE,\n  use.isotype.control = TRUE,\n  isotype.control.name.vec = c(\"IgG1\", \"IgG2a\", \"IgG2b\")\n)\n```\n\n### Defining Empty Droplets\nTo use `dsb` effectively, you must load the **raw** (unfiltered) matrix from your aligner (e.g., Cell Ranger `raw_feature_bc_matrix`) to identify background droplets.\n- **Cells**: Barcodes called as cells by the aligner.\n- **Empty Droplets**: Barcodes with low RNA content but sufficient ADT counts (e.g., log10 ADT library size between 1.5 and 3).\n\n## Advanced Workflows\n\n### Data Lacking Isotype Controls\nIf isotype controls are unavailable, you can still remove ambient noise:\n```R\nnormalized_matrix <- DSBNormalizeProtein(\n  cell_protein_matrix = cell_adt_raw,\n  empty_drop_matrix = empty_drop_adt_raw,\n  denoise.counts = FALSE # Only step 1 (ambient removal)\n)\n```\n\n### No Empty Droplets Available\nIf you only have the filtered cell matrix, use `ModelNegativeADTnorm()` to infer the background population via a Gaussian Mixture Model:\n```R\nnormalized_matrix <- ModelNegativeADTnorm(\n  cell_protein_matrix = cell_adt_raw,\n  denoise.counts = TRUE,\n  use.isotype.control = TRUE,\n  isotype.control.name.vec = isotypes\n)\n```\n\n### Large Datasets (Fast Mode)\nFor datasets with >100k cells, use `fast.km = TRUE` to speed up the denoising step by ~10-fold:\n```R\nnormalized_matrix <- DSBNormalizeProtein(\n  cell_protein_matrix = cell_adt_raw,\n  empty_drop_matrix = empty_drop_adt_raw,\n  fast.km = TRUE\n)\n```\n\n## Integration with Seurat\nAdd `dsb` normalized values to the `data` slot of a Seurat Assay (do not put them in `counts` as they are already normalized and contain negative values).\n\n```R\n# Create Seurat object with RNA\npbmc <- CreateSeuratObject(counts = rna_counts)\n\n# Add dsb normalized protein to a new assay\npbmc[[\"ADT\"]] <- CreateAssayObject(data = normalized_matrix)\n\n# Downstream: skip NormalizeData for ADT; go straight to ScaleData or PCA\nDefaultAssay(pbmc) <- \"ADT\"\npbmc <- ScaleData(pbmc)\npbmc <- RunPCA(pbmc, reduction.name = \"apca\")\n```\n\n## Tips for Success\n- **Outliers**: If normalized values have an extreme range (e.g., > 50), use `quantile.clipping = TRUE` in `DSBNormalizeProtein`.\n- **Interpretation**: `dsb` values are interpretable as standard deviations above the expected noise. A value of 3-4 is often a good threshold for \"positive\" expression.\n- **Sparse Matrices**: Convert large sparse matrices to dense matrices (`as.matrix()`) before passing to `dsb` if memory allows, as `dsb` performs dense matrix operations.\n\n## Reference documentation\n- [End-to-end CITE-seq analysis workflow](./references/end_to_end_workflow.Rmd)\n- [Understanding how the dsb method works](./references/understanding_dsb.Rmd)\n- [Normalizing without empty droplets](./references/no_empty_drops.Rmd)\n- [Fast normalization for large datasets](./references/fastkm.Rmd)\n- [Additional Topics: Python, Bioconductor, and FAQ](./references/additional_topics.Rmd)",
+  "skill_front_matter": {
+    "name": "r-dsb",
+    "description": "This tool normalizes and denoises protein expression data from droplet-based single-cell experiments by removing ambient and technical noise. Use when user asks to normalize ADT counts, remove ambient protein noise using empty droplets, or denoise CITE-seq data using isotype controls.",
+    "homepage": "https://cran.r-project.org/web/packages/dsb/index.html"
+  }
+}

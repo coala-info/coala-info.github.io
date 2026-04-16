@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scope",
+  "category": "bioconductor",
+  "name": "bioconductor-scope",
+  "description": "SCOPE identifies copy number variants in single-cell DNA sequencing data using a Poisson latent factor model. Use when user asks to perform normalization, correct for GC content bias, identify diploid control cells, or conduct multi-sample segmentation for copy number estimation.",
+  "overview": "SCOPE (Single-cell Copy Number Estimation) is an R package designed to identify copy number variations in single-cell DNA sequencing data. It utilizes a Poisson latent factor model to account for GC content bias and technical artifacts. Key features include the use of Gini coefficients to identify diploid/normal control cells and multi-sample segmentation to find shared breakpoints across cells within the same genetic lineage.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SCOPE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SCOPE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SCOPE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scope\n\nname: bioconductor-scope\ndescription: Statistical framework for calling copy number variants (CNVs) from single-cell DNA sequencing (scDNA-seq) data. Use this skill to perform normalization, GC content bias correction, and multi-sample segmentation for single-cell copy number estimation using the SCOPE R package.\n\n# bioconductor-scope\n\n## Overview\n\nSCOPE (Single-cell Copy Number Estimation) is an R package designed to identify copy number variations in single-cell DNA sequencing data. It utilizes a Poisson latent factor model to account for GC content bias and technical artifacts. Key features include the use of Gini coefficients to identify diploid/normal control cells and multi-sample segmentation to find shared breakpoints across cells within the same genetic lineage.\n\n## Core Workflow\n\n### 1. Pre-preparation and Binning\nDefine genomic bins (default 500kb) and extract read counts from BAM files.\n\n```r\nlibrary(SCOPE)\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\n\n# Define BAM files and sample names\nbamfolder <- system.file(\"extdata\", package = \"WGSmapp\")\nbamFile <- list.files(bamfolder, pattern = '*.dedup.bam$')\nbamdir <- file.path(bamfolder, bamFile)\nsampname_raw <- sapply(strsplit(bamFile, \".\", fixed = TRUE), \"[\", 1)\n\n# Create bin-level GRanges object\nbambedObj <- get_bam_bed(bamdir = bamdir, sampname = sampname_raw, hgref = \"hg38\")\nref_raw <- bambedObj$ref\n```\n\n### 2. GC Content and Mappability\nCalculate bias metrics for each bin. Supports hg19, hg38, and mm10.\n\n```r\nmapp <- get_mapp(ref_raw, hgref = \"hg38\")\ngc <- get_gc(ref_raw, hgref = \"hg38\")\nvalues(ref_raw) <- cbind(values(ref_raw), DataFrame(gc, mapp))\n```\n\n### 3. Coverage and Quality Control\nGenerate the read depth matrix and filter low-quality bins/cells.\n\n```r\n# Get raw read depth\ncoverageObj <- get_coverage_scDNA(bambedObj, mapqthres = 40, seq = 'paired-end', hgref = \"hg38\")\nY_raw <- coverageObj$Y\n\n# Perform QC\nQCmetric_raw <- get_samp_QC(bambedObj)\nqcObj <- perform_qc(Y_raw = Y_raw, sampname_raw = sampname_raw, ref_raw = ref_raw, QCmetric_raw = QCmetric_raw)\nY <- qcObj$Y\nref <- qcObj$ref\n```\n\n### 4. Normalization and Ploidy Initialization\nIdentify normal cells using Gini coefficients and initialize ploidy states.\n\n```r\n# Calculate Gini coefficients to find diploid cells\nGini <- get_gini(Y)\nnorm_idx <- which(Gini <= 0.12) # Example threshold for normal cells\n\n# First-pass normalization (no latent factors)\nnormObj.pre <- normalize_codex2_ns_noK(Y_qc = Y, gc_qc = ref$gc, norm_index = norm_idx)\n\n# Initialize ploidy\nploidy <- initialize_ploidy(Y = Y, Yhat = normObj.pre$Yhat, ref = ref)\n\n# Full SCOPE normalization (supports parallel computing)\nnormObj.scope <- normalize_scope_foreach(Y_qc = Y, gc_qc = ref$gc, K = 1, \n                                         ploidyInt = ploidy, norm_index = norm_idx, \n                                         T = 1:5, beta0 = normObj.pre$beta.hat, nCores = 2)\n\n# Extract best Yhat based on BIC\nYhat <- normObj.scope$Yhat[[which.max(normObj.scope$BIC)]]\n```\n\n### 5. Segmentation and Visualization\nPerform cross-sample segmentation to identify integer copy numbers.\n\n```r\n# Segmentation chromosome by chromosome\nchrs <- unique(as.character(seqnames(ref)))\nsegment_cs <- lapply(chrs, function(chri) {\n    segment_CBScs(Y = Y, Yhat = Yhat, sampname = colnames(Y), \n                  ref = ref, chr = chri, mode = \"integer\", max.ns = 1)\n})\niCN_mat <- do.call(rbind, lapply(segment_cs, function(z){z[[\"iCN\"]]}))\n\n# Plot heatmap\nplot_iCN(iCNmat = iCN_mat, ref = ref, Gini = Gini, filename = \"SCOPE_heatmap\")\n```\n\n## Key Functions\n- `get_gini()`: Computes cell-specific Gini coefficients to identify outliers or diploid cells.\n- `initialize_ploidy()`: Estimates initial ploidy states for the EM algorithm.\n- `normalize_scope()` / `normalize_scope_foreach()`: Main normalization functions using the Poisson latent factor model.\n- `segment_CBScs()`: Performs multi-sample segmentation to identify shared breakpoints.\n- `plot_iCN()`: Generates heatmaps of integer copy number profiles.\n\n## Tips\n- **Normal Cell Selection**: If no prior knowledge of diploid cells exists, use a Gini coefficient threshold (typically < 0.12) to identify them.\n- **Parallelization**: Use `normalize_scope_foreach` for significantly faster performance on large single-cell datasets.\n- **Custom Genomes**: While hg19/hg38 are defaults, SCOPE can be adapted to mm10 by specifying `hgref = \"mm10\"` and providing appropriate blacklist regions.\n\n## Reference documentation\n- [SCOPE: Single-cell Copy Number Estimation](./references/SCOPE_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scope",
+    "description": "SCOPE identifies copy number variants in single-cell DNA sequencing data using a Poisson latent factor model. Use when user asks to perform normalization, correct for GC content bias, identify diploid control cells, or conduct multi-sample segmentation for copy number estimation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SCOPE.html"
+  }
+}

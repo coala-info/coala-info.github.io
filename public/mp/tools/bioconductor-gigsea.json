@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gigsea",
+  "category": "bioconductor",
+  "name": "bioconductor-gigsea",
+  "description": "GIGSEA performs gene set enrichment analysis by integrating GWAS summary statistics with eQTL data through imputed differential gene expression. Use when user asks to perform gene set enrichment analysis on GWAS data, account for LD structure and gene size, or run single and multiple gene set enrichment models.",
+  "overview": "GIGSEA (Genotype Imputed Gene Set Enrichment Analysis) is a method that uses GWAS summary statistics and eQTL data to perform gene set enrichment analysis. It addresses common challenges in SNP enrichment analysis—such as gene size and LD structure—by using imputed differential gene expression. The package utilizes weighted linear regression models where weights account for imputation accuracy and model completeness. It supports both discrete-valued (e.g., KEGG, GO) and continuous-valued (e.g., ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GIGSEA.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gigsea/overview",
+  "github": "N/A",
+  "conda_downloads": "25.6K",
+  "conda_downloads_num": 25600,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GIGSEA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GIGSEA.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gigsea/overview",
+    "github": "N/A",
+    "conda_downloads": "25.6K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gigsea\n\n## Overview\n\nGIGSEA (Genotype Imputed Gene Set Enrichment Analysis) is a method that uses GWAS summary statistics and eQTL data to perform gene set enrichment analysis. It addresses common challenges in SNP enrichment analysis—such as gene size and LD structure—by using imputed differential gene expression. The package utilizes weighted linear regression models where weights account for imputation accuracy and model completeness. It supports both discrete-valued (e.g., KEGG, GO) and continuous-valued (e.g., TargetScan miRNA binding affinity) gene sets.\n\n## Core Workflow\n\n### 1. Data Preparation\nGIGSEA typically starts with output from MetaXcan (S-Predixcan). You need a data frame containing gene names, Z-scores (imputed differential expression), and weights.\n\n```r\nlibrary(GIGSEA)\ndata(heart.metaXcan)\n\n# Calculate weights: (fraction of SNPs used) * (prediction R^2)\nusedFrac <- heart.metaXcan$n_snps_used / heart.metaXcan$n_snps_in_model\nweights <- usedFrac * heart.metaXcan$pred_perf_r2\n\n# Create the input data frame\ninput_data <- data.frame(\n  gene = heart.metaXcan$gene_name,\n  fc = heart.metaXcan$zscore,\n  weights = weights\n)\n```\n\n### 2. Loading Gene Sets\nGIGSEA provides several built-in gene sets as sparse matrices.\n\n*   **Discrete:** `data(MSigDB.KEGG.Pathway)`, `data(MSigDB.TF)`, `data(MSigDB.miRNA)`, `data(GO)`\n*   **Continuous:** `data(Fantom5.TF)`, `data(TargetScan.miRNA)`, `data(LINCS.CMap.drug)`\n\n### 3. Running Enrichment Analysis\n\n#### Single Gene Set Enrichment Analysis (SGSEA)\nUse the matrix-based function for high efficiency. It tests each gene set individually.\n\n```r\n# Align genes between expression data and gene set matrix\nnet <- MSigDB.KEGG.Pathway$net\ndata_aligned <- orderedIntersect(x = input_data, by.x = input_data$gene, by.y = rownames(net))\nnet_aligned <- orderedIntersect(x = net, by.x = rownames(net), by.y = input_data$gene)\n\n# Run SGSEA with permutations\nres_sgsea <- permutationSimpleLmMatrix(\n  fc = data_aligned$fc, \n  net = net_aligned, \n  weights = data_aligned$weights, \n  num = 1000\n)\n```\n\n#### Multiple Gene Set Enrichment Analysis (MGSEA)\nUse this to adjust for redundancy/crosstalk between gene sets by considering all sets as covariates in one model.\n\n```r\nres_mgsea <- permutationMultipleLmMatrix(\n  fc = data_aligned$fc, \n  net = net_aligned, \n  weights = data_aligned$weights, \n  num = 1000\n)\n```\n\n### 4. One-Step Analysis\nThe `weightedGSEA` function wraps the entire process, checking multiple classes of gene sets and saving results to a directory.\n\n```r\nweightedGSEA(\n  data = input_data, \n  geneCol = 'gene', \n  fcCol = 'fc', \n  weightCol = 'weights',\n  geneSet = c(\"MSigDB.KEGG.Pathway\", \"TargetScan.miRNA\"),\n  permutationNum = 1000, \n  outputDir = \"./GIGSEA_results\"\n)\n```\n\n## User-Defined Gene Sets\nYou can convert custom GMT files or data frames into the required sparse matrix format using `gmt2geneSet` and `geneSet2sparseMatrix`.\n\n```r\n# Example: Creating a net from custom terms\n# net <- geneSet2sparseMatrix(term = terms, geneset = gene_lists, value = values)\n```\n\n## Tips for Performance\n*   **Matrix Functions:** Always prefer functions ending in `Matrix` (e.g., `permutationSimpleLmMatrix`) as they use large matrix operations and are significantly faster than their standard counterparts.\n*   **Sparse Matrices:** Use the `Matrix` package to handle gene sets to minimize memory footprint.\n*   **Permutations:** For publication-quality results, use at least 10,000 permutations.\n\n## Reference documentation\n- [GIGSEA Tutorial](./references/GIGSEA_tutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gigsea",
+    "description": "GIGSEA performs gene set enrichment analysis by integrating GWAS summary statistics with eQTL data through imputed differential gene expression. Use when user asks to perform gene set enrichment analysis on GWAS data, account for LD structure and gene size, or run single and multiple gene set enrichment models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GIGSEA.html"
+  }
+}

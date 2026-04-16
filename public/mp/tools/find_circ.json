@@ -1,0 +1,43 @@
+{
+  "id": "find_circ",
+  "category": "library",
+  "name": "find_circ",
+  "description": "find_circ identifies circular RNA junctions by analyzing back-spliced alignments of unmapped read anchors. Use when user asks to identify circular RNA, extract anchors from unmapped reads, or detect back-splice junctions from RNA-seq data.",
+  "overview": "The find_circ pipeline identifies circular RNA by analyzing reads that fail to map contiguously to a reference genome. It works by extracting \"anchors\" from the ends of unmapped reads, re-mapping them, and identifying cases where the anchors map in a \"back-spliced\" orientation (the downstream anchor maps upstream of the upstream anchor). This skill covers the standard command-line workflow involving Bowtie2, samtools, and the find_circ Python scripts.",
+  "homepage": "https://github.com/marvin-jens/find_circ",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/find_circ/overview",
+  "github": "https://github.com/marvin-jens/find_circ",
+  "conda_downloads": "2.1K",
+  "conda_downloads_num": 2100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "find_circ"
+    ],
+    "description": "FAIL to generate CWL: find_circ not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/find_differential_primers:0.1.4--py_0",
+    "homepage": "https://github.com/marvin-jens/find_circ",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/find_circ/overview",
+    "github": "https://github.com/marvin-jens/find_circ",
+    "conda_downloads": "2.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# find_circ\n\n## Overview\nThe find_circ pipeline identifies circular RNA by analyzing reads that fail to map contiguously to a reference genome. It works by extracting \"anchors\" from the ends of unmapped reads, re-mapping them, and identifying cases where the anchors map in a \"back-spliced\" orientation (the downstream anchor maps upstream of the upstream anchor). This skill covers the standard command-line workflow involving Bowtie2, samtools, and the find_circ Python scripts.\n\n## Prerequisites\n- Python 2.7 with `numpy` and `pysam`\n- Bowtie2 and samtools installed in the PATH\n- A reference genome (FASTA) and its corresponding Bowtie2 index\n\n## Standard Workflow\n\n### 1. Initial Mapping and Unmapped Read Extraction\nMap your RNA-seq reads against the genome. Use sensitive settings to ensure that only truly non-contiguous reads remain unmapped.\n\n```bash\n# Map reads and sort output\nbowtie2 -p 16 --very-sensitive --score-min=C,-15,0 --mm -x <bt2_index> -q -U <reads.fastq.gz> | \\\nsamtools view -hbuS - | samtools sort -o mapped_sorted.bam\n\n# Extract unmapped reads (flag 4)\nsamtools view -hf 4 mapped_sorted.bam | samtools view -Sb - > unmapped.bam\n```\n\n### 2. Generate Anchors\nUse `unmapped2anchors.py` to extract the head and tail sequences (anchors) from the unmapped reads. These anchors are typically 20bp long.\n\n```bash\n./unmapped2anchors.py unmapped.bam | gzip > anchors.fastq.gz\n```\n\n### 3. Map Anchors and Detect Junctions\nMap the anchors back to the genome and pipe the output directly into `find_circ.py`.\n\n```bash\nbowtie2 -p 16 --score-min=C,-15,0 --reorder --mm -q -U anchors.fastq.gz -x <bt2_index> | \\\n./find_circ.py \\\n  --genome=<genome.fa> \\\n  --prefix=<sample_prefix>_ \\\n  --name=<sample_name> \\\n  --stats=stats.txt \\\n  --reads=spliced_reads.fa \\\n  > splice_sites.bed\n```\n\n## Expert Tips and Best Practices\n\n### Filtering for Circular RNAs\nThe output `splice_sites.bed` contains both linear and circular junctions. To isolate circular RNAs, use grep:\n```bash\ngrep \"CIRCULAR\" splice_sites.bed > circ_candidates.bed\n```\n\n### Handling Uniqueness\nBy default (v1.2+), `find_circ.py` does not report junctions that lack at least one read where both anchors align uniquely. \n- Use `--halfuniq` if you want to report junctions with only one uniquely aligned anchor.\n- Use `--report_nobridge` to include junctions flagged as `NO_UNIQ_BRIDGES`.\n\n### Performance and Memory\n- Use the `--mm` flag in Bowtie2 for memory-mapped I/O when working with large indices on machines with limited RAM.\n- Ensure the `--genome` FASTA file is indexed (find_circ will attempt to create a `.fai` or internal index on first access).\n\n### Merging Results\nIf you have multiple samples or need to consolidate results, use `merge_bed.py`. Note that in newer versions, you may need the `-c` flag to maintain compatibility with older input formats.\n\n## Reference documentation\n- [find_circ GitHub Repository](./references/github_com_marvin-jens_find_circ.md)\n- [Bioconda find_circ Overview](./references/anaconda_org_channels_bioconda_packages_find_circ_overview.md)",
+  "skill_front_matter": {
+    "name": "find_circ",
+    "description": "find_circ identifies circular RNA junctions by analyzing back-spliced alignments of unmapped read anchors. Use when user asks to identify circular RNA, extract anchors from unmapped reads, or detect back-splice junctions from RNA-seq data.",
+    "homepage": "https://github.com/marvin-jens/find_circ"
+  }
+}

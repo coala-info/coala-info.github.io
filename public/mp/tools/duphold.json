@@ -1,0 +1,45 @@
+{
+  "id": "duphold",
+  "category": "CLI",
+  "name": "duphold",
+  "description": "\"Duphold evaluates sequencing depth to provide fold-change metrics and SNP evidence for validating structural variant calls. Use when user asks to annotate structural variants with depth information, validate deletions and duplications, or filter SV calls based on coverage fold-change.\"",
+  "overview": "`duphold` is a high-performance tool designed to add depth-based evidence to structural variant calls. While SV callers like Lumpy or Manta use split-reads and paired-end distances to identify variants, `duphold` provides a secondary layer of validation by examining the actual sequencing depth. It calculates fold-change metrics that allow researchers to confirm if a putative deletion actually shows a drop in coverage or if a duplication shows the expected increase, significantly improving the pr",
+  "homepage": "https://github.com/brentp/duphold",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/duphold/overview",
+  "github": "https://github.com/brentp/duphold",
+  "conda_downloads": "61.8K",
+  "conda_downloads_num": 61800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "duphold"
+    ],
+    "description": "duphold is a tool for calling structural variants (SVs) from long-read sequencing data.",
+    "docker_image": "quay.io/biocontainers/duphold:0.2.1--hfb13731_0",
+    "homepage": "https://github.com/brentp/duphold",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/duphold/overview",
+    "github": "https://github.com/brentp/duphold",
+    "conda_downloads": "61.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "duphold.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# duphold\n\n## Overview\n\n`duphold` is a high-performance tool designed to add depth-based evidence to structural variant calls. While SV callers like Lumpy or Manta use split-reads and paired-end distances to identify variants, `duphold` provides a secondary layer of validation by examining the actual sequencing depth. It calculates fold-change metrics that allow researchers to confirm if a putative deletion actually shows a drop in coverage or if a duplication shows the expected increase, significantly improving the precision of SV discovery.\n\n## Core Usage Patterns\n\n### Basic SV Annotation\nTo annotate a single-sample VCF with depth information, provide the BAM/CRAM file and the reference FASTA.\n\n```bash\nduphold \\\n  --threads 4 \\\n  --vcf input_svs.vcf \\\n  --bam input_reads.cram \\\n  --fasta reference.fasta \\\n  --output annotated_svs.bcf\n```\n\n### Annotation with SNP/Indel Evidence\nProviding a SNP VCF (ideally in BCF format for speed) allows `duphold` to report the number of homozygous and heterozygous SNPs within the SV region. This is useful for identifying \"deletions\" that incorrectly contain heterozygous SNP calls.\n\n```bash\nduphold \\\n  --snp high_qual_snps.bcf \\\n  --vcf input_svs.vcf \\\n  --bam input_reads.bam \\\n  --fasta reference.fasta \\\n  --output annotated_svs.bcf\n```\n\n## Key Metrics Generated\n\n`duphold` updates the `FORMAT` field for the sample with the following tags:\n\n*   **DHFFC**: Fold-change of the variant depth relative to its **Flanking** regions. (Best for Deletions).\n*   **DHBFC**: Fold-change of the variant depth relative to genomic bins with similar **GC-content**. (Best for Duplications).\n*   **DHFC**: Fold-change relative to the average depth of the entire chromosome.\n*   **DHGT**: (When using `--snp`) Counts of [0] Hom-ref, [1] Het, [2] Hom-alt, [3] Unknown, and [4] Low-quality SNPs in the region.\n\n## Expert Filtering Recommendations\n\nAfter annotation, use `bcftools` to filter for high-confidence variants. The following thresholds are recommended by the author to retain ~98-99% of true positives while removing the majority of false positives:\n\n### Filter for High-Quality Deletions and Duplications\n```bash\nbcftools view -i '(SVTYPE = \"DEL\" & FMT/DHFFC[0] < 0.7) | (SVTYPE = \"DUP\" & FMT/DHBFC[0] > 1.3)' input.duphold.bcf\n```\n\n## Performance and Optimization\n\n*   **Input Formats**: `duphold` is significantly faster when processing **CRAM** files compared to BAM files.\n*   **Output Formats**: Always prefer **BCF** output (`-o output.bcf`) for downstream processing speed.\n*   **Threading**: Use up to 4 threads (`-t 4`). Beyond this, the bottleneck usually shifts from decompression to I/O.\n*   **Flanking Regions**: The default flank size is 1000bp. For assemblies with poor contiguity or very small variants, you can adjust this using the environment variable:\n    `export DUPHOLD_FLANK=500`\n*   **Sample Name Mismatch**: If the sample name in the BAM header doesn't match the VCF, use:\n    `export DUPHOLD_SAMPLE_NAME=CorrectName`\n\n## Reference documentation\n- [github_com_brentp_duphold.md](./references/github_com_brentp_duphold.md)\n- [anaconda_org_channels_bioconda_packages_duphold_overview.md](./references/anaconda_org_channels_bioconda_packages_duphold_overview.md)",
+  "skill_front_matter": {
+    "name": "duphold",
+    "description": "Duphold evaluates sequencing depth to provide fold-change metrics and SNP evidence for validating structural variant calls. Use when user asks to annotate structural variants with depth information, validate deletions and duplications, or filter SV calls based on coverage fold-change.",
+    "homepage": "https://github.com/brentp/duphold"
+  }
+}

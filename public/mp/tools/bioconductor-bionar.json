@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bionar",
+  "category": "bioconductor",
+  "name": "bioconductor-bionar",
+  "description": "This tool performs comprehensive biological network analysis and topological characterization of protein-protein interaction networks in R. Use when user asks to build networks, annotate vertices with functional or disease data, calculate centrality measures, perform community detection, or identify bridge proteins.",
+  "overview": "BioNAR is a Bioconductor package designed for the topological analysis of biological networks, particularly proteomic data. It provides a unified pipeline to move from a list of protein interactions to biological insights by mapping functional and disease annotations onto network structures. Key capabilities include calculating multiple centrality measures, performing robust clustering with consensus matrices, and measuring the \"bridgeness\" of proteins that link different functional communities.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BioNAR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bionar/overview",
+  "github": "https://github.com/lptolik/BioNAR",
+  "conda_downloads": "4.3K",
+  "conda_downloads_num": 4300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BioNAR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioNAR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bionar/overview",
+    "github": "https://github.com/lptolik/BioNAR",
+    "conda_downloads": "4.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bionar\n\nname: bioconductor-bionar\ndescription: Comprehensive biological network analysis in R. Use this skill to build, annotate, and analyze protein-protein interaction (PPI) networks. It supports centrality estimation, community detection (clustering), network entropy, scale-free property testing, and disease-disease overlap analysis.\n\n## Overview\n\nBioNAR is a Bioconductor package designed for the topological analysis of biological networks, particularly proteomic data. It provides a unified pipeline to move from a list of protein interactions to biological insights by mapping functional and disease annotations onto network structures. Key capabilities include calculating multiple centrality measures, performing robust clustering with consensus matrices, and measuring the \"bridgeness\" of proteins that link different functional communities.\n\n## Core Workflow\n\n### 1. Network Construction\nBuild a network from a data frame of edges or load an existing graph file.\n\n```r\nlibrary(BioNAR)\n# From data frame (columns: entA, entB, weight)\ngg <- buildNetwork(edge_df)\n\n# From GML/GraphML using igraph\ngg <- igraph::read_graph(\"network.gml\", format=\"gml\")\n```\n\n### 2. Annotation\nAnnotate vertices with gene names, GO terms, or disease ontology IDs.\n\n```r\n# Standard annotations\ngg <- annotateGeneNames(gg)\ngg <- annotateGOont(gg) # Requires GO.db\n\n# Disease Ontology (HDO) annotation\n# dis_df should contain gene-to-HDO mappings\ngg <- annotateTopOntoOVG(gg, dis_df)\n\n# Custom vertex annotation\ngg <- annotate_vertex(gg, data_matrix, name=\"MyAnnotation\")\n```\n\n### 3. Centrality and Topology\nCalculate standard and specialized network metrics.\n\n```r\n# Calculate all centralities (DEG, BET, CC, SL, mnSP, PR, sdSP)\ngg <- calcCentrality(gg)\n\n# Get results as a matrix\nmc <- getCentralityMatrix(gg)\n\n# Test scale-free properties (Power Law fit)\npFit <- fitDegree(as.vector(igraph::degree(gg)), Nsim=100, plot=TRUE)\n\n# Network Entropy\nent <- getEntropyRate(gg)\nSRprime <- getEntropy(gg)\nplotEntropy(SRprime, SRo=ent$SRo, maxSr=ent$maxSr)\n```\n\n### 4. Clustering and Community Detection\nBioNAR supports multiple algorithms: `louvain`, `infomap`, `fc` (fast-greedy), `wt` (walktrap), `lec` (leading eigenvector), and `sgG1/2/5` (spinglass).\n\n```r\n# Run specific clustering\nalg <- \"louvain\"\ngg <- calcClustering(gg, alg)\n\n# Compare multiple algorithms\nggc <- calcAllClustering(gg)\nsummary_stats <- clusteringSummary(ggc, att=c('lec', 'wt', 'louvain'))\n\n# Layout by cluster for visualization\nmem_df <- data.frame(names=V(gg)$name, membership=V(gg)$louvain)\nlay <- layoutByCluster(gg, mem_df)\nplot(gg, layout=lay, vertex.color=V(gg)$louvain)\n```\n\n### 5. Robustness and Bridgeness\nAssess cluster stability and identify \"bridge\" proteins that connect different modules.\n\n```r\n# 1. Create consensus matrix (N should be >= 500 for publication)\nconmat <- makeConsensusMatrix(gg, N=50, alg=\"louvain\", type=2, mask=10)\n\n# 2. Calculate Bridgeness\ngg <- calcBridgeness(gg, alg=\"louvain\", conmat)\n\n# 3. Plot Bridgeness vs Semi-local centrality (SL)\nplotBridgeness(gg, alg=\"louvain\", Xatt='SL')\n```\n\n### 6. Disease Overlap Analysis\nMeasure the separation or overlap between two sets of annotated genes (e.g., two different diseases).\n\n```r\n# Calculate separation (sAB)\np <- calcDiseasePairs(gg, name=\"TopOnto_OVG_HDO_ID\", \n                      diseases=c(\"DOID:10652\", \"DOID:3312\"))\n\n# Run permutations for significance\nr <- runPermDisease(gg, name=\"TopOnto_OVG_HDO_ID\", \n                    diseases=c(\"DOID:10652\", \"DOID:3312\"), Nperm=100)\n```\n\n## Tips for Success\n- **Vertex Names**: Ensure your graph vertices are named with Entrez IDs or consistent identifiers before annotation.\n- **Memory Management**: `calcAllClustering` and `makeConsensusMatrix` with high `N` are computationally intensive; consider running them on a subset or using a high-performance environment.\n- **Normalization**: Use `normModularity` to compare modularity scores across networks of different sizes or densities.\n\n## Reference documentation\n- [BioNAR: Biological Network Analysis in R](./references/BioNAR_overview.md)\n- [BioNAR: Biological Network Analysis in R (Source)](./references/BioNAR_overview.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-bionar",
+    "description": "This tool performs comprehensive biological network analysis and topological characterization of protein-protein interaction networks in R. Use when user asks to build networks, annotate vertices with functional or disease data, calculate centrality measures, perform community detection, or identify bridge proteins.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioNAR.html"
+  }
+}

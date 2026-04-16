@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bioplex",
+  "category": "bioconductor",
+  "name": "bioconductor-bioplex",
+  "description": "This package provides access to BioPlex protein-protein interaction networks, CORUM complexes, and associated multi-omic data for human cell lines. Use when user asks to retrieve PPI networks, map protein identifiers, convert interaction data to graph objects, analyze CORUM protein complexes, or integrate interaction data with transcriptome and proteome profiles.",
+  "overview": "The BioPlex package provides R-based access to the BioPlex project's high-throughput affinity-purification mass spectrometry (AP-MS) data. It allows users to explore the human interactome by retrieving cell-line-specific PPI networks (293T and HCT116), CORUM protein complexes, and corresponding RNA-seq and proteomic datasets. The package facilitates the conversion of these data into standard Bioconductor structures like `graphNEL` and `SummarizedExperiment` for downstream systems biology analysi",
+  "homepage": "https://bioconductor.org/packages/3.14/bioc/html/BioPlex.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bioplex/overview",
+  "github": "https://github.com/ccb-hms/BioPlex",
+  "conda_downloads": "7.9K",
+  "conda_downloads_num": 7900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BioPlex"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.14/bioc/html/BioPlex.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bioplex/overview",
+    "github": "https://github.com/ccb-hms/BioPlex",
+    "conda_downloads": "7.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bioplex\n\nname: bioconductor-bioplex\ndescription: Access and analyze BioPlex protein-protein interaction (PPI) networks, CORUM complexes, and associated transcriptome/proteome data for human cell lines (293T and HCT116). Use this skill to retrieve PPI data, map protein identifiers, convert networks to graph objects, and integrate interaction data with PFAM domains or expression profiles.\n\n## Overview\n\nThe BioPlex package provides R-based access to the BioPlex project's high-throughput affinity-purification mass spectrometry (AP-MS) data. It allows users to explore the human interactome by retrieving cell-line-specific PPI networks (293T and HCT116), CORUM protein complexes, and corresponding RNA-seq and proteomic datasets. The package facilitates the conversion of these data into standard Bioconductor structures like `graphNEL` and `SummarizedExperiment` for downstream systems biology analysis.\n\n## Core Workflows\n\n### 1. Retrieving PPI Networks\nAccess the latest BioPlex interaction data for specific cell lines.\n\n```r\nlibrary(BioPlex)\n\n# Get BioPlex 3.0 for 293T cells\nbp.293t <- getBioPlex(cell.line = \"293T\", version = \"3.0\")\n\n# Get BioPlex 1.0 for HCT116 cells\nbp.hct116 <- getBioPlex(cell.line = \"HCT116\", version = \"1.0\")\n\n# Optional: Remap Uniprot IDs to current symbols/Entrez IDs\nbp.remapped <- getBioPlex(cell.line = \"293T\", version = \"3.0\", remap.uniprot.ids = TRUE)\n```\n\n### 2. Graph Representation and Analysis\nConvert data frames into graph objects to perform network analysis.\n\n```r\n# Convert to directed graph (bait -> prey)\nbp.gr <- bioplex2graph(bp.293t)\n\n# Add PFAM domain annotations to nodes (requires OrgDb)\nlibrary(AnnotationHub)\nah <- AnnotationHub()\norgdb <- query(ah, c(\"orgDb\", \"Homo sapiens\"))[[1]]\nbp.gr <- annotatePFAM(bp.gr, orgdb)\n\n# Extract a subnetwork based on specific nodes\nnodes_of_interest <- c(\"P24941\", \"P24385\") # Uniprot IDs\nbp.sub <- graph::subGraph(nodes_of_interest, bp.gr)\n```\n\n### 3. Working with CORUM Complexes\nRetrieve and manipulate known protein complex data.\n\n```r\n# Get the core set of human complexes\ncore.corum <- getCorum(set = \"core\", organism = \"Human\")\n\n# Convert to a list of UniProt IDs\ncorum.list <- corum2list(core.corum)\n\n# Convert to a list of undirected graphs (all-to-all connectivity)\ncorum.glist <- corum2graphlist(core.corum)\n\n# Check if a specific subunit exists in complexes\nhas.cdk2 <- hasSubunit(corum.glist, subunit = \"CDK2\", id.type = \"SYMBOL\")\ncdk2.complexes <- corum.glist[has.cdk2]\n```\n\n### 4. Integrating Expression Data\nRetrieve transcriptome and proteome data associated with BioPlex cell lines.\n\n```r\n# Get RNA-seq data (SummarizedExperiment) for 293T\nse.rna <- getGSE122425()\n\n# Get relative protein expression (293T vs HCT116)\nbp.prot <- getBioplexProteome()\n\n# Access CCLE proteome data via ExperimentHub\nlibrary(ExperimentHub)\neh <- ExperimentHub()\nccle.prot <- eh[[\"EH3459\"]]\n# Convert to SummarizedExperiment\nse.prot <- ccleProteome2SummarizedExperiment(ccle.prot)\n```\n\n## Tips and Best Practices\n\n- **Identifier Mapping**: BioPlex functions primarily use UniProt IDs as node keys. Use `remap.uniprot.ids = TRUE` in getter functions to ensure gene symbols and Entrez IDs are synchronized with current Bioconductor annotations.\n- **Interaction Scores**: The `pInt` column in the PPI data frame represents the probability of a bona fide interaction. Filter this (e.g., `pInt > 0.95`) for high-confidence networks.\n- **Graph Conversion**: `bioplex2graph` creates a `graphNEL` object. If you prefer `igraph`, use `igraph::graph_from_graphnel(bp.gr)`.\n- **Caching**: Data is cached locally using `BiocFileCache`. To force a fresh download, set `cache = FALSE` in the `get*` functions.\n\n## Reference documentation\n\n- [Basic checks of BioPlex PPI data](./references/BasicChecks.md)\n- [Import and representation of BioPlex PPI data and related resources](./references/BioPlex.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bioplex",
+    "description": "This package provides access to BioPlex protein-protein interaction networks, CORUM complexes, and associated multi-omic data for human cell lines. Use when user asks to retrieve PPI networks, map protein identifiers, convert interaction data to graph objects, analyze CORUM protein complexes, or integrate interaction data with transcriptome and proteome profiles.",
+    "homepage": "https://bioconductor.org/packages/3.14/bioc/html/BioPlex.html"
+  }
+}

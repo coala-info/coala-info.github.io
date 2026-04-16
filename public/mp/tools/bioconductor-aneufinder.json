@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-aneufinder",
+  "category": "bioconductor",
+  "name": "bioconductor-aneufinder",
+  "description": "Bioconductor-aneufinder analyzes copy number variations in whole-genome single-cell sequencing data using various calling algorithms and quality control methods. Use when user asks to perform CNV calling, apply mappability correction, create genomic blacklists, or visualize single-cell karyotype heterogeneity.",
+  "overview": "AneuFinder is a bioinformatics package designed for the study of copy number variations (CNV) in whole-genome single-cell sequencing (WGSCS) data. It allows users to perform CNV calling using various algorithms (Hidden Markov Models, changepoint-algorithms, or the edivisive-algorithm) on binned read counts. The package also provides extensive tools for quality control, karyotype heterogeneity analysis, and visualization through heatmaps, karyograms, and PCA.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/AneuFinder.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-aneufinder/overview",
+  "github": "https://github.com/ataudt/aneufinder",
+  "conda_downloads": "33.0K",
+  "conda_downloads_num": 33000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AneuFinder"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/AneuFinder.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-aneufinder/overview",
+    "github": "https://github.com/ataudt/aneufinder",
+    "conda_downloads": "33.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-aneufinder\n\nname: bioconductor-aneufinder\ndescription: Use for analyzing copy number variations (CNV) in whole-genome single-cell sequencing (WGSCS) data. This skill includes methods for CNV calling (HMM, edivisive, or DNAcopy), mappability correction, blacklisting, quality control, and visualization of genomic profiles.\n\n# bioconductor-aneufinder\n\n## Overview\nAneuFinder is a bioinformatics package designed for the study of copy number variations (CNV) in whole-genome single-cell sequencing (WGSCS) data. It allows users to perform CNV calling using various algorithms (Hidden Markov Models, changepoint-algorithms, or the edivisive-algorithm) on binned read counts. The package also provides extensive tools for quality control, karyotype heterogeneity analysis, and visualization through heatmaps, karyograms, and PCA.\n\n## Installation\nTo install the package from Bioconductor:\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"AneuFinder\")\n```\n\n## Quickstart\nThe primary function `Aneufinder()` automates the pipeline from aligned reads (BAM or BED) to final results. The \"edivisive\" method is generally recommended.\n\n```R\nlibrary(AneuFinder)\n\n# Run the full pipeline\nAneufinder(inputfolder='path/to/bam_files', \n           outputfolder='output_results',\n           numCPU=2, \n           method='edivisive')\n```\n\n## Detailed Workflow\n\n### 1. Mappability Correction and Blacklisting\nTo improve accuracy, you can use a euploid reference for mappability correction (variable-width binning) and create a blacklist to exclude repetitive or problematic regions.\n\n```R\n# Create a blacklist from a euploid reference\nlibrary(AneuFinder)\nbedfile <- \"path/to/euploid_reference.bed.gz\"\nbins <- binReads(bedfile, assembly='hg19', binsizes=100e3, chromosomes=c(1:22,'X'))[[1]]\n\n# Define thresholds for blacklisting\nlcutoff <- quantile(bins$counts, 0.05)\nucutoff <- quantile(bins$counts, 0.999)\nblacklist <- bins[bins$counts <= lcutoff | bins$counts >= ucutoff]\nblacklist <- reduce(blacklist)\n\n# Export for use in Aneufinder()\nexportGRanges(blacklist, filename=\"my_blacklist.bed\", header=FALSE)\n```\n\n### 2. Running the Analysis\nExecute the main function with specific parameters like GC correction and blacklisting.\n\n```R\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\nAneufinder(inputfolder = 'data_folder', \n           outputfolder = 'output_folder', \n           assembly = 'hg19',\n           numCPU = 4, \n           binsizes = c(5e5, 1e6), \n           variable.width.reference = 'reference.bam',\n           blacklist = 'my_blacklist.bed', \n           correction.method = 'GC',\n           GC.BSgenome = BSgenome.Hsapiens.UCSC.hg19,\n           method = 'edivisive')\n```\n\n### 3. Loading and Visualizing Results\nResults are stored as `.RData` files in the `MODELS` subfolder.\n\n```R\n# Load models\nfiles <- list.files('output_folder/MODELS/method-edivisive', full.names=TRUE)\nmodels <- loadFromFiles(files)\n\n# Plot a single cell profile\nplot(models[[1]], type='profile')\n\n# Plot a genome-wide heatmap for all cells\nheatmapGenomewide(models)\n```\n\n### 4. Quality Control\nUse `clusterByQuality()` to identify and filter out low-quality libraries based on metrics like spikiness, entropy, and the number of segments.\n\n```R\n# Cluster cells by quality\ncl <- clusterByQuality(models)\n\n# View clusters (usually the last cluster contains failed libraries)\nplot(cl$Mclust, what='classification')\n\n# Select high-quality cells for further analysis\nselected_models <- unlist(cl$classification[1:2])\n```\n\n### 5. Karyotype Measures and PCA\nQuantify aneuploidy and heterogeneity across different samples or conditions.\n\n```R\n# Calculate scores\nk_stats <- karyotypeMeasures(selected_models)\nprint(k_stats$genomewide)\n\n# Compare heterogeneity between groups\nplotHeterogeneity(hmms.list = list(GroupA = models_A, GroupB = models_B))\n\n# Perform PCA\nplot_pca(selected_models, colorBy=sample_labels)\n```\n\n## Reference documentation\n- [AneuFinder](./references/AneuFinder.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-aneufinder",
+    "description": "Bioconductor-aneufinder analyzes copy number variations in whole-genome single-cell sequencing data using various calling algorithms and quality control methods. Use when user asks to perform CNV calling, apply mappability correction, create genomic blacklists, or visualize single-cell karyotype heterogeneity.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/AneuFinder.html"
+  }
+}

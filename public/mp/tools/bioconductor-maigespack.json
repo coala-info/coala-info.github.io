@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-maigespack",
+  "category": "bioconductor",
+  "name": "bioconductor-maigespack",
+  "description": "The maigesPack package provides a comprehensive toolkit for the pre-processing, normalization, and statistical analysis of microarray data with a focus on gene groups and networks. Use when user asks to load raw microarray data, perform local loess normalization, identify differentially expressed genes using T-tests or ANOVA, and conduct functional classification of gene modules.",
+  "overview": "The `maigesPack` package is a comprehensive toolkit for microarray data analysis. It integrates several Bioconductor and CRAN packages to provide a unified workflow for pre-processing and high-level statistical analysis. It is particularly strong in handling gene groups (modules) and gene networks (pathways) to provide biological context to statistical results.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/maigesPack.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maigesPack"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/maigesPack.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-maigespack\n\n## Overview\n\nThe `maigesPack` package is a comprehensive toolkit for microarray data analysis. It integrates several Bioconductor and CRAN packages to provide a unified workflow for pre-processing and high-level statistical analysis. It is particularly strong in handling gene groups (modules) and gene networks (pathways) to provide biological context to statistical results.\n\n## Core Workflow\n\n### 1. Data Loading and Initialization\nThe package uses a configuration-based approach for loading raw data.\n\n```r\nlibrary(maigesPack)\n\n# Load raw data using a configuration file\n# The config file specifies data columns and file locations\ngastro = loadData(fileConf=\"load_gastro.conf\")\n\n# Optional: Add gene groups and networks\ngastro = addGeneGrps(gastro, folder=\"geneGrps\", ext=\"txt\")\ngastro = addPaths(gastro, folder=\"geneNets\", ext=\"tgf\")\n\n# Convert to maigesRaw object for processing\ngastro.raw = createMaigesRaw(gastro, \n                             greenDataField=\"Ch1.Mean\", \n                             greenBackDataField=\"Ch1.B.Mean\", \n                             redDataField=\"Ch2.Mean\", \n                             redBackDataField=\"Ch2.B.Mean\", \n                             flagDataField=\"Flags\",\n                             gLabelGrp=\"GeneName\", \n                             gLabelPath=\"GeneName\")\n```\n\n### 2. Exploratory Analysis\nBefore normalization, visualize data quality using WA plots (log-ratio vs average intensity) and spatial images.\n\n```r\n# WA plot (equivalent to MA plot) for the first chip\nplot(gastro.raw[,1], bkgSub=\"none\")\n\n# Spatial image of log-ratios (W values)\nimage(gastro.raw[,1])\n\n# Hierarchical clustering to check for batch effects or replicates\nhierM(gastro.raw, sLabelID=\"Sample\", gLabelID=\"Name\", doHeat=FALSE)\n```\n\n### 3. Normalization\nNormalization involves selecting reliable spots and applying local or global regressions.\n\n```r\n# Select spots based on signal-to-noise or flags\ngastro.raw2 = selSpots(gastro.raw, sigNoise=1, rmFlag=NULL, gLabelsID=\"Name\")\n\n# Local loess normalization\ngastro.norm = normLoc(gastro.raw2, span=0.4, method=\"loess\")\n\n# Scale adjustment (e.g., global MAD)\ngastro.norm = normScaleMarray(gastro.norm, norm=\"globalMAD\")\n\n# Summarize replicates (spots or samples)\ngastro.summ = summarizeReplicates(gastro.norm, gLabelID=\"GeneName\", sLabelID=\"Sample\", funcS=\"mean\", funcG=\"median\")\n```\n\n### 4. Differential Expression (DE)\n`maigesPack` supports T-tests, Wilcoxon tests, and ANOVA models.\n\n```r\n# 2-group comparison (T-test)\ngastro.ttest = deGenes2by2Ttest(gastro.summ, sLabelID=\"Type\")\n\n# ANOVA for multiple groups\ngastro.ANOVA = designANOVA(gastro.summ, factors=\"Tissue\")\ngastro.ANOVAfit = deGenesANOVA(gastro.ANOVA, retF=TRUE)\n\n# Visualize results\nplot(gastro.ttest) # Volcano plot\ntablesDE(gastro.ttest) # Save results to HTML/CSV\n```\n\n### 5. Advanced Functional Analysis\n\n#### Functional Classification of Gene Groups\nSearch for modules with more DE genes than expected by chance.\n```r\ngastro.mod = activeMod(gastro.summ, sLabelID=\"Tissue\", cutExp=1, cutPhiper=0.05)\nplot(gastro.mod, \"C\") # Heatmap of active modules\n```\n\n#### Relevance Networks\nAnalyze altered correlations between genes in specific tissues.\n```r\n# Construct network for a specific tissue and gene group\ngastro.net = relNetworkB(gastro.summ, sLabelID=\"Tissue\", samples=\"Neso\", geneGrp=1)\nplot(gastro.net, cutPval=0.05)\n\n# Compare correlations between two conditions\ngastro.net2 = relNetworkM(gastro.summ, sLabelID=\"Tissue\", \n                          samples = list(Neso=\"Neso\", Aeso=\"Aeso\"), geneGrp=7)\n```\n\n#### Active Networks\nMeasure the significance of gene network activation using a gamma distribution statistic.\n```r\ngastro.active = activeNet(gastro.summ, sLabelID=\"Tissue\")\nplot(gastro.active, type=\"score\")\n```\n\n## Tips for Success\n- **Configuration Files**: The `loadData` function relies heavily on a correctly formatted `.conf` file. Ensure column names match your image processing software output (e.g., GenePix, ScanArray).\n- **Memory Management**: Functions like `normOLIN` or `deGenes2by2BootT` are computationally intensive. Use them on subsetted data first to estimate time.\n- **Object Classes**: Pay attention to the transition from `maigesPreRaw` -> `maigesRaw` -> `maiges` (normalized) -> `maigesDEcluster`. Most analysis functions require specific classes.\n\n## Reference documentation\n- [Quick start guide for maigesPack – from start to finish](./references/maigesPack_tutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-maigespack",
+    "description": "The maigesPack package provides a comprehensive toolkit for the pre-processing, normalization, and statistical analysis of microarray data with a focus on gene groups and networks. Use when user asks to load raw microarray data, perform local loess normalization, identify differentially expressed genes using T-tests or ANOVA, and conduct functional classification of gene modules.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/maigesPack.html"
+  }
+}

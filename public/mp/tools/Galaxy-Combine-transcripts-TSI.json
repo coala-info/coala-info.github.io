@@ -1,0 +1,43 @@
+{
+  "id": "Galaxy-Combine-transcripts-TSI",
+  "category": "galaxy",
+  "name": "combine-transcripts-tsi",
+  "description": "\"This workflow merges multiple tissue-specific transcriptome GTF files using StringTie, extracts sequences with bedtools, and employs CPAT to identify and filter for high-probability coding transcripts. Use this skill when you need to create a unified, high-confidence coding transcriptome from multiple tissue-specific assemblies while filtering out non-coding sequences.\"",
+  "overview": "This Galaxy workflow integrates multiple tissue-specific transcriptomes into a single, filtered fasta file of coding sequences. It begins by using [StringTie merge](https://toolshed.g2.bx.psu.edu/repos/iuc/stringtie/stringtie_merge/2.2.1+galaxy1) to combine a collection of GTF files into a unified transcriptome, applying specific thresholds for minimum length (-m 30) and minimum input transcript abundance (-F 0.1).",
+  "homepage": "https://www.biocommons.org.au/",
+  "validation": "N/A",
+  "conda_home": "N/A",
+  "github": "N/A",
+  "conda_downloads": "628",
+  "conda_downloads_num": 628,
+  "last_updated": "2024-05-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Description"
+    ],
+    "description": "",
+    "docker_image": "N/A",
+    "homepage": "https://www.biocommons.org.au/",
+    "validation": "N/A",
+    "conda_home": "N/A",
+    "github": "N/A",
+    "conda_downloads": "628",
+    "last_updated": "2024-05-09",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# Combine transcripts - TSI\n\n## Overview\n\nThis Galaxy workflow integrates multiple tissue-specific transcriptomes into a single, filtered fasta file of coding sequences. It begins by using [StringTie merge](https://toolshed.g2.bx.psu.edu/repos/iuc/stringtie/stringtie_merge/2.2.1+galaxy1) to combine a collection of GTF files into a unified transcriptome, applying specific thresholds for minimum length (-m 30) and minimum input transcript abundance (-F 0.1).\n\nThe merged transcriptome is then converted from GTF to BED12 format to facilitate sequence extraction. Using [bedtools getfasta](https://toolshed.g2.bx.psu.edu/repos/iuc/bedtools/bedtools_getfastabed/2.30.0+galaxy1), the workflow extracts the corresponding sequences from the provided genome fasta, maintaining strandedness and name attributes.\n\nTo ensure the quality of the final output, the workflow employs [CPAT](https://toolshed.g2.bx.psu.edu/repos/bgruening/cpat/cpat/3.0.5+galaxy0) to assess coding probability. The sequences are processed through a series of text transformation and filtering steps to remove non-coding transcripts, resulting in a final dataset of filtered, merged transcriptome sequences in fasta format.\n\n## Inputs and data preparation\n\n| Step | Label | Type | Notes |\n| --- | --- | --- | --- |\n| 0 | Collection of transcriptome.gtf files | data_collection_input |  |\n| 1 | genome.fasta | data_input |  |\n| 2 | coding_seqs.fasta | data_input |  |\n| 3 | non_coding_seqs.fasta | data_input |  |\n\n\nEnsure all input transcriptome GTFs are organized into a single data collection to facilitate the StringTie merge process, while the genome and training sequences should be provided as individual FASTA datasets. Verify that your FASTA headers match the chromosome names in the GTF files to prevent errors during the bedtools getfasta step. For automated execution, you can initialize a job template using `planemo workflow_job_init` to generate a `job.yml` file. Refer to the README.md for comprehensive details on parameter tuning for CPAT and StringTie. Always validate that your coding and non-coding training sets are representative of your target organism for accurate transcript filtering.\n\n## Steps (tools)\n\n| Step | Name | Tool ID | Notes |\n| --- | --- | --- | --- |\n| 4 | StringTie merge | toolshed.g2.bx.psu.edu/repos/iuc/stringtie/stringtie_merge/2.2.1+galaxy1 |  |\n| 5 | Convert GTF to BED12 | toolshed.g2.bx.psu.edu/repos/iuc/gtftobed12/gtftobed12/357 |  |\n| 6 | bedtools getfasta | toolshed.g2.bx.psu.edu/repos/iuc/bedtools/bedtools_getfastabed/2.30.0+galaxy1 |  |\n| 7 | CPAT | toolshed.g2.bx.psu.edu/repos/bgruening/cpat/cpat/3.0.5+galaxy0 | The table of best probabilities is called orf_seqs_prob_best; converted this to tabular |\n| 8 | Filter | Filter1 | skipping 1 header line |\n| 9 | Advanced Cut | toolshed.g2.bx.psu.edu/repos/bgruening/text_processing/tp_cut_tool/9.3+galaxy0 |  |\n| 10 | Text transformation | toolshed.g2.bx.psu.edu/repos/bgruening/text_processing/tp_sed_tool/9.3+galaxy0 | part of the headers have become capitalized, this reverts everything after the :: to lowercase. May need to be changed if headers don't have the same format with a :: in them. |\n| 11 | Filter sequences by ID | toolshed.g2.bx.psu.edu/repos/peterjc/seq_filter_by_id/seq_filter_by_id/0.2.9 |  |\n\n\n## Workflow outputs (marked in Galaxy)\n\n| Step | Label | Output name |\n| --- | --- | --- |\n| 4 | out_gtf | out_gtf |\n| 5 | bed_file | bed_file |\n| 6 | output | output |\n| 7 | orf_seqs_prob_best | orf_seqs_prob_best |\n| 7 | orf_seqs | orf_seqs |\n| 7 | no_orf_seqs | no_orf_seqs |\n| 7 | orf_seqs_prob | orf_seqs_prob |\n| 8 | out_file1 | out_file1 |\n| 11 | output_pos | output_pos |\n\n\n## How to run (Planemo)\n\n### Local Galaxy (default engine)\n\n```bash\nplanemo run Galaxy-Workflow-Combine-transcripts-TSI.ga job.yml --download_outputs --output_directory . --output_json output.json\n```\n\nOptional: `--galaxy_root /path/to/galaxy` speeds up spinning up a local Galaxy.\n\n### Docker Galaxy\n\nAppend e.g. `--engine docker_galaxy --ignore_dependency_problems` (requires Docker).\n\n### External Galaxy (usegalaxy.org / EU / …)\n\n```bash\nplanemo run Galaxy-Workflow-Combine-transcripts-TSI.ga job.yml --engine external_galaxy --galaxy_url SERVER_URL --galaxy_user_key YOUR_API_KEY\n```\n\nCreate a reusable profile: `planemo profile_create myprofile --galaxy_url ... --galaxy_user_key ... --engine external_galaxy` then `planemo run Galaxy-Workflow-Combine-transcripts-TSI.ga job.yml --profile myprofile`.\n\n### Job file\n\n- Generate a template: `planemo workflow_job_init Galaxy-Workflow-Combine-transcripts-TSI.ga -o job.yml`\n- Lint: `planemo workflow_lint Galaxy-Workflow-Combine-transcripts-TSI.ga`\n\nSee **[Running Galaxy workflows](https://planemo.readthedocs.io/en/master/running.html)** in the Planemo documentation.\n\n## Invocation outputs\n\nAfter a successful run with `--download_outputs`, files appear under your chosen `--output_directory`. `--output_json` records CWL-style metadata for outputs (paths, checksums).\n\nOn an external Galaxy, use `planemo invocation_download INVOCATION_ID --profile ...` to fetch outputs, or track progress with `planemo workflow_track INVOCATION_ID`.\n\nWorkflow steps marked as **workflow outputs** in the editor are listed under **Workflow outputs**; exact filenames depend on tools and Galaxy configuration.\n\n## Files\n\n- `Galaxy-Workflow-Combine-transcripts-TSI.ga` — Galaxy workflow export (JSON)\n- `job.yml` — inputs/parameters for `planemo run` (create with `planemo workflow_job_init`)\n- [Planemo: Running Galaxy workflows](https://planemo.readthedocs.io/en/master/running.html)\n",
+  "skill_front_matter": {
+    "name": "combine-transcripts-tsi",
+    "description": "This workflow merges multiple tissue-specific transcriptome GTF files using StringTie, extracts sequences with bedtools, and employs CPAT to identify and filter for high-probability coding transcripts. Use this skill when you need to create a unified, high-confidence coding transcriptome from multiple tissue-specific assemblies while filtering out non-coding sequences.",
+    "homepage": "https://workflowhub.eu/workflows/878"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "vg",
+  "category": "CLI",
+  "name": "vg",
+  "description": "The vg toolkit performs genome informatics using pangenomic variation graphs to represent populations of genomes as networks. Use when user asks to build graphs from FASTA or VCF files, map reads using Giraffe, call variants, or project graph alignments back to linear coordinates.",
+  "overview": "The `vg` (Variation Graph) toolkit is a suite of tools designed for genome informatics using pangenomic representations. Unlike traditional linear references, variation graphs represent populations of genomes as a network of nodes (sequences), edges (connections), and paths (individual genomes or alignments). This skill assists in navigating the complex CLI environment of `vg` to build graphs from FASTA/VCF/GFA files, map reads using high-performance algorithms like Giraffe, and project graph-ba",
+  "homepage": "https://github.com/vgteam/vg",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/vg/overview",
+  "github": "https://github.com/vgteam/vg",
+  "conda_downloads": "103.1K",
+  "conda_downloads_num": 103100,
+  "last_updated": "2025-11-24",
+  "cwl_count": 10,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "vg_autoindex",
+      "vg_construct",
+      "vg_rna",
+      "vg_index",
+      "vg_map",
+      "vg_giraffe",
+      "vg_mpmap",
+      "vg_augment",
+      "vg_pack",
+      "vg_call"
+    ],
+    "description": "Build indexes for vg",
+    "docker_image": "quay.io/biocontainers/vg:1.70.0--h9ee0642_0",
+    "homepage": "https://github.com/vgteam/vg",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/vg/overview",
+    "github": "https://github.com/vgteam/vg",
+    "conda_downloads": "103.1K",
+    "last_updated": "2025-11-24",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "vg_augment.cwl",
+    "vg_autoindex.cwl",
+    "vg_call.cwl",
+    "vg_construct.cwl",
+    "vg_giraffe.cwl",
+    "vg_index.cwl",
+    "vg_map.cwl",
+    "vg_mpmap.cwl",
+    "vg_pack.cwl",
+    "vg_rna.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# vg\n\n## Overview\n\nThe `vg` (Variation Graph) toolkit is a suite of tools designed for genome informatics using pangenomic representations. Unlike traditional linear references, variation graphs represent populations of genomes as a network of nodes (sequences), edges (connections), and paths (individual genomes or alignments). This skill assists in navigating the complex CLI environment of `vg` to build graphs from FASTA/VCF/GFA files, map reads using high-performance algorithms like Giraffe, and project graph-based data back into linear coordinates for standard downstream analysis.\n\n## Core Workflows and CLI Patterns\n\n### 1. Automatic Indexing (Best Practice)\nThe `vg autoindex` subcommand is the recommended entry point for creating the necessary data structures for mapping. It handles the complex ordering of index generation based on the intended mapping tool.\n\n*   **For Short-Read Mapping (Giraffe):**\n    ```bash\n    vg autoindex --workflow sr-giraffe --prefix index_prefix --ref-fasta ref.fa --vcf variants.vcf.gz\n    ```\n*   **For Long-Read Mapping (Giraffe):**\n    ```bash\n    vg autoindex --workflow lr-giraffe --prefix index_prefix --ref-fasta ref.fa --vcf variants.vcf.gz\n    ```\n*   **For Splice-Aware RNA-seq (mpmap):**\n    ```bash\n    vg autoindex --workflow mpmap --prefix index_prefix --ref-fasta ref.fa --vcf variants.vcf.gz --tx-gff annotation.gtf\n    ```\n\n### 2. Read Mapping with Giraffe\n`vg giraffe` is the primary tool for fast, haplotype-aware alignment. It requires a `.gbz` graph, a `.min` minimizer index, and a `.dist` distance index.\n\n*   **Basic Alignment (Outputting GAF):**\n    ```bash\n    vg giraffe -Z graph.gbz -m graph.min -d graph.dist -f reads.fastq > aligned.gaf\n    ```\n*   **Alignment to BAM (Surjection):**\n    To project graph alignments back to a linear reference (e.g., for use with standard variant callers):\n    ```bash\n    vg giraffe -Z graph.gbz -m graph.min -d graph.dist -f reads.fastq --output-format BAM > aligned.bam\n    ```\n\n### 3. Variant Calling and Deconstruction\n`vg` can call variants by comparing alignments against the graph or deconstruct a graph into a VCF relative to a reference path.\n\n*   **Calling Variants from GAM:**\n    ```bash\n    vg pack -x graph.xg -g aligned.gam -o graph.pack\n    vg call graph.xg -k graph.pack > variants.vcf\n    ```\n*   **Deconstructing a Pangenome to VCF:**\n    ```bash\n    vg deconstruct -p ref_path_name graph.gbz > pangenome_variants.vcf\n    ```\n\n### 4. Graph Manipulation and Visualization\n*   **Viewing Graph Statistics:**\n    ```bash\n    vg stats -z graph.gbz\n    ```\n*   **Visualizing Small Subgraphs:**\n    Convert a portion of the graph to DOT format for rendering with Graphviz:\n    ```bash\n    vg find -x graph.xg -r ref:1000-2000 -c 1 | vg view -d - > subgraph.dot\n    dot -Tpng subgraph.dot -o subgraph.png\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Memory Management:** Indexing eukaryotic pangenomes is resource-intensive. Use `--target-mem` in `vg autoindex` to suggest a memory limit and always point `--tmp-dir` to a high-capacity disk.\n*   **File Formats:** Prefer `.gbz` for modern workflows. It is a compressed format that combines the graph structure and the GBWT haplotype index, significantly reducing memory overhead during mapping.\n*   **Path Metadata:** When building graphs from GFA, ensure your path names follow the `[sample]#[haplotype]#[contig]` convention to allow `vg` to correctly parse pangenome metadata.\n*   **Surjection:** If you need to use traditional tools (like GATK or Samtools), use `vg surject` or the `--output-format BAM` flag in Giraffe to move from graph space to linear coordinate space.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| vg augment | Embed GAM alignments into a graph to facilitate variant calling |\n| vg autoindex | Build indexes for vg |\n| vg call | Call variants or genotype known variants |\n| vg construct | Construct a variation graph from reference and variant calls or a multiple sequence alignment. |\n| vg giraffe | Fast haplotype-aware read mapper. |\n| vg index | Creates an index on the specified graph or graphs. All graphs indexed must already be in a joint ID space. |\n| vg map | Align reads to a graph. |\n| vg mpmap | Multipath align reads to a graph. |\n| vg pack | Compresses alignments into coverage packs. |\n| vg rna | Constructs a splicing graph from transcripts and a graph. |\n\n## Reference documentation\n\n- [GitHub - vgteam/vg: tools for working with genome variation graphs](./references/github_com_vgteam_vg.md)\n- [Automatic indexing for read mapping and downstream inference](./references/github_com_vgteam_vg_wiki_Automatic-indexing-for-read-mapping-and-downstream-inference.md)\n- [Mapping short reads with Giraffe](./references/github_com_vgteam_vg_wiki_Mapping-short-reads-with-Giraffe.md)\n- [VCF export with vg deconstruct](./references/github_com_vgteam_vg_wiki_VCF-export-with-vg-deconstruct.md)\n- [File Formats](./references/github_com_vgteam_vg_wiki_File-Formats.md)",
+  "skill_front_matter": {
+    "name": "vg",
+    "description": "The vg toolkit performs genome informatics using pangenomic variation graphs to represent populations of genomes as networks. Use when user asks to build graphs from FASTA or VCF files, map reads using Giraffe, call variants, or project graph alignments back to linear coordinates.",
+    "homepage": "https://github.com/vgteam/vg"
+  }
+}

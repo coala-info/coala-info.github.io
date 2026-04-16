@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chrogps",
+  "category": "bioconductor",
+  "name": "bioconductor-chrogps",
+  "description": "This tool visualizes and analyzes epigenome maps using Multi-Dimensional Scaling and Procrustes analysis to map relationships between epigenetic factors or genes. Use when user asks to generate 2D or 3D epigenetic maps, integrate datasets from different technologies, adjust for technical biases, or perform cluster analysis on genomic intervals based on epigenetic profiles.",
+  "overview": "The `chroGPS` package provides a \"Global Positioning System\" for the epigenome. It uses Multi-Dimensional Scaling (MDS) to translate similarities between epigenetic marks or genomic elements into spatial distances on a map. It is particularly useful for visualizing the relationship between different chromatin modifications, comparing datasets across different technologies or cell lines, and identifying functional gene clusters based on their epigenetic profiles.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/chroGPS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chrogps/overview",
+  "github": "N/A",
+  "conda_downloads": "8.6K",
+  "conda_downloads_num": 8600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "chroGPS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/chroGPS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chrogps/overview",
+    "github": "N/A",
+    "conda_downloads": "8.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chrogps\n\nname: bioconductor-chrogps\ndescription: Visualization and functional analysis of epigenome maps using Multi-Dimensional Scaling (MDS) and Procrustes analysis. Use this skill to generate 2D/3D maps of epigenetic factors (chroGPSfactors) or genes (chroGPSgenes), integrate data from different sources (ChIP-seq vs. ChIP-chip), and perform cluster analysis on genomic intervals.\n\n# bioconductor-chrogps\n\n## Overview\n\nThe `chroGPS` package provides a \"Global Positioning System\" for the epigenome. It uses Multi-Dimensional Scaling (MDS) to translate similarities between epigenetic marks or genomic elements into spatial distances on a map. It is particularly useful for visualizing the relationship between different chromatin modifications, comparing datasets across different technologies or cell lines, and identifying functional gene clusters based on their epigenetic profiles.\n\n## Core Workflows\n\n### 1. chroGPSfactors: Mapping Epigenetic Elements\nThis workflow visualizes the association between different proteins or histone marks.\n\n```R\nlibrary(chroGPS)\n# 1. Prepare data (GRangesList of binding sites)\ndata(s2) \n\n# 2. Compute pairwise distances (avgdist is standard for factors)\nd <- distGPS(s2, metric='avgdist')\n\n# 3. Generate MDS representation (2D or 3D)\nmds1 <- mds(d, k=2, type='isoMDS')\n\n# 4. Plot the map\nplot(mds1, drawlabels=TRUE, point.pch=20)\n```\n\n### 2. Integrating and Adjusting Data Sources\nWhen merging data from different technologies (e.g., ChIP-chip and ChIP-seq), use Procrustes or Peak Width adjustment to remove systematic biases.\n\n```R\n# Procrustes adjustment (requires common points/factors)\n# mds_joint is an MDS object of the combined datasets\n# adjust is a vector indicating the source (e.g., 'chip', 'seq')\nmds_adj <- procrustesAdj(mds_joint, dist_joint, adjust=adjust, sampleid=sampleid)\n\n# Peak Width Adjustment (useful for resolution differences)\ns2_pAdj <- adjustPeaks(gr_list, adjust=adjust, sampleid=sampleid, logscale=TRUE)\n```\n\n### 3. chroGPSgenes: Mapping Genes by Epigenetic Profile\nThis workflow groups genes based on the similarity of their epigenetic marks.\n\n```R\n# 1. Prepare a binary matrix (Genes x Factors)\n# 1 if mark is present, 0 otherwise\nd_genes <- distGPS(s2.tab, metric='tanimoto', uniqueRows=TRUE)\n\n# 2. MDS with BoostMDS for large datasets (genome-wide)\n# splitMDS handles high computational load\nmds_genes <- mds(d_genes, type='isoMDS', splitMDS=TRUE, split=.5)\nmds_boost <- mds(d_genes, mds_genes, type='boostMDS')\n\n# 3. Clustering and Density Estimation\nh <- hclust(as.dist(as.matrix(d_genes)), method='average')\nclus <- clusGPS(d_genes, mds_boost, h, preMerge=TRUE, minpoints=20)\n\n# 4. Merge overlapping clusters for better interpretation\nclus_merged <- mergeClusters(clus, brake=0)\nplot(mds_boost, point.col=clusterID(clus_merged))\n```\n\n### 4. Differential Analysis\nCompare epigenome maps across different conditions (e.g., cell lines or time points).\n\n```R\n# For factors: Compare two MDS objects\ndf_factors <- diffFactors(mds_cond1, mds_cond2)\nplot(df_factors$mds3) # Shows shifts between conditions\n\n# For genes: Identify genes changing epigenetic identity\n# x is the combined genes matrix\ndiff_genes <- diffGenes(x, mds_obj, clus_obj, label.x='Cond1', label.y='Cond2')\n```\n\n## Key Functions and Parameters\n\n- `distGPS`: Computes distance matrices. Use `metric='avgdist'` for factors and `metric='tanimoto'` for binary gene matrices.\n- `mds`: Performs MDS. `type='isoMDS'` is standard; `type='boostMDS'` is recommended for large gene maps to improve R-squared and speed.\n- `clusGPS`: Performs clustering and computes Correct Classification Rates (CCR) to assess cluster robustness.\n- `procrustesAdj`: Optimal superimposition of maps by altering location, scale, and orientation while maintaining relative distances.\n- `domainDist`: Evaluates conservation of chromatin domains between datasets.\n- `rankFactorsbyDomain`: Identifies which factors are most critical for defining a specific chromatin domain.\n\n## Tips for Effective Mapping\n\n- **Dimensionality**: Check the R-squared and Stress values. An R-squared > 0.6 and Stress < 0.1 usually indicate a reliable 2D representation. If values are poor, try `k=3`.\n- **Parallelization**: Many functions support `mc.cores` for parallel processing on Linux/Mac.\n- **Visualization**: Use `densCols` for gene maps to visualize point density, or `probContour=p` in cluster plots to show high-probability regions.\n- **Export**: Use `gps2xgmml(mds_obj, ...)` to export maps to Cytoscape for interactive network exploration.\n\n## Reference documentation\n- [chroGPS](./references/chroGPS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chrogps",
+    "description": "This tool visualizes and analyzes epigenome maps using Multi-Dimensional Scaling and Procrustes analysis to map relationships between epigenetic factors or genes. Use when user asks to generate 2D or 3D epigenetic maps, integrate datasets from different technologies, adjust for technical biases, or perform cluster analysis on genomic intervals based on epigenetic profiles.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/chroGPS.html"
+  }
+}

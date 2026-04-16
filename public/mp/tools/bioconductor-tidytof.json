@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tidytof",
+  "category": "bioconductor",
+  "name": "bioconductor-tidytof",
+  "description": "The tidytof package provides a tidy data interface for analyzing high-dimensional cytometry data within the R ecosystem. Use when user asks to read or write FCS files, preprocess CyTOF data, perform dimensionality reduction, cluster cell populations, or conduct differential discovery analysis.",
+  "overview": "`tidytof` is a Bioconductor package designed for the analysis of high-dimensional cytometry data (CyTOF) using a \"tidy\" interface. It organizes data into `tof_tbl` objects (extended tibbles) where each row is a cell and each column is a protein measurement or metadata. The package follows a consistent verb-based syntax: `tof_verb(data, column_spec, method_spec)`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/tidytof.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/keyes-timothy/tidytof",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tidytof"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tidytof.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/keyes-timothy/tidytof",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tidytof\n\nname: bioconductor-tidytof\ndescription: Expert guidance for using the tidytof R package for high-dimensional cytometry (CyTOF) data analysis. Use this skill when you need to perform tasks such as reading/writing FCS files, preprocessing (arcsinh transformation), downsampling, dimensionality reduction (PCA, UMAP, tSNE), clustering (FlowSOM, PhenoGraph), differential discovery analysis (DAA/DEA), and building predictive models using a tidy data interface.\n\n# bioconductor-tidytof\n\n## Overview\n\n`tidytof` is a Bioconductor package designed for the analysis of high-dimensional cytometry data (CyTOF) using a \"tidy\" interface. It organizes data into `tof_tbl` objects (extended tibbles) where each row is a cell and each column is a protein measurement or metadata. The package follows a consistent verb-based syntax: `tof_verb(data, column_spec, method_spec)`.\n\n## Core Workflows\n\n### 1. Data Input and Preprocessing\nRead FCS or CSV files into a `tof_tbl` and apply variance-stabilizing transformations.\n\n```r\nlibrary(tidytof)\n\n# Read data from a directory or single file\nmy_data <- tof_read_data(\"path/to/fcs_files\")\n\n# Standard preprocessing: arcsinh transformation (default cofactor = 5)\n# and removal of Fluidigm Gaussian noise\npreprocessed_data <- my_data |>\n    tof_preprocess(channel_cols = where(is.numeric), undo_noise = TRUE)\n```\n\n### 2. Cell-Level Operations\nDownsample large datasets for tractability and perform dimensionality reduction for visualization.\n\n```r\n# Downsample to 1000 cells per sample\ndownsampled_data <- preprocessed_data |>\n    tof_downsample(group_cols = file_name, method = \"constant\", num_cells = 1000)\n\n# Dimensionality Reduction (tSNE, UMAP, or PCA)\ndr_data <- downsampled_data |>\n    tof_reduce_dimensions(method = \"tsne\", cluster_cols = starts_with(\"cd\"))\n\n# Visualization helper\ndr_data |>\n    tof_plot_cells_embedding(embedding_cols = contains(\"tsne\"), color_col = sample_id)\n```\n\n### 3. Clustering and Metaclustering\nIdentify cell populations using algorithms like PhenoGraph or FlowSOM.\n\n```r\nclustered_data <- preprocessed_data |>\n    tof_cluster(\n        cluster_cols = contains(\"cd\"),\n        method = \"phenograph\",\n        num_neighbors = 30\n    ) |>\n    tof_metacluster(\n        cluster_col = .phenograph_cluster,\n        method = \"kmeans\",\n        num_metaclusters = 5\n    )\n```\n\n### 4. Differential Discovery Analysis\nCompare cluster abundance (DAA) or marker expression (DEA) across experimental conditions.\n\n```r\n# Differential Abundance (e.g., Basal vs Stimulated)\ndaa_results <- clustered_data |>\n    tof_analyze_abundance(\n        cluster_col = .phenograph_cluster,\n        effect_col = stimulation_status,\n        group_cols = patient_id,\n        method = \"ttest\",\n        test_type = \"paired\"\n    )\n\n# Differential Expression\ndea_results <- clustered_data |>\n    tof_analyze_expression(\n        cluster_col = .phenograph_cluster,\n        marker_cols = c(pStat5, pAkt),\n        effect_col = stimulation_status,\n        group_cols = patient_id,\n        method = \"ttest\"\n    )\n```\n\n### 5. Feature Extraction and Modeling\nAggregate single-cell data into sample-level features for predictive machine learning.\n\n```r\n# Extract features (proportions and central tendencies)\nsample_features <- clustered_data |>\n    tof_extract_features(\n        cluster_col = .phenograph_cluster,\n        group_cols = sample_id,\n        lineage_cols = starts_with(\"cd\"),\n        signaling_cols = c(pStat5, pS6)\n    )\n\n# Train a model (e.g., two-class elastic net)\ntrained_model <- sample_features |>\n    tof_train_model(\n        response_col = clinical_outcome,\n        predictor_cols = contains(\"prop\"),\n        model_type = \"two-class\"\n    )\n```\n\n## Key Design Principles\n- **Verb Syntax**: Almost all functions take a `tof_tbl` as the first argument, followed by column specifications (using `tidyselect` helpers), then method-specific parameters.\n- **Column Naming**: Columns added by `tidytof` (like clusters or embeddings) always start with a dot (e.g., `.phenograph_cluster`) to avoid overwriting raw data.\n- **Panel Metadata**: Use `tof_get_panel(my_tof_tbl)` to retrieve metal/antigen mappings stored in the object attributes.\n\n## Reference documentation\n- [Clustering and metaclustering](./references/clustering.Rmd)\n- [How to contribute code](./references/contributing-to-tidytof.Rmd)\n- [Differential discovery analysis](./references/differential-discovery-analysis.Rmd)\n- [Dimensionality reduction](./references/dimensionality-reduction.Rmd)\n- [Downsampling](./references/downsampling.Rmd)\n- [Feature extraction](./references/feature-extraction.Rmd)\n- [Building predictive models](./references/modeling.Rmd)\n- [Preprocessing](./references/preprocessing.Rmd)\n- [Quality control](./references/quality-control.Rmd)\n- [Reading and writing data](./references/reading-and-writing-data.Rmd)\n- [Getting started with tidytof](./references/tidytof.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-tidytof",
+    "description": "The tidytof package provides a tidy data interface for analyzing high-dimensional cytometry data within the R ecosystem. Use when user asks to read or write FCS files, preprocess CyTOF data, perform dimensionality reduction, cluster cell populations, or conduct differential discovery analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tidytof.html"
+  }
+}

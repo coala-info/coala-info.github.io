@@ -1,0 +1,57 @@
+{
+  "id": "baktfold",
+  "category": "CLI",
+  "name": "baktfold",
+  "description": "Baktfold identifies the functions of hypothetical proteins by performing structural homology searches using protein language models and 3D shape prediction. Use when user asks to annotate hypothetical proteins, perform structural homology searches with Foldseek, or convert Prokka and eukaryotic GenBank files for functional annotation.",
+  "overview": "Baktfold is a specialized bioinformatics tool designed to bridge the gap in genome annotation where sequence-based methods fail. It specifically targets \"hypothetical proteins\"—sequences that standard tools like Bakta or Prokka cannot confidently identify. By using the ProstT5 language model to translate amino acid sequences into 3Di structural tokens, Baktfold allows for sensitive structural homology searches using Foldseek. This approach can identify protein functions based on their predicted ",
+  "homepage": "https://github.com/gbouras13/baktfold",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/baktfold/overview",
+  "github": "https://github.com/gbouras13/baktfold",
+  "conda_downloads": "124",
+  "conda_downloads_num": 124,
+  "last_updated": "2025-11-17",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "baktfold_citation",
+      "baktfold_compare",
+      "baktfold_install",
+      "baktfold_predict",
+      "baktfold_proteins",
+      "baktfold_proteins-compare",
+      "baktfold_proteins-predict",
+      "baktfold_run"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/baktfold:0.0.3--pyhdfd78af_0",
+    "homepage": "https://github.com/gbouras13/baktfold",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/baktfold/overview",
+    "github": "https://github.com/gbouras13/baktfold",
+    "conda_downloads": "124",
+    "last_updated": "2025-11-17",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "baktfold_compare.cwl",
+    "baktfold_install.cwl",
+    "baktfold_predict.cwl",
+    "baktfold_proteins-compare.cwl",
+    "baktfold_proteins.cwl",
+    "baktfold_run.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# baktfold\n\n## Overview\nBaktfold is a specialized bioinformatics tool designed to bridge the gap in genome annotation where sequence-based methods fail. It specifically targets \"hypothetical proteins\"—sequences that standard tools like Bakta or Prokka cannot confidently identify. By using the ProstT5 language model to translate amino acid sequences into 3Di structural tokens, Baktfold allows for sensitive structural homology searches using Foldseek. This approach can identify protein functions based on their predicted 3D shape rather than just their primary sequence, making it highly effective for diverse biological entities including bacteria, plasmids, and eukaryotes.\n\n## Installation and Database Setup\nBefore running annotations, the environment must be configured and databases must be initialized.\n\n*   **Environment**: Use Conda to manage dependencies, especially `foldseek`.\n    ```bash\n    conda create -n baktfoldENV -c conda-forge -c bioconda baktfold\n    ```\n*   **GPU Acceleration**: If an NVIDIA GPU is available, install the CUDA-compatible version of pytorch to significantly speed up the ProstT5 translation step.\n    ```bash\n    conda install -c pytorch -c nvidia pytorch-cuda=11.8\n    ```\n*   **Database Initialization**: Download the required structural databases. Use the `-t` flag to specify threads for faster downloads.\n    ```bash\n    baktfold install -d baktfold_db -t 8\n    ```\n*   **GPU Database Padding**: If using a GPU for Foldseek searches, you must format the database accordingly:\n    ```bash\n    baktfold install -d baktfold_db --foldseek-gpu\n    ```\n\n## Core Workflows\n\n### 1. Annotating Bakta Outputs\nThe primary workflow involves taking the `.json` output from a Bakta annotation run. Baktfold will automatically extract the hypothetical proteins and attempt to annotate them.\n```bash\nbaktfold run -i assembly.json -o output_dir -d baktfold_db -t 8\n```\n\n### 2. Annotating Protein Sequences (Fasta)\nIf you have a set of protein sequences in FASTA format (e.g., from a different annotator or a specific study), use the `proteins` subcommand.\n```bash\nbaktfold proteins -i proteins.faa -o output_dir -d baktfold_db -t 8\n```\n\n### 3. Handling Non-Bakta GenBank Files\nIf your starting point is a Prokka GenBank file or a eukaryotic GenBank file, you must convert it to the Bakta JSON format first.\n*   **Prokka Conversion**:\n    ```bash\n    baktfold convert-prokka -i prokka.gbk -o converted.json\n    ```\n*   **Eukaryotic Conversion (Experimental)**:\n    ```bash\n    baktfold convert-euk -i euk.gbk -o euk.json\n    ```\n\n## Expert Tips and Best Practices\n*   **Eukaryotic Support**: When running Baktfold on eukaryotic data, always include the `--euk` flag in the `run` command to ensure proper handling of eukaryotic genomic features.\n*   **Custom Databases**: You can supplement the default structural databases with your own using the `--custom-db` flag.\n*   **Pre-computed Structures**: If you have already generated `.pdb` or `.cif` structures (e.g., via AlphaFold2 or ColabFold), you can provide these to Baktfold to skip the ProstT5 translation step, increasing accuracy.\n*   **Resource Management**: The ProstT5 model is memory-intensive. If running on a system with limited RAM, monitor usage closely during the translation phase.\n*   **Multi-domain Proteins**: Baktfold is configured to keep non-overlapping top hits for CATH (similar to Foldseek's `--greedy-best-hits`), which is essential for correctly identifying functions in multi-domain proteins.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| baktfold compare | Runs Foldseek vs baktfold db |\n| baktfold install | Installs ProstT5 model and baktfold database |\n| baktfold predict | Uses ProstT5 to predict 3Di tokens - GPU recommended |\n| baktfold proteins | baktfold proteins-predict then comapare all in one - GPU recommended |\n| baktfold proteins-compare | Runs Foldseek vs baktfold db on proteins input |\n| baktfold run | baktfold predict then comapare all in one - GPU recommended |\n\n## Reference documentation\n- [Baktfold GitHub Repository](./references/github_com_gbouras13_baktfold_blob_main_README.md)\n- [Baktfold Version History](./references/github_com_gbouras13_baktfold_blob_main_HISTORY.md)",
+  "skill_front_matter": {
+    "name": "baktfold",
+    "description": "Baktfold identifies the functions of hypothetical proteins by performing structural homology searches using protein language models and 3D shape prediction. Use when user asks to annotate hypothetical proteins, perform structural homology searches with Foldseek, or convert Prokka and eukaryotic GenBank files for functional annotation.",
+    "homepage": "https://github.com/gbouras13/baktfold"
+  }
+}

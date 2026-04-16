@@ -1,0 +1,51 @@
+{
+  "id": "feelnc",
+  "category": "CLI",
+  "name": "feelnc",
+  "description": "FEELnc is a bioinformatics pipeline for the automated annotation and classification of long non-coding RNAs from reconstructed transcripts. Use when user asks to filter transcripts against protein-coding exons, calculate coding potential using k-mer models, or classify lncRNAs based on their genomic localization.",
+  "overview": "FEELnc (FlExible Extraction of LncRNA) is a specialized bioinformatics pipeline for the automated annotation of lncRNAs from reconstructed transcripts (e.g., from StringTie or Cufflinks). It operates through three primary stages: filtering out transcripts that overlap with known protein-coding exons, calculating the coding potential of candidates using a k-mer based model, and classifying the resulting lncRNAs based on their genomic relationship to neighboring genes (such as intergenic, antisens",
+  "homepage": "https://github.com/tderrien/FEELnc",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/feelnc/overview",
+  "github": "https://github.com/tderrien/FEELnc",
+  "conda_downloads": "11.9K",
+  "conda_downloads_num": 11900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "feelnc_FEELnc_filter.pl",
+      "feelnc_FEELnc_codpot.pl",
+      "feelnc_FEELnc_classifier.pl",
+      "feelnc_FEELnc_pipeline.sh"
+    ],
+    "description": "Filter candidate lncRNA transcripts based on a GTF annotation file.",
+    "docker_image": "quay.io/biocontainers/feelnc:0.2--pl526_0",
+    "homepage": "https://github.com/tderrien/FEELnc",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/feelnc/overview",
+    "github": "https://github.com/tderrien/FEELnc",
+    "conda_downloads": "11.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "feelnc_FEELnc_classifier.pl.cwl",
+    "feelnc_FEELnc_codpot.pl.cwl",
+    "feelnc_FEELnc_filter.pl.cwl",
+    "feelnc_FEELnc_pipeline.sh.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# feelnc\n\n## Overview\n\nFEELnc (FlExible Extraction of LncRNA) is a specialized bioinformatics pipeline for the automated annotation of lncRNAs from reconstructed transcripts (e.g., from StringTie or Cufflinks). It operates through three primary stages: filtering out transcripts that overlap with known protein-coding exons, calculating the coding potential of candidates using a k-mer based model, and classifying the resulting lncRNAs based on their genomic relationship to neighboring genes (such as intergenic, antisense, or intronic).\n\n## Core Modules and CLI Usage\n\nThe pipeline can be run as individual modules for fine-grained control or via a wrapper script for standard workflows.\n\n### 1. Filtering (FEELnc_filter.pl)\nExtracts candidate transcripts by removing those that overlap with reference protein-coding exons.\n\n*   **Basic Pattern:**\n    ```bash\n    FEELnc_filter.pl -i transcripts.gtf -a reference_annotation.gtf > candidates.gtf\n    ```\n*   **Best Practice:** Always use the `--biotype` option to ensure you are only filtering against protein-coding mRNAs, preventing the accidental removal of known lncRNAs present in your reference.\n    ```bash\n    FEELnc_filter.pl -i transcripts.gtf -a reference.gtf -b transcript_biotype=protein_coding > candidates.gtf\n    ```\n*   **Stranded Data:** If using a stranded protocol, include antisense monoexonic transcripts which are often filtered by default.\n    ```bash\n    FEELnc_filter.pl -i transcripts.gtf -a reference.gtf --monoex=-1 > candidates.gtf\n    ```\n\n### 2. Coding Potential (FEELnc_codpot.pl)\nComputes the probability of a transcript being non-coding.\n\n*   **Standard Mode (with Genome):**\n    ```bash\n    FEELnc_codpot.pl -i candidates.gtf -a reference.gtf -g genome.fa --mode=shuffle\n    ```\n*   **De Novo/Reference-free:** If a reference genome is unavailable, this module can run directly on FASTA files.\n*   **Performance:** Use the `-proc` argument (if available in your version) to specify the number of threads for k-mer counting.\n\n### 3. Classification (FEELnc_classifier.pl)\nCategorizes lncRNAs based on their genomic localization relative to other transcripts.\n\n*   **Usage:**\n    ```bash\n    FEELnc_classifier.pl -i lncRNA.gtf -a reference.gtf > classification_results.txt\n    ```\n*   **Output:** This generates a detailed table describing the type of lncRNA (e.g., lincRNA, antisense, intronic) and the distance to the nearest partner gene.\n\n### 4. Integrated Pipeline (FEELnc_pipeline.sh)\nA wrapper script to execute all three steps in a single command.\n\n```bash\nFEELnc_pipeline.sh --candidate=transcripts.gtf \\\n                   --reference=reference.gtf \\\n                   --genome=genome.fa \\\n                   --outname=project_name \\\n                   --outdir=output_directory\n```\n\n## Expert Tips and Best Practices\n\n*   **Reference Preparation:** When providing a reference GTF, it is highly recommended to subselect only `protein_coding` biotypes to serve as the \"gold standard\" for what is NOT a lncRNA.\n*   **K-mer Shuffling:** The `--mode=shuffle` in `FEELnc_codpot.pl` is effective for generating a null model of coding potential by shuffling the input sequences while preserving k-mer frequencies.\n*   **Environment Setup:** Ensure `PERL5LIB` is correctly exported to include the FEELnc `lib` directory, and that `KmerInShort` and `fasta_ushuffle` binaries are in your `PATH`.\n*   **Input Formats:** Ensure your input GTF files follow standard formatting (9 columns). FEELnc is sensitive to the attribute column for biotype filtering.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| FEELnc_classifier.pl | Classifies lncRNAs based on their genomic context and overlap with protein-coding genes. |\n| FEELnc_codpot.pl | FEELnc_codpot.pl is a tool for predicting lncRNA transcripts. |\n| FEELnc_filter.pl | Filter candidate lncRNA transcripts based on a GTF annotation file. |\n| FEELnc_pipeline.sh | FEELnc pipeline for transcript model annotation. |\n\n## Reference documentation\n- [FEELnc GitHub Repository](./references/github_com_tderrien_FEELnc.md)",
+  "skill_front_matter": {
+    "name": "feelnc",
+    "description": "FEELnc is a bioinformatics pipeline for the automated annotation and classification of long non-coding RNAs from reconstructed transcripts. Use when user asks to filter transcripts against protein-coding exons, calculate coding potential using k-mer models, or classify lncRNAs based on their genomic localization.",
+    "homepage": "https://github.com/tderrien/FEELnc"
+  }
+}

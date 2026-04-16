@@ -1,0 +1,61 @@
+{
+  "id": "allhic",
+  "category": "CLI",
+  "name": "allhic",
+  "description": "\"ALLHIC scaffolds polyploid or highly heterozygous diploid genome assemblies using Hi-C contact data to partition, order, and orient contigs. Use when user asks to scaffold a genome assembly, partition contigs into linkage groups using Hi-C data, or optimize the order and orientation of contigs for polyploid genomes.\"",
+  "overview": "ALLHIC is a specialized genome scaffolding tool designed to handle the complexities of polyploid and highly heterozygous diploid genomes. Unlike standard scaffolders that may struggle with homologous chromosomes, ALLHIC utilizes Hi-C contact data to partition contigs into linkage groups and then employs a Genetic Algorithm to determine the most likely linear order and orientation of those contigs. It is best used when you have a draft assembly (contigs) and high-quality Hi-C sequencing data.",
+  "homepage": "https://github.com/tanghaibao/allhic",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/allhic/overview",
+  "github": "https://github.com/tanghaibao/allhic",
+  "conda_downloads": "1.6K",
+  "conda_downloads_num": 1600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "allhic_alleles",
+      "allhic_assess",
+      "allhic_build",
+      "allhic_extract",
+      "allhic_optimize",
+      "allhic_partition",
+      "allhic_pipeline",
+      "allhic_plot",
+      "allhic_prune"
+    ],
+    "description": "Identify and classify allelic contigs from a PAF file to be used for 'allhic prune'. Generates 'alleles.table'.",
+    "docker_image": "quay.io/biocontainers/allhic:0.9.14--he881be0_0",
+    "homepage": "https://github.com/tanghaibao/allhic",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/allhic/overview",
+    "github": "https://github.com/tanghaibao/allhic",
+    "conda_downloads": "1.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "allhic_alleles.cwl",
+    "allhic_assess.cwl",
+    "allhic_build.cwl",
+    "allhic_extract.cwl",
+    "allhic_optimize.cwl",
+    "allhic_partition.cwl",
+    "allhic_pipeline.cwl",
+    "allhic_plot.cwl",
+    "allhic_prune.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# allhic\n\n## Overview\nALLHIC is a specialized genome scaffolding tool designed to handle the complexities of polyploid and highly heterozygous diploid genomes. Unlike standard scaffolders that may struggle with homologous chromosomes, ALLHIC utilizes Hi-C contact data to partition contigs into linkage groups and then employs a Genetic Algorithm to determine the most likely linear order and orientation of those contigs. It is best used when you have a draft assembly (contigs) and high-quality Hi-C sequencing data.\n\n## Core Workflow and CLI Patterns\n\n### 1. Link Extraction\nThe first step processes the raw alignments to identify Hi-C contacts.\n```bash\nallhic extract <sample.bam> <ref.fasta>\n```\n*   **Input**: A BAM file of Hi-C reads mapped to your contigs and the corresponding FASTA file.\n*   **Output**: Generates a `.clm` file (compact link matrix) and a distribution of intra-contig links.\n\n### 2. Allelic Pruning (Polyploid Specific)\nFor polyploid genomes, use `prune` to remove links between allelic contigs that might cause mis-partitioning.\n```bash\nallhic prune <Allele.ctg.table> <sample.pairs.txt>\n```\n*   **Tip**: This step is optional for simple inbred diploids but critical for polyploids to ensure contigs are assigned to the correct homologous group.\n\n### 3. Partitioning\nDivide contigs into $k$ groups (typically the number of haploid chromosomes).\n```bash\n# Standard usage\nallhic partition <counts_GATC.txt> <sample.pairs.txt>\n\n# If pruning was performed\nallhic partition <counts_GATC.txt> <sample.pairs.prune.txt>\n```\n*   **Optimization**: This uses hierarchical clustering based on average links to separate contigs into chromosomal clusters.\n\n### 4. Optimization\nReconstruct the order and orientation of contigs within each partition using a Genetic Algorithm.\n```bash\nallhic optimize <partition.counts_GATC.txt> <sample.clm>\n```\n*   **Note**: You must run this for each partition generated in the previous step. It produces a `.tour` file containing the optimized path.\n\n### 5. Final Assembly Building\nConvert the optimized tours into standard genomic formats.\n```bash\nallhic build <tour_files> <ref.fasta> <output.fasta>\n```\n*   **Output**: Generates both `.agp` and `.fasta` files representing the final scaffolded assembly.\n\n### 6. Visualization\nGenerate heatmaps to assess the quality of the scaffolding.\n```bash\nallhic plot <sample.bam> <sample.tour>\n```\n\n## Best Practices\n*   **Scripted Pipelines**: For large-scale assemblies, it is highly recommended to wrap these commands in a shell script to iterate through all partitions during the `optimize` phase.\n*   **Restriction Sites**: Ensure the counts file (e.g., `counts_GATC.txt`) correctly reflects the restriction enzyme used in your Hi-C library preparation.\n*   **Genetic Algorithm**: The `optimize` step is stochastic. If results are inconsistent, consider running multiple iterations or checking the `.clm` file for link density.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| allhic alleles | Identify and classify allelic contigs from a PAF file to be used for 'allhic prune'. Generates 'alleles.table'. |\n| allhic assess | Assess Hi-C data using BAM and BED files |\n| allhic build | Build a chromosome-level assembly from tour files and contigs |\n| allhic extract | Extract information from BAM and FASTA files for ALLHIC |\n| allhic optimize | Given a set of Hi-C contacts between contigs, as specified in the clmfile, reconstruct the highest scoring ordering and orientations for these contigs. Optimize run on a specific partition in \"clusters.txt\" as generated by \"partition\" sub-command, with the group_number matching the order appearing in \"clusters.txt\". |\n| allhic partition | Separate all the contigs into separate clusters using a hierarchical clustering algorithm based on average links. Requires counts_RE.txt and pairs.txt generated by the extract sub-command. |\n| allhic pipeline | A pipeline for Hi-C scaffolding using the ALLHIC algorithm. |\n| allhic plot | Plot BAM and tour files for ALLHIC |\n| allhic prune | Prune inter-allelic links from contig pairing data to enable allele-separated assemblies. It removes Hi-C links between contigs identified as allelic and filters links to keep only the single-best edge when multiple contigs link to the same allelic group. |\n\n## Reference documentation\n- [ALLHIC: Genome scaffolding based on Hi-C data](./references/github_com_tanghaibao_allhic_blob_main_README.md)\n- [AGP and Fasta Building Logic](./references/github_com_tanghaibao_allhic_blob_main_agp.go.md)\n- [Allele Table Handling](./references/github_com_tanghaibao_allhic_blob_main_alleles.go.md)",
+  "skill_front_matter": {
+    "name": "allhic",
+    "description": "ALLHIC scaffolds polyploid or highly heterozygous diploid genome assemblies using Hi-C contact data to partition, order, and orient contigs. Use when user asks to scaffold a genome assembly, partition contigs into linkage groups using Hi-C data, or optimize the order and orientation of contigs for polyploid genomes.",
+    "homepage": "https://github.com/tanghaibao/allhic"
+  }
+}

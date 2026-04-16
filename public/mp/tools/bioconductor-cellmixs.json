@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cellmixs",
+  "category": "bioconductor",
+  "name": "bioconductor-cellmixs",
+  "description": "This tool evaluates and visualizes batch effects and data integration quality in single-cell RNA-seq data. Use when user asks to quantify batch mixing, calculate Cellspecific Mixing Scores, evaluate structural preservation after integration, or visualize integration metrics.",
+  "overview": "CellMixS is a Bioconductor package designed to quantify and visualize batch effects in single-cell RNA-seq data. It is particularly useful for evaluating the performance of data integration methods. Its two primary metrics are:\n1. **Cellspecific Mixing Score (CMS)**: A test for batch effects within k-nearest neighborhoods.\n2. **Local Density Differences (ldfDiff)**: A score that measures how much the internal structure of a batch is preserved after integration.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CellMixS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellmixs/overview",
+  "github": "https://github.com/almutlue/CellMixS",
+  "conda_downloads": "23.4K",
+  "conda_downloads_num": 23400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CellMixS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CellMixS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellmixs/overview",
+    "github": "https://github.com/almutlue/CellMixS",
+    "conda_downloads": "23.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cellmixs\n\nname: bioconductor-cellmixs\ndescription: Evaluate and visualize data integration and batch effects in single-cell RNA-seq data. Use this skill to calculate Cellspecific Mixing Scores (CMS), Local Density Differences (ldfDiff), and other integration metrics (entropy, ISI) to quantify batch mixing and structural preservation.\n\n# bioconductor-cellmixs\n\n## Overview\n\nCellMixS is a Bioconductor package designed to quantify and visualize batch effects in single-cell RNA-seq data. It is particularly useful for evaluating the performance of data integration methods. Its two primary metrics are:\n1. **Cellspecific Mixing Score (CMS)**: A test for batch effects within k-nearest neighborhoods.\n2. **Local Density Differences (ldfDiff)**: A score that measures how much the internal structure of a batch is preserved after integration.\n\nThe package works primarily with `SingleCellExperiment` objects.\n\n## Typical Workflow\n\n### 1. Initial Visualization\nBefore quantifying, visualize the batch distribution on a reduced dimension plot (e.g., UMAP or TSNE).\n\n```r\nlibrary(CellMixS)\nlibrary(scater)\n\n# Visualize batch distribution\nvisGroup(sce, group = \"batch\", dim_red = \"UMAP\")\n```\n\n### 2. Quantify Batch Mixing (CMS)\nThe `cms` function calculates a p-value for each cell, testing the hypothesis that batches are well-mixed in its neighborhood.\n\n```r\n# Calculate CMS\n# k: number of neighbors (default 30)\n# group: the colData column containing batch labels\nsce <- cms(sce, k = 30, group = \"batch\", res_name = \"unaligned\")\n\n# Visualize results\nvisHist(sce, metric = \"cms.unaligned\") # Histogram of p-values\nvisMetric(sce, metric_var = \"cms_smooth.unaligned\") # CMS on UMAP\n```\n*   **Interpretation**: A flat p-value histogram indicates good mixing. An enrichment of low p-values indicates batch-specific bias.\n\n### 3. Evaluate Data Integration\nAfter running integration (e.g., MNN, Harmony, or limma), use `cms` on the integrated embeddings or corrected counts.\n\n```r\n# Using integrated embeddings (e.g., MNN)\nsce <- cms(sce, k = 30, group = \"batch\", dim_red = \"MNN\", res_name = \"MNN\")\n\n# Using corrected counts (e.g., limma)\nsce <- cms(sce, k = 30, group = \"batch\", assay_name = \"limma_corrected\", res_name = \"limma\")\n```\n\n### 4. Check Structural Preservation (ldfDiff)\nUse `ldfDiff` to ensure integration hasn't distorted the local density of cells within their original batches.\n\n```r\n# Requires a list of SCE objects (one per batch) representing the pre-integrated state\nsce_pre_list <- list(\"batch1\" = sce[, sce$batch == \"1\"], \"batch2\" = sce[, sce$batch == \"2\"])\n\nsce <- ldfDiff(sce_pre_list, sce_combined = sce, group = \"batch\", \n               k = 70, dim_red = \"PCA\", dim_combined = \"MNN\", res_name = \"MNN\")\n\n# Visualize structural changes\nvisIntegration(sce, metric = \"diff_ldf\", metric_name = \"ldfDiff\")\n```\n*   **Interpretation**: `ldfDiff` scores should be centered around 0. Large deviations suggest the integration method has altered the data's internal structure.\n\n### 5. Multi-Metric Evaluation\nThe `evalIntegration` wrapper allows running multiple metrics (ISI, entropy, CMS) simultaneously.\n\n```r\nsce <- evalIntegration(metrics = c(\"isi\", \"entropy\", \"cms\"), \n                       sce, group = \"batch\", k = 30)\n\n# Summary overview\nvisOverview(sce, group = \"batch\", metric = c(\"cms_smooth\", \"isi\", \"entropy\"))\n```\n\n## Key Functions and Parameters\n\n- **`cms(sce, k, group, dim_red, res_name, ...)`**: Main mixing score function.\n    - `k`: Neighborhood size. Should not exceed the size of the smallest cell population.\n    - `dim_red`: The reduced dimension slot to use (e.g., \"PCA\", \"UMAP\", \"MNN\").\n- **`ldfDiff(sce_pre_list, sce_combined, group, ...)`**: Measures structural preservation.\n    - `sce_pre_list`: List of SCE objects before integration, named by batch levels.\n- **`visGroup()` / `visMetric()`**: Plotting functions for categorical (batch) and continuous (CMS) variables.\n- **`visHist()`**: Plots p-value distributions. Essential for interpreting CMS results.\n- **`visCluster()`**: Boxplots of metrics across clusters or cell types to identify specific populations that are poorly integrated.\n\n## Tips for Success\n- **Neighborhood Definition**: If cell populations are of very different sizes, consider using `k_min` or `batch_min` in `cms` to allow for dynamic neighborhood sizes.\n- **Smoothing**: `cms` provides both `cms` (raw) and `cms_smooth` (weighted mean of neighborhood). `cms_smooth` is generally better for visualization.\n- **Input Format**: Ensure the `group` variable is a factor in the `colData` of your `SingleCellExperiment`.\n\n## Reference documentation\n- [CellMixS](./references/CellMixS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cellmixs",
+    "description": "This tool evaluates and visualizes batch effects and data integration quality in single-cell RNA-seq data. Use when user asks to quantify batch mixing, calculate Cellspecific Mixing Scores, evaluate structural preservation after integration, or visualize integration metrics.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CellMixS.html"
+  }
+}

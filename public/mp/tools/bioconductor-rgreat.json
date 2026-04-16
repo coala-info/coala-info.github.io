@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rgreat",
+  "category": "bioconductor",
+  "name": "bioconductor-rgreat",
+  "description": "This tool performs Genomic Regions Enrichment of Annotations Tool (GREAT) analysis to associate non-coding genomic regions with biological functions. Use when user asks to perform functional enrichment analysis on genomic regions, associate ChIP-seq peaks with nearby genes, or run GREAT analysis locally or via the web service.",
+  "overview": "The `rGREAT` package implements the GREAT algorithm, which assigns biological functions to non-coding genomic regions by associating them with nearby genes. It supports two main modes:\n1. **Local GREAT (`great()`)**: A flexible, Bioconductor-integrated version that supports any organism, custom gene sets, and large datasets.\n2. **Online GREAT (`submitGreatJob()`)**: A wrapper for the official GREAT web service (supports hg38, hg19, mm10, mm9).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/rGREAT.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/jokergoo/rGREAT",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rGREAT"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rGREAT.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/jokergoo/rGREAT",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rgreat\n\nname: bioconductor-rgreat\ndescription: Perform Genomic Regions Enrichment of Annotations Tool (GREAT) analysis in R. Use this skill to associate genomic regions (e.g., ChIP-seq peaks) with biological functions using either the online GREAT web service or a local implementation. Supports multiple organisms, custom gene sets (GO, MSigDB, KEGG, Reactome), and background region sets.\n\n# bioconductor-rgreat\n\n## Overview\nThe `rGREAT` package implements the GREAT algorithm, which assigns biological functions to non-coding genomic regions by associating them with nearby genes. It supports two main modes:\n1. **Local GREAT (`great()`)**: A flexible, Bioconductor-integrated version that supports any organism, custom gene sets, and large datasets.\n2. **Online GREAT (`submitGreatJob()`)**: A wrapper for the official GREAT web service (supports hg38, hg19, mm10, mm9).\n\n## Core Workflows\n\n### 1. Local GREAT Analysis (Recommended)\nLocal GREAT is more robust and supports more organisms/ontologies than the web version.\n\n```r\nlibrary(rGREAT)\nlibrary(GenomicRanges)\n\n# 1. Prepare input regions (GRanges)\ngr = GRanges(seqnames = \"chr1\", ranges = IRanges(start = c(100, 500), end = c(200, 600)))\n\n# 2. Perform enrichment (Default: GO:BP for hg19)\n# tss_source can be a genome string (\"hg38\"), TxDb object, or Gencode version (\"Gencode_v19\")\nres = great(gr, \"GO:BP\", \"hg19\")\n\n# 3. Get results\ntb = getEnrichmentTable(res)\n```\n\n### 2. Online GREAT Analysis\nUse this to replicate results from the official GREAT web server.\n\n```r\n# Submit job to GREAT server\njob = submitGreatJob(gr, genome = \"hg19\")\n\n# Retrieve enrichment tables (returns a list of data frames)\ntbls = getEnrichmentTables(job)\n```\n\n### 3. Working with Custom Gene Sets\nYou can use KEGG, Reactome, or MSigDB by providing a named list of gene vectors.\n\n```r\n# Example: Using MSigDB Hallmark sets\nres = great(gr, \"MSigDB:H\", \"hg38\")\n\n# Example: Manual list of genes (Entrez IDs)\nmy_gs = list(SET_A = c(\"1\", \"2\", \"3\"), SET_B = c(\"4\", \"5\"))\nres = great(gr, my_gs, \"hg38\")\n```\n\n### 4. Background and Exclusions\nTo avoid false positives, exclude gap regions or provide a specific background (e.g., all peaks from a specific assay).\n\n```r\n# Exclude gap regions (default behavior in local GREAT)\nres = great(gr, \"GO:BP\", \"hg19\", exclude = \"gap\")\n\n# Use specific background regions\nres = great(gr, \"GO:BP\", \"hg19\", background = background_gr)\n```\n\n## Visualization and Reporting\n\n- **Volcano Plot**: `plotVolcano(res)` - Visualize fold enrichment vs. p-values.\n- **Region-Gene Associations**: \n  - `plotRegionGeneAssociations(res)` - Distribution of distances to TSS.\n  - `getRegionGeneAssociations(res)` - Get a GRanges object showing which genes are linked to which regions.\n- **Interactive Report**: `shinyReport(res)` - Launch a Shiny app to explore results.\n\n## Tips for Success\n- **Genome Versions**: Ensure your input `GRanges` and the `tss_source` (e.g., \"hg19\" vs \"hg38\") match exactly. Using the wrong version significantly degrades results.\n- **Gene IDs**: Local GREAT primarily uses **Entrez IDs**. If using custom gene sets or TSS sources, ensure ID types match (e.g., use `SYMBOL` or `ENSEMBL` explicitly in `extendTSS()` if needed).\n- **Distance to TSS**: By default, GREAT uses a \"Basal plus extension\" rule (5kb upstream, 1kb downstream, up to 1Mb extension). You can modify this in `great()` or `submitGreatJob()`.\n\n## Reference documentation\n- [Get gene-region associations for a group of GO terms](./references/group_associations.Rmd)\n- [Analyze with local GREAT](./references/local-GREAT.Rmd)\n- [Analyze with online GREAT](./references/online-GREAT.Rmd)\n- [Work with other geneset databases](./references/other-geneset-databases.Rmd)\n- [Work with other organisms](./references/other-organisms.Rmd)\n- [The rGREAT package overview](./references/rGREAT.Rmd)\n- [Compare GO annotations from online and local GREAT](./references/suppl_compare_GO.Rmd)\n- [Compare different genome versions](./references/suppl_compare_genome_versions.Rmd)\n- [Compare online and local GREAT results](./references/suppl_compare_online_and_local.Rmd)\n- [Compare different TSS sources](./references/suppl_compare_tss.Rmd)\n- [Use background regions](./references/suppl_use_background.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-rgreat",
+    "description": "This tool performs Genomic Regions Enrichment of Annotations Tool (GREAT) analysis to associate non-coding genomic regions with biological functions. Use when user asks to perform functional enrichment analysis on genomic regions, associate ChIP-seq peaks with nearby genes, or run GREAT analysis locally or via the web service.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/rGREAT.html"
+  }
+}

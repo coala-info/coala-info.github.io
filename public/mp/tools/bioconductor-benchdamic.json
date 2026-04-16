@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-benchdamic",
+  "category": "bioconductor",
+  "name": "bioconductor-benchdamic",
+  "description": "This package provides a framework for benchmarking differential abundance detection methods in microbial data through goodness of fit, error control, concordance, and enrichment analyses. Use when user asks to evaluate statistical models for microbiome data, perform type I error control using mock datasets, measure concordance between different differential abundance methods, or validate findings against biological ground truth.",
+  "overview": "The `benchdamic` package provides a comprehensive framework for benchmarking differential abundance (DA) detection methods specifically for microbial data. It allows users to evaluate methods based on four key pillars:\n1. **Goodness of Fit (GOF):** Assessing how well parametric distributions (NB, ZINB, ZIG, HURDLE, DM) fit observed counts and zeros.\n2. **Type I Error Control (TIEC):** Evaluating false positive rates using mock comparisons.\n3. **Concordance:** Measuring agreement between differen",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/benchdamic.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/mcalgaro93/benchdamic",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "benchdamic"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/benchdamic.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/mcalgaro93/benchdamic",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-benchdamic\n\n## Overview\n\nThe `benchdamic` package provides a comprehensive framework for benchmarking differential abundance (DA) detection methods specifically for microbial data. It allows users to evaluate methods based on four key pillars:\n1. **Goodness of Fit (GOF):** Assessing how well parametric distributions (NB, ZINB, ZIG, HURDLE, DM) fit observed counts and zeros.\n2. **Type I Error Control (TIEC):** Evaluating false positive rates using mock comparisons.\n3. **Concordance:** Measuring agreement between different methods (BMC) and a method's self-consistency across data splits (WMC).\n4. **Enrichment:** Validating findings against *a priori* biological knowledge or simulated ground truth.\n\n## Typical Workflow\n\n### 1. Data Preparation\n`benchdamic` works with `phyloseq` or `TreeSummarizedExperiment` objects.\n\n```r\nlibrary(benchdamic)\ndata(\"ps_stool_16S\")\n\n# Optional: Add normalization factors\nmy_normalizations <- setNormalizations(fun = c(\"norm_edgeR\", \"norm_CSS\"), method = c(\"TMM\", \"CSS\"))\nps_stool_16S <- runNormalizations(normalization_list = my_normalizations, object = ps_stool_16S)\n```\n\n### 2. Goodness of Fit (GOF)\nEvaluate which statistical model best represents your data's distribution.\n\n```r\n# Fit multiple models\ngof_results <- fitModels(\n    object = ps_stool_16S,\n    models = c(\"NB\", \"ZINB\", \"DM\", \"ZIG\", \"HURDLE\"),\n    scale_HURDLE = \"median\"\n)\n\n# Visualize Mean Differences (MD) and Zero Probability Differences (ZPD)\nplotMD(data = gof_results, difference = \"MD\", split = TRUE)\nplotRMSE(gof_results, difference = \"MD\")\n```\n\n### 3. Type I Error Control (TIEC)\nUse mock datasets (randomly shuffling group labels) to check if methods control false discoveries.\n\n```r\n# 1. Create mocks\nmy_mocks <- createMocks(nsamples = phyloseq::nsamples(ps_stool_16S), N = 10)\n\n# 2. Set up DA methods to test\nmy_methods <- c(\n    set_edgeR(group_name = \"group\", design = ~ group, norm = \"TMM\"),\n    set_DESeq2(design = ~ group, contrast = c(\"group\", \"grp2\", \"grp1\"), norm = \"poscounts\")\n)\n\n# 3. Run mocks\nmock_da <- runMocks(mocks = my_mocks, method_list = my_methods, object = ps_stool_16S)\n\n# 4. Evaluate TIEC\ntiec_summary <- createTIEC(mock_da)\nplotFPR(tiec_summary$df_FPR)\nplotQQ(tiec_summary$df_QQ, zoom = c(0, 0.1))\n```\n\n### 4. Concordance Analysis\nCheck if different methods agree on the top-ranked features using \"Concordance At the Top\" (CAT).\n\n```r\n# 1. Create data splits\nmy_splits <- createSplits(object = ps_plaque_16S, varName = \"HMP_BODY_SUBSITE\", N = 5)\n\n# 2. Run DA on splits\nsplit_da <- runSplits(split_list = my_splits, method_list = my_methods, object = ps_plaque_16S)\n\n# 3. Calculate and plot concordance\nconcordance <- createConcordance(object = split_da, slot = \"pValMat\", colName = \"rawP\")\npC <- plotConcordance(concordance = concordance, threshold = 30)\n```\n\n### 5. Enrichment Analysis\nValidate DA results against known biological traits (e.g., metabolism).\n\n```r\n# 1. Run DA on the real comparison\nda_results <- runDA(method_list = my_methods, object = ps_plaque_16S)\n\n# 2. Create enrichment object with prior knowledge\n# priorInfo should be a data.frame mapping taxa to a trait (e.g., \"Aerobic\")\nenrichment <- createEnrichment(\n    object = da_results,\n    priorKnowledge = priorInfo,\n    enrichmentCol = \"Type\",\n    namesCol = \"Genus\",\n    threshold_pvalue = 0.1\n)\n\n# 3. Visualize\nplotEnrichment(enrichment, enrichmentCol = \"Type\")\nplotMutualFindings(enrichment, enrichmentCol = \"Type\", n_methods = 2)\n```\n\n## Key Functions and Tips\n\n- **Method Setup:** Always use `set_<method_name>` (e.g., `set_edgeR`, `set_ALDEx2`, `set_ANCOM`) to create instruction lists. This allows `runMocks`, `runSplits`, and `runDA` to execute multiple configurations efficiently.\n- **Custom Methods:** You can add custom DA functions. They must return a list containing `pValMat` (with `rawP` and `adjP`), `statInfo` (with `logFC`), and `name`.\n- **Weights:** Use `weights_ZINB()` to calculate observational weights that can be passed to `edgeR`, `DESeq2`, or `limma` to handle zero-inflation.\n- **Parallelization:** Use `BiocParallel` parameters (e.g., `MulticoreParam()`) in `runMocks` and `runSplits`. Note: `ANCOM` methods often require `SerialParam()` due to internal parallelization.\n\n## Reference documentation\n\n- [An introduction to benchdamic](./references/intro.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-benchdamic",
+    "description": "This package provides a framework for benchmarking differential abundance detection methods in microbial data through goodness of fit, error control, concordance, and enrichment analyses. Use when user asks to evaluate statistical models for microbiome data, perform type I error control using mock datasets, measure concordance between different differential abundance methods, or validate findings against biological ground truth.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/benchdamic.html"
+  }
+}

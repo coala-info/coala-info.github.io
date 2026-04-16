@@ -1,0 +1,45 @@
+{
+  "id": "talon",
+  "category": "CLI",
+  "name": "talon",
+  "description": "\"TALON identifies and quantifies transcripts in long-read sequencing datasets by categorizing alignments into known or novel isoforms. Use when user asks to label internal priming artifacts, initialize a transcript database from a GTF, run the TALON annotator, or filter and quantify isoforms from long-read SAM files.\"",
+  "overview": "TALON is a technology-agnostic pipeline for the identification and quantification of transcripts in long-read datasets. It processes mapped SAM files to categorize reads into known models or various categories of novelty (e.g., NIC, NNC, Antisense). Use this skill to navigate the multi-step workflow required to transform raw alignments into a filtered, quantified isoform database.",
+  "homepage": "https://github.com/mortazavilab/TALON",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/talon/overview",
+  "github": "https://github.com/mortazavilab/TALON",
+  "conda_downloads": "8.5K",
+  "conda_downloads_num": 8500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "talon"
+    ],
+    "description": "TALON takes transcripts from one or more long read datasets (SAM format) and assigns them transcript and gene identifiers based on a database-bound annotation. Novel events are assigned new identifiers.",
+    "docker_image": "quay.io/biocontainers/talon:6.0.1--pyhdfd78af_0",
+    "homepage": "https://github.com/mortazavilab/TALON",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/talon/overview",
+    "github": "https://github.com/mortazavilab/TALON",
+    "conda_downloads": "8.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "talon.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# talon\n\n## Overview\nTALON is a technology-agnostic pipeline for the identification and quantification of transcripts in long-read datasets. It processes mapped SAM files to categorize reads into known models or various categories of novelty (e.g., NIC, NNC, Antisense). Use this skill to navigate the multi-step workflow required to transform raw alignments into a filtered, quantified isoform database.\n\n## Core Workflow\n\n### 1. Pre-requisites and Alignment\nReads must be aligned to the reference genome and oriented in the forward direction (5'->3').\n- **Aligner**: Minimap2 is recommended.\n- **Critical Flag**: You must use the `--MD` flag in Minimap2 (or equivalent) to generate the MD tag, which TALON requires for internal priming checks.\n- **Optional**: Use `TranscriptClean` prior to TALON to correct non-canonical splice junctions.\n\n### 2. Flagging Internal Priming\nIdentify potential artifacts where oligo-dT primers bound to internal A-rich sequences.\n```bash\ntalon_label_reads --f input.sam \\\n                  --g reference_genome.fasta \\\n                  --t 8 \\\n                  --ar 20 \\\n                  --o output_prefix\n```\n- `--ar`: Size of the post-transcript interval to check for fraction of As (default is 20bp).\n- The output is a SAM file with an `fA:f` custom tag.\n\n### 3. Initializing the TALON Database\nCreate a SQLite database from a reference GTF (e.g., GENCODE). This is a one-time setup per annotation.\n```bash\ntalon_initialize_database --f annotation.gtf \\\n                          --g hg38 \\\n                          --a gencode_v38 \\\n                          --l 0 \\\n                          --idprefix TALON \\\n                          --o my_talon_db\n```\n- **GTF Requirement**: The file must explicitly contain `gene`, `transcript`, and `exon` entries.\n- **Parameters**: `--5p` (default 500bp) and `--3p` (default 300bp) define the allowable distance from known ends.\n\n### 4. Running the Annotator\nThe main `talon` command modifies the database in place to track and quantify transcripts.\n- **Configuration File**: Create a CSV with four columns: `name, sample_description, platform, sam_path`.\n- **Execution**:\n```bash\ntalon --f config.csv \\\n      --db my_talon_db.db \\\n      --build hg38 \\\n      --threads 8 \\\n      --o experiment_output\n```\n- Use `--cb` if your SAM files contain cell barcodes in the `CB` tag; the config file format then changes to `sample_description, platform, sam_path`.\n\n### 5. Post-Processing and Filtering\nAfter running TALON, use the utility scripts to extract usable data.\n- **Filtering**: Use `talon_filter_transcripts` to remove low-confidence models based on internal priming or reproducibility across datasets.\n- **Abundance**: Use `talon_abundance` to generate a matrix of gene and transcript counts.\n- **AnnData**: Use `talon_create_GTF` or specific scripts to generate AnnData objects for single-cell analysis.\n\n## Expert Tips\n- **Database Persistence**: TALON modifies the SQLite database in place. Always keep a backup of your initialized database before running a new experiment if you intend to reuse the base annotation.\n- **GTF Troubleshooting**: If the database tables are empty after initialization, verify that your GTF includes the third column \"feature\" types for genes and transcripts; many \"minimal\" GTFs only include exons.\n- **Multithreading**: TALON v4.4+ supports multithreading. Ensure your environment has sufficient memory, as SQLite operations can become a bottleneck with very high thread counts.\n\n## Reference documentation\n- [TALON Main Documentation](./references/github_com_mortazavilab_TALON.md)\n- [TALON Wiki and Troubleshooting](./references/github_com_mortazavilab_TALON_wiki.md)\n- [Bioconda Package Overview](./references/anaconda_org_channels_bioconda_packages_talon_overview.md)",
+  "skill_front_matter": {
+    "name": "talon",
+    "description": "TALON identifies and quantifies transcripts in long-read sequencing datasets by categorizing alignments into known or novel isoforms. Use when user asks to label internal priming artifacts, initialize a transcript database from a GTF, run the TALON annotator, or filter and quantify isoforms from long-read SAM files.",
+    "homepage": "https://github.com/mortazavilab/TALON"
+  }
+}

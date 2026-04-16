@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scnorm",
+  "category": "bioconductor",
+  "name": "bioconductor-scnorm",
+  "description": "SCnorm performs robust normalization of single-cell RNA-seq data by addressing non-linear relationships between gene expression and sequencing depth. Use when user asks to normalize scRNA-seq counts, evaluate count-depth relationships via slope distributions, or handle multiple experimental conditions and within-sample biases.",
+  "overview": "SCnorm is a normalization approach for single-cell RNA-seq (scRNA-seq) data that addresses the fact that sequencing depth does not affect all gene counts equally. It groups genes based on their count-depth relationship and applies quantile regression within each group to estimate scaling factors. This method is particularly effective when the relationship between expression and sequencing depth varies across genes, making global scaling factors (like CPM or TMM) inadequate.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SCnorm.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/rhondabacher/SCnorm",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SCnorm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SCnorm.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/rhondabacher/SCnorm",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scnorm\n\nname: bioconductor-scnorm\ndescription: Robust normalization of single-cell RNA-seq (scRNA-seq) data. Use this skill when you need to normalize scRNA-seq counts to account for non-linear count-depth relationships, evaluate normalization quality via slope distributions, or handle multiple experimental conditions and within-sample biases (like GC content).\n\n# bioconductor-scnorm\n\n## Overview\nSCnorm is a normalization approach for single-cell RNA-seq (scRNA-seq) data that addresses the fact that sequencing depth does not affect all gene counts equally. It groups genes based on their count-depth relationship and applies quantile regression within each group to estimate scaling factors. This method is particularly effective when the relationship between expression and sequencing depth varies across genes, making global scaling factors (like CPM or TMM) inadequate.\n\n## Core Workflow\n\n### 1. Data Preparation\nSCnorm accepts a `matrix` (Genes x Cells) or a `SingleCellExperiment` object. Gene names must be in `rownames`.\n\n```r\nlibrary(SCnorm)\nlibrary(SingleCellExperiment)\n\n# Example with a matrix\n# Data: G-by-S matrix of raw counts\n# Conditions: Vector indicating group/condition for each cell\nsce <- SingleCellExperiment(assays = list(counts = ExampleSimSCData))\nconditions <- rep(c(1), each = 90)\n```\n\n### 2. Evaluate Count-Depth Relationship\nBefore normalizing, check if SCnorm is necessary. If slopes are not similar across expression levels, proceed with SCnorm.\n\n```r\n# Generates a plot of slope distributions for 10 expression groups\ncountDeptEst <- plotCountDepth(Data = sce, \n                               Conditions = conditions, \n                               FilterCellProportion = 0.1, \n                               NCores = 3)\n```\n\n### 3. Run Normalization\nSCnorm automatically increases the number of groups (K) until the count-depth relationship is sufficiently removed (slopes near 0).\n\n```r\nDataNorm <- SCnorm(Data = sce,\n                   Conditions = conditions,\n                   PrintProgressPlots = TRUE,\n                   FilterCellNum = 10, \n                   NCores = 3, \n                   reportSF = TRUE)\n\n# Access normalized counts\nnormCounts <- SingleCellExperiment::normcounts(DataNorm)\n\n# Access other results\nscaleFactors <- results(DataNorm, type = \"ScaleFactors\")\nfilteredGenes <- results(DataNorm, type = \"GenesFilteredOut\")\n```\n\n## Advanced Usage\n\n### Multiple Conditions\nWhen multiple conditions exist, SCnorm normalizes them independently and then scales between them.\n- Use `useZerosToScale = TRUE` if your downstream tool (e.g., DESeq2, edgeR) includes zeros in its model.\n- Use `useZerosToScale = FALSE` (default) for tools like MAST.\n\n```r\nDataNorm <- SCnorm(Data = multiCondMatrix,\n                   Conditions = multiCondVector,\n                   useZerosToScale = TRUE,\n                   NCores = 3)\n```\n\n### UMI and Sparse Data\nFor sparse data or data with many tied counts (common in UMI datasets):\n- Set `ditherCounts = TRUE` to improve count-depth relationship estimation.\n- If convergence fails, increase `FilterExpression` (e.g., 1 or 2) to exclude very low expressors from the scaling model.\n\n```r\nDataNorm <- SCnorm(Data = umiData, \n                   Conditions = conditions,\n                   ditherCounts = TRUE,\n                   FilterExpression = 1)\n```\n\n### Within-Sample Normalization\nTo correct for gene-specific features like GC-content or gene length before between-sample normalization:\n\n```r\n# 1. Visualize bias\nwithinFactorMatrix <- plotWithinFactor(Data = sce, withinSample = geneGCContent)\n\n# 2. Run SCnorm with correction\nDataNorm <- SCnorm(Data = sce, \n                   Conditions = conditions,\n                   withinSample = geneGCContent)\n```\n\n### Spike-ins\nIf high-quality ERCC spike-ins are available, they can be used for the between-condition scaling step. SCnorm expects spike-ins to be named with the \"ERCC-\" prefix.\n\n```r\nDataNorm <- SCnorm(Data = sce_with_spikes, \n                   Conditions = conditions,\n                   useSpikes = TRUE)\n```\n\n## Troubleshooting and Tips\n- **Convergence Issues**: If SCnorm fails to converge (K > 25), it is often due to high sparsity. Increase `FilterExpression` to remove genes with very low non-zero medians.\n- **Speed**: For large datasets, use the `NCores` parameter for parallel processing. Alternatively, cluster cells into similar groups and use those as `Conditions`.\n- **Validation**: Always run `plotCountDepth()` on the normalized data. Successful normalization should result in slope modes near 0 for all expression groups.\n\n## Reference documentation\n- [SCnorm](./references/SCnorm.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scnorm",
+    "description": "SCnorm performs robust normalization of single-cell RNA-seq data by addressing non-linear relationships between gene expression and sequencing depth. Use when user asks to normalize scRNA-seq counts, evaluate count-depth relationships via slope distributions, or handle multiple experimental conditions and within-sample biases.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SCnorm.html"
+  }
+}

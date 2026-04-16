@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-deltagseg",
+  "category": "bioconductor",
+  "name": "bioconductor-deltagseg",
+  "description": "This tool identifies subpopulations and macrostates in time-series data using multiscale analysis, segmentation, and clustering. Use when user asks to identify distinct states in molecular dynamics simulations, perform wavelet-based denoising on time-series, or detect regime shifts through data segmentation.",
+  "overview": "The `deltaGseg` package is designed to identify distinct subpopulations (macrostates) within time-series data. While originally developed for molecular dynamics (MD) simulation free binding energies, it is applicable to any time-series data where identifying coexistence of different states is required. The workflow involves testing for stationarity, splitting or differentiating non-stationary series, segmenting data using Segment Neighborhoods, denoising via wavelets, and grouping segments into ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/deltaGseg.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deltagseg/overview",
+  "github": "N/A",
+  "conda_downloads": "24.1K",
+  "conda_downloads_num": 24100,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "deltaGseg"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/deltaGseg.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-deltagseg/overview",
+    "github": "N/A",
+    "conda_downloads": "24.1K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-deltagseg\n\nname: bioconductor-deltagseg\ndescription: Identify subpopulations and macrostates in time-series data (specifically molecular dynamics simulation free binding energies) using multiscale time-series analysis, segmentation, denoising, and clustering. Use this skill when analyzing time-series measurements to detect regime shifts, perform wavelet-based denoising, or estimate ergodic subpopulations.\n\n# bioconductor-deltagseg\n\n## Overview\nThe `deltaGseg` package is designed to identify distinct subpopulations (macrostates) within time-series data. While originally developed for molecular dynamics (MD) simulation free binding energies, it is applicable to any time-series data where identifying coexistence of different states is required. The workflow involves testing for stationarity, splitting or differentiating non-stationary series, segmenting data using Segment Neighborhoods, denoising via wavelets, and grouping segments into subpopulations through hierarchical clustering.\n\n## Core Workflow\n\n### 1. Data Loading and Stationarity Testing\nData should be 2-column, space-separated files (Time, Measurement).\n```R\nlibrary(deltaGseg)\n\n# Load trajectories from a directory\ndir <- system.file(\"extdata\", package=\"deltaGseg\")\ntraj <- parseTraj(path=dir, files=c(\"file1\", \"file2\"))\n\n# Check contents and Augmented Dickey-Fuller (ADF) p-values\n# p-value <= 0.05 suggests the series is weakly stationary\ntraj\nplot(traj, name='all')\n```\n\n### 2. Transforming Non-Stationary Series\nIf a series is not weakly stationary (ADF p-value > 0.05), it must be transformed.\n- **Splitting**: Breaks the series into stationary sub-series.\n- **Differentiation**: Uses $B_t - B_{t-1}$ to remove trends.\n- **Manual Splitting**: Use `splitTraj` and `chooseBreaks` for custom breakpoints.\n\n```R\n# Automatic splitting\ntraj.tr <- transformSeries(object = traj, method = \"splitting\", breakpoints = 1)\n\n# Manual splitting for long series\nall_breaks <- splitTraj(traj, segsplits = c(5, 5))\nmy_breaks <- chooseBreaks(all_breaks, numbreaks = 3)\ntraj.sp <- transformSeries(object = traj, method = \"override_splitting\", breakpoints = my_breaks)\n\n# Differentiation (for trend-heavy data)\ntraj.diff <- transformSeries(object = traj, method = \"differentiation\")\n```\n\n### 3. Segmentation and Denoising\nSegments the series and applies wavelet shrinkage to remove autocorrelation.\n```R\ntraj.denoise <- denoiseSegments(object = traj.tr, \n                                seg_method = \"SegNeigh\", \n                                maxQ = 15, \n                                minobs = 200)\n```\n\n### 4. Subpopulation Estimation\nClusters segments to identify macrostates. Using `pvclust` provides multiscale bootstrap p-values for cluster significance.\n```R\n# Estimate bootstrap p-values\npvals <- clusterPV(object = traj.denoise, bootstrap = 500)\n\n# Interactive clustering (requires user to click on the dendrogram to group)\ntraj.ss <- clusterSegments(object = traj.denoise, intervention = \"pvclust\", pv = pvals)\n\n# Visualize results\nplot(traj.ss)\n\n# Extract intervals for each subpopulation\nintervals <- getIntervals(traj.ss)\n```\n\n### 5. Diagnostics\nValidate the wavelet modeling by checking residuals for normality and lack of autocorrelation.\n```R\ndiagnosticPlots(object = traj.ss, norm.test = \"KS\", single.series = TRUE)\n```\n\n## Tips and Constraints\n- **Minimum Observations**: The `minobs` parameter in `denoiseSegments` defaults to 200; segments shorter than this may be rejected.\n- **Stationarity**: Always ensure sub-series have ADF p-values $\\leq 0.05$ before proceeding to segmentation.\n- **Clustering**: In `clusterSegments`, the \"Approximately Unbiased\" (AU) p-values (red) are more reliable than \"Bootstrap Probability\" (BP) values (green).\n- **Memory**: For very long series (>50,000 points), use `splitTraj` to break data into manageable chunks to improve R's computation time.\n\n## Reference documentation\n- [deltaGseg](./references/deltaGseg.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-deltagseg",
+    "description": "This tool identifies subpopulations and macrostates in time-series data using multiscale analysis, segmentation, and clustering. Use when user asks to identify distinct states in molecular dynamics simulations, perform wavelet-based denoising on time-series, or detect regime shifts through data segmentation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/deltaGseg.html"
+  }
+}

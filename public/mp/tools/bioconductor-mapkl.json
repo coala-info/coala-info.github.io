@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mapkl",
+  "category": "bioconductor",
+  "name": "bioconductor-mapkl",
+  "description": "This tool implements a hybrid gene selection method using multiple hypothesis testing and Affinity Propagation clustering to identify non-redundant gene exemplars. Use when user asks to identify representative gene sets from high-throughput data, build SVM classification models, or perform pathway and network analysis on selected genes.",
+  "overview": "The `mAPKL` package implements a hybrid feature selection approach. It first filters genes using multiple hypothesis testing (maxT) to rank differential expression. It then uses the Krzanowski and Lai index to determine an optimal cluster number and applies Affinity Propagation (AP) clustering to identify \"exemplars\"—representative genes that capture the biological signal while reducing redundancy. This is particularly effective for creating robust classifiers from gene expression data.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/mAPKL.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mAPKL"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/mAPKL.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mapkl\n\nname: bioconductor-mapkl\ndescription: Hybrid gene selection method using multiple hypothesis testing and Affinity Propagation (AP) clustering. Use this skill to identify a small set of non-redundant gene exemplars from high-throughput biological data, build SVM classification models, and perform network/pathway analysis on selected genes.\n\n## Overview\nThe `mAPKL` package implements a hybrid feature selection approach. It first filters genes using multiple hypothesis testing (maxT) to rank differential expression. It then uses the Krzanowski and Lai index to determine an optimal cluster number and applies Affinity Propagation (AP) clustering to identify \"exemplars\"—representative genes that capture the biological signal while reducing redundancy. This is particularly effective for creating robust classifiers from gene expression data.\n\n## Core Workflow\n\n### 1. Data Preparation and Sampling\nThe package works with `eSet` objects. Use the `sampling` function to split data into training and validation sets.\n\n```R\nlibrary(mAPKL)\nlibrary(mAPKLData)\ndata(mAPKLData)\n\n# Split data: 60% training, 40% validation\n# classLabels refers to the column in phenoData defining groups\nbreast <- sampling(Data=mAPKLData, valPercent=40, classLabels=\"type\", seed=135)\ntrainSet <- breast$trainData\ntestSet <- breast$testData\n```\n\n### 2. Preprocessing and Normalization\nThe `preprocess` function provides multiple normalization options (mean-centering, z-score, quantile, cyclic loess) with or without log2 transformation.\n\n```R\nnormTrain <- preprocess(trainSet)\nnormTest <- preprocess(testSet)\n\n# Select a specific method (e.g., cyclic loess + log2 transformation)\nexprs(trainSet) <- normTrain$clL2.normdata\nexprs(testSet) <- normTest$clL2.normdata\n```\n\n### 3. Gene Selection (mAPKL)\nThe core function identifies the exemplars. The `dataType` parameter specifies which normalization was used (refer to `attributes(normTrain)` for the index).\n\n```R\n# Perform the hybrid selection\nout.clL2 <- mAPKL(trObj = trainSet, classLabels = \"type\", \n                  valObj = testSet, dataType = 7)\n\n# Access identified exemplars\nexemplars <- out.clL2@exemplars\n```\n\n### 4. Classification and Evaluation\nBuild and test an SVM classifier using the identified exemplars.\n\n```R\n# Build SVM and predict on test set\nclasPred <- classification(out.clL2@exemplTrain, \"type\", out.clL2@exemplTest)\n\n# Results include AUC, Accuracy, MCC, Specificity, and Sensitivity\n```\n\n## Advanced Analysis\n\n### Annotation and Pathways\nConvert probe IDs to gene symbols and perform pathway analysis using Reactome.\n\n```R\n# Annotate probe IDs\ngene.info <- annotate(out.clL2@exemplars, \"hgu133plus2.db\")\nprint(gene.info@results)\n\n# Identify relevant pathways\npathways <- probes2pathways(gene.info)\n```\n\n### Network Characteristics\nAnalyze the network properties of the selected genes, including centralities (degree, closeness, betweenness) and transitivity.\n\n```R\n# Compute network attributes\nnet.attr <- netwAttr(out.clL2)\n\n# Identify hub genes (local degree > global mean + SD)\nsdev <- sd(net.attr@degree$WdegreeL)\nmsd <- net.attr@degree$WdegreeG + sdev\nhubs <- net.attr@degree$WdegreeL[which(net.attr@degree$WdegreeL > msd)]\n```\n\n### Reporting\nGenerate a comprehensive HTML report of the entire analysis.\n\n```R\nreport(out.clL2, gene.info, clasPred)\n```\n\n## Tips\n- **Memory/Time**: The Krzanowski and Lai cluster indexing step can be computationally intensive; ensure your environment has sufficient resources for large datasets.\n- **Normalization**: Always inspect the density plots generated by `preprocess()` in your working directory to choose the most appropriate normalization method.\n- **Exemplars**: Exemplars are the \"cluster centers\" in the gene expression space, making them more robust features than simple top-ranked lists.\n\n## Reference documentation\n- [mAPKL](./references/mAPKL.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mapkl",
+    "description": "This tool implements a hybrid gene selection method using multiple hypothesis testing and Affinity Propagation clustering to identify non-redundant gene exemplars. Use when user asks to identify representative gene sets from high-throughput data, build SVM classification models, or perform pathway and network analysis on selected genes.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/mAPKL.html"
+  }
+}

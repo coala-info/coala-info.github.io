@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-compounddb",
+  "category": "bioconductor",
+  "name": "bioconductor-compounddb",
+  "description": "The CompoundDb package provides a flexible infrastructure for managing and querying small molecule annotations, MS/MS spectra, and experimental ion data using a SQLite backend. Use when user asks to create or query compound databases, retrieve MS/MS spectra, manage lab-specific retention times and adducts, or calculate m/z values from exact masses.",
+  "overview": "The `CompoundDb` package provides a flexible infrastructure for managing small molecule annotations. It centers around the `CompDb` object, which interfaces with a SQLite backend to store compound metadata (mass, formula, InChIKey) and MS/MS spectra. It also supports `IonDb` for lab-specific resources including retention times and adduct-specific m/z values.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CompoundDb.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RforMassSpectrometry/CompoundDb",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CompoundDb"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CompoundDb.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RforMassSpectrometry/CompoundDb",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-compounddb\n\n## Overview\n\nThe `CompoundDb` package provides a flexible infrastructure for managing small molecule annotations. It centers around the `CompDb` object, which interfaces with a SQLite backend to store compound metadata (mass, formula, InChIKey) and MS/MS spectra. It also supports `IonDb` for lab-specific resources including retention times and adduct-specific m/z values.\n\n## Core Workflows\n\n### 1. Loading and Querying a CompDb\nLoad an existing database and retrieve compound information using filters.\n\n```r\nlibrary(CompoundDb)\n\n# Load database\ncdb <- CompDb(\"path/to/database.sql\")\n\n# List available variables\ncompoundVariables(cdb)\n\n# Extract compounds with filters\n# Filters use formula syntax (~ variable == value)\nres <- compounds(cdb, \n                 columns = c(\"name\", \"formula\", \"exactmass\"),\n                 filter = ~ name == \"Mellein\" & exactmass > 170)\n\n# Get supported filter types\nsupportedFilters(cdb)\n```\n\n### 2. Creating a CompDb from Sources\nBuild databases from SDF files (HMDB, ChEBI, LipidMaps) or custom data frames.\n\n```r\n# 1. Extract compound data from SDF\ncmps <- compound_tbl_sdf(system.file(\"sdf/HMDB_sub.sdf.gz\", package = \"CompoundDb\"))\n\n# 2. Load MS/MS spectra (e.g., from HMDB XMLs)\nspctra <- msms_spectra_hmdb(\"path/to/xml_folder\")\n\n# 3. Define metadata\nmetad <- make_metadata(source = \"HMDB\", url = \"http://www.hmdb.ca\",\n                       source_version = \"4.0\", source_date = \"2017-09\",\n                       organism = \"Hsapiens\")\n\n# 4. Create SQLite database\ndb_file <- createCompDb(cmps, metadata = metad, msms_spectra = spctra, path = tempdir())\n```\n\n### 3. Working with MS/MS Spectra\n`CompoundDb` integrates with the `Spectra` package for on-the-fly data retrieval.\n\n```r\nlibrary(Spectra)\n\n# Create Spectra object from CompDb\nsps <- Spectra(cdb, filter = ~ name == \"Mellein\")\n\n# Access spectra variables\nsps$collisionEnergy\nmz(sps)\nintensity(sps)\n\n# Compare spectra against the whole database\nall_sps <- Spectra(cdb)\ncompareSpectra(sps, all_sps, ppm = 40)\n```\n\n### 4. Ion Databases (IonDb)\nUse `IonDb` to store experimental m/z and retention times for specific adducts.\n\n```r\nlibrary(RSQLite)\n# Convert CompDb to IonDb (requires write access)\ncon <- dbConnect(SQLite(), \"my_ion_db.sql\")\nidb <- IonDb(con, cdb)\n\n# Insert experimental ion data\nion_df <- data.frame(compound_id = \"1\",\n                     ion_adduct = \"[M+H]+\",\n                     ion_mz = 123.34,\n                     ion_rt = 196)\nidb <- insertIon(idb, ion_df)\n\n# Query ions\nions(idb, columns = c(\"ion_adduct\", \"name\", \"ion_rt\"))\n```\n\n### 5. Utility Functions\n*   **Adduct Calculation**: Use `mass2mz(cdb, adduct = \"[M+H]+\")` to calculate expected m/z values for all compounds in the database.\n*   **Manual Filling**: Use `emptyCompDb()` followed by `insertCompound()` and `insertSpectra()` to build a database from scratch.\n*   **Database Extension**: Use `addJoinDefinition()` to link custom user tables to the core compound/spectra tables.\n\n## Tips and Best Practices\n*   **Read-Only by Default**: `CompDb()` loads databases as read-only. To modify (insert/delete), use `flags = RSQLite::SQLITE_RW`.\n*   **Filtering Performance**: Apply filters directly in the `Spectra(cdb, filter = ...)` call rather than subsetting the resulting object; this is significantly faster as it happens at the SQL level.\n*   **Redundancy**: Some sources (like MoNa) are spectrum-centric. The `ms_compound` table may contain redundant entries if the source data isn't normalized.\n\n## Reference documentation\n- [Usage of Annotation Resources with the CompoundDb Package](./references/CompoundDb-usage.md)\n- [Creating CompoundDb annotation resources](./references/create-compounddb.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-compounddb",
+    "description": "The CompoundDb package provides a flexible infrastructure for managing and querying small molecule annotations, MS/MS spectra, and experimental ion data using a SQLite backend. Use when user asks to create or query compound databases, retrieve MS/MS spectra, manage lab-specific retention times and adducts, or calculate m/z values from exact masses.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CompoundDb.html"
+  }
+}

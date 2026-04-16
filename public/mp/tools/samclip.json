@@ -1,0 +1,45 @@
+{
+  "id": "samclip",
+  "category": "CLI",
+  "name": "samclip",
+  "description": "\"samclip filters sequence alignments by removing reads with excessive soft or hard clipping while preserving those at contig edges. Use when user asks to clean SAM files, filter clipped reads, or remove alignment noise before variant calling.\"",
+  "overview": "samclip is a specialized tool designed to clean up sequence alignments by filtering out reads with \"clipped\" ends. In SAM files, soft (S) and hard (H) clipping in the CIGAR string indicates portions of a read that did not align to the reference. While these can represent biological reality, they often introduce noise in variant calling pipelines. samclip removes these problematic alignments based on a user-defined threshold but intelligently preserves reads that are clipped because they overlap ",
+  "homepage": "https://github.com/tseemann/samclip",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/samclip/overview",
+  "github": "https://github.com/tseemann/samclip",
+  "conda_downloads": "50.9K",
+  "conda_downloads_num": 50900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "samclip"
+    ],
+    "description": "Filter SAM file for soft & hard clipped alignments",
+    "docker_image": "quay.io/biocontainers/samclip:0.4.0--hdfd78af_1",
+    "homepage": "https://github.com/tseemann/samclip",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/samclip/overview",
+    "github": "https://github.com/tseemann/samclip",
+    "conda_downloads": "50.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "samclip.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# samclip\n\n## Overview\nsamclip is a specialized tool designed to clean up sequence alignments by filtering out reads with \"clipped\" ends. In SAM files, soft (S) and hard (H) clipping in the CIGAR string indicates portions of a read that did not align to the reference. While these can represent biological reality, they often introduce noise in variant calling pipelines. samclip removes these problematic alignments based on a user-defined threshold but intelligently preserves reads that are clipped because they overlap the start or end of a contig, ensuring that coverage is not unnecessarily lost in those regions.\n\n## Usage Patterns\n\n### Basic Filtering\nThe tool reads from STDIN and writes to STDOUT. You must provide a reference genome in FASTA format.\n\n```bash\nsamclip --ref reference.fa < input.sam > filtered.sam\n```\n\n### Integration with Aligners\nsamclip is most efficient when used in a command pipeline immediately after alignment and before sorting/indexing.\n\n**With BWA MEM:**\n```bash\nbwa mem ref.fa R1.fq R2.fq | samclip --ref ref.fa | samtools sort -o filtered_sorted.bam\n```\n\n**With Minimap2:**\n```bash\nminimap2 -ax sr ref.fa R1.fq R2.fq | samclip --ref ref.fa | samtools sort > filtered.bam\n```\n\n### Processing Existing BAM Files\nTo process an existing BAM file, you must include the header using `samtools view -h`.\n\n```bash\nsamtools view -h input.bam | samclip --ref ref.fa | samtools view -b > filtered.bam\n```\n\n## Command Options and Best Practices\n\n### Reference Indexing\nThe reference FASTA file must be indexed with `samtools faidx`. If `reference.fa.fai` is missing, samclip will fail.\n```bash\nsamtools faidx reference.fa\n```\n\n### Adjusting Clipping Thresholds\nThe `--max` parameter defines the maximum allowed sum of soft and hard clipped bases (default is 5).\n- **Strict filtering**: Use `--max 0` to reject any read with clipping that does not occur at a contig edge.\n- **Permissive filtering**: Increase `--max` (e.g., `--max 20`) if you are working with longer reads or expect higher natural variation.\n\n### Quality Control and Inversion\nTo inspect which reads are being removed by your current settings, use the `--invert` flag. This is useful for tuning the `--max` parameter.\n```bash\nsamclip --ref ref.fa --max 10 --invert < input.sam > rejected_reads.sam\n```\n\n### Performance Monitoring\nFor large datasets, use `--progress` to monitor the processing rate.\n```bash\nsamclip --ref ref.fa --progress 500000 < input.sam > filtered.sam\n```\n\n## Expert Tips\n- **Contig Edges**: samclip's primary advantage over simple CIGAR string filters is its \"edge-awareness.\" It checks the alignment position against the reference lengths (from the `.fai` file) to ensure reads falling off the ends of contigs are kept.\n- **Memory Efficiency**: Since samclip processes SAM files line-by-line, it has a very low memory footprint regardless of the input file size.\n- **Header Preservation**: Always ensure the SAM header is passed through the pipeline (using `-h` in samtools), as samclip requires the header to maintain a valid SAM structure for downstream tools.\n\n## Reference documentation\n- [samclip GitHub README](./references/github_com_tseemann_samclip.md)\n- [samclip Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_samclip_overview.md)",
+  "skill_front_matter": {
+    "name": "samclip",
+    "description": "samclip filters sequence alignments by removing reads with excessive soft or hard clipping while preserving those at contig edges. Use when user asks to clean SAM files, filter clipped reads, or remove alignment noise before variant calling.",
+    "homepage": "https://github.com/tseemann/samclip"
+  }
+}

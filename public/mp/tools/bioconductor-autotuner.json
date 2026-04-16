@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-autotuner",
+  "category": "bioconductor",
+  "name": "bioconductor-autotuner",
+  "description": "Autotuner automates the selection of optimal parameters for metabolomics preprocessing by analyzing regions of interest in raw mass spectrometry data. Use when user asks to identify regions of interest in the total ion current, extract peak-picking parameters from extracted ion chromatograms, or estimate settings for XCMS.",
+  "overview": "Autotuner automates the selection of parameters for metabolomics preprocessing. It uses a three-step process: identifying regions of interest in the Total Ion Current (TIC), extracting parameters from individual Extracted Ion Chromatograms (EICs) within those regions, and aggregating those values into final estimates for software like XCMS.",
+  "homepage": "https://bioconductor.org/packages/3.10/bioc/html/Autotuner.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-autotuner/overview",
+  "github": "https://github.com/crmclean/Autotuner",
+  "conda_downloads": "14.5K",
+  "conda_downloads_num": 14500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Autotuner"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.10/bioc/html/Autotuner.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-autotuner/overview",
+    "github": "https://github.com/crmclean/Autotuner",
+    "conda_downloads": "14.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-autotuner\n\n## Overview\nAutotuner automates the selection of parameters for metabolomics preprocessing. It uses a three-step process: identifying regions of interest in the Total Ion Current (TIC), extracting parameters from individual Extracted Ion Chromatograms (EICs) within those regions, and aggregating those values into final estimates for software like XCMS.\n\n## Workflow and Core Functions\n\n### 1. Initialization\nCreate an `Autotuner` object by providing paths to raw data files and a metadata data frame.\n```r\nlibrary(Autotuner)\n\n# rawPaths: vector of file paths (.mzML, .mzXML, etc.)\n# metadata: data.frame with file names and experimental factors\nAutotuner <- createAutotuner(rawPaths,\n                             metadata,\n                             file_col = \"Raw.Spectral.Data.File\",\n                             factorCol = \"Factor.Value.genotype.\")\n```\n\n### 2. TIC Peak Identification (Sliding Window)\nIdentify regions enriched with chemical signals using a sliding window moving average.\n```r\n# Parameters:\n# lag: number of scan points for moving average\n# threshold: intensity multiplier for significance\n# influence: scaling factor for significant scans (0-1)\nlag <- 25\nthreshold <- 3.1\ninfluence <- 0.1\n\nsignals <- lapply(getAutoIntensity(Autotuner), \n                  ThresholdingAlgo, lag, threshold, influence)\n\n# Visualize to ensure narrow peaks are captured in the signal plot\nplot_signals(Autotuner, threshold, sample_index = 1:3, signals = signals)\n```\n\n### 3. Peak Isolation\nIsolate and expand the detected TIC regions to prepare for EIC-level parameter estimation.\n```r\n# returned_peaks: number of peaks to use for estimation (e.g., 10-20)\nAutotuner <- isolatePeaks(Autotuner = Autotuner, \n                          returned_peaks = 10, \n                          signals = signals)\n\n# Verify bounds visually\nplot_peaks(Autotuner = Autotuner, peak = 1)\n```\n\n### 4. EIC Parameter Extraction\nPerform statistical inference on the isolated peaks to calculate specific parameters.\n```r\n# massThresh: absolute mass error (Da) slightly above instrument capability\neicParamEsts <- EICparams(Autotuner = Autotuner, \n                          massThresh = .005, \n                          verbose = FALSE,\n                          returnPpmPlots = FALSE,\n                          useGap = TRUE)\n```\n\n### 5. Retrieving Results\nExtract the final estimates to be used in XCMS or other tools.\n```r\nresults <- returnParams(eicParamEsts, Autotuner)\n# results$eicParams contains: ppm, noise, preIntensity, snThresh, Peakwidth\n# results$ticParams contains: max_width, min_width, group_diff\n```\n\n## Best Practices\n- **Sliding Window Tuning**: Prioritize finding where peaks *start*. The goal is to isolate regions with real features, not to perfectly bound every peak.\n- **Metadata Matching**: Ensure the `file_col` in your metadata exactly matches the basenames or paths provided in `rawPaths`.\n- **Mass Threshold**: The `massThresh` in `EICparams` should be set based on the mass analyzer's expected error (e.g., 0.005 for high-res instruments).\n\n## Reference documentation\n- [Intro to AutoTuner](./references/Autotuner.Rmd)\n- [Autotuner Vignette](./references/Autotuner.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-autotuner",
+    "description": "Autotuner automates the selection of optimal parameters for metabolomics preprocessing by analyzing regions of interest in raw mass spectrometry data. Use when user asks to identify regions of interest in the total ion current, extract peak-picking parameters from extracted ion chromatograms, or estimate settings for XCMS.",
+    "homepage": "https://bioconductor.org/packages/3.10/bioc/html/Autotuner.html"
+  }
+}

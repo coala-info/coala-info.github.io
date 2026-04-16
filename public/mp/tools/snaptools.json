@@ -1,0 +1,61 @@
+{
+  "id": "snaptools",
+  "category": "CLI",
+  "name": "snaptools",
+  "description": "Snaptools processes single-cell epigenomics data by managing the creation, manipulation, and analysis of structured .snap files. Use when user asks to index genomes, align sequencing reads, create snap files from BAM files, or generate cell-by-bin, cell-by-peak, and cell-by-gene count matrices.",
+  "overview": "snaptools is a specialized Python-based command-line suite designed for handling Single Nucleus Accessibility Profile (.snap) files. These files are hierarchically structured HDF5 containers optimized for storing and querying large-scale single-cell epigenomics datasets. The tool manages the entire primary data processing pipeline—from raw sequencing reads and genome alignment to the generation of structured count matrices (bins, peaks, and genes) and fragment indexing.",
+  "homepage": "https://github.com/r3fang/SnapTools.git",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/snaptools/overview",
+  "github": "https://github.com/r3fang/SnapTools",
+  "conda_downloads": "3.7K",
+  "conda_downloads_num": 3700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "snaptools_dex-fastq",
+      "snaptools_index-genome",
+      "snaptools_align-paired-end",
+      "snaptools_align-single-end",
+      "snaptools_snap-pre",
+      "snaptools_snap-add-bmat",
+      "snaptools_snap-add-pmat",
+      "snaptools_snap-add-gmat",
+      "snaptools_snap-del"
+    ],
+    "description": "Decomplexes a fastq file containing reads from multiple cells into individual fastq files for each cell.",
+    "docker_image": "quay.io/biocontainers/snaptools:1.4.8--py_0",
+    "homepage": "https://github.com/r3fang/SnapTools.git",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/snaptools/overview",
+    "github": "https://github.com/r3fang/SnapTools",
+    "conda_downloads": "3.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "snaptools_align-paired-end.cwl",
+    "snaptools_align-single-end.cwl",
+    "snaptools_dex-fastq.cwl",
+    "snaptools_index-genome.cwl",
+    "snaptools_snap-add-bmat.cwl",
+    "snaptools_snap-add-gmat.cwl",
+    "snaptools_snap-add-pmat.cwl",
+    "snaptools_snap-del.cwl",
+    "snaptools_snap-pre.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# snaptools\n\n## Overview\n\nsnaptools is a specialized Python-based command-line suite designed for handling Single Nucleus Accessibility Profile (.snap) files. These files are hierarchically structured HDF5 containers optimized for storing and querying large-scale single-cell epigenomics datasets. The tool manages the entire primary data processing pipeline—from raw sequencing reads and genome alignment to the generation of structured count matrices (bins, peaks, and genes) and fragment indexing.\n\n## Core Workflow and CLI Patterns\n\n### 1. Genome Indexing\nBefore alignment, index the reference genome using a supported aligner (e.g., BWA).\n```bash\nsnaptools index-genome \\\n    --input-fasta=genome.fa \\\n    --output-prefix=genome_index \\\n    --aligner=bwa \\\n    --path-to-aligner=/path/to/bwa/bin/ \\\n    --num-threads=5\n```\n\n### 2. Alignment\nAlign paired-end or single-end reads. **Critical**: Set `--if-sort=True` to sort reads by name, which is required for grouping fragments by barcode in subsequent steps.\n```bash\nsnaptools align-paired-end \\\n    --input-reference=genome.fa \\\n    --input-fastq1=reads.R1.fastq.gz \\\n    --input-fastq2=reads.R2.fastq.gz \\\n    --output-bam=aligned.bam \\\n    --aligner=bwa \\\n    --read-fastq-command=zcat \\\n    --if-sort=True \\\n    --num-threads=8\n```\n\n### 3. Snap File Creation (Preprocessing)\nConvert BAM files into the `.snap` format. This step performs quality control, filters fragments by mapping quality (MAPQ) and length, and removes PCR duplicates.\n```bash\nsnaptools snap-pre \\\n    --input-file=aligned.bam \\\n    --output-snap=sample.snap \\\n    --genome-name=hg38 \\\n    --genome-size=hg38.chrom.size \\\n    --min-mapq=30 \\\n    --max-flen=1000 \\\n    --keep-chrm=TRUE \\\n    --min-cov=100\n```\n*Note: This command also generates a `.snap.qc` file containing library quality metrics.*\n\n### 4. Matrix Generation\nAdd count matrices to the existing `.snap` file. These commands modify the file in-place.\n\n**Cell-by-Bin Matrix:**\n```bash\nsnaptools snap-add-bmat \\\n    --snap-file=sample.snap \\\n    --bin-size-list 5000 10000\n```\n\n**Cell-by-Peak Matrix:**\n```bash\nsnaptools snap-add-pmat \\\n    --snap-file=sample.snap \\\n    --peak-file=peaks.bed\n```\n\n**Cell-by-Gene Matrix:**\n```bash\nsnaptools snap-add-gmat \\\n    --snap-file=sample.snap \\\n    --gene-file=genes.bed\n```\n\n## Expert Tips and Best Practices\n\n- **In-place Updates**: Most `snap-add-*` commands append data to the original `.snap` file rather than creating new files. Ensure you have sufficient disk space and write permissions.\n- **Session Management**: Use `snap-del` to remove specific sessions (e.g., a specific bin resolution or the peak matrix) if you need to re-run a step without recreating the entire file.\n- **Memory and Performance**: When processing large datasets, utilize the `--num-threads` parameter in alignment and indexing steps. For `snap-pre`, the `--max-num` parameter can limit the number of barcodes processed if testing on a subset.\n- **Fragment Indexing**: The FM (fragment) session in the snap file is indexed for fast search. This is essential for downstream visualization and subsetting.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| snaptools align-paired-end | Align paired-end FASTQ files to a reference genome. |\n| snaptools align-single-end | Align single-end reads to a reference genome. |\n| snaptools dex-fastq | Decomplexes a fastq file containing reads from multiple cells into individual fastq files for each cell. |\n| snaptools index-genome | Builds genome index for snaptools. |\n| snaptools snap-add-bmat | Add cell-by-bin count matrix to snap file. |\n| snaptools snap-add-gmat | Add gene matrix to snap file. |\n| snaptools snap-add-pmat | Add peak information to snap file. |\n| snaptools snap-del | Delete a session from a snap file. |\n| snaptools snap-pre | Preprocess single-cell ATAC-seq data into snap format. |\n\n## Reference documentation\n- [SnapTools README](./references/github_com_r3fang_SnapTools_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "snaptools",
+    "description": "Snaptools processes single-cell epigenomics data by managing the creation, manipulation, and analysis of structured .snap files. Use when user asks to index genomes, align sequencing reads, create snap files from BAM files, or generate cell-by-bin, cell-by-peak, and cell-by-gene count matrices.",
+    "homepage": "https://github.com/r3fang/SnapTools.git"
+  }
+}

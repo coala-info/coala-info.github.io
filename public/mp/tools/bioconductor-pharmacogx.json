@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pharmacogx",
+  "category": "bioconductor",
+  "name": "bioconductor-pharmacogx",
+  "description": "PharmacoGx provides a unified framework for integrating and analyzing large-scale pharmacogenomic datasets. Use when user asks to integrate pharmacogenomic data into PharmacoSet objects, fit dose-response curves, compute IC50 and AUC metrics, or perform drug synergy analysis using reference models like Bliss, HSA, and Loewe.",
+  "overview": "PharmacoGx provides a unified framework for integrating and analyzing large pharmacogenomic datasets. It centers around the `PharmacoSet` (PSet) class, which coordinates cell line (sample) metadata, drug (treatment) metadata, molecular profiles (RNA, mutation, etc.), and drug dose-response data. The package is essential for biomarker discovery and drug synergy modeling in cancer research.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PharmacoGx.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/bhklab/PharmacoGx",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PharmacoGx"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PharmacoGx.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/bhklab/PharmacoGx",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pharmacogx\n\n## Overview\n\nPharmacoGx provides a unified framework for integrating and analyzing large pharmacogenomic datasets. It centers around the `PharmacoSet` (PSet) class, which coordinates cell line (sample) metadata, drug (treatment) metadata, molecular profiles (RNA, mutation, etc.), and drug dose-response data. The package is essential for biomarker discovery and drug synergy modeling in cancer research.\n\n## Core Workflows\n\n### 1. Working with PharmacoSet (PSet) Objects\n\nA PSet is the primary container. While many are available via the `downloadPSet` function, you can construct custom ones using `PharmacoSet2`.\n\n**Structure Requirements:**\n*   **sample**: A data.frame with `sampleid` (rownames) and `tissueid`.\n*   **treatment**: A data.frame with `treatmentid` (rownames).\n*   **molecularProfiles**: A list of `SummarizedExperiment` objects or a `MultiAssayExperiment`.\n*   **treatmentResponse**: A `CoreGx::TreatmentResponseExperiment` containing viability data.\n\n```r\nlibrary(PharmacoGx)\n\n# Basic constructor for PharmacoGx 2.0+\npset <- PharmacoSet2(\n  name = \"MyDataset\",\n  treatment = treatment_df,\n  sample = sample_df,\n  molecularProfiles = mae_object,\n  treatmentResponse = tre_object,\n  datasetType = \"sensitivity\"\n)\n```\n\n### 2. Dose-Response Modeling\n\nPharmacoGx provides robust functions to fit monotherapy curves and compute summary statistics.\n\n```r\n# Fit a log-logistic model\nfit <- logLogisticRegression(doses, viabilities, viability_as_pct = FALSE)\n\n# Compute summary metrics\nic50 <- computeIC50(doses, Hill_fit = fit)\nauc <- computeAUC(doses, Hill_fit = fit)\n```\n\n### 3. Drug Synergy Analysis\n\nFor drug combination experiments, use the `endoaggregate` workflow to calculate synergy scores relative to null models.\n\n**Reference Models:**\n*   **HSA (Highest Single Agent)**: `computeHSA(v1, v2)`\n*   **Bliss Independence**: `computeBliss(v1, v2)`\n*   **Loewe Additivity**: `computeLoewe(d1, HS1, EC50_1, E_inf_1, d2, HS2, EC50_2, E_inf_2)`\n*   **ZIP (Zero Interaction Potency)**: `computeZIP(...)`\n\n**Workflow for Synergy:**\n1.  **Normalize**: Ensure viability is relative to untreated controls [0, 1].\n2.  **Fit Monotherapy**: Use `endoaggregate` to fit curves for individual drugs in the combination.\n3.  **Merge**: Join monotherapy fit parameters back to the combination data.\n4.  **Compute Scores**: Calculate the difference between observed viability and the reference model.\n\n```r\n# Example: Computing Bliss Synergy\ntre_synergy <- tre_combo |>\n    endoaggregate(\n        assay = \"combo_viability\",\n        Bliss_ref = computeBliss(viability_1, viability_2),\n        by = assayKeys(tre_combo, \"combo_viability\")\n    ) |>\n    endoaggregate(\n        assay = \"combo_viability\",\n        Bliss_score = Bliss_ref - mean_viability,\n        by = assayKeys(tre_synergy, \"combo_viability\")\n    )\n```\n\n### 4. Visualization\n\nVisualize synergy surfaces or heatmaps to identify dose-dependent interactions.\n\n```r\n# Synergy Surface (Contour Plot)\nggplot(synergy_df, aes(x = dose1, y = dose2, z = ZIP_delta)) +\n    geom_contour_filled() +\n    scale_x_log10() +\n    scale_y_log10()\n```\n\n## Tips for Success\n\n*   **Identifier Matching**: Ensure `sampleid` and `treatmentid` match exactly across all slots (sample, treatment, molecularProfiles, and treatmentResponse).\n*   **Data Normalization**: Always truncate viability at 0 and ideally 1 (or 100%) before fitting curves to avoid artifacts in synergy calculation.\n*   **Technical Replicates**: Use `endoaggregate` to summarize technical replicates (e.g., taking the mean) before performing curve fitting.\n*   **Parallelization**: Many functions like `endoaggregate` support an `nthread` argument to speed up large-scale curve fitting.\n\n## Reference documentation\n\n- [Creating a PharmacoSet Object](./references/CreatingPharmacoSet.md)\n- [Detecting Drug Synergy and Antagonism with PharmacoGx 3.0+](./references/DetectingDrugSynergyAndAntagonism.md)\n- [PharmacoGx: An R Package for Analysis of Large Pharmacogenomic Datasets](./references/PharmacoGx.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pharmacogx",
+    "description": "PharmacoGx provides a unified framework for integrating and analyzing large-scale pharmacogenomic datasets. Use when user asks to integrate pharmacogenomic data into PharmacoSet objects, fit dose-response curves, compute IC50 and AUC metrics, or perform drug synergy analysis using reference models like Bliss, HSA, and Loewe.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PharmacoGx.html"
+  }
+}

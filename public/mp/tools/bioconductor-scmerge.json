@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-scmerge",
+  "category": "bioconductor",
+  "name": "bioconductor-scmerge",
+  "description": "The scMerge package merges and normalizes single-cell RNA-seq data across different batches using stably expressed genes and the RUVIII model. Use when user asks to merge scRNA-seq datasets, remove batch effects, identify negative control genes, or perform scalable hierarchical data integration.",
+  "overview": "The `scMerge` package provides a framework for merging and normalizing single-cell RNA-seq (scRNA-seq) data from different batches. It utilizes Stably Expressed Genes (SEGs) as negative controls and constructs pseudo-replicates to estimate and remove unwanted variation using the RUVIII model. The package supports unsupervised, supervised, and semi-supervised workflows, and includes `scMerge2` for improved scalability and hierarchical merging.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scMerge.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/SydneyBioX/scMerge",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scMerge"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scMerge.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/SydneyBioX/scMerge",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-scmerge\n\n## Overview\n\nThe `scMerge` package provides a framework for merging and normalizing single-cell RNA-seq (scRNA-seq) data from different batches. It utilizes Stably Expressed Genes (SEGs) as negative controls and constructs pseudo-replicates to estimate and remove unwanted variation using the RUVIII model. The package supports unsupervised, supervised, and semi-supervised workflows, and includes `scMerge2` for improved scalability and hierarchical merging.\n\n## Core Workflow\n\n### 1. Prepare Data\nData should be stored in a `SingleCellExperiment` object. Ensure that the batches are combined into a single object and that a log-normalized assay (e.g., \"logcounts\") is available.\n\n```r\nlibrary(scMerge)\nlibrary(SingleCellExperiment)\n\n# Example: example_sce contains 'batch' and 'cellTypes' in colData\ndata(\"example_sce\", package = \"scMerge\")\n```\n\n### 2. Identify Negative Controls (SEGs)\nNegative controls are genes with constant expression across datasets. You can use pre-computed lists provided by the package or calculate them from your data.\n\n```r\n# Use pre-computed mouse SEGs (Ensembl IDs)\ndata(\"segList_ensemblGeneID\", package = \"scMerge\")\nctl_genes <- segList_ensemblGeneID$mouse$mouse_scSEG\n\n# Or compute SEGs from your own data\nexprs_mat <- assay(example_sce, \"counts\")\nseg_index <- scSEGIndex(exprs_mat = exprs_mat)\n```\n\n### 3. Run scMerge (Original)\nChoose a mode based on available cell type information:\n\n*   **Unsupervised:** Requires `kmeansK` (number of clusters per batch).\n*   **Supervised:** Uses known `cell_type` labels.\n*   **Semi-supervised:** Uses partial labels or mutual nearest clusters (`cell_type_match = TRUE`).\n\n```r\n# Unsupervised example\nsce_merged <- scMerge(\n  sce_combine = example_sce,\n  ctl = ctl_genes,\n  kmeansK = c(3, 3), # 3 clusters for batch 1, 3 for batch 2\n  assay_name = \"scMerge_normalized\"\n)\n```\n\n### 4. Run scMerge2 (Scalable & Hierarchical)\n`scMerge2` is designed for larger datasets and offers a hierarchical merging strategy.\n\n```r\n# Basic scMerge2\nscMerge2_res <- scMerge2(\n  exprsMat = logcounts(example_sce),\n  batch = example_sce$batch,\n  ctl = ctl_genes,\n  verbose = FALSE\n)\n\n# Assign result back to SCE object\nassay(example_sce, \"scMerge2\") <- scMerge2_res$newY\n```\n\n## Advanced Features\n\n### Hierarchical Merging (`scMerge2h`)\nUseful for complex experimental designs (e.g., removing sample effects within a batch before merging batches).\n\n```r\n# Define levels of merging via index lists and batch lists\n# level 1: within batch; level 2: across batches\nh_idx_list <- list(level1 = split(seq_len(ncol(example_sce)), example_sce$batch),\n                   level2 = list(seq_len(ncol(example_sce))))\n\nbatch_list <- list(level1 = split(example_sce$sample, example_sce$batch),\n                   level2 = list(example_sce$batch))\n\nres_h <- scMerge2h(\n  exprsMat = logcounts(example_sce),\n  batch_list = batch_list,\n  h_idx_list = h_idx_list,\n  ctl = ctl_genes,\n  ruvK_list = c(2, 5) # K for each level\n)\n```\n\n### Performance Optimization\n*   **Fast SVD:** Use `BSPARAM = BiocSingular::IrlbaParam()` and `svd_k` for large datasets.\n*   **Parallelization:** Use `BPPARAM = BiocParallel::MulticoreParam(workers = n)`.\n*   **Memory Efficiency:** Supports `DelayedArray`, `SparseArray`, and `HDF5Array` inputs.\n\n## Reference documentation\n- [An introduction to the scMerge package](./references/scMerge.md)\n- [An introduction to scMerge2](./references/scMerge2.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-scmerge",
+    "description": "The scMerge package merges and normalizes single-cell RNA-seq data across different batches using stably expressed genes and the RUVIII model. Use when user asks to merge scRNA-seq datasets, remove batch effects, identify negative control genes, or perform scalable hierarchical data integration.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scMerge.html"
+  }
+}

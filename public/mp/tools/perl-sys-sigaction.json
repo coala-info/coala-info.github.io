@@ -1,0 +1,43 @@
+{
+  "id": "perl-sys-sigaction",
+  "category": "perl",
+  "name": "perl-sys-sigaction",
+  "description": "\"Sys::SigAction provides a consistent interface for POSIX signal handling and robust timeouts in Perl. Use when user asks to implement scoped signal handlers, wrap code blocks with timeouts, or interrupt blocking system calls using unsafe signals.\"",
+  "overview": "`Sys::SigAction` provides a consistent interface for POSIX signal handling in Perl. It is primarily used to overcome the limitations of Perl's \"safe signals\" (deferred signals) introduced in version 5.8.0, which can cause blocking system calls to be automatically retried instead of being interrupted by an `ALRM`. This skill helps you implement robust timeouts and scoped signal handlers that automatically reset when they go out of scope.",
+  "homepage": "http://metacpan.org/pod/Sys::SigAction",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-sys-sigaction/overview",
+  "github": "N/A",
+  "conda_downloads": "14.1K",
+  "conda_downloads_num": 14100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "perl-sys-sigaction"
+    ],
+    "description": "FAIL to generate CWL: perl-sys-sigaction not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/perl-sys-sigaction:0.23--pl5.22.0_0",
+    "homepage": "http://metacpan.org/pod/Sys::SigAction",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/perl-sys-sigaction/overview",
+    "github": "N/A",
+    "conda_downloads": "14.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# perl-sys-sigaction\n\n## Overview\n`Sys::SigAction` provides a consistent interface for POSIX signal handling in Perl. It is primarily used to overcome the limitations of Perl's \"safe signals\" (deferred signals) introduced in version 5.8.0, which can cause blocking system calls to be automatically retried instead of being interrupted by an `ALRM`. This skill helps you implement robust timeouts and scoped signal handlers that automatically reset when they go out of scope.\n\n## Core Functions\n\n### Scoped Signal Handling\nUse `set_sig_handler()` to define a handler that exists only within a specific lexical scope. The handler is restored to its previous state when the returned object is destroyed.\n\n```perl\nuse Sys::SigAction qw( set_sig_handler );\n\n{\n    # Handler is set here\n    my $h = set_sig_handler( 'INT', sub { die \"Interrupted!\\n\" } );\n    # ... perform work ...\n} \n# Handler is automatically restored to previous value here\n```\n\n### Implementing Timeouts\nThe `timeout_call()` function is the most efficient way to wrap a block of code with a timer. It supports sub-second resolution if `Time::HiRes` is available.\n\n```perl\nuse Sys::SigAction qw( timeout_call );\n\nmy $timeout = 2.5; # Seconds (supports floating point)\nmy $code = sub {\n    # Blocking operation here\n    return $dbh->connect(...);\n};\n\nif ( timeout_call( $timeout, $code ) ) {\n    print \"The operation timed out.\\n\";\n} else {\n    print \"Operation completed successfully.\\n\";\n}\n```\n\n### Manual Timeout with POSIX sigaction\nFor more control, use `set_sig_handler` with the `safe` flag set to `0` to ensure a system call is actually interrupted.\n\n```perl\nuse Sys::SigAction qw( set_sig_handler );\n\neval {\n    my $h = set_sig_handler( 'ALRM', sub { die \"timeout\" }, { safe => 0 } );\n    eval {\n        alarm(5);\n        # This system call will now correctly throw EINTR on alarm\n        my $data = <$socket>;\n        alarm(0);\n    };\n    alarm(0);\n    die $@ if $@;\n};\nif ($@ =~ /timeout/) { ... }\n```\n\n## Best Practices\n- **Prefer `timeout_call`**: It handles the `eval`/`alarm` boilerplate and `Time::HiRes` integration automatically.\n- **Use `safe => 0` for Timeouts**: When using Perl 5.8.0 or later, set the `safe` attribute to `0` to bypass deferred signals if you need to interrupt a blocking library call (like `DBI->connect`).\n- **Avoid Global State**: Always assign the result of `set_sig_handler()` to a `my` variable to ensure the signal handler is cleaned up via RAII (Resource Acquisition Is Initialization).\n- **Signal Names vs. Numbers**: Use `sig_number('NAME')` and `sig_name(number)` for portable signal translation.\n\n## Reference documentation\n- [Sys::SigAction - Perl extension for Consistent Signal Handling](./references/metacpan_org_pod_Sys__SigAction.md)",
+  "skill_front_matter": {
+    "name": "perl-sys-sigaction",
+    "description": "Sys::SigAction provides a consistent interface for POSIX signal handling and robust timeouts in Perl. Use when user asks to implement scoped signal handlers, wrap code blocks with timeouts, or interrupt blocking system calls using unsafe signals.",
+    "homepage": "http://metacpan.org/pod/Sys::SigAction"
+  }
+}

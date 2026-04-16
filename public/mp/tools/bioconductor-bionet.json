@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bionet",
+  "category": "bioconductor",
+  "name": "bioconductor-bionet",
+  "description": "BioNet identifies functional modules in biological networks by integrating omics data and p-values with protein-protein interaction networks. Use when user asks to identify high-scoring subnetworks, fit a Beta-uniform mixture model to p-values, or find functional modules in biological networks.",
+  "overview": "BioNet provides a framework for the integrated analysis of biological networks and \"omics\" data. It maps p-values (from differential expression, survival analysis, etc.) onto a network, fits a Beta-uniform mixture (BUM) model to the p-value distribution, and identifies high-scoring subnetworks (modules). These modules represent functional units that are significantly perturbed under the studied conditions.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BioNet.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bionet/overview",
+  "github": "N/A",
+  "conda_downloads": "46.9K",
+  "conda_downloads_num": 46900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BioNet"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioNet.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bionet/overview",
+    "github": "N/A",
+    "conda_downloads": "46.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bionet\n\nname: bioconductor-bionet\ndescription: Integrated network analysis using the BioNet R package. Use this skill to identify functional modules (subnetworks) in biological networks by integrating gene expression data, p-values from differential expression or survival analysis, and protein-protein interaction (PPI) networks.\n\n## Overview\n\nBioNet provides a framework for the integrated analysis of biological networks and \"omics\" data. It maps p-values (from differential expression, survival analysis, etc.) onto a network, fits a Beta-uniform mixture (BUM) model to the p-value distribution, and identifies high-scoring subnetworks (modules). These modules represent functional units that are significantly perturbed under the studied conditions.\n\n## Core Workflow\n\n### 1. Data Preparation and Network Mapping\nLoad the network (typically a `graphNEL` or `igraph` object) and your p-values. Map the experimental data to the network nodes.\n\n```R\nlibrary(BioNet)\n# Load network and data (e.g., from DLBCL package)\ndata(interactome) \ndata(dataLym)\n\n# Create a subnetwork containing only genes present in your study\nsubnet <- subNetwork(dataLym$label, interactome)\nsubnet <- rmSelfLoops(subnet)\n\n# If multiple p-values exist (e.g., t-test and survival), aggregate them\npvals <- cbind(t = dataLym$t.pval, s = dataLym$s.pval)\npval_agg <- aggrPvals(pvals, order = 2, plot = FALSE)\n```\n\n### 2. Scoring Nodes\nBioNet uses a BUM model to transform p-values into scores. Positive scores indicate significant nodes; negative scores indicate non-significant nodes.\n\n```R\n# Fit the Beta-uniform mixture model\nfb <- fitBumModel(pval_agg, plot = TRUE)\n\n# Score nodes based on a specific False Discovery Rate (FDR)\n# Higher FDR results in larger modules; lower FDR results in smaller, more stringent modules\nscores <- scoreNodes(subnet, fb, fdr = 0.001)\n```\n\n### 3. Module Identification\nIdentify the maximum-scoring subnetwork.\n\n*   **Heuristic Approach:** Use `runFastHeinz` for a quick approximation (recommended for most users).\n*   **Exact Approach:** Use `runHeinz` or `writeHeinzNodes`/`writeHeinzEdges` if the external HEINZ tool and a CPLEX license are available.\n\n```R\n# Fast heuristic calculation\nmodule <- runFastHeinz(subnet, scores)\n```\n\n### 4. Visualization and Export\nVisualize the resulting module with expression data (fold changes) mapped to node colors.\n\n```R\n# Plot the module (red/green for up/down regulation)\nlogFC <- dataLym$diff\nnames(logFC) <- dataLym$label\nplotModule(module, scores = scores, diff.expr = logFC)\n\n# Export for Cytoscape\nsaveNetwork(module, file = \"my_module\", type = \"XGMML\")\n```\n\n## Advanced Features\n\n### Consensus Modules\nTo handle variability, use jackknife resampling to generate an ensemble of modules and identify robust \"consensus\" components.\n\n1.  Generate multiple p-value sets via resampling.\n2.  Score the network for each set.\n3.  Calculate frequency-based scores using `consensusScores`.\n4.  Identify the final module based on these consensus scores.\n\n### Mapping Identifiers\nUse `mapByVar` when dealing with microarray data (e.g., Affymetrix) to map probe IDs to gene symbols or Entrez IDs while selecting the probe with the highest variance for each gene.\n\n## Tips for Success\n*   **Largest Connected Component:** Use `largestComp(network)` before scoring to ensure the analysis focuses on the main body of the interactome.\n*   **FDR Selection:** If `runFastHeinz` returns an empty or tiny module, try increasing the `fdr` parameter in `scoreNodes`. If the module is too large/hairball-like, decrease the `fdr`.\n*   **Self-Loops:** Always run `rmSelfLoops(network)` as they can interfere with the optimization algorithms.\n\n## Reference documentation\n- [BioNet Tutorial](./references/Tutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bionet",
+    "description": "BioNet identifies functional modules in biological networks by integrating omics data and p-values with protein-protein interaction networks. Use when user asks to identify high-scoring subnetworks, fit a Beta-uniform mixture model to p-values, or find functional modules in biological networks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BioNet.html"
+  }
+}

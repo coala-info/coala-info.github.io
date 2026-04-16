@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-drimseq",
+  "category": "bioconductor",
+  "name": "bioconductor-drimseq",
+  "description": "DRIMSeq implements a Dirichlet-multinomial framework for modeling multivariate count data to analyze transcript usage in RNA-seq experiments. Use when user asks to identify differential transcript usage between conditions or detect transcript usage quantitative trait loci.",
+  "overview": "DRIMSeq implements a Dirichlet-multinomial framework for modeling multivariate count data, specifically designed for RNA-seq transcript usage. It models the ratios of features (e.g., transcripts) within a group (e.g., a gene) rather than total abundance. The package supports two main workflows:\n1.  **Differential Transcript Usage (DTU):** Identifying changes in transcript proportions between experimental conditions (e.g., Control vs. Knockdown).\n2.  **Transcript Usage QTL (tuQTL):** Identifying ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DRIMSeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-drimseq/overview",
+  "github": "N/A",
+  "conda_downloads": "43.8K",
+  "conda_downloads_num": 43800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DRIMSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DRIMSeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-drimseq/overview",
+    "github": "N/A",
+    "conda_downloads": "43.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-drimseq\n\n## Overview\n\nDRIMSeq implements a Dirichlet-multinomial framework for modeling multivariate count data, specifically designed for RNA-seq transcript usage. It models the ratios of features (e.g., transcripts) within a group (e.g., a gene) rather than total abundance. The package supports two main workflows:\n1.  **Differential Transcript Usage (DTU):** Identifying changes in transcript proportions between experimental conditions (e.g., Control vs. Knockdown).\n2.  **Transcript Usage QTL (tuQTL):** Identifying genetic variants (SNPs) associated with changes in transcript proportions.\n\n## Core Workflow: Differential Transcript Usage (DTU)\n\n### 1. Data Preparation\nCreate a `dmDSdata` object using a count table (with `gene_id` and `feature_id` columns) and a sample metadata data frame.\n\n```r\nlibrary(DRIMSeq)\n\n# counts: data.frame with gene_id, feature_id, and sample columns\n# samples: data.frame with sample_id and grouping variables\nd <- dmDSdata(counts = pasilla_counts, samples = pasilla_samples)\n```\n\n### 2. Filtering\nFilter out lowly expressed genes and transcripts to improve power and reliability.\n- `min_samps_feature_expr`: Min samples where a transcript must have `min_feature_expr` counts.\n- `min_samps_gene_expr`: Min samples where a gene must have `min_gene_expr` counts.\n\n```r\nd <- dmFilter(d, \n              min_samps_gene_expr = 7, min_gene_expr = 10,\n              min_samps_feature_expr = 3, min_feature_expr = 10)\n```\n\n### 3. Precision Estimation\nEstimate the Dirichlet-multinomial precision (inverse of dispersion). Use a design matrix to account for conditions and batch effects.\n\n```r\ndesign_full <- model.matrix(~ group, data = samples(d))\nset.seed(123) # For reproducibility in subset selection\nd <- dmPrecision(d, design = design_full)\n```\n\n### 4. Proportion Estimation (Fitting)\nFit the full model to estimate transcript proportions and regression coefficients. Set `bb_model = TRUE` to enable transcript-level testing via the beta-binomial model.\n\n```r\nd <- dmFit(d, design = design_full, bb_model = TRUE)\n```\n\n### 5. Testing\nPerform likelihood ratio tests by specifying which coefficient to drop (null model).\n\n```r\nd <- dmTest(d, coef = \"groupKD\")\n# Access results\nres_gene <- results(d) # Gene-level\nres_tx <- results(d, level = \"feature\") # Transcript-level\n```\n\n## Core Workflow: tuQTL Analysis\n\n### 1. Data Preparation\nRequires `GRanges` for genes and SNPs to associate variants within a specific `window`.\n\n```r\nd <- dmSQTLdata(counts = geuv_counts, \n                gene_ranges = geuv_gene_ranges,\n                genotypes = geuv_genotypes, \n                snp_ranges = geuv_snp_ranges,\n                samples = geuv_samples, \n                window = 5e3)\n```\n\n### 2. Filtering and Analysis\nThe tuQTL pipeline follows a similar logic to DTU but operates on gene-SNP blocks.\n\n```r\nd <- dmFilter(d, minor_allele_freq = 5)\nd <- dmPrecision(d, speed = TRUE) # speed=TRUE uses one precision per gene\nd <- dmFit(d)\nd <- dmTest(d) # Uses permutation-based p-value adjustment by default\n```\n\n## Visualization and Interpretation\n\n- **Data Exploration:** `plotData(d)` shows histograms of features per gene.\n- **Precision:** `plotPrecision(d)` plots precision vs. mean expression to check for trends.\n- **P-values:** `plotPValues(d)` checks the distribution of p-values.\n- **Proportions:** `plotProportions(d, gene_id = \"...\", group_variable = \"group\")` visualizes observed vs. estimated transcript ratios. Use `plot_type = \"boxplot2\"` for large sample sizes (QTL).\n\n## Key Tips\n- **Batch Effects:** Include batch variables in the `model.matrix` (e.g., `~ condition + batch`) to account for technical variation.\n- **Parallelization:** Use `BPPARAM = BiocParallel::MulticoreParam()` in `dmPrecision`, `dmFit`, and `dmTest` to speed up computation on large datasets.\n- **Stage-wise Testing:** For DTU, it is recommended to use the `stageR` package on DRIMSeq outputs to control FDR across gene and transcript levels simultaneously.\n- **Precision vs. Dispersion:** DRIMSeq uses \"precision\" ($\\gamma_0$). High precision means low dispersion (low inter-library variation).\n\n## Reference documentation\n- [DRIMSeq](./references/DRIMSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-drimseq",
+    "description": "DRIMSeq implements a Dirichlet-multinomial framework for modeling multivariate count data to analyze transcript usage in RNA-seq experiments. Use when user asks to identify differential transcript usage between conditions or detect transcript usage quantitative trait loci.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DRIMSeq.html"
+  }
+}

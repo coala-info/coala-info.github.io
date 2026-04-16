@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spanorm",
+  "category": "bioconductor",
+  "name": "bioconductor-spanorm",
+  "description": "SpaNorm normalizes spatial molecular datasets by using generalized linear models and thin plate splines to account for spatial variation in library size. Use when user asks to normalize spatial transcriptomics data, identify spatially variable genes, or perform dimensionality reduction on spatial experiments.",
+  "overview": "SpaNorm is a Bioconductor package designed for the normalization of spatial molecular datasets (e.g., 10x Visium). Unlike standard single-cell normalization methods, SpaNorm accounts for the fact that library size often correlates with spatial biology. It uses generalized linear models (GLMs) and thin plate splines to decompose spatial variation into technical (library size associated) and biological (library size independent) components.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SpaNorm.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/bhuvad/SpaNorm",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SpaNorm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpaNorm.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/bhuvad/SpaNorm",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spanorm\n\n## Overview\n\nSpaNorm is a Bioconductor package designed for the normalization of spatial molecular datasets (e.g., 10x Visium). Unlike standard single-cell normalization methods, SpaNorm accounts for the fact that library size often correlates with spatial biology. It uses generalized linear models (GLMs) and thin plate splines to decompose spatial variation into technical (library size associated) and biological (library size independent) components.\n\n## Core Workflow\n\n### 1. Data Preparation\nSpaNorm works with `SpatialExperiment` or `Seurat` objects. It is recommended to filter lowly expressed genes before normalization.\n\n```r\nlibrary(SpaNorm)\nlibrary(SpatialExperiment)\n\n# Load data (example)\ndata(HumanDLPFC)\n\n# Filter genes expressed in at least 10% of spots\nkeep = filterGenes(HumanDLPFC, prop = 0.1)\nHumanDLPFC = HumanDLPFC[keep, ]\n```\n\n### 2. Normalization\nThe `SpaNorm()` function performs both model fitting and data adjustment. By default, it uses Percentile Adjusted Counts (PAC) and stores the result in the `logcounts` assay.\n\n```r\n# Basic normalization\nset.seed(42)\nHumanDLPFC = SpaNorm(HumanDLPFC)\n\n# Parameters:\n# sample.p: Proportion of cells to use for model fitting (default 0.25)\n# df.tps: Degrees of freedom for spatial smoothing (default 6)\n# verbose: Set to FALSE to suppress convergence output\n```\n\n### 3. Alternative Adjustment Methods\nIf a model has already been fit, you can compute alternative residuals without re-fitting the entire model by changing the `adj.method`.\n\n```r\n# Pearson residuals\nHumanDLPFC = SpaNorm(HumanDLPFC, adj.method = \"pearson\")\n\n# Mean or Median biology (useful for low-signal genes)\nHumanDLPFC = SpaNorm(HumanDLPFC, adj.method = \"meanbio\")\nHumanDLPFC = SpaNorm(HumanDLPFC, adj.method = \"medbio\")\n```\n\n### 4. Identifying Spatially Variable Genes (SVGs)\nSpaNorm provides a specific framework for identifying SVGs by fitting a nested model and using an F-test.\n\n```r\n# Identify SVGs\nHumanDLPFC = SpaNormSVG(HumanDLPFC)\n\n# Retrieve top 10 SVGs\nsvgs = topSVGs(HumanDLPFC, n = 10)\n```\n\n### 5. Dimensionality Reduction (SpaNormPCA)\nTo avoid distortions caused by log-transforming counts, use `SpaNormPCA`, which approximates GLM-PCA using the null model from the SVG step.\n\n```r\n# Must run SpaNormSVG first\nHumanDLPFC = SpaNormPCA(HumanDLPFC, ncomponents = 50, svg.fdr = 0.2)\n\n# Results are stored in reducedDim(HumanDLPFC, \"PCA\")\n```\n\n## Usage with Seurat\nSpaNorm supports Seurat objects (v5+). It automatically looks for spatial coordinates in `images$coordinates`, or metadata columns named `x`/`y` or `imagecol`/`imagerow`.\n\n```r\n# Run on Seurat object\nseurat_obj <- SpaNorm(seurat_obj, assay = \"counts\", slot = \"counts\")\n```\n\n## Tips and Best Practices\n- **Signal Enhancement**: For very lowly expressed marker genes, use `scale.factor` (e.g., `scale.factor = 4`) in the `SpaNorm()` call to make adjusted data more continuous and interpretable.\n- **Model Reuse**: The model fit is stored in `metadata(obj)$SpaNorm`. SpaNorm will automatically reuse this fit unless parameters like `df.tps`, `batch`, or object dimensions change.\n- **Visualization**: Use `plotSpatial(obj, colour = GENE_NAME, assay = \"logcounts\")` to visualize normalized expression and `plotCovariate(obj, covariate = \"biology\")` to inspect the learned spatial functions.\n\n## Reference documentation\n- [SpaNorm: Spatially aware library size normalisation](./references/SpaNorm.md)\n- [SpaNorm Vignette Source](./references/SpaNorm.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-spanorm",
+    "description": "SpaNorm normalizes spatial molecular datasets by using generalized linear models and thin plate splines to account for spatial variation in library size. Use when user asks to normalize spatial transcriptomics data, identify spatially variable genes, or perform dimensionality reduction on spatial experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpaNorm.html"
+  }
+}

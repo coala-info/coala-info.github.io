@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-help",
+  "category": "bioconductor",
+  "name": "bioconductor-help",
+  "description": "This tool provides a pipeline for analyzing DNA methylation microarray data from the HELP assay protocol. Use when user asks to import Roche NimbleGen .pair files, perform spatial quality control, calculate probe melting temperatures, apply quantile normalization, or summarize probe-level data into methylation measures.",
+  "overview": "The `HELP` package provides a modular pipeline for analyzing DNA methylation microarrays, specifically those using the Roche NimbleGen format and the HELP assay protocol. It handles the dual-channel data where Cy3 (532nm) typically represents the reference (MspI) and Cy5 (635nm) represents the experimental (HpaII) sample. The package includes tools for data import, spatial quality control, density-dependent normalization, and data summarization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HELP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-help/overview",
+  "github": "N/A",
+  "conda_downloads": "35.2K",
+  "conda_downloads_num": 35200,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HELP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HELP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-help/overview",
+    "github": "N/A",
+    "conda_downloads": "35.2K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-help\n\nname: bioconductor-help\ndescription: Analysis of HELP (HpaII tiny fragment Enrichment by Ligation-mediated PCR) microarray data. Use this skill to import Roche NimbleGen .pair files, perform quality control, calculate probe melting temperatures (Tm) and GC content, apply single-sample quantile normalization, and summarize probe-level data into methylation measures.\n\n# bioconductor-help\n\n## Overview\n\nThe `HELP` package provides a modular pipeline for analyzing DNA methylation microarrays, specifically those using the Roche NimbleGen format and the HELP assay protocol. It handles the dual-channel data where Cy3 (532nm) typically represents the reference (MspI) and Cy5 (635nm) represents the experimental (HpaII) sample. The package includes tools for data import, spatial quality control, density-dependent normalization, and data summarization.\n\n## Core Workflow\n\n### 1. Data Import\nImport matched `.pair` files into an `ExpressionSet` object.\n\n```R\nlibrary(HELP)\n\n# Identify pair files\nmsp1.files <- dir(data.path, pattern=\"532[._]pair\", full.names=TRUE)\nhpa2.files <- dir(data.path, pattern=\"635[._]pair\", full.names=TRUE)\n\n# Import files iteratively\npairs <- readPairs(msp1.files[1], hpa2.files[1])\nfor (i in 2:length(msp1.files)) {\n    pairs <- readPairs(msp1.files[i], hpa2.files[i], pairs)\n}\n\n# Apply sample names via a sample key\nchips <- readSampleKey(file=\"sample.key.txt\", chips=basename(msp1.files))\nsampleNames(pairs) <- chips\n```\n\n### 2. Design and Sequence Information\nLink probe identifiers to genomic positions and sequences using `.ndf` and `.ngd` files.\n\n```R\npairs <- readDesign(\"HELP.ndf.txt\", \"HELP.ngd.txt\", pairs)\n\n# Calculate sequence properties\ntm_values <- calcTm(getFeatures(pairs, \"SEQUENCE\"))\ngc_content <- calcGC(getFeatures(pairs, \"SEQUENCE\"))\n```\n\n### 3. Quality Control\nVisualize spatial variation and fragment size biases.\n\n```R\n# Spatial plot for a specific sample\nplotChip(pairs, sample=\"Brain1\")\n\n# Fragment size vs. signal intensity (identifies methylation populations)\nplotFeature(pairs[,\"Brain1\"])\n\n# Calculate prototypical signal across arrays for comparison\nprototypes <- calcPrototype(pairs, center=TRUE)\n```\n\n### 4. Single-Sample Quantile Normalization\nCorrect for fragment size bias (LM-PCR bias) using density-dependent sliding windows.\n\n```R\n# Define background thresholds using random probes\nrand_idx <- which(getFeatures(pairs, \"TYPE\") == \"RAND\")\nmsp_fail <- median(exprs(pairs)[rand_idx,]) + 2.5 * mad(exprs(pairs)[rand_idx,])\n\n# Normalize MspI (reference) channel\nnorand <- which(getFeatures(pairs, \"TYPE\") == \"DATA\")\nsize <- as.numeric(getFeatures(pairs, \"SIZE\"))[norand]\nmsp_vals <- exprs(pairs)[norand, \"Brain1\"]\nmsp_norm <- msp_vals\nmsp_norm[msp_vals > msp_fail] <- quantileNormalize(msp_vals[msp_vals > msp_fail], size[msp_vals > msp_fail])\n```\n\n### 5. Data Summarization\nGroup probe-level data into fragment-level methylation measures.\n\n```R\n# Summarize using weighted mean (weighted by MspI intensity)\ndata_summary <- combineData(\n    data = getSamples(pairs, element=\"exprs2\"), \n    group = getFeatures(pairs, 'SEQ_ID'), \n    weight = getSamples(pairs, element=\"exprs\"), \n    trim = 0.2\n)\n\n# Pairwise sample comparison\nplotPairs(pairs, element=\"exprs2\")\n```\n\n## Tips and Best Practices\n- **Channel Mapping**: Ensure Cy3 is mapped to MspI (reference) and Cy5 to HpaII (experimental).\n- **Background Handling**: Always use the random probes (`TYPE==\"RAND\"`) to define the noise floor before normalization.\n- **Normalization Strategy**: Normalize HpaII signals separately for those within the background distribution versus those above it to preserve biological methylation signals.\n- **Summarization**: Use `trim=0.2` in `combineData` to reduce the impact of outlier probes within a fragment.\n\n## Reference documentation\n- [HELP Microarray Analytical Tools](./references/HELP.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-help",
+    "description": "This tool provides a pipeline for analyzing DNA methylation microarray data from the HELP assay protocol. Use when user asks to import Roche NimbleGen .pair files, perform spatial quality control, calculate probe melting temperatures, apply quantile normalization, or summarize probe-level data into methylation measures.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HELP.html"
+  }
+}

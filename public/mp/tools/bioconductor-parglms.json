@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-parglms",
+  "category": "bioconductor",
+  "name": "bioconductor-parglms",
+  "description": "This tool fits generalized linear models on large, dispersed datasets using parallel evaluation. Use when user asks to fit GLMs on datasets too large for memory, perform parallelized model estimation on chunked data, or analyze large-scale genomic datasets stored in BatchJobs registries.",
+  "overview": "The `parglms` package provides a scalable approach to fitting Generalized Linear Models (GLMs). It decomposes the model-fitting process—specifically the calculation of sufficient statistics—into parts that fit in memory. These parts are processed in parallel using `BiocParallel`, making it ideal for large-scale genomic studies like eQTL analysis where data is dispersed across multiple files or nodes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/parglms.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "parglms"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/parglms.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-parglms\n\nname: bioconductor-parglms\ndescription: Fitting generalized linear models (GLMs) on large, dispersed datasets using parallel evaluation. Use this skill when working with Bioconductor datasets that are too large for memory and are stored in chunks (e.g., BatchJobs registries or geuvStore2), requiring scalable GLM estimation.\n\n## Overview\n\nThe `parglms` package provides a scalable approach to fitting Generalized Linear Models (GLMs). It decomposes the model-fitting process—specifically the calculation of sufficient statistics—into parts that fit in memory. These parts are processed in parallel using `BiocParallel`, making it ideal for large-scale genomic studies like eQTL analysis where data is dispersed across multiple files or nodes.\n\n## Core Workflow\n\n### 1. Data Preparation (Dispersal)\nData must be organized into chunks, typically using a `BatchJobs` registry.\n\n```r\nlibrary(BatchJobs)\nlibrary(parglms)\n\n# Create a registry and map data into chunks\nmyr = makeRegistry(\"my_analysis\", file.dir=tempfile())\nchs = chunk(1:nrow(large_data), n.chunks=10)\nf = function(x) large_data[x,]\nbatchMap(myr, f, chs)\nsubmitJobs(myr)\nwaitForJobs(myr)\n```\n\n### 2. Fitting the Model\nThe `parGLM` function is the primary interface. It requires a formula, the registry object, and standard GLM parameters.\n\n```r\n# Fit a Gaussian model\nmodel = parGLM(\n  formula = Postwt ~ Treat + Prewt, \n  registry = myr,\n  family = gaussian, \n  binit = c(0, 0, 0, 0), # Initial values for coefficients\n  maxit = 10, \n  tol = .001\n)\n\n# Fit a Binomial model (e.g., GWAS hit status)\nmodel_bin = parGLM(\n  isGwasHit ~ hmmState, \n  registry = prst,\n  family = binomial, \n  binit = rep(0, 13)\n)\n```\n\n### 3. Extracting Results\nThe resulting object contains coefficients and variance estimates. Use `summaryPG` for a quick overview.\n\n```r\n# View coefficients\nmodel$coefficients\n\n# Get summary statistics (coefficients, SE, z-scores)\nsummaryPG(model)\n\n# Access other components\nmodel$eff.variance    # Effective variance\nmodel$converged       # Convergence status\nmodel$N               # Total number of observations\n```\n\n## Advanced Usage with geuvStore2\nWhen working with specialized stores like `geuvStore2`, you must define an `extractor` function for the registry to transform the stored chunks into a format suitable for the GLM (usually a `data.frame`).\n\n```r\n# Define an extractor that processes GRanges into data.frame\nprst$extractor = function(store, i) {\n  chunk_data = loadResult(store, i)[[1]]\n  # Perform transformations/decorations here\n  return(as.data.frame(chunk_data))\n}\n\n# Run parallel GLM on the store\np1 = parGLM(isGwasHit ~ hmmState, prst, family=binomial)\n```\n\n## Tips and Best Practices\n- **Parallel Backend**: `parGLM` uses `BiocParallel`. Ensure a parallel backend is registered (e.g., `register(MulticoreParam(4))`) to actually achieve speedups; otherwise, it defaults to sequential execution.\n- **Initial Values**: Providing a good `binit` (initial beta vector) can significantly improve convergence speed for complex models.\n- **Memory Management**: Ensure that the individual chunks defined in your registry are small enough to fit comfortably in the memory of a single worker node.\n\n## Reference documentation\n- [parglms](./references/parglms.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-parglms",
+    "description": "This tool fits generalized linear models on large, dispersed datasets using parallel evaluation. Use when user asks to fit GLMs on datasets too large for memory, perform parallelized model estimation on chunked data, or analyze large-scale genomic datasets stored in BatchJobs registries.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/parglms.html"
+  }
+}

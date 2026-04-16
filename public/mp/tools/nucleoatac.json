@@ -1,0 +1,55 @@
+{
+  "id": "nucleoatac",
+  "category": "CLI",
+  "name": "nucleoatac",
+  "description": "NucleoATAC identifies nucleosome positions and occupancy levels from paired-end ATAC-seq data by analyzing fragment size distributions and V-plot patterns. Use when user asks to call nucleosome positions, estimate nucleosome occupancy, identify nucleosome-free regions, or characterize ATAC-seq fragment size distributions.",
+  "overview": "NucleoATAC leverages the unique fragmentation patterns of ATAC-seq (V-plots) to distinguish between nucleosomal and nucleosome-free regions (NFR). It is specifically designed for paired-end data where fragment size information is available. This skill provides the procedural knowledge to run the full `nucleoatac` pipeline, manage its subcommands for granular control, and utilize the `pyatac` utility suite for data characterization.",
+  "homepage": "http://nucleoatac.readthedocs.io/en/latest/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/nucleoatac/overview",
+  "github": "N/A",
+  "conda_downloads": "13.4K",
+  "conda_downloads_num": 13400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "nucleoatac_run",
+      "nucleoatac_occ",
+      "nucleoatac_vprocess",
+      "nucleoatac_nuc",
+      "nucleoatac_merge",
+      "nucleoatac_nfr"
+    ],
+    "description": "Run the nucleoatac pipeline",
+    "docker_image": "quay.io/biocontainers/nucleoatac:0.3.4--py27hf119a78_5",
+    "homepage": "http://nucleoatac.readthedocs.io/en/latest/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/nucleoatac/overview",
+    "github": "N/A",
+    "conda_downloads": "13.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "nucleoatac_merge.cwl",
+    "nucleoatac_nfr.cwl",
+    "nucleoatac_nuc.cwl",
+    "nucleoatac_occ.cwl",
+    "nucleoatac_run.cwl",
+    "nucleoatac_vprocess.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# nucleoatac\n\n## Overview\nNucleoATAC leverages the unique fragmentation patterns of ATAC-seq (V-plots) to distinguish between nucleosomal and nucleosome-free regions (NFR). It is specifically designed for paired-end data where fragment size information is available. This skill provides the procedural knowledge to run the full `nucleoatac` pipeline, manage its subcommands for granular control, and utilize the `pyatac` utility suite for data characterization.\n\n## Core Workflow: The \"Run\" Command\nFor most standard analyses, use the `run` subcommand to execute the full pipeline (occupancy estimation, V-plot processing, and nucleosome calling) in one step.\n\n```bash\nnucleoatac run \\\n    --bed <regions.bed> \\\n    --bam <aligned_sorted.bam> \\\n    --fasta <indexed_genome.fasta> \\\n    --out <prefix> \\\n    --cores <int>\n```\n\n### Input Requirements\n- **BAM**: Must be paired-end, sorted, and indexed. Filter for high mapping quality and remove mitochondrial reads beforehand.\n- **FASTA**: Must be indexed (e.g., `samtools faidx`).\n- **BED**: Broad open-chromatin regions (e.g., MACS2 `--broad` peaks). It is recommended to merge overlapping regions and slightly extend them (slop) to ensure enough context for the V-plot model.\n\n## Granular Control (Subcommands)\nIf the `run` command fails or you need to adjust specific parameters, execute the steps manually:\n\n1.  **`occ`**: Estimates nucleosome occupancy and fragment size distribution.\n    - *Output*: `.occ.bedgraph.gz` (occupancy track) and `.nuc_dist.txt`.\n2.  **`vprocess`**: Generates the normalized V-plot matrix using the distribution from `occ`.\n    - *Command*: `nucleoatac vprocess --sizes <prefix>.nuc_dist.txt --out <prefix>`\n3.  **`nuc`**: Performs the high-resolution cross-correlation to call nucleosome positions.\n    - *Output*: `.nucpos.bed.gz` (high-res dyads) and `.nucleoatac_signal.bedgraph.gz`.\n4.  **`merge`**: Combines low-resolution occupancy peaks with high-resolution dyad calls.\n5.  **`nfr`**: Identifies Nucleosome Free Regions between called nucleosomes.\n\n## Interpreting Key Outputs\n- **`.nucpos.bed.gz`**: The primary file for high-resolution dyad positions. Use this for sequence preference analysis.\n- **`.occ.bedgraph.gz`**: Best for comparing occupancy levels between different samples or loci, as it is less confounded by local accessibility than the signal track.\n- **`.nucleoatac_signal.bedgraph.gz`**: Represents how well the local pattern matches a nucleosome V-plot. Note: Negative values are possible and do not necessarily mean a nucleosome is absent; they indicate the signal is lower than the background model.\n\n## ATAC-seq Utilities (pyatac)\nUse `pyatac` for preprocessing and diagnostic checks:\n- **`pyatac sizes`**: Check fragment size distribution. If there is no \"nucleosome laddering\" (peak at ~150-200bp), NucleoATAC results will not be reliable.\n- **`pyatac ins`**: Generate a bedgraph of insertion frequencies.\n- **`pyatac bias`**: Calculate Tn5 hexamer sequence bias.\n- **`pyatac vplot`**: Generate a diagnostic V-plot around a set of genomic features (e.g., TSS).\n\n## Expert Tips\n- **Memory/Performance**: Use the `--cores` flag to parallelize across genomic regions.\n- **Single-End Data**: Do not attempt to use NucleoATAC on single-end data; the model strictly requires fragment length.\n- **Signal-to-Noise**: In low-quality samples, occupancy estimates may be biased downwards. Always cross-reference occupancy tracks with raw insertion density.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| nucleoatac merge | Merge nucleosome occupancy and position files. |\n| nucleoatac nfr | NFR determination parameters |\n| nucleoatac nuc | Nucleosome calling |\n| nucleoatac occ | Calculate nucleosome occupancy |\n| nucleoatac run | Run the nucleoatac pipeline |\n| nucleoatac vprocess | Processes nucleosome positioning data to generate various outputs and plots related to insert sizes and nucleosome footprints. |\n\n## Reference documentation\n- [NucleoATAC Overview](./references/nucleoatac_readthedocs_io_en_latest_nucleoatac.md)\n- [Pyatac Utilities](./references/nucleoatac_readthedocs_io_en_latest_pyatac.md)\n- [Frequently Asked Questions](./references/nucleoatac_readthedocs_io_en_latest_faq.md)",
+  "skill_front_matter": {
+    "name": "nucleoatac",
+    "description": "NucleoATAC identifies nucleosome positions and occupancy levels from paired-end ATAC-seq data by analyzing fragment size distributions and V-plot patterns. Use when user asks to call nucleosome positions, estimate nucleosome occupancy, identify nucleosome-free regions, or characterize ATAC-seq fragment size distributions.",
+    "homepage": "http://nucleoatac.readthedocs.io/en/latest/"
+  }
+}

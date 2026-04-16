@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-heron",
+  "category": "bioconductor",
+  "name": "bioconductor-heron",
+  "description": "This tool performs hierarchical analysis of high-density peptide array data to identify significant binding events at probe, epitope, and protein levels. Use when user asks to perform quantile normalization, calculate probe-level p-values, identify epitope segments, or aggregate peptide binding results to protein levels.",
+  "overview": "HERON is a Bioconductor package designed for the hierarchical analysis of peptide binding array data. It provides a structured workflow to identify significant binding events at three levels: individual probes, epitope segments (consecutive probes), and whole proteins. It is particularly effective for COVID-19 or other viral peptide tiling arrays where identifying specific epitope regions is critical.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HERON.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-heron/overview",
+  "github": "https://github.com/Ong-Research/HERON",
+  "conda_downloads": "819",
+  "conda_downloads_num": 819,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HERON"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HERON.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-heron/overview",
+    "github": "https://github.com/Ong-Research/HERON",
+    "conda_downloads": "819",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-heron\n\nname: bioconductor-heron\ndescription: Analysis of high-density peptide array data (e.g., NimbleGen) using the HERON (Hierarchical Epitope pROtein biNding) package. Use this skill to perform quantile normalization, calculate probe-level p-values, identify epitope segments, and aggregate results to epitope and protein levels.\n\n# bioconductor-heron\n\n## Overview\n\nHERON is a Bioconductor package designed for the hierarchical analysis of peptide binding array data. It provides a structured workflow to identify significant binding events at three levels: individual probes, epitope segments (consecutive probes), and whole proteins. It is particularly effective for COVID-19 or other viral peptide tiling arrays where identifying specific epitope regions is critical.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe central object is the `HERONSequenceDataSet` (a subclass of `SummarizedExperiment`).\n\n```R\nlibrary(HERON)\n\n# Required components:\n# 1. seq_mat: Matrix of intensities (rows = sequences, cols = samples)\n# 2. col_data: DataFrame with 'ptid', 'visit' (pre/post), and 'SampleName'\n# 3. probe_meta: Mapping of PROBE_SEQUENCE to PROBE_ID (Protein;Position)\n\nsds <- HERONSequenceDataSet(seq_mat)\ncolData(sds) <- col_data\nmetadata(sds)$probe_meta <- probe_meta\n```\n\n### 2. Pre-processing and Probe Analysis\nNormalize the data and calculate p-values for each probe.\n\n```R\n# Quantile normalization\nseq_ds_qn <- quantileNormalize(sds)\n\n# Calculate combined p-values (t-test/z-score by default)\n# Use d_paired = TRUE for paired pre/post designs\nseq_pval_res <- calcCombPValues(seq_ds_qn)\n\n# Convert to probe-level dataset\nprobe_pval_res <- convertSequenceDSToProbeDS(seq_pval_res)\n\n# Make calls (TRUE/FALSE) based on adjusted p-values\nprobe_calls_res <- makeProbeCalls(probe_pval_res)\n```\n\n### 3. Epitope Segment Identification\nIdentify blocks of consecutive probes that show binding.\n\n```R\n# Find segments using the 'unique' method (all consecutive called probes)\nepi_segments <- findEpitopeSegments(probe_calls_res, segment_method = \"unique\")\n\n# Calculate epitope-level significance using meta p-value methods (e.g., \"wmax1\")\nepi_padj <- calcEpitopePValues(\n    probe_calls_res,\n    epitope_ids = epi_segments,\n    metap_method = \"wmax1\"\n)\n\n# Make epitope-level calls\nepi_calls <- makeEpitopeCalls(epi_padj, one_hit_filter = TRUE)\n```\n\n### 4. Protein-Level Aggregation\nAggregate epitope results to determine if an entire protein shows significant binding.\n\n```R\nprot_padj <- calcProteinPValues(epi_padj, metap_method = \"tippetts\")\nprot_calls <- makeProteinCalls(prot_padj)\n```\n\n## Advanced Features\n\n### Alternative Statistical Tests\n- **Wilcoxon Test**: Use `calcCombPValues(obj, use = \"w\")` for non-normal data.\n- **Z-score Cutoffs**: Use `calcCombPValues(obj, use = \"z\")` to make calls based on global z-score thresholds rather than p-values.\n\n### Segmentation Methods\nBeyond the \"unique\" method, HERON supports clustering-based segmentation:\n- **hclust**: Hierarchical clustering across samples.\n- **skater**: Spatial 'skater' algorithm for segmenting probes.\n- **Parameters**: Adjust `segment_score_type` (\"binary\" or \"zscore\") and `segment_dist_method` (\"hamming\" or \"euclidean\").\n\n### Smoothing\nTo reduce variability, apply a running average across protein probes:\n```R\nprobe_ds_qn <- convertSequenceDSToProbeDS(seq_ds_qn, probe_meta)\nsmooth_ds <- smoothProbeDS(probe_ds_qn)\nprobe_sm_pval <- calcCombPValues(smooth_ds)\n```\n\n### Result Summaries\nUse `getKofN()` to calculate the number of samples (K), frequency (F), and percentage (P) of positive calls for any level (probe, epitope, or protein).\n\n## Reference documentation\n\n- [Analyzing High Density Peptide Array Data using HERON](./references/full_analysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-heron",
+    "description": "This tool performs hierarchical analysis of high-density peptide array data to identify significant binding events at probe, epitope, and protein levels. Use when user asks to perform quantile normalization, calculate probe-level p-values, identify epitope segments, or aggregate peptide binding results to protein levels.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HERON.html"
+  }
+}

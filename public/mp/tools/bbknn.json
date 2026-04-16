@@ -1,0 +1,43 @@
+{
+  "id": "bbknn",
+  "category": "library",
+  "name": "bbknn",
+  "description": "BBKNN is a fast, graph-based integration tool that mitigates batch effects in single-cell transcriptomics by identifying neighbors within each batch independently. Use when user asks to integrate single-cell datasets, remove batch effects from neighbor graphs, or perform computationally efficient data integration after PCA.",
+  "overview": "BBKNN (Batch Balanced K-Nearest Neighbors) is a fast, graph-based integration tool designed to mitigate batch effects in single-cell transcriptomics. Unlike standard methods that find the nearest neighbors across an entire merged dataset—which often results in cells clustering by batch rather than biology—BBKNN identifies a set number of neighbors for each cell within each individual batch independently. These local neighbor lists are then merged to create a balanced connectivity graph. This app",
+  "homepage": "https://github.com/Teichlab/bbknn",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bbknn/overview",
+  "github": "https://github.com/Teichlab/bbknn",
+  "conda_downloads": "100.0K",
+  "conda_downloads_num": 100000,
+  "last_updated": "2025-09-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bbknn"
+    ],
+    "description": "FAIL to generate CWL: bbknn not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/bbknn:1.6.0--py311h6cce608_5",
+    "homepage": "https://github.com/Teichlab/bbknn",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bbknn/overview",
+    "github": "https://github.com/Teichlab/bbknn",
+    "conda_downloads": "100.0K",
+    "last_updated": "2025-09-09",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bbknn\n\n## Overview\nBBKNN (Batch Balanced K-Nearest Neighbors) is a fast, graph-based integration tool designed to mitigate batch effects in single-cell transcriptomics. Unlike standard methods that find the nearest neighbors across an entire merged dataset—which often results in cells clustering by batch rather than biology—BBKNN identifies a set number of neighbors for each cell within each individual batch independently. These local neighbor lists are then merged to create a balanced connectivity graph. This approach is computationally efficient and integrates data without modifying the original gene expression values or PCA coordinates, making it a \"lightweight\" alternative to more intensive correction methods like MNN or Harmony.\n\n## Installation\nInstall via conda or pip:\n```bash\nconda install -c bioconda bbknn\n# OR\npip install bbknn\n```\n*Note: For significantly faster performance on large datasets, ensure `faiss` is installed.*\n\n## Core Usage Patterns\n\n### Standard Scanpy Integration\nBBKNN is designed to replace `scanpy.pp.neighbors()`. It should be run after PCA but before clustering (Leiden/Louvain) or manifold visualization (UMAP/PAGA).\n\n```python\nimport scanpy as sc\nimport bbknn\n\n# 1. Standard preprocessing\nsc.pp.filter_cells(adata, min_genes=200)\nsc.pp.normalize_total(adata)\nsc.pp.log1p(adata)\nsc.pp.highly_variable_genes(adata)\nsc.pp.pca(adata)\n\n# 2. Run BBKNN instead of sc.pp.neighbors\n# batch_key identifies the column in adata.obs containing batch info\nbbknn.bbknn(adata, batch_key='batch')\n\n# 3. Proceed with downstream analysis\nsc.tl.umap(adata)\nsc.tl.leiden(adata)\n```\n\n### Advanced Integration with Ridge Regression\nFor complex datasets, integration can be improved by regressing out technical effects while preserving biological variation using a \"round-trip\" workflow.\n\n```python\n# Initial integration to get coarse clusters\nbbknn.bbknn(adata, batch_key='batch')\nsc.tl.leiden(adata)\n\n# Perform ridge regression using clusters as biological confounders\nbbknn.ridge_regression(adata, batch_key=['batch'], confounder_key=['leiden'])\n\n# Re-run PCA and BBKNN on the regressed data\nsc.tl.pca(adata)\nbbknn.bbknn(adata, batch_key='batch')\n```\n\n### Working with Raw Matrices\nIf you are not using `AnnData` objects, use the matrix-based interface:\n\n```python\nimport bbknn.matrix\n# pca_matrix: cells as rows, PCs as columns\n# batch_list: a vector/list of batch assignments for each cell\ndistances, connectivities, parameters = bbknn.matrix.bbknn(pca_matrix, batch_list)\n```\n\n## Expert Tips and Best Practices\n\n- **Batch Key Selection**: The `batch_key` defaults to `'batch'`. If your samples were concatenated using `adata.concatenate()`, this column is created automatically.\n- **Neighbors per Batch**: Use `neighbors_within_batch` (default: 3) to control how many neighbors are identified in each batch. Total neighbors for a cell will be `neighbors_within_batch * number_of_batches`.\n- **Graph Trimming**: If you suspect unrelated cell populations are being forced together, use the `trim` parameter. It limits the total number of neighbors per cell to the $N$ strongest edges, helping to remove spurious connections.\n- **FAISS Acceleration**: If working with >100k cells, use `use_faiss=True`. This requires the `faiss` library and provides a massive speedup for the neighbor search.\n- **Metric Choice**: While Euclidean distance is standard for PCA space, you can specify other metrics (e.g., `metric='angular'`) if your data requires it.\n- **R Integration**: While there is no native R package, BBKNN can be called via `reticulate` within a Seurat/SingleCellExperiment workflow by passing the PCA embeddings and batch vector to the Python module.\n\n## Reference documentation\n- [Batch balanced KNN GitHub Repository](./references/github_com_Teichlab_bbknn.md)\n- [bbknn - bioconda | Anaconda.org](./references/anaconda_org_channels_bioconda_packages_bbknn_overview.md)",
+  "skill_front_matter": {
+    "name": "bbknn",
+    "description": "BBKNN is a fast, graph-based integration tool that mitigates batch effects in single-cell transcriptomics by identifying neighbors within each batch independently. Use when user asks to integrate single-cell datasets, remove batch effects from neighbor graphs, or perform computationally efficient data integration after PCA.",
+    "homepage": "https://github.com/Teichlab/bbknn"
+  }
+}

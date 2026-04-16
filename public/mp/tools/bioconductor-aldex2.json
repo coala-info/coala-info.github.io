@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-aldex2",
+  "category": "bioconductor",
+  "name": "bioconductor-aldex2",
+  "description": "ALDEx2 performs differential abundance analysis for high-throughput sequencing data using a compositional data analysis approach. Use when user asks to perform differential expression testing, account for technical variation via Dirichlet Monte-Carlo sampling, or estimate effect sizes for compositional datasets.",
+  "overview": "ALDEx2 (ANOVA-Like Differential Expression) is an R package designed for the analysis of high-throughput sequencing count data. Unlike methods that rely on library size normalization, ALDEx2 treats data as compositional. It uses Dirichlet Monte-Carlo (DMC) sampling to model technical variation and Centred Log-Ratio (CLR) transformations to linearize the data. It is robust against sparsity and varying sequencing depths, providing expected values for statistical tests and effect sizes.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ALDEx2.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-aldex2/overview",
+  "github": "https://github.com/ggloor/ALDEx_bioc",
+  "conda_downloads": "48.6K",
+  "conda_downloads_num": 48600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ALDEx2"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ALDEx2.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-aldex2/overview",
+    "github": "https://github.com/ggloor/ALDEx_bioc",
+    "conda_downloads": "48.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-aldex2\n\nname: bioconductor-aldex2\ndescription: Differential abundance analysis for high-throughput sequencing data (RNA-Seq, 16S, metagenomics, SELEX) using a compositional data analysis approach. Use when Claude needs to perform differential expression or abundance testing while accounting for the compositional nature of sequencing data, technical variation via Dirichlet Monte-Carlo sampling, or scale uncertainty.\n\n# bioconductor-aldex2\n\n## Overview\nALDEx2 (ANOVA-Like Differential Expression) is an R package designed for the analysis of high-throughput sequencing count data. Unlike methods that rely on library size normalization, ALDEx2 treats data as compositional. It uses Dirichlet Monte-Carlo (DMC) sampling to model technical variation and Centred Log-Ratio (CLR) transformations to linearize the data. It is robust against sparsity and varying sequencing depths, providing expected values for statistical tests and effect sizes.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data must be a data frame or matrix of non-negative integers (counts) where rows are features (genes, OTUs) and columns are samples.\n\n```r\nlibrary(ALDEx2)\ndata(selex)\n# Define conditions vector matching the columns of the count table\nconds <- c(rep(\"NS\", 7), rep(\"S\", 7))\n```\n\n### 2. The All-in-One Approach\nFor simple two-group comparisons, use the wrapper function `aldex`.\n\n```r\n# mc.samples: 128 is recommended for production; 16 for quick checks\n# test: \"t\" for Welch's t and Wilcoxon; \"kw\" for ANOVA\n# effect: TRUE to calculate effect sizes (highly recommended)\nresult <- aldex(selex, conds, mc.samples=128, test=\"t\", effect=TRUE, denom=\"all\")\n```\n\n### 3. The Modular Approach\nFor power users or complex designs, use the modular functions to expose intermediate values.\n\n```r\n# Step 1: Generate CLR Monte-Carlo instances\n# denom: \"all\" (default), \"iqlr\" (for asymmetric data), or \"zero\"\nx <- aldex.clr(selex, conds, mc.samples=128, denom=\"all\")\n\n# Step 2: Perform statistical tests\nx.tt <- aldex.ttest(x, paired.test=FALSE)\n\n# Step 3: Estimate effect sizes (Difference between vs Difference within)\nx.effect <- aldex.effect(x, CI=TRUE)\n\n# Step 4: Combine results\nx.all <- data.frame(x.tt, x.effect)\n```\n\n## Complex Designs (GLM)\nUse `aldex.glm` for complex study designs involving multiple covariates or continuous variables.\n\n```r\ncovariates <- data.frame(\"A\" = sample(0:1, 14, replace = TRUE), \"B\" = c(rep(0, 7), rep(1, 7)))\nmm <- model.matrix(~ A + B, covariates)\n\nx.glm.clr <- aldex.clr(selex, mm, mc.samples=16, denom=\"all\")\nglm.test <- aldex.glm(x.glm.clr, mm)\nglm.eff <- aldex.glm.effect(x.glm.clr)\n```\n\n## Scale Uncertainty\nTo account for scale uncertainty (e.g., when one group has a higher total biomass/mRNA load), use the `gamma` parameter or a scale matrix.\n\n```r\n# mu represents the log-ratio of the scale between groups\nmu.mod <- c(rep(1, 7), rep(8, 7)) \nscale.model <- aldex.makeScaleMatrix(gamma=0.5, mu=mu.mod, conditions=conds, mc.samples=128)\n\nx.scaled <- aldex.clr(selex, conds, gamma=scale.model)\n```\n\n## Visualization\nALDEx2 provides specialized plotting functions to interpret results.\n\n- **Bland-Altman (MA) Plot**: `aldex.plot(result, type=\"MA\", test=\"welch\")` - Shows abundance vs. difference.\n- **Effect Plot (MW)**: `aldex.plot(result, type=\"MW\", test=\"welch\")` - Shows dispersion vs. difference.\n- **Volcano Plot**: `aldex.plot(result, type=\"volcano\", test=\"welch\")`\n- **Feature Plot**: `aldex.plotFeature(x, \"FeatureName\")` - Visualizes the posterior distribution of a specific feature.\n\n## Interpretation Tips\n- **Effect Size**: Focus on the `effect` column. An absolute effect size > 1 is generally considered biologically relevant.\n- **Overlap**: The `overlap` column indicates the proportion of the distribution overlapping 0. Low overlap suggests a robust difference.\n- **P-values**: ALDEx2 returns *expected* p-values (`we.ep`, `wi.ep`) and BH-corrected values (`we.eBH`, `wi.eBH`).\n- **Asymmetry**: If the data is asymmetric (one group has many more features than the other), use `denom=\"iqlr\"` in `aldex.clr`.\n\n## Reference documentation\n- [ANOVA-Like Differential Expression tool for high throughput sequencing data](./references/ALDEx2_vignette.md)\n- [ALDEx2 scaleSim Vignette](./references/scaleSim_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-aldex2",
+    "description": "ALDEx2 performs differential abundance analysis for high-throughput sequencing data using a compositional data analysis approach. Use when user asks to perform differential expression testing, account for technical variation via Dirichlet Monte-Carlo sampling, or estimate effect sizes for compositional datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ALDEx2.html"
+  }
+}

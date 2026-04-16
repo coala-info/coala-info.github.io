@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sesamedata",
+  "category": "bioconductor",
+  "name": "bioconductor-sesamedata",
+  "description": "This tool provides annotation data and processing functions for analyzing Illumina Infinium DNA methylation array data. Use when user asks to process IDAT files, calculate quality control metrics, infer sample metadata like sex or ethnicity, perform differential methylation analysis, or work with non-human methylation arrays.",
+  "overview": "The `sesameData` package provides essential annotation data and example datasets for the `sesame` R package. Together, they offer a suite of tools for analyzing Illumina Infinium DNA methylation arrays. The workflow typically involves reading raw IDAT files, applying specialized preprocessing (background subtraction, dye bias correction), and performing downstream statistical modeling or biological inference.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/sesameData.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/zwdzwd/sesame",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sesameData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/sesameData.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/zwdzwd/sesame",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sesamedata\n\nname: bioconductor-sesamedata\ndescription: Comprehensive DNA methylation analysis using the SeSAMe and sesameData packages. Use when Claude needs to process Illumina Infinium BeadChip data (EPIC, HM450, MM285, Mammal40) for: (1) Preprocessing IDAT files to beta values, (2) Quality control and metric calculation, (3) Sample metadata inference (sex, age, ethnicity), (4) Differential methylation analysis (DML/DMR), or (5) Working with non-human (mouse, mammal) arrays.\n\n# bioconductor-sesamedata\n\n## Overview\nThe `sesameData` package provides essential annotation data and example datasets for the `sesame` R package. Together, they offer a suite of tools for analyzing Illumina Infinium DNA methylation arrays. The workflow typically involves reading raw IDAT files, applying specialized preprocessing (background subtraction, dye bias correction), and performing downstream statistical modeling or biological inference.\n\n## Core Workflow: IDAT to Beta Values\nThe `openSesame` function is the primary entry point for end-to-end processing.\n\n```r\nlibrary(sesame)\nlibrary(sesameData)\n\n# CRITICAL: Run once per installation to cache annotations\nsesameDataCache()\n\n# Process a directory of IDATs\nidat_dir <- \"path/to/idat_folder\"\nbetas <- openSesame(idat_dir)\n\n# Custom preprocessing (e.g., for EPIC array)\n# Q: QualityMask, C: ChannelInference, D: DyeBias, P: pOOBAH, B: Background (Noob)\nbetas <- openSesame(idat_dir, prep = \"QCDPB\")\n```\n\n## Quality Control\nCalculate and rank quality metrics to identify problematic samples.\n\n```r\n# Calculate stats for a SigDF object\nsdf <- sesameDataGet('EPIC.1.SigDF')\nqc <- sesameQC_calcStats(sdf, funs = c(\"detection\", \"intensity\"))\n\n# Print QC summary\nprint(qc)\n\n# Rank against public datasets\nsesameQC_rankStats(qc, platform = \"EPIC\")\n\n# Get specific metric\nfrac_dt <- sesameQC_getStats(qc, \"frac_dt\")\n```\n\n## Metadata Inference\nInfer biological properties from the methylation data to validate sample integrity.\n\n```r\n# Sex and Karyotype inference\ninferSex(sdf)\ninferSexKaryotypes(sdf)\n\n# Ethnicity inference (Human)\ninferEthnicity(sdf)\n\n# Age prediction (Epigenetic Clock)\n# Requires downloading specific model RDS files\nbetas <- getBetas(sdf)\n# predictAge(betas, model) \n\n# Cell count deconvolution (Leukocyte fraction)\nestimateLeukocyte(betas)\n```\n\n## Differential Methylation (DML/DMR)\nModel methylation variation against predictors (age, sex, tissue).\n\n```r\nlibrary(SummarizedExperiment)\nse <- sesameDataGet(\"MM285.10.SE.tissue\")\n\n# 1. Check levels to ensure enough data per group\nse_ok <- checkLevels(assay(se), colData(se)$sex)\nse <- se[se_ok,]\n\n# 2. Fit Linear Model (DML)\nsmry <- DML(se, ~tissue + sex)\n\n# 3. Extract test results\ntest_results <- summaryExtractTest(smry)\n\n# 4. Identify Regions (DMR)\nmerged_dmr <- DMR(se, smry, \"sexMale\")\n```\n\n## Working with Non-Human Arrays (MM285, Mammal40)\nSpecialized functions for species and strain inference.\n\n```r\n# Species inference for Mammal40\nsdf <- sesameDataGet(\"Mammal40.1.SigDF\")\ninferSpecies(sdf, return.species = TRUE)\n\n# Mouse strain inference for MM285\nsdf_mouse <- sesameDataGet(\"MM285.1.SigDF\")\ninferStrain(sdf_mouse, return.strain = TRUE)\n\n# Recommended prep code for Mouse: \"TQCDPB\" (T: Strain inference)\nbetas_mouse <- openSesame(idat_dir, prep = \"TQCDPB\")\n```\n\n## Data Retrieval and Manifests\nAccessing genomic coordinates and probe information.\n\n```r\n# Get manifest as GRanges\ngr <- sesameData_getManifestGRanges(\"EPIC\")\n\n# Get probes by gene or region\nprobes <- sesameData_getProbesByGene(\"DNMT3A\", \"EPIC\", promoter = TRUE)\n\n# Annotate custom probe lists\ninput_probes <- c(\"cg14620903\", \"cg22464003\")\nregs <- sesameData_getTxnGRanges(\"hg38\", merge2gene = TRUE)\nsesameData_annoProbes(input_probes, regs, column = \"gene_name\")\n```\n\n## Reference documentation\n- [KnowYourCG (Enrichment Analysis)](./references/KYCG.Rmd)\n- [Quality Control](./references/QC.Rmd)\n- [Sample Metadata Inference](./references/inferences.Rmd)\n- [Differential Methylation Modeling](./references/modeling.Rmd)\n- [Non-human Array Processing](./references/nonhuman.Rmd)\n- [Basic Usage & Preprocessing](./references/sesame.Rmd)\n- [sesameData User Guide](./references/sesameData.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sesamedata",
+    "description": "This tool provides annotation data and processing functions for analyzing Illumina Infinium DNA methylation array data. Use when user asks to process IDAT files, calculate quality control metrics, infer sample metadata like sex or ethnicity, perform differential methylation analysis, or work with non-human methylation arrays.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/sesameData.html"
+  }
+}

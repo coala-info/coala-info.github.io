@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-idmappinganalysis",
+  "category": "bioconductor",
+  "name": "bioconductor-idmappinganalysis",
+  "description": "This tool evaluates and compares bioinformatics identifier mapping resources using statistical methods and experimental data. Use when user asks to evaluate ID map quality, compare annotation services like DAVID or Ensembl, validate mappings with experimental data, or perform mixture modeling on correlation data.",
+  "overview": "The `IdMappingAnalysis` package provides a framework for critically evaluating identifier maps retrieved from various bioinformatics resources. It is particularly useful when integrating data from different high-throughput platforms (like transcriptomics and proteomics). The package allows users to characterize ID maps, compare them without experimental data, and use experimental results to determine which mapping resource provides the most biologically relevant links through correlation analysi",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/IdMappingAnalysis.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-idmappinganalysis/overview",
+  "github": "N/A",
+  "conda_downloads": "8.7K",
+  "conda_downloads_num": 8700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IdMappingAnalysis"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/IdMappingAnalysis.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-idmappinganalysis/overview",
+    "github": "N/A",
+    "conda_downloads": "8.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-idmappinganalysis\n\nname: bioconductor-idmappinganalysis\ndescription: Analyze and compare identifier (ID) mapping resources in bioinformatics. Use this skill to evaluate the quality of ID maps (e.g., UniProt to Affymetrix), compare different annotation services (NetAffx, DAVID, Ensembl), and validate mappings using experimental data (e.g., mRNA vs. protein correlations) through mixture modeling and regression.\n\n# bioconductor-idmappinganalysis\n\n## Overview\n\nThe `IdMappingAnalysis` package provides a framework for critically evaluating identifier maps retrieved from various bioinformatics resources. It is particularly useful when integrating data from different high-throughput platforms (like transcriptomics and proteomics). The package allows users to characterize ID maps, compare them without experimental data, and use experimental results to determine which mapping resource provides the most biologically relevant links through correlation analysis and mixture modeling.\n\n## Core Workflows\n\n### 1. Initializing and Preparing ID Maps\nID maps are typically structured as `IdMap` objects where the first column is the primary ID and the second contains secondary IDs (comma-separated).\n\n```R\nlibrary(IdMappingAnalysis)\n\n# Load example data\ndata(examples)\n\n# Create a JointIdMap from multiple resources\n# primaryIDs and secondaryIDs should be vectors of IDs from your experiments\njointIdMap <- JointIdMap(examples$identDfList, primaryIDs, verbose=FALSE)\n\n# View the combined data\nhead(jointIdMap$as.data.frame())\n```\n\n### 2. Characterizing and Comparing Maps\nAnalyze the distribution of secondary IDs per primary ID and find discrepancies between resources.\n\n```R\n# Get counts of secondary IDs per primary ID across services\nmapCounts <- getCounts(jointIdMap, idMapNames=c(\"NetAffx_Q\", \"DAVID_Q\"))\nstats <- mapCounts$getStats(summary=TRUE, cutoff=3)\n\n# Compare two specific maps (A vs B)\ndiffs <- jointIdMap$getDiff(\"DAVID_Q\", \"EnVision_Q\")\ndiffCounts <- IdMapDiffCounts(diffs)\ndiffCounts$summary()\nplot(diffCounts)\n```\n\n### 3. Data-Driven Evaluation (Correlation Analysis)\nUse experimental data (e.g., MS/MS protein counts and mRNA expression) to validate mappings.\n\n```R\n# 1. Create UniquePairs and CorrData objects\nuniquePairs <- as.UniquePairs(getUnionIdMap(jointIdMap), secondaryIDs)\ncorrData <- CorrData(uniquePairs, msmsExperimentSet, mrnaExperimentSet)\n\n# 2. Calculate correlations for all ID pairs\ncorr <- Corr(corrData, method=\"pearson\")\n\n# 3. Plot correlation densities to compare services\njointUniquePairs <- JointUniquePairs(uniquePairs, getIdMapList(jointIdMap))\njointUniquePairs$corr.plot(corr, idMapNames=c(\"NetAffx_Q\", \"DAVID_Q\"), subsetting=TRUE)\n```\n\n### 4. Mixture Modeling and Regression\nIdentify the \"best\" mapping resource by fitting a mixture model to correlations (separating noise from signal) and using the posterior probability as a quality measure.\n\n```R\n# Fit a 2-component mixture model\nmixture <- Mixture(corr, G=2)\nplot(mixture)\n\n# Get posterior probabilities for the 'good' correlation component\nqualityMeasure <- mixture$getData(G=2)\n\n# Regression: Which service predicts 'good' correlations?\nfit <- jointUniquePairs$do.glm(qualityMeasure, idMapNames=c(\"DAVID_Q\", \"EnVision_Q\", \"NetAffx_Q\"))\nsummary(fit)\n```\n\n## Key Classes and Methods\n- `IdMap`: Basic container for ID mappings. Use `$swapKeys()` to reverse mapping direction.\n- `JointIdMap`: Aligns multiple `IdMap` objects.\n- `CorrData`: Collates experimental data for rapid correlation calculation.\n- `JointUniquePairs`: Tracks which ID maps reported each unique pair; used for group-wise comparisons.\n- `Bootstrap`: Used to estimate standard deviations of correlations for weighted regression.\n\n## Tips\n- **Interactive Exploration**: Many methods like `jointIdMap$diffCounts.plot(\"loop\")` or `corrData$interactive.plot()` trigger GUI menus for exploratory analysis.\n- **Filtering**: Use `DataFilter` to clean experimental data (e.g., `DataFilter$removeNASeries`) before calculating correlations to avoid bias.\n- **Reversing Maps**: Reversing a map (Secondary to Primary) is not always a perfect inverse; use `IdMap$swapKeys()` carefully.\n\n## Reference documentation\n- [IdMappingAnalysis](./references/IdMappingAnalysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-idmappinganalysis",
+    "description": "This tool evaluates and compares bioinformatics identifier mapping resources using statistical methods and experimental data. Use when user asks to evaluate ID map quality, compare annotation services like DAVID or Ensembl, validate mappings with experimental data, or perform mixture modeling on correlation data.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/IdMappingAnalysis.html"
+  }
+}

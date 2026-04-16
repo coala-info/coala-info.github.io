@@ -1,0 +1,56 @@
+{
+  "id": "renet2",
+  "category": "CLI",
+  "name": "renet2",
+  "description": "RENET2 is a deep learning framework designed to extract gene-disease relationships from full-text scientific articles. Use when user asks to identify gene-disease associations, train custom relation extraction models, or evaluate performance using cross-validation on annotated biomedical text.",
+  "overview": "RENET2 is a deep learning framework designed to identify and extract relationships between genes and diseases from scientific text. While many tools are limited to processing abstracts or single sentences, RENET2 is specifically optimized for full-text articles. It utilizes section filtering to focus on the most informative parts of a document and employs iterative training data expansion to handle the scarcity of labeled full-text data. This makes it an essential tool for researchers building b",
+  "homepage": "https://github.com/sujunhao/RENET2",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/renet2/overview",
+  "github": "https://github.com/sujunhao/RENET2",
+  "conda_downloads": "2.3K",
+  "conda_downloads_num": 2300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "renet2_predict",
+      "renet2_train",
+      "renet2_evaluate_renet2_ft_cv",
+      "renet2_download_data",
+      "renet2_parse_data",
+      "renet2_normalize_ann",
+      "renet2_install_geniass"
+    ],
+    "description": "RENET2 testing models [assemble, full-text]",
+    "docker_image": "quay.io/biocontainers/renet2:1.2--py_0",
+    "homepage": "https://github.com/sujunhao/RENET2",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/renet2/overview",
+    "github": "https://github.com/sujunhao/RENET2",
+    "conda_downloads": "2.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "renet2_download_data.cwl",
+    "renet2_evaluate_renet2_ft_cv.cwl",
+    "renet2_normalize_ann.cwl",
+    "renet2_parse_data.cwl",
+    "renet2_predict.cwl",
+    "renet2_train.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# renet2\n\n## Overview\nRENET2 is a deep learning framework designed to identify and extract relationships between genes and diseases from scientific text. While many tools are limited to processing abstracts or single sentences, RENET2 is specifically optimized for full-text articles. It utilizes section filtering to focus on the most informative parts of a document and employs iterative training data expansion to handle the scarcity of labeled full-text data. This makes it an essential tool for researchers building biomedical knowledge bases or performing systematic literature mining.\n\n## Installation and Setup\nBefore running RENET2, the environment must be configured and the pre-trained models must be downloaded.\n\n1. **Environment**: Activate the environment using `conda activate renet2-env`.\n2. **Resource Acquisition**: Pre-trained models and datasets are not included in the base installation. Use the provided utility script to download them:\n   ```bash\n   # Define the download URL\n   RENET2_DATA_S_URL=https://raw.githubusercontent.com/sujunhao/RENET2/main/src/renet2/download_renet2_data.sh\n   # Download and execute\n   curl -s ${RENET2_DATA_S_URL} | bash -s .\n   # Set the directory variable for subsequent commands\n   export R2_DIR=$(pwd)\n   ```\n\n## Common CLI Patterns\n\n### Predicting Gene-Disease Associations\nTo extract associations from full-text data using pre-trained models:\n```bash\nrenet2 predict \\\n  --raw_data_dir ${R2_DIR}/data/ft_data/ \\\n  --model_dir ${R2_DIR}/models/ft_models/ \\\n  --gda_fn_d ${R2_DIR}/data/ft_gda/ \\\n  --models_number 2 \\\n  --batch_size 60 \\\n  --use_cuda\n```\n*   `--is_sensitive_mode`: Enable this flag to use \"RENET2-Sensitive\" mode, which prioritizes higher recall.\n*   `--no_cache_file`: Use this to bypass cached processed data and force a fresh run.\n*   `--max_doc_num`: Limits the number of documents processed (useful for quick testing).\n\n### Training Custom Models\nTo train the model on a specific annotated dataset:\n```bash\nrenet2 train \\\n  --raw_data_dir ${R2_DIR}/data/ft_data/ \\\n  --annotation_info_dir ${R2_DIR}/data/ft_info \\\n  --model_dir ./output_models \\\n  --pretrained_model_p ${R2_DIR}/models/Bst_abs_10 \\\n  --epochs 10 \\\n  --models_number 10 \\\n  --use_cuda\n```\n\n### Performance Evaluation\nTo run a 5-fold cross-validation on an annotated dataset:\n```bash\nrenet2 evaluate_renet2_ft_cv \\\n  --raw_data_dir ${R2_DIR}/data/ft_data/ \\\n  --annotation_info_dir ${R2_DIR}/data/ft_info/ \\\n  --epochs 10 \\\n  --use_cuda\n```\n\n## Expert Tips\n- **Hardware Optimization**: Always use the `--use_cuda` flag if a GPU is available. Relation extraction on full-text articles is computationally expensive and significantly slower on CPUs.\n- **Memory Management**: If you encounter \"Out of Memory\" (OOM) errors, reduce the `--batch_size`. For full-text processing on standard GPUs, a batch size between 8 and 16 is often safer than the default.\n- **Data Preparation**: RENET2 relies on section filtering. Ensure your input data format preserves section boundaries (e.g., Introduction, Methods, Results) to allow the model to filter out less relevant sections effectively.\n- **Output Files**: The primary output is `gda_rst.tsv`. This tab-separated file contains the predicted gene-disease pairs and their associated confidence scores.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| download_data.py | download abstrcts/full-text pubtator/json file from Pubtator |\n| evaluate_renet2_ft_cv.py | RENET2 training models [assemble, full-text] and testing |\n| normalize_ann.py | normalize annotation ID |\n| parse_data.py | parse abstracts/full-text pubtator/json file to RENET2 input format |\n| predict.py | RENET2 testing models [assemble, full-text] |\n| train.py | RENET2 training models [assemble, full-text] and testing |\n\n## Reference documentation\n- [RENET2 README](./references/github_com_sujunhao_RENET2_blob_main_README.md)\n- [RENET2 Setup and Entry Points](./references/github_com_sujunhao_RENET2_blob_main_setup.py.md)",
+  "skill_front_matter": {
+    "name": "renet2",
+    "description": "RENET2 is a deep learning framework designed to extract gene-disease relationships from full-text scientific articles. Use when user asks to identify gene-disease associations, train custom relation extraction models, or evaluate performance using cross-validation on annotated biomedical text.",
+    "homepage": "https://github.com/sujunhao/RENET2"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-yapsa",
+  "category": "bioconductor",
+  "name": "bioconductor-yapsa",
+  "description": "This tool performs supervised mutational signature analysis using Linear Combination Decomposition to attribute known signatures to mutation catalogues. Use when user asks to attribute mutational signatures to SNV or Indel catalogues, apply signature-specific cutoffs, calculate confidence intervals via profile likelihood, or perform stratified mutational catalogue analysis.",
+  "overview": "YAPSA (Yet Another Package for Signature Analysis) is a Bioconductor package designed for the supervised analysis of mutational signatures. Unlike discovery-based methods (NMF), YAPSA uses Linear Combination Decomposition (LCD) to attribute known signatures to samples. This allows for analysis of small cohorts (even single samples) and provides advanced features like signature-specific cutoffs to reduce false positives, confidence interval estimation, and stratified analysis to see how signature",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/YAPSA.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "YAPSA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/YAPSA.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-yapsa\n\nname: bioconductor-yapsa\ndescription: Performs supervised mutational signature analysis using Linear Combination Decomposition (LCD). Use this skill to attribute mutational signatures (COSMIC, PCAWG) to SNV or Indel catalogues, apply signature-specific cutoffs, calculate confidence intervals via profile likelihood, and perform stratified mutational catalogue (SMC) analysis to identify enrichment/depletion patterns across genomic strata.\n\n# bioconductor-yapsa\n\n## Overview\nYAPSA (Yet Another Package for Signature Analysis) is a Bioconductor package designed for the supervised analysis of mutational signatures. Unlike discovery-based methods (NMF), YAPSA uses Linear Combination Decomposition (LCD) to attribute known signatures to samples. This allows for analysis of small cohorts (even single samples) and provides advanced features like signature-specific cutoffs to reduce false positives, confidence interval estimation, and stratified analysis to see how signatures vary across different genomic regions or mutation densities.\n\n## Core Workflow\n\n### 1. Data Preparation\nLoad the package and required genome data. YAPSA typically works with data frames containing variant calls (CHROM, POS, REF, ALT, PID).\n\n```r\nlibrary(YAPSA)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Load built-in signatures and cutoffs\ndata(sigs)\ndata(cutoffs)\n```\n\n### 2. Building a Mutational Catalogue\nConvert variant data frames into a mutational catalogue matrix (96 features for SNVs).\n\n```r\nword_length <- 3\nmutCat_list <- create_mutation_catalogue_from_df(\n  variant_df,\n  this_seqnames.field = \"CHROM\",\n  this_start.field = \"POS\",\n  this_end.field = \"POS\",\n  this_PID.field = \"PID\",\n  this_subgroup.field = \"SUBGROUP\",\n  this_refGenome = BSgenome.Hsapiens.UCSC.hg19,\n  this_wordLength = word_length\n)\nmutCat_df <- as.data.frame(mutCat_list$matrix)\n```\n\n### 3. Signature Attribution (LCD)\nPerform the decomposition. It is highly recommended to use `LCD_complex_cutoff` or `LCD_complex_cutoff_combined` with signature-specific cutoffs to minimize false positive attributions.\n\n```r\n# Select COSMIC signatures and corresponding optimal cutoffs (cost factor 6)\ncurrent_sig_df <- AlexCosmicValid_sig_df\ncurrent_sigInd_df <- AlexCosmicValid_sigInd_df\ncurrent_cutoff_vector <- cutoffCosmicValid_abs_df[6,]\n\n# Run supervised analysis\nresults <- LCD_complex_cutoff_combined(\n  in_mutation_catalogue_df = mutCat_df,\n  in_cutoff_vector = current_cutoff_vector,\n  in_signatures_df = current_sig_df,\n  in_sig_ind_df = current_sigInd_df\n)\n\n# Access exposures\nexposures <- results$cohort$exposures\n```\n\n### 4. Visualization\nYAPSA provides specialized plotting functions for exposures.\n\n```r\n# Create subgroup annotation if needed\nsubgroups_df <- make_subgroups_df(metadata_df, exposures)\n\n# Plot absolute exposures\nexposures_barplot(\n  in_exposures_df = exposures,\n  in_signatures_ind_df = results$cohort$out_sig_ind_df,\n  in_subgroups_df = subgroups_df\n)\n```\n\n## Advanced Features\n\n### Stratified Mutational Catalogue (SMC)\nAnalyze if signatures are enriched in specific genomic regions (e.g., high vs. low mutation density, or specific chromatin states).\n\n```r\n# 1. Annotate variants with strata (e.g., density_cat)\n# 2. Run SMC\nmut_density_list <- run_SMC(\n  variant_df,\n  results$cohort$signatures,\n  results$cohort$out_sig_ind_df,\n  subgroups_df,\n  column_name = \"density_cat\",\n  refGenome = BSgenome.Hsapiens.UCSC.hg19\n)\n\n# 3. Test for significance\nstat_res <- stat_test_SMC(mut_density_list, in_flag = \"norm\")\n```\n\n### Confidence Intervals\nCalculate 95% CIs for exposures using the profile likelihood method.\n\n```r\nci_df <- variateExp(\n  in_catalogue_df = mutCat_df,\n  in_sig_df = results$cohort$signatures,\n  in_exposures_df = results$cohort$exposures,\n  in_sigLevel = 0.025\n)\n\nplotExposuresConfidence(ci_df, subgroups_df, results$cohort$out_sig_ind_df)\n```\n\n### Whole Exome Sequencing (WES) Normalization\nWES data must be corrected for the triplet frequency differences between the exome capture kit and the whole genome.\n\n```r\ndata(targetCapture_cor_factors)\n# Select kit, e.g., \"AgilentSureSelectAllExon\"\ncor_factors <- targetCapture_cor_factors[[\"AgilentSureSelectAllExon\"]]\ncorrected_mutCat <- normalizeMotifs_otherRownames(mutCat_df, cor_factors$rel_cor)\n```\n\n## Tips for Success\n- **Signature Selection**: Use `AlexCosmicValid_sig_df` for standard COSMIC v2 analysis or `PCAWG_SP_SBS_sigs_Real_df` for PCAWG/COSMIC v3.\n- **Cutoffs**: Always use signature-specific cutoffs. For WGS, use `_abs_` cutoffs; for WES, use `_rel_` cutoffs.\n- **Indels**: For Indel analysis, use `PCAWG_SP_ID_sigs_df` and ensure your input data follows the 83-feature classification required by PCAWG.\n\n## Reference documentation\n- [Usage of YAPSA](./references/YAPSA.md)\n- [Confidence Intervals](./references/vignette_confidenceIntervals.md)\n- [Whole Exome Sequencing (WES) data](./references/vignette_exomes.md)\n- [Signature-specific cutoffs](./references/vignette_signature_specific_cutoffs.md)\n- [Stratified Analysis of Mutational Signatures](./references/vignette_stratifiedAnalysis.md)\n- [Indel signature analysis](./references/vignettes_Indel.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-yapsa",
+    "description": "This tool performs supervised mutational signature analysis using Linear Combination Decomposition to attribute known signatures to mutation catalogues. Use when user asks to attribute mutational signatures to SNV or Indel catalogues, apply signature-specific cutoffs, calculate confidence intervals via profile likelihood, or perform stratified mutational catalogue analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/YAPSA.html"
+  }
+}

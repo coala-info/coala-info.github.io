@@ -1,0 +1,43 @@
+{
+  "id": "phip-stat",
+  "category": "library",
+  "name": "phip-stat",
+  "description": "phip-stat processes PhIP-seq experimental data through a pipeline of alignment, sample merging, and statistical modeling to identify enriched clones. Use when user asks to align PhIP-seq reads, merge sample counts into a matrix, normalize data using Gamma-Poisson models, or call hits using matrix factorization.",
+  "overview": "The `phip-stat` toolset is a specialized suite for processing PhIP-seq experimental data. It manages the transition from raw FASTQ files to analysis-ready enrichment scores through a three-stage pipeline: alignment (counting reads per library member), merging (combining samples into a single matrix), and modeling (normalizing and calling hits). While the project is in maintenance mode, it remains a standard for implementing the Gamma-Poisson model and low-rank matrix factorization for PhIP-seq d",
+  "homepage": "https://github.com/lasersonlab/phip-stat",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/phip-stat/overview",
+  "github": "https://github.com/lasersonlab/phip-stat",
+  "conda_downloads": "2.1K",
+  "conda_downloads_num": 2100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "phip-stat_phip"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/phip-stat:0.5.1--pyh7cba7a3_0",
+    "homepage": "https://github.com/lasersonlab/phip-stat",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/phip-stat/overview",
+    "github": "https://github.com/lasersonlab/phip-stat",
+    "conda_downloads": "2.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# phip-stat\n\n## Overview\n\nThe `phip-stat` toolset is a specialized suite for processing PhIP-seq experimental data. It manages the transition from raw FASTQ files to analysis-ready enrichment scores through a three-stage pipeline: alignment (counting reads per library member), merging (combining samples into a single matrix), and modeling (normalizing and calling hits). While the project is in maintenance mode, it remains a standard for implementing the Gamma-Poisson model and low-rank matrix factorization for PhIP-seq datasets.\n\n## Installation and Setup\n\nInstall via bioconda or pip:\n\n```bash\nconda install bioconda::phip-stat\n# OR\npip install phip-stat\n```\n\nNote: The `clipped-factorization-model` requires `tensorflow` to be installed in the environment.\n\n## Core Workflows\n\n### 1. Recommended: Kallisto + Gamma-Poisson\nThis is the most efficient pipeline for modern PhIP-seq analysis, using pseudoalignment for speed and the Gamma-Poisson model for robust statistical scoring.\n\n**Step 1: Align (per sample)**\n```bash\nkallisto quant --single --plaintext --fr-stranded -l 75 -s 0.1 -t 4 \\\n  -i reference.idx -o sample_counts/sample1 sample1.fastq.gz\n```\n\n**Step 2: Merge**\n```bash\nphip merge-kallisto-tpm -i sample_counts -o cpm.tsv\n```\n\n**Step 3: Model**\n```bash\nphip gamma-poisson-model -t 99.9 -i cpm.tsv -o gamma-poisson_results\n```\n\n### 2. Exact Matching + Matrix Factorization\nUse this workflow when you require exact sequence matches and want to use residuals from a low-rank approximation to identify enrichment.\n\n**Step 1: Align**\n```bash\nphip count-exact-matches -r reference.fasta -l 75 -o sample_counts/sample1.counts.tsv sample1.fastq.gz\n```\n\n**Step 2: Merge**\n```bash\nphip merge-columns -m iter -i sample_counts -o counts.tsv\n```\n\n**Step 3: Model and Call Hits**\n```bash\nphip clipped-factorization-model --rank 2 -i counts.tsv -o residuals.tsv\nphip call-hits -i residuals.tsv -o hits.tsv --beads-regex \".*BEADS_ONLY.*\"\n```\n\n### 3. Bowtie2 + Normalization\nUse this for maximum sensitivity at the cost of processing time.\n\n**Step 1: Merge with Outer Join**\nIf samples have different sets of clones, use the outer join method:\n```bash\nphip merge-columns -m outer -i sample_counts -o counts.tsv\n```\n\n**Step 2: Normalize**\n```bash\nphip normalize-counts -m size-factors -i counts.tsv -o normalized_counts.tsv\n```\n\n## Command Reference and Tips\n\n- **Help Access**: Every subcommand supports the `-h` flag. Use `phip <command> -h` to see specific parameters like thresholds (`-t`) or input/output paths.\n- **Model Selection**: The `gamma-poisson-model` is generally preferred over the older `generalized-poisson-model` (Larman et al. original) for better handling of overdispersion.\n- **Hit Calling**: When using `call-hits`, ensure your `--beads-regex` correctly identifies your negative control/beads-only samples to establish a proper baseline for residuals.\n- **Large Datasets**: For NextSeq runs (e.g., 500M reads), prefer `kallisto` or `count-exact-matches` over `bowtie2` to keep processing times under 30 minutes on standard hardware.\n\n## Reference documentation\n- [phip-stat GitHub Repository](./references/github_com_lasersonlab_phip-stat.md)\n- [Bioconda phip-stat Overview](./references/anaconda_org_channels_bioconda_packages_phip-stat_overview.md)",
+  "skill_front_matter": {
+    "name": "phip-stat",
+    "description": "phip-stat processes PhIP-seq experimental data through a pipeline of alignment, sample merging, and statistical modeling to identify enriched clones. Use when user asks to align PhIP-seq reads, merge sample counts into a matrix, normalize data using Gamma-Poisson models, or call hits using matrix factorization.",
+    "homepage": "https://github.com/lasersonlab/phip-stat"
+  }
+}

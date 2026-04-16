@@ -1,0 +1,61 @@
+{
+  "id": "sinto",
+  "category": "CLI",
+  "name": "sinto",
+  "description": "Sinto is a suite of command-line utilities designed to manipulate single-cell alignment files and generate fragment files based on cell-level metadata. Use when user asks to filter BAM files by barcode, create scATAC-seq fragment files, add or move BAM tags, or process FASTQ files for single-cell analysis.",
+  "overview": "Sinto is a specialized suite of command-line utilities designed to handle the unique requirements of single-cell sequencing data. It provides efficient methods for manipulating alignment files (BAM) based on cell-level metadata. It is particularly useful for scATAC-seq workflows where fragment files are required, or for scRNA-seq tasks involving the management of Cell Barcode (CB) and Unique Molecular Identifier (UB/UMI) tags.",
+  "homepage": "https://timoast.github.io/sinto/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/sinto/overview",
+  "github": "https://github.com/timoast/sinto",
+  "conda_downloads": "25.9K",
+  "conda_downloads_num": 25900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 9,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sinto_filterbarcodes",
+      "sinto_addtags",
+      "sinto_tagtorg",
+      "sinto_tagtotag",
+      "sinto_fragments",
+      "sinto_blocks",
+      "sinto_barcode",
+      "sinto_tagtoname",
+      "sinto_nametotag"
+    ],
+    "description": "Filter reads based on input list of cell barcodes",
+    "docker_image": "quay.io/biocontainers/sinto:0.10.1--pyhdfd78af_0",
+    "homepage": "https://timoast.github.io/sinto/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/sinto/overview",
+    "github": "https://github.com/timoast/sinto",
+    "conda_downloads": "25.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "sinto_addtags.cwl",
+    "sinto_barcode.cwl",
+    "sinto_blocks.cwl",
+    "sinto_filterbarcodes.cwl",
+    "sinto_fragments.cwl",
+    "sinto_nametotag.cwl",
+    "sinto_tagtoname.cwl",
+    "sinto_tagtorg.cwl",
+    "sinto_tagtotag.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# sinto\n\n## Overview\n\nSinto is a specialized suite of command-line utilities designed to handle the unique requirements of single-cell sequencing data. It provides efficient methods for manipulating alignment files (BAM) based on cell-level metadata. It is particularly useful for scATAC-seq workflows where fragment files are required, or for scRNA-seq tasks involving the management of Cell Barcode (CB) and Unique Molecular Identifier (UB/UMI) tags.\n\n## Basic Usage and Installation\n\nInstall sinto via pip or bioconda:\n\n```bash\npip install sinto\n# OR\nconda install -c bioconda sinto\n```\n\nAll commands follow the pattern: `sinto <command> [options]`\n\n## Core Command Patterns\n\n### Subsetting BAM Files by Barcode\nUse `filterbarcodes` to create a new BAM file containing only reads from specific cells or to split a BAM by cluster.\n\n```bash\n# Filter BAM for specific barcodes listed in a file\nsinto filterbarcodes -b input.bam -c barcodes.txt -o filtered.bam\n\n# Split BAM into multiple files based on a mapping file (barcode <tab> cluster)\nsinto filterbarcodes -b input.bam -c metadata.tsv -p 8\n```\n*   **Tip**: The barcode file can be gzipped.\n*   **Tip**: Use `-p` to specify the number of processors for faster execution.\n\n### Creating scATAC-seq Fragment Files\nThe `fragments` command is the standard way to generate a fragment file from an aligned scATAC-seq BAM.\n\n```bash\nsinto fragments -b input.bam -f fragments.tsv.gz\n```\n*   **Requirement**: The BAM file must be indexed.\n*   **Best Practice**: Always use the `.gz` extension for the output to ensure the file is compressed, as fragment files can be very large.\n\n### Manipulating Barcodes and Tags\nSinto can move barcodes between read names and BAM tags, which is often necessary when switching between different pipeline requirements (e.g., CellRanger vs. custom scripts).\n\n```bash\n# Copy barcode from read name to the 'CB' tag\nsinto barcode -b input.bam -o output.bam --barcode_readname\n\n# Add tags to a BAM file from a CSV file\nsinto addtags -b input.bam -c tags.csv -o tagged.bam\n```\n\n### Processing FASTQ Files\nAdd cell barcodes directly to FASTQ read names before alignment.\n\n```bash\nsinto fastq -r1 read1.fastq.gz -r2 read2.fastq.gz -b barcodes.fastq.gz -o output_prefix\n```\n\n## Expert Tips\n\n1.  **Multi-threading**: Most sinto commands support the `-p` or `--nproc` argument. Increasing this is the most effective way to speed up processing of large single-cell datasets.\n2.  **Memory Management**: When using `filterbarcodes` with many output files (e.g., splitting by 20+ clusters), ensure your system's file descriptor limit (`ulimit -n`) is high enough to handle the simultaneous open BAM files.\n3.  **Read Group Integration**: Use `tag2rg` to convert a BAM tag (like a cluster ID) into a Read Group (RG). This allows you to use standard tools like GATK or Samtools that operate on Read Groups rather than custom tags.\n4.  **Tag Copying**: Use `copytag` to duplicate information between tags (e.g., copying `CB` to `CR`) without re-processing the entire file through a heavy pipeline.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| sinto addtags | Add read tags to reads from individual cells |\n| sinto fragments | Create ATAC-seq fragment file from BAM file |\n| sinto nametotag | Copy cell barcode sequences from read name to read tag |\n| sinto tagtorg | Append a read tag to the read group ID of each read. Also appends the read tag to the SM field of the read group. |\n| sinto_barcode | Add cell barcode sequences to read names in FASTQ file. |\n| sinto_blocks | Create scRNA-seq block file from BAM file |\n| sinto_filterbarcodes | Filter reads based on input list of cell barcodes |\n| sinto_tagtoname | Copy cell barcode sequences from tag to read names. Cell barcodes will be added as a readname prefix, followed by \":\" |\n| sinto_tagtotag | Copies BAM entries to a new file while copying a read tag to another read tag and optionally deleting the originating tag. |\n\n## Reference documentation\n\n- [Sinto: single-cell analysis tools](./references/github_com_timoast_sinto_blob_master_README.rst.md)\n- [Basic Usage](./references/timoast_github_io_sinto_basic_usage.html.md)\n- [scATAC-seq Fragments](./references/timoast_github_io_sinto_scatac.html.md)",
+  "skill_front_matter": {
+    "name": "sinto",
+    "description": "Sinto is a suite of command-line utilities designed to manipulate single-cell alignment files and generate fragment files based on cell-level metadata. Use when user asks to filter BAM files by barcode, create scATAC-seq fragment files, add or move BAM tags, or process FASTQ files for single-cell analysis.",
+    "homepage": "https://timoast.github.io/sinto/"
+  }
+}

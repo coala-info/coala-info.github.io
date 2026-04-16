@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-saser",
+  "category": "bioconductor",
+  "name": "bioconductor-saser",
+  "description": "This tool performs aberrant expression and splicing analysis in bulk RNA-seq datasets to detect outliers using a negative binomial framework. Use when user asks to transform BAM files into count matrices, calculate normalization offsets, estimate latent confounders with RUV, or fit models for outlier detection in rare disease research.",
+  "overview": "`saseR` is designed for detecting outliers in RNA-seq data, particularly useful in the context of rare Mendelian disorders. It leverages a negative binomial framework with adapted offsets to model both aberrant expression and splicing. The package is highly scalable, using a \"fast\" parameter estimation method that handles large numbers of latent factors efficiently.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/saseR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/statOmics/saseR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "saseR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/saseR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/statOmics/saseR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-saser\n\nname: bioconductor-saser\ndescription: Perform aberrant expression (AE) and aberrant splicing (AS) analysis in bulk RNA-seq datasets using the saseR Bioconductor package. Use this skill to transform BAM files into count matrices, calculate adapted offsets for splicing proportions, estimate latent confounders with RUV, and fit negative binomial models for outlier detection.\n\n# bioconductor-saser\n\n## Overview\n`saseR` is designed for detecting outliers in RNA-seq data, particularly useful in the context of rare Mendelian disorders. It leverages a negative binomial framework with adapted offsets to model both aberrant expression and splicing. The package is highly scalable, using a \"fast\" parameter estimation method that handles large numbers of latent factors efficiently.\n\n## Core Workflow\n\n### 1. Data Preparation\nTransform BAM files into gene, bin, or junction counts using `ASpli`-based functions.\n\n```r\nlibrary(saseR)\nlibrary(txdbmaker)\nlibrary(BiocParallel)\n\n# 1. Setup annotation and BAM list\ngtf <- ASpli::aspliExampleGTF()\nbams <- ASpli::aspliExampleBamList()\ntxdb <- makeTxDbFromGFF(gtf)\nfeatures <- binGenome(txdb)\n\n# 2. Create targets data frame\ntargets <- data.frame(\n  row.names = paste0('Sample', 1:12),\n  bam = bams,\n  f1 = rep(\"A\", 12) # Experimental factors (placeholder for AE/AS)\n)\n\n# 3. Generate counts (SummarizedExperiment)\nASpliSE <- BamtoAspliCounts(\n  features = features,\n  targets = targets,\n  minReadLength = 100,\n  libType = \"SE\"\n)\n\n# 4. Extract specific counts\nSEgenes <- convertASpli(ASpliSE, type = \"gene\")\nSEbins <- convertASpli(ASpliSE, type = \"bin\")\nSEjunctions <- convertASpli(ASpliSE, type = \"junction\")\n```\n\n### 2. Aberrant Expression (AE) Analysis\nFocuses on total gene count outliers.\n\n```r\n# Define design (intercept only for outlier detection)\nmetadata(SEgenes)$design <- ~1\n\n# Filter and calculate normalization offsets (TMM or geommean)\nSEgenes <- SEgenes[filterByExpr(SEgenes), ]\nSEgenes <- calculateOffsets(SEgenes, method = \"TMM\")\n\n# Find latent factors (GD = Gavish-Donoho threshold)\nSEgenes <- saseRfindEncodingDim(SEgenes, method = \"GD\")\n\n# Fit model\nSEgenes <- saseRfit(SEgenes, analysis = \"AE\", fit = \"fast\")\n\n# Access results\npvals <- assays(SEgenes)$pValue\nadjPvals <- assays(SEgenes)$pValueAdjust\n```\n\n### 3. Aberrant Splicing (AS) Analysis\nUses adapted offsets to model feature proportions (bins/junctions) relative to the gene/locus.\n\n```r\nmetadata(SEbins)$design <- ~1\n\n# Calculate AS offsets BEFORE filtering\n# aggregation: \"locus\" for bins, \"symbol\" or \"ASpliCluster\" for junctions\nSEbins <- calculateOffsets(SEbins, method = \"AS\", aggregation = \"locus\")\n\n# Filter low counts\nSEbins <- SEbins[filterByExpr(SEbins), ]\n\n# Find latent factors and fit\nSEbins <- saseRfindEncodingDim(SEbins, method = \"GD\")\nSEbins <- saseRfit(SEbins, analysis = \"AS\", fit = \"fast\")\n\n# Aggregated p-values per locus (gene level splicing outlier)\nlocusPvals <- metadata(SEbins)$pValuesLocus\n```\n\n### 4. Differential Usage with Adapted Offsets\n`saseR` logic can be applied to standard `DESeq2` or `edgeR` workflows for differential splicing by manually providing the gene-level aggregate as an offset.\n\n```r\n# Example for DESeq2\n# counts: bin counts; offsets: total gene counts for those bins\nnormalizationFactors(dds) <- offsets \ndds <- estimateDispersionsGeneEst(dds)\ndispersions(dds) <- mcols(dds)$dispGeneEst\ndds <- nbinomWaldTest(dds)\n```\n\n## Key Functions\n- `binGenome()`: Prepares genomic features from a TxDb object.\n- `BamtoAspliCounts()`: High-level wrapper to generate count matrices from BAM files.\n- `calculateOffsets()`: Critical step. Use `method=\"TMM\"` for AE and `method=\"AS\"` for AS.\n- `saseRfindEncodingDim()`: Estimates the number of latent confounders to control for.\n- `saseRfit()`: The main engine. `fit=\"fast\"` is recommended for large datasets or many confounders.\n\n## Tips\n- **Order of Operations**: For AE, filter then calculate offsets. For AS, calculate offsets then filter.\n- **Latent Factors**: Always use `saseRfindEncodingDim` to account for hidden batch effects or technical noise, which are prevalent in rare disease cohorts.\n- **Fast Fit**: The `fast` fit uses an overdispersed quadratic mean-variance relationship, allowing for matrix multiplications that significantly speed up computation compared to standard GLM fitting.\n\n## Reference documentation\n- [Main vignette: Aberrant expression and splicing analysis](./references/saseR-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-saser",
+    "description": "This tool performs aberrant expression and splicing analysis in bulk RNA-seq datasets to detect outliers using a negative binomial framework. Use when user asks to transform BAM files into count matrices, calculate normalization offsets, estimate latent confounders with RUV, or fit models for outlier detection in rare disease research.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/saseR.html"
+  }
+}

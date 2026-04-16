@@ -1,0 +1,59 @@
+{
+  "id": "popins2",
+  "category": "CLI",
+  "name": "popins2",
+  "description": "PopIns2 discovers and genotypes large non-reference insertions across multiple individuals using a population-scale de Bruijn graph approach. Use when user asks to assemble unmapped reads, merge contigs into supercontigs, anchor novel sequences to a reference genome, or genotype insertions across a population.",
+  "overview": "PopIns2 is a specialized bioinformatics suite designed to discover and genotype large non-reference insertions across multiple individuals. Unlike standard variant callers that rely on direct mapping, PopIns2 uses a colored de Bruijn graph approach to aggregate unmapped or poorly aligned reads from an entire population. This allows for the reconstruction of \"supercontigs\" representing novel genetic material not present in the reference genome, which are then anchored back to specific genomic loc",
+  "homepage": "https://github.com/kehrlab/PopIns2",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/popins2/overview",
+  "github": "https://github.com/kehrlab/PopIns2",
+  "conda_downloads": "591",
+  "conda_downloads_num": 591,
+  "last_updated": "2025-04-22",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "popins2_assemble",
+      "popins2_merge",
+      "popins2_multik",
+      "popins2_contigmap",
+      "popins2_place-refalign",
+      "popins2_place-splitalign",
+      "popins2_place-finish",
+      "popins2_genotype"
+    ],
+    "description": "Assembly of unmapped reads.",
+    "docker_image": "quay.io/biocontainers/popins2:0.13.0--h077b44d_0",
+    "homepage": "https://github.com/kehrlab/PopIns2",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/popins2/overview",
+    "github": "https://github.com/kehrlab/PopIns2",
+    "conda_downloads": "591",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "popins2_assemble.cwl",
+    "popins2_contigmap.cwl",
+    "popins2_genotype.cwl",
+    "popins2_merge.cwl",
+    "popins2_multik.cwl",
+    "popins2_place-finish.cwl",
+    "popins2_place-refalign.cwl",
+    "popins2_place-splitalign.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# popins2\n\n## Overview\nPopIns2 is a specialized bioinformatics suite designed to discover and genotype large non-reference insertions across multiple individuals. Unlike standard variant callers that rely on direct mapping, PopIns2 uses a colored de Bruijn graph approach to aggregate unmapped or poorly aligned reads from an entire population. This allows for the reconstruction of \"supercontigs\" representing novel genetic material not present in the reference genome, which are then anchored back to specific genomic locations and genotyped across all samples.\n\n## Workflow and CLI Patterns\n\nThe PopIns2 workflow is strictly sequential. Each command must be executed in the order listed below to maintain data integrity.\n\n### 1. Sample Assembly\nExtract and assemble unmapped/low-quality reads from individual BAM files.\n```bash\n# Run for each sample\npopins2 assemble --sample <sample_id> <input.bam>\n```\n*   **Tip**: Ensure the input BAM is indexed (`bwa index`).\n*   **Decontamination**: Use an additional reference FASTA with `--extra-ref` to filter out known contaminants (e.g., viral or bacterial sequences) before assembly.\n\n### 2. Population Merging\nCombine contigs from all samples into a colored compacted de Bruijn Graph (ccdbg) to generate supercontigs.\n```bash\npopins2 merge -r <project_directory> -di\n```\n*   **Critical Flags**: Always use `-r` to specify the source directory. The `-d` and `-i` flags are highly recommended for graph simplification and path identification.\n*   **Alternative**: If you already have a Bifrost graph, use `-y <graph.gfa> -z <colors.bfg_colors>`.\n\n### 3. Contig Mapping\nMap the low-quality reads of each sample back to the newly generated supercontigs.\n```bash\n# Run for each sample\npopins2 contigmap <sample_id>\n```\n\n### 4. Anchoring (Placement)\nAnchor the supercontigs to the reference genome using a three-step process.\n```bash\n# Step A: Collect potential anchor locations\npopins2 place-refalign\n\n# Step B: Perform split-alignment for each sample\npopins2 place-splitalign <sample_id>\n\n# Step C: Combine results into a final VCF\npopins2 place-finish\n```\n\n### 5. Genotyping\nDetermine the presence and zygosity of each insertion for every sample.\n```bash\n# Run for each sample\npopins2 genotype <sample_id>\n```\n\n## Best Practices and Troubleshooting\n\n*   **Directory Structure**: Maintain a consistent project structure where each sample has its own subdirectory containing the BAM and BAI files.\n*   **Resource Management**: The `merge` step is memory-intensive as it builds the global graph. Ensure your environment has sufficient RAM for the population size.\n*   **Compiler Optimization**: If running on a cluster, be aware that the default build uses `-march=native`. If you encounter \"Illegal instruction\" errors, recompile without this flag or ensure all nodes share the same CPU architecture.\n*   **Bifrost Compatibility**: PopIns2 is sensitive to Bifrost versions. It is recommended to use a Bifrost version prior to the April 2022 API changes (specifically before commit `703be6d`) and ensure it was built with `MAX_KMER_SIZE=64`.\n*   **Post-Processing**: To create a population-wide VCF, sort and index individual `insertions.vcf` files using `vcf-sort` and `bgzip`, then combine them using `vcf-merge`.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| popins2 assemble | Assembly of unmapped reads. |\n| popins2 contigmap | Alignment of unmapped reads to assembled contigs. |\n| popins2 genotype | Computes genotype likelihoods for a sample for all insertions given in the input VCF file by aligning all reads, which are mapped to the reference genome around the insertion breakpoint or to the contig, to the reference and to the alternative insertion sequence. VCF records with the genotype likelihoods in GT:PL format for the individual are written to a file insertions.vcf in the sample directory. |\n| popins2 merge | Build or read a colored and compacted de Bruijn Graph (CCDBG) and generate supercontigs. |\n| popins2 multik | Multi-k framework for a colored and compacted de Bruijn Graph (CCDBG) |\n| popins2 place-finish | Combining breakpoint positions from split-read alignment. |\n| popins2 place-refalign | Contig placing by alignment of contig ends to reference genome. |\n| popins2 place-splitalign | Contig placing by split-read alignment. |\n\n## Reference documentation\n- [PopIns2 GitHub README](./references/github_com_kehrlab_PopIns2.md)\n- [Post-processing Guide](./references/github_com_kehrlab_PopIns2_wiki_Post-processing.md)\n- [Troubleshooting and FAQ](./references/github_com_kehrlab_PopIns2_wiki_Troubleshooting---FAQ.md)",
+  "skill_front_matter": {
+    "name": "popins2",
+    "description": "PopIns2 discovers and genotypes large non-reference insertions across multiple individuals using a population-scale de Bruijn graph approach. Use when user asks to assemble unmapped reads, merge contigs into supercontigs, anchor novel sequences to a reference genome, or genotype insertions across a population.",
+    "homepage": "https://github.com/kehrlab/PopIns2"
+  }
+}

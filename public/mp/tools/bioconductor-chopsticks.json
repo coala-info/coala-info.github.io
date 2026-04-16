@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-chopsticks",
+  "category": "bioconductor",
+  "name": "bioconductor-chopsticks",
+  "description": "The chopsticks package provides high-performance classes and methods for large-scale SNP association studies using memory-efficient genotype storage. Use when user asks to perform single SNP association testing, calculate linkage disequilibrium, conduct quality control on genotype data, or visualize results with QQ plots.",
+  "overview": "The `chopsticks` package (an evolution of `snpMatrix`) provides high-performance S4 classes and methods for large-scale SNP association studies. It stores genotype calls as single bytes, allowing genome-wide data to be processed in memory. It supports population-based studies with quantitative or qualitative phenotypes, controlling for covariates and stratification.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/chopsticks.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chopsticks/overview",
+  "github": "N/A",
+  "conda_downloads": "44.8K",
+  "conda_downloads_num": 44800,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "chopsticks"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/chopsticks.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-chopsticks/overview",
+    "github": "N/A",
+    "conda_downloads": "44.8K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-chopsticks\n\n## Overview\nThe `chopsticks` package (an evolution of `snpMatrix`) provides high-performance S4 classes and methods for large-scale SNP association studies. It stores genotype calls as single bytes, allowing genome-wide data to be processed in memory. It supports population-based studies with quantitative or qualitative phenotypes, controlling for covariates and stratification.\n\n## Core Data Classes\n- **snp.matrix**: A specialized matrix where rows are subjects and columns are SNPs. Genotypes are stored in a memory-efficient byte format.\n- **snp.support**: A data frame containing SNP metadata (chromosome, position, alleles). Row names must match `snp.matrix` column names.\n- **subject.support**: A data frame containing subject metadata (phenotypes, strata, covariates). Row names must match `snp.matrix` row names.\n\n## Essential Workflows\n\n### 1. Data Inspection and Quality Control\nUse `summary()` and `row.summary()` to identify poorly performing SNPs or samples.\n\n```r\nlibrary(chopsticks)\n\n# Summarize SNPs (Call rate, MAF, HWE)\nsnpsum <- summary(snps.10)\nhist(snpsum$MAF)\nhist(snpsum$z.HWE) # Z-score for Hardy-Weinberg Equilibrium\n\n# Summarize Samples (Call rate, Heterozygosity)\nsample.qc <- row.summary(snps.10)\nplot(sample.qc)\n\n# Filter samples/SNPs\nuse.samples <- sample.qc$Heterozygosity > 0\nsnps.clean <- snps.10[use.samples, ]\n```\n\n### 2. Single SNP Association Testing\nThe `single.snp.tests()` function is the fastest method for Cochran-Armitage (1 df) and Pearsonian (2 df) tests.\n\n```r\n# Basic association test (cc = case-control status)\ntests <- single.snp.tests(cc, data = subject.support, snp.data = snps.10)\n\n# Stratified test to control for population structure\ntests.strat <- single.snp.tests(cc, stratum, data = subject.support, snp.data = snps.10)\n\n# Extract p-values\np1 <- pchisq(tests.strat$chi2.1df, df = 1, lower.tail = FALSE)\n```\n\n### 3. Visualizing Results\nUse Quantile-Quantile (QQ) plots to check for over-dispersion (inflation).\n\n```r\n# QQ plot for 1 df tests\nqq.chisq(tests.strat$chi2.1df, df = 1)\n\n# Manhattan-style plot using hexbin for large data\nlibrary(hexbin)\nplot(hexbin(snp.support$position, -log10(p1), xbin = 50))\n```\n\n### 4. Linkage Disequilibrium (LD) and Effect Size\nCalculate LD between SNPs and estimate odds ratios using logistic regression.\n\n```r\n# Calculate LD (D') for a subset of SNPs\nld.matrix <- ld.snp(snps.subset)\nplot(ld.matrix)\n\n# Estimate effect size (Odds Ratio) for a specific SNP\ntop.snp <- as.numeric(snps.10[, \"rs870041\"])\nmodel <- glm(cc ~ top.snp + stratum, family = \"binomial\", data = subject.support)\nsummary(model)\nexp(coef(model)[\"top.snp\"]) # Odds Ratio\n```\n\n### 5. Multi-locus and Flexible Testing\nUse `snp.rhs.tests` for testing groups of SNPs (tags) or complex models.\n\n```r\n# Test blocks of SNPs (e.g., defined in a list 'blocks')\nmtests <- snp.rhs.tests(cc ~ stratum, family = \"binomial\", \n                        data = subject.support, \n                        snp.data = snps.use, \n                        tests = blocks)\n\n# Calculate p-values for multi-df tests\npm <- pchisq(mtests$Chi.squared, mtests$Df, lower.tail = FALSE)\n```\n\n## Tips for Efficiency\n- **Memory**: Always subset the `snp.matrix` using logical or integer vectors to keep memory usage low.\n- **Ordering**: Ensure row names of support data frames match the row/column names of the `snp.matrix` before analysis.\n- **Missingness**: `single.snp.tests` handles missing data automatically, but `glm` on extracted numeric vectors may require explicit handling of `NA` values.\n\n## Reference documentation\n- [snpMatrix vignette](./references/chopsticks-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-chopsticks",
+    "description": "The chopsticks package provides high-performance classes and methods for large-scale SNP association studies using memory-efficient genotype storage. Use when user asks to perform single SNP association testing, calculate linkage disequilibrium, conduct quality control on genotype data, or visualize results with QQ plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/chopsticks.html"
+  }
+}

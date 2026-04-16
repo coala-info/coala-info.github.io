@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-noiseq",
+  "category": "bioconductor",
+  "name": "bioconductor-noiseq",
+  "description": "NOISeq is a non-parametric tool for identifying differential expression and performing quality control analysis on RNA-seq data. Use when user asks to identify differentially expressed genes, perform quality control for sequencing biases, or analyze RNA-seq experiments with few or no replicates.",
+  "overview": "NOISeq is a non-parametric approach for identifying differential expression in RNA-seq data. Unlike parametric methods (e.g., DESeq2, edgeR), it does not assume a specific distribution (like Negative Binomial) for the counts. It is particularly effective for:\n1. **NOISeq-real/sim**: Handling technical replicates or experiments with no replicates by simulating noise distributions.\n2. **NOISeqBIO**: Optimized for biological replicates (at least 2 per condition).\n3. **Quality Control**: Extensive d",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NOISeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NOISeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NOISeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-noiseq\n\n## Overview\nNOISeq is a non-parametric approach for identifying differential expression in RNA-seq data. Unlike parametric methods (e.g., DESeq2, edgeR), it does not assume a specific distribution (like Negative Binomial) for the counts. It is particularly effective for:\n1. **NOISeq-real/sim**: Handling technical replicates or experiments with no replicates by simulating noise distributions.\n2. **NOISeqBIO**: Optimized for biological replicates (at least 2 per condition).\n3. **Quality Control**: Extensive diagnostic tools to identify sequencing biases (length, GC content, RNA composition).\n\n## Core Workflow\n\n### 1. Data Preparation\nNOISeq requires a `readData` object containing counts and experimental factors.\n\n```r\nlibrary(NOISeq)\n\n# counts: matrix with features as rows, samples as columns\n# factors: data.frame with sample annotations\nmydata <- readData(data = mycounts, \n                   factors = myfactors,\n                   length = mylength, # Optional: for length bias/RPKM\n                   gc = mygc,         # Optional: for GC bias\n                   biotype = mybiotypes, # Optional: e.g., protein_coding, lincRNA\n                   chromosome = mychroms) # Optional: for Manhattan plots\n```\n\n### 2. Quality Control (Exploratory Analysis)\nBefore DE analysis, check for biases.\n\n```r\n# 1. Generate data for a specific plot type\n# Types: \"biodetection\", \"countsbio\", \"saturation\", \"lengthbias\", \"GCbias\", \"cd\", \"PCA\"\nqc_data <- dat(mydata, type = \"biodetection\")\n\n# 2. Plot the data\nexplo.plot(qc_data)\n\n# 3. Check for RNA composition bias (Diagnostic Test)\n# If the test fails, TMM or Upper Quartile normalization is required.\nqc_cd <- dat(mydata, type = \"cd\", norm = FALSE)\nexplo.plot(qc_cd)\n\n# 4. Generate a full PDF report\nQCreport(mydata, factor = \"Tissue\", file = \"QC_report.pdf\")\n```\n\n### 3. Normalization and Filtering\nNOISeq provides built-in functions for common normalization methods.\n\n```r\n# Normalization\ncounts_tmm <- tmm(assayData(mydata)$exprs, long = 1000)\ncounts_rpkm <- rpkm(assayData(mydata)$exprs, long = mylength)\n\n# Filtering low counts (Method 1: CPM cutoff)\n# Highly recommended for NOISeqBIO\nfilt_data <- filtered.data(mycounts, factor = myfactors$Tissue, \n                           method = 1, cpm = 1)\n```\n\n### 4. Differential Expression Analysis\n\n#### For Biological Replicates (Recommended)\nUse `noiseqbio` when you have at least 2 biological replicates per condition.\n\n```r\nres_bio <- noiseqbio(mydata, \n                     k = 0.5, \n                     norm = \"tmm\", \n                     factor = \"Tissue\", \n                     filter = 1) # 1: CPM, 2: Wilcoxon, 3: Proportion\n```\n\n#### For Technical Replicates or No Replicates\nUse `noiseq`.\n\n```r\n# Technical replicates\nres_tech <- noiseq(mydata, k = 0.5, norm = \"rpkm\", \n                   replicates = \"technical\", factor = \"Tissue\")\n\n# No replicates (Simulates noise distribution)\nres_sim <- noiseq(mydata, k = 0.5, norm = \"rpkm\", \n                  replicates = \"no\", factor = \"Tissue\",\n                  nss = 5, pnr = 0.2, v = 0.02)\n```\n\n### 5. Interpreting Results\nNOISeq uses a \"probability of differential expression\" (`prob`) rather than a p-value.\n\n```r\n# Select DE genes\n# For noiseq: q = 0.8 (odds 4:1) or 0.9\n# For noiseqbio: q = 0.95 (equivalent to 1 - FDR)\nde_genes <- degenes(res_bio, q = 0.95, M = NULL) # M = \"up\" or \"down\"\n\n# Visualization\nDE.plot(res_bio, q = 0.95, graphic = \"expr\") # Expression plot\nDE.plot(res_bio, q = 0.95, graphic = \"MD\")   # MD plot (M vs D)\nDE.plot(res_bio, q = 0.95, graphic = \"distr\") # Distribution across biotypes/chroms\n```\n\n## Batch Effect Correction (ARSyNseq)\nIf PCA shows clustering by batch rather than condition, use ARSyNseq.\n\n```r\n# If batch is known\nmydata_corr <- ARSyNseq(mydata, factor = \"Batch\", batch = TRUE, norm = \"tmm\")\n\n# If batch is unknown (identifies systematic noise in residuals)\nmydata_corr <- ARSyNseq(mydata, factor = \"Tissue\", batch = FALSE, norm = \"tmm\")\n```\n\n## Reference documentation\n- [NOISeq: Differential Expression in RNA-seq](./references/NOISeq.md)\n- [Quality Control of Expression Data Report](./references/QCreport.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-noiseq",
+    "description": "NOISeq is a non-parametric tool for identifying differential expression and performing quality control analysis on RNA-seq data. Use when user asks to identify differentially expressed genes, perform quality control for sequencing biases, or analyze RNA-seq experiments with few or no replicates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NOISeq.html"
+  }
+}

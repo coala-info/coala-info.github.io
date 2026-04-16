@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sigsquared",
+  "category": "bioconductor",
+  "name": "bioconductor-sigsquared",
+  "description": "This tool parameterizes and applies gene signatures based on linear signaling pathways to predict survival outcomes. Use when user asks to train model thresholds for signaling networks, perform cross-validation for survival prediction, or apply gene signatures to transcriptomic datasets.",
+  "overview": "The `sigsquared` package implements a strategy for generating gene signatures from known linear signaling pathways. Unlike general network inference, it uses a simple threshold-based model for each node in a pathway. It determines if alternate signaling states (e.g., the repression of one gene leading to the de-repression of another) can significantly predict survival outcomes. The package uses Nelder-Mead optimization and k-fold cross-validation to find optimal expression thresholds for a set o",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/sigsquared.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sigsquared"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sigsquared.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sigsquared\n\nname: bioconductor-sigsquared\ndescription: Expert guidance for the sigsquared R package to parameterize and apply gene signatures based on linear signaling pathways. Use this skill when you need to train model parameters (thresholds) for a specific signaling network, perform cross-validation to predict differential survival outcomes (e.g., metastasis-free survival), or apply existing gene signatures to transcriptomic datasets.\n\n## Overview\n\nThe `sigsquared` package implements a strategy for generating gene signatures from known linear signaling pathways. Unlike general network inference, it uses a simple threshold-based model for each node in a pathway. It determines if alternate signaling states (e.g., the repression of one gene leading to the de-repression of another) can significantly predict survival outcomes. The package uses Nelder-Mead optimization and k-fold cross-validation to find optimal expression thresholds for a set of genes within a cohort.\n\n## Core Workflow\n\n### 1. Define the Signaling Environment\nYou must first define the genes involved and their regulatory directionality. Directionality is encoded as a vector of `-1` (down-regulated/inhibited) and `1` (up-regulated/activated).\n\n```r\nlibrary(sigsquared)\nlibrary(Biobase)\nlibrary(survival)\n\n# Initialize a new geneSignature object\ngs <- new(\"geneSignature\")\n\n# Define genes and their expected directions in the \"aberrant\" state\n# Example: RKIP is low (-1), while others are high (1)\ngenes <- c(\"RKIP\", \"HMGA2\", \"SPP1\", \"CXCR4\", \"MMP1\", \"MetaLET7\", \"MetaBACH1\")\ndirections <- c(-1, 1, 1, 1, 1, 1, 1)\n\ngs <- setGeneSignature(gs, direct=directions, genes=genes)\n```\n\n### 2. Train Thresholds (Optimization)\nThe `analysisPipeline` function performs k-fold cross-validation to find the optimal thresholds. \n- `dataSet`: An `ExpressionSet` object containing transcript data and survival metadata.\n- `iterPerK`: Number of optimizations per fold. For publication-quality results, at least 2,500 is recommended.\n- `k`: Number of folds for cross-validation.\n\n```r\n# Load example data (BrCa443)\ndata(BrCa443)\n\n# Run the optimization pipeline\ngs <- analysisPipeline(dataSet=BrCa443, geneSig=gs, iterPerK=50, k=2, rand=FALSE)\n```\n\n### 3. Apply and Validate the Model\nOnce thresholds are set, use `ensembleAdjustable` to classify patients in a dataset based on the signature. This returns a vector indicating which patients match the signaling state.\n\n```r\n# Apply the signature to the dataset\ns <- ensembleAdjustable(dataSet=BrCa443, geneSig=gs)\n\n# Validate using Survival Analysis (Kaplan-Meier)\n# Assumes 'MFS' (time) and 'met' (event) are in pData(BrCa443)\nfit <- survfit(Surv(MFS, met) ~ s, data=pData(BrCa443))\nplot(fit, col=c(\"black\", \"red\"), xlab=\"Time\", ylab=\"Survival Probability\")\n```\n\n## Key Functions\n\n- `new(\"geneSignature\")`: Constructor for the signature object.\n- `setGeneSignature(gs, direct, genes)`: Configures the genes and their expected directions.\n- `analysisPipeline(...)`: The main training function using Nelder-Mead optimization.\n- `ensembleAdjustable(dataSet, geneSig)`: Applies the trained signature to a dataset to generate patient groupings.\n\n## Implementation Tips\n\n- **Data Requirements**: Input data must be an `ExpressionSet`. Ensure that the gene names in your signature match the feature names (or a specific annotation column) in the `ExpressionSet`.\n- **Optimization Depth**: The `iterPerK` parameter significantly impacts the robustness of the thresholds. Low values (e.g., 50) are only suitable for testing code; use higher values for actual discovery.\n- **Directionality**: The `direct` vector is critical. It represents the \"high-risk\" or \"aberrant\" state you are trying to detect.\n\n## Reference documentation\n\n- [sigsquared](./references/sigsquared.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sigsquared",
+    "description": "This tool parameterizes and applies gene signatures based on linear signaling pathways to predict survival outcomes. Use when user asks to train model thresholds for signaling networks, perform cross-validation for survival prediction, or apply gene signatures to transcriptomic datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/sigsquared.html"
+  }
+}

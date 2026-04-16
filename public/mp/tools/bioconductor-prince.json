@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-prince",
+  "category": "bioconductor",
+  "name": "bioconductor-prince",
+  "description": "bioconductor-prince is a computational pipeline for reconstructing protein-protein interaction networks from co-elution proteomics data using machine learning. Use when user asks to predict protein-protein interactions, reconstruct interactomes from co-elution profiles, or identify significantly co-eluting protein complexes.",
+  "overview": "PrInCE (Predicting Interactomes from Co-Elution) is a computational pipeline for reconstructing protein-protein interaction (PPI) networks from co-elution proteomics data. It uses a machine-learning approach to distinguish interacting from non-interacting protein pairs based on features derived directly from elution profiles, such as Pearson correlation, Euclidean distance, and Gaussian mixture model parameters. This approach minimizes bias toward known interactions and allows for the discovery ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PrInCE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/fosterlab/PrInCE",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PrInCE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PrInCE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/fosterlab/PrInCE",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-prince\n\n## Overview\n\nPrInCE (Predicting Interactomes from Co-Elution) is a computational pipeline for reconstructing protein-protein interaction (PPI) networks from co-elution proteomics data. It uses a machine-learning approach to distinguish interacting from non-interacting protein pairs based on features derived directly from elution profiles, such as Pearson correlation, Euclidean distance, and Gaussian mixture model parameters. This approach minimizes bias toward known interactions and allows for the discovery of novel complexes.\n\n## Core Workflow\n\nThe standard PrInCE workflow involves three main stages: data preprocessing (Gaussian fitting), feature calculation, and interaction prediction.\n\n### 1. One-Step Analysis\nFor most users, the `PrInCE` function provides a complete end-to-end workflow.\n\n```r\nlibrary(PrInCE)\ndata(scott) # Example co-elution matrix\ndata(gold_standard) # List of known complexes\n\n# Predict interactions (returns a ranked list with precision scores)\nset.seed(0)\ninteractions <- PrInCE(scott, gold_standard, cv_folds = 10)\n\n# Filter for high-confidence interactions (e.g., 50% precision)\nnetwork <- threshold_precision(interactions, threshold = 0.5)\n```\n\n### 2. Step-by-Step Analysis\nFor large datasets or custom parameter tuning, run the pipeline manually.\n\n#### A. Gaussian Mixture Modeling\nFit Gaussians to elution profiles to filter noise and enable \"co-apex\" feature calculation.\n```r\n# Build Gaussians (computationally intensive)\ngaussians <- build_gaussians(scott, min_R_squared = 0.5, max_gaussians = 5)\n\n# Filter the original matrix to keep only proteins with successful fits\nfiltered_scott <- scott[names(gaussians), ]\n```\n\n#### B. Feature Calculation\nCalculate similarity metrics for every possible protein pair.\n```r\n# Generates features like Pearson R, Euclidean distance, and Co-peak scores\nfeatures <- calculate_features(filtered_scott, gaussians)\n\n# If using multiple replicates, concatenate them:\n# feat_list <- list(feat_rep1, feat_rep2)\n# combined_features <- concatenate_features(feat_list)\n```\n\n#### C. Interaction Prediction\nTrain a classifier (Naive Bayes by default) using a gold standard.\n```r\n# Convert list of complexes to an adjacency matrix for the classifier\nreference <- adjacency_matrix_from_list(gold_standard)\n\n# Predict using a specific classifier (NB, SVM, RF, LR, or ensemble)\nppi_results <- predict_interactions(features, reference, classifier = \"NB\")\n```\n\n### 3. Identifying Known Complexes\nTo test if specific *known* complexes are significantly co-eluting (rather than predicting new ones):\n```r\n# Preprocess profiles\nfiltered <- filter_profiles(scott)\nchromatograms <- clean_profiles(filtered)\n\n# Calculate Z-scores for complexes based on internal correlation vs random null\nz_scores <- detect_complexes(chromatograms, gold_standard)\nsignificant_complexes <- z_scores[z_scores > 1.96] # p < 0.05\n```\n\n## Key Functions and Parameters\n\n- `PrInCE()`: The wrapper function. Key arguments include `models` (number of ensemble classifiers), `cv_folds` (cross-validation folds), and `classifier`.\n- `build_gaussians()`: Parameters like `min_consecutive` (default 5) and `min_R_squared` (default 0.5) control data stringency.\n- `threshold_precision()`: Used to subset the results. Precision is the ratio of True Positives / (TP + FP) based on the gold standard.\n- `adjacency_matrix_from_list()`: Essential for converting `list` format gold standards (like CORUM or Complex Portal) into the format required by the predictor.\n\n## Tips for Success\n\n- **Gold Standards**: Use high-quality complex databases like CORUM or the Complex Portal. PrInCE assumes intra-complex pairs are True Positives and inter-complex pairs are True Negatives.\n- **Computational Time**: Gaussian fitting is slow. Use `build_gaussians` once and save the object, then pass it to `PrInCE(..., gaussians = my_gaussians)` to iterate on classifier settings quickly.\n- **Missing Values**: PrInCE handles `NA`/`NaN` values by imputing single missing values and adding near-zero noise to others during the \"cleaning\" phase.\n- **Replicates**: When using multiple replicates, ensure protein identifiers are consistent across all matrices before calling `concatenate_features`.\n\n## Reference documentation\n- [Interactome reconstruction from co-elution data with PrInCE](./references/intro-to-prince.md)\n- [PrInCE Vignette Source](./references/intro-to-prince.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-prince",
+    "description": "bioconductor-prince is a computational pipeline for reconstructing protein-protein interaction networks from co-elution proteomics data using machine learning. Use when user asks to predict protein-protein interactions, reconstruct interactomes from co-elution profiles, or identify significantly co-eluting protein complexes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PrInCE.html"
+  }
+}

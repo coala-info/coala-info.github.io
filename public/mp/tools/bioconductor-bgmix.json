@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bgmix",
+  "category": "bioconductor",
+  "name": "bioconductor-bgmix",
+  "description": "bioconductor-bgmix performs Bayesian mixture modeling to identify differentially expressed genes across various experimental designs. Use when user asks to identify over-expressed or under-expressed genes, perform MCMC-based estimation for gene expression, or calculate false discovery rates using posterior probabilities.",
+  "overview": "BGmix implements a fully Bayesian mixture model approach for detecting differential gene expression. It typically uses a 3-component mixture (under-expressed, null, over-expressed) to classify genes. The package handles various experimental designs by utilizing a design matrix and allows for flexible gene-specific variance structures. Key features include MCMC estimation, false discovery rate (FDR) calculation based on posterior probabilities, and predictive p-values for model checking.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/BGmix.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bgmix/overview",
+  "github": "N/A",
+  "conda_downloads": "47.8K",
+  "conda_downloads_num": 47800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BGmix"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/BGmix.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bgmix/overview",
+    "github": "N/A",
+    "conda_downloads": "47.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bgmix\n\nname: bioconductor-bgmix\ndescription: Bayesian mixture modeling for differential gene expression analysis. Use this skill to identify over-expressed, under-expressed, and non-differentially expressed genes using fully Bayesian hierarchical models (BGmix). It supports unpaired, paired, and multi-class experimental designs, MCMC-based estimation, and predictive model checking.\n\n# bioconductor-bgmix\n\n## Overview\n\nBGmix implements a fully Bayesian mixture model approach for detecting differential gene expression. It typically uses a 3-component mixture (under-expressed, null, over-expressed) to classify genes. The package handles various experimental designs by utilizing a design matrix and allows for flexible gene-specific variance structures. Key features include MCMC estimation, false discovery rate (FDR) calculation based on posterior probabilities, and predictive p-values for model checking.\n\n## Data Preparation\n\nBGmix requires three primary inputs:\n- `ybar`: A matrix of sample means (rows = genes, columns = conditions).\n- `ss`: A matrix of unbiased sample variances (divide by $n-1$).\n- `nreps`: A vector containing the number of replicates for each condition.\n\nData should be log-transformed or shifted-log transformed to satisfy normality assumptions.\n\n## Core Workflow\n\n### 1. Running the Model\nThe `BGmix` function executes the MCMC. It returns the name of the output directory where results are stored.\n\n```R\nlibrary(BGmix)\ndata(ybar, ss)\n\n# Basic unpaired differential expression (default design)\noutdir <- BGmix(ybar, ss, nreps=c(8,8), niter=1000, nburn=1000)\n```\n\n### 2. Experimental Design Configuration\nYou can customize the design using the following parameters:\n- `xx`: Design matrix (no. effects x no. conditions).\n- `jstar`: Index of the effect with the mixture prior (0-indexed). Set to -1 for no mixture (fixed effects).\n- `ntau`: Number of variance parameters per gene.\n- `indtau`: Vector mapping conditions to variance groups.\n\n**Common Designs:**\n- **Unpaired DE:** `xx = matrix(c(1,1,-0.5,0.5), 2, 2, byrow=T)`, `jstar = 1`.\n- **Paired DE:** `xx = 1`, `jstar = 0`, `ntau = 1`, `indtau = 0`.\n- **Multi-class (Fixed Effects):** `xx = diag(nconds)`, `jstar = -1`.\n\n### 3. Extracting and Plotting Results\nUse `ccParams` to load posterior means and classification probabilities from the output directory.\n\n```R\n# Load parameters\nparams <- ccParams(file = outdir)\n\n# Basic plots for DE models (smoothing and classification)\nplotBasic(params, ybar, ss)\n\n# Calculate and plot FDR\nfdr <- calcFDR(params)\nplotFDR(fdr)\n```\n\n### 4. Model Checking\nPredictive p-values help assess if the model fits the data.\n\n```R\n# Read predictive p-values\npred <- ccPred(file = outdir)\n\n# Plot histograms of predictive p-values for mixture components\nplotPredChecks(pred$pval.ybar.mix2, params$pc, probz = 0.8)\n```\n\n### 5. Tail Posterior Probability (Unstructured Priors)\nFor designs without a mixture prior (`jstar = -1`), use the Tail Posterior Probability method.\n\n```R\n# Requires trace output\nres_trace <- ccTrace(outdir)\ntpp_res <- TailPP(res_trace, nreps=c(8,8), params, p.cut = 0.7)\n\n# Plot results\nhistTailPP(tpp_res)\nFDRplotTailPP(tpp_res)\n```\n\n## Model Options\n\n- **Mixture Prior (`move.choice.bz`):**\n  - `1`: Null point mass, alternatives Uniform.\n  - `4`: Null point mass, alternatives Gamma (Default).\n  - `5`: Null small Normal, alternatives Gamma.\n- **Gene Variance Prior (`move.choice.tau`):**\n  - `1`: Inverse Gamma.\n  - `2`: Log Normal.\n\n## Reference documentation\n\n- [BGmix](./references/BGmix.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bgmix",
+    "description": "bioconductor-bgmix performs Bayesian mixture modeling to identify differentially expressed genes across various experimental designs. Use when user asks to identify over-expressed or under-expressed genes, perform MCMC-based estimation for gene expression, or calculate false discovery rates using posterior probabilities.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/BGmix.html"
+  }
+}

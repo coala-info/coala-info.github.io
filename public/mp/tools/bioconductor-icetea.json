@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-icetea",
+  "category": "bioconductor",
+  "name": "bioconductor-icetea",
+  "description": "This tool analyzes transcript 5'-profiling data such as CAGE, RAMPAGE, and MAPCap to identify transcription start sites and perform differential expression analysis. Use when user asks to demultiplex 5' end sequencing data, filter PCR duplicates using UMIs, detect transcription start sites, or conduct differential TSS expression analysis.",
+  "overview": "The `icetea` (Integrating Cap Expression and Termini Annotation) package is designed for the analysis of 5'-profiling data. It is particularly optimized for paired-end, multiplexed protocols like MAPCap and RAMPAGE, but also supports conventional CAGE data. The package provides a unified workflow for demultiplexing, mapping, PCR duplicate removal, TSS calling via local enrichment of genomic windows, and differential expression analysis.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/icetea.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-icetea/overview",
+  "github": "https://github.com/vivekbhr/icetea",
+  "conda_downloads": "22.3K",
+  "conda_downloads_num": 22300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "icetea"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/icetea.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-icetea/overview",
+    "github": "https://github.com/vivekbhr/icetea",
+    "conda_downloads": "22.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-icetea\n\nname: bioconductor-icetea\ndescription: Analysis of transcript 5'-profiling data (CAGE, RAMPAGE, MAPCap) using the icetea R package. Use this skill to process multiplexed 5' end sequencing data, perform TSS (Transcription Start Site) detection, filter PCR duplicates using UMIs, and conduct differential TSS expression analysis.\n\n# bioconductor-icetea\n\n## Overview\nThe `icetea` (Integrating Cap Expression and Termini Annotation) package is designed for the analysis of 5'-profiling data. It is particularly optimized for paired-end, multiplexed protocols like MAPCap and RAMPAGE, but also supports conventional CAGE data. The package provides a unified workflow for demultiplexing, mapping, PCR duplicate removal, TSS calling via local enrichment of genomic windows, and differential expression analysis.\n\n## Core Workflow: The CapSet Object\nThe analysis centers around the `CapSet` object, which tracks file paths and processing statistics through the pipeline.\n\n### 1. Initialization\nCreate a `CapSet` object from raw or processed files.\n```r\nlibrary(icetea)\n\n# From raw multiplexed FASTQ\ncs <- newCapSet(expMethod = 'MAPCap',\n                fastq_R1 = \"path/to/R1.fastq.gz\",\n                fastq_R2 = \"path/to/R2.fastq.gz\",\n                idxList = c(\"barcode1\", \"barcode2\"),\n                sampleNames = c(\"sample1\", \"sample2\"))\n\n# Or from existing BAM files if already mapped/filtered\ncs <- newCapSet(expMethod = 'MAPCap',\n                filtered_file = c(\"s1.bam\", \"s2.bam\"),\n                sampleNames = c(\"s1\", \"s2\"))\n```\n\n### 2. Pre-processing\nIf starting from raw FASTQ, follow these steps:\n```r\n# Demultiplexing\ncs <- demultiplexFASTQ(cs, outdir = \"split_fastq\", ncores = 4)\n\n# Mapping (requires Rsubread index)\ncs <- mapCaps(cs, subread_index = \"genome_idx\", outdir = \"mapped_bam\")\n\n# PCR Duplicate Filtering (uses UMIs/random barcodes in read headers)\ncs <- filterDuplicates(cs, outdir = \"dedup_bam\")\n```\n\n### 3. TSS Detection\n`icetea` uses a sliding-window approach to detect TSS based on local enrichment.\n```r\n# Detect TSS across groups\ncs <- detectTSS(cs, \n                groups = c(\"ctrl\", \"ctrl\", \"treat\", \"treat\"),\n                outfile_prefix = \"results/TSS_calls\")\n\n# Export results to BED\nexportTSS(cs, merged = TRUE, outfile_prefix = \"results/TSS_calls\")\n```\n\n## Differential TSS Expression\nDifferential analysis is performed using `edgeR` integration. It requires biological replicates.\n\n```r\n# 1. Fit the model\ncsfit <- fitDiffTSS(cs, \n                    groups = c(\"ctrl\", \"ctrl\", \"treat\", \"treat\"),\n                    normalization = \"windowTMM\")\n\n# 2. Detect differences\nde_tss <- detectDiffTSS(csfit, \n                        testGroup = \"treat\", \n                        contGroup = \"ctrl\",\n                        TSSfile = \"results/TSS_calls_merged.bed\")\n\n# de_tss is a GRanges object containing logFC and adjusted p-values (score)\n```\n\n## Visualization and QC\n- **Read Statistics**: `plotReadStats(cs, plotValue = \"numbers\")` shows reads remaining after each step.\n- **TSS Precision**: `plotTSSprecision(reference = txdb_obj, detectedTSS = \"tss.bed\")` evaluates how close detected TSS are to known annotations.\n- **Annotation**: `annotateTSS(tssBED = \"tss.bed\", txdb = txdb_obj)` provides distribution across genomic features (promoter, exon, intron, etc.).\n\n## Tips and Best Practices\n- **Memory Management**: For very large datasets, perform mapping and de-duplication outside R and initialize the `CapSet` using `filtered_file`.\n- **Sample Info**: Use `sampleInfo(cs)` to view or update the metadata table containing file paths and read counts.\n- **Gene Counts**: Use `getGeneCounts(cs, annotation_granges)` to summarize TSS-level data to gene-level counts for standard RNA-seq style downstream analysis.\n- **Spike-ins**: If using spike-in controls, calculate factors with `getNormFactors` and pass them to the `normFactors` argument in `fitDiffTSS`.\n\n## Reference documentation\n- [Analysing transcript 5'-profiling data using icetea](./references/mapcap_analysis.Rmd)\n- [Analysing transcript 5'-profiling data using icetea](./references/mapcap_analysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-icetea",
+    "description": "This tool analyzes transcript 5'-profiling data such as CAGE, RAMPAGE, and MAPCap to identify transcription start sites and perform differential expression analysis. Use when user asks to demultiplex 5' end sequencing data, filter PCR duplicates using UMIs, detect transcription start sites, or conduct differential TSS expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/icetea.html"
+  }
+}

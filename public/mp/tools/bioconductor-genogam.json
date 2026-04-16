@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-genogam",
+  "category": "bioconductor",
+  "name": "bioconductor-genogam",
+  "description": "GenoGAM performs statistical analysis of genome-wide data like ChIP-Seq using Generalized Additive Models to represent protein occupancy. Use when user asks to model protein occupancy, perform differential binding analysis, call peaks with confidence bands, or normalize and fit genomic data using GAMs.",
+  "overview": "GenoGAM (Genome-wide Generalized Additive Model) is designed for the analysis of noisy genomic data, specifically ChIP-Seq. It models the expected fragment counts as a sum of smooth functions of genomic positions. This allows for a flexible representation of protein occupancy and provides a robust statistical framework for comparing conditions (differential occupancy) and identifying peaks.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/GenoGAM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genogam/overview",
+  "github": "https://github.com/gstricker/GenoGAM",
+  "conda_downloads": "38.4K",
+  "conda_downloads_num": 38400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GenoGAM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/GenoGAM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-genogam/overview",
+    "github": "https://github.com/gstricker/GenoGAM",
+    "conda_downloads": "38.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-genogam\n\nname: bioconductor-genogam\ndescription: Statistical analysis of genome-wide data (ChIP-Seq) using Generalized Additive Models (GAMs). Use this skill to model protein occupancy, perform differential binding analysis, and call peaks with position-wise confidence bands using the GenoGAM Bioconductor package.\n\n# bioconductor-genogam\n\n## Overview\nGenoGAM (Genome-wide Generalized Additive Model) is designed for the analysis of noisy genomic data, specifically ChIP-Seq. It models the expected fragment counts as a sum of smooth functions of genomic positions. This allows for a flexible representation of protein occupancy and provides a robust statistical framework for comparing conditions (differential occupancy) and identifying peaks.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires an experiment design file (tab-separated) with columns: `ID`, `file` (BAM path), and `paired` (TRUE/FALSE), plus any experimental factors (e.g., `genotype`).\n\n```r\nlibrary(GenoGAM)\nlibrary(BiocParallel)\n\n# Register parallel backend (SnowParam recommended for large genomes)\nregister(SnowParam(workers = 2))\n\n# Define design and tiles\n# x = genomic position; genotype = binary factor for differential analysis\ndesign <- ~ s(x) + s(x, by = genotype)\nchunkSize <- 50000\noverhangSize <- 1000\n\n# Create GenoGAMDataSet\nggd <- GenoGAMDataSet(\n  expDesign = \"experimentDesign.txt\",\n  directory = \"path/to/bams\",\n  design = design,\n  chunkSize = chunkSize,\n  overhangSize = overhangSize,\n  hdf5 = TRUE # Use HDF5 for large genomes to save memory\n)\n```\n\n### 2. Normalization and Fitting\nSize factors account for sequencing depth differences. Model fitting estimates the smoothing parameter ($\\lambda$) and dispersion ($\\theta$).\n\n```r\n# Compute size factors (natural log scale)\nggd <- computeSizeFactors(ggd)\n\n# Fit the model\n# If lambda and theta are unknown, genogam() will estimate them via cross-validation\nresult <- genogam(ggd, lambda = 4601, theta = 4.51)\n```\n\n### 3. Statistical Analysis\nGenoGAM provides pointwise and region-wise significance testing.\n\n```r\n# Pointwise p-values\nresult <- computeSignificance(result)\n\n# Region-wise significance (Differential Binding)\nregions <- GRanges(\"chrI\", IRanges(1000, 5000))\ndb_results <- computeRegionSignificance(result, regions = regions, smooth = \"s(x):genotype\")\n```\n\n### 4. Peak Calling\nIdentify narrow or broad peaks based on the fitted model.\n\n```r\n# Narrow peaks\npeaks <- callPeaks(result, threshold = 1, smooth = \"s(x):genotype\")\n\n# Broad peaks\nbroad_peaks <- callPeaks(result, threshold = 1, peakType = \"broad\", cutoff = 0.75)\n\n# Export\nwriteToBEDFile(peaks, file = \"my_peaks\")\n```\n\n### 5. Visualization\nVisualize fits and raw data for specific genomic ranges.\n\n```r\nplot_range <- GRanges(\"chrI\", IRanges(45000, 55000))\nplotGenoGAM(result, ranges = plot_range)\n```\n\n## Key Functions\n- `GenoGAMDataSet()`: Constructor for the data object.\n- `computeSizeFactors()`: Normalizes for library size.\n- `genogam()`: Main fitting function.\n- `computeSignificance()`: Calculates pointwise p-values.\n- `computeRegionSignificance()`: Tests for differential binding in specific regions.\n- `callPeaks()`: Performs peak calling.\n- `view()`: Extracts data/fits into data frames for manual inspection.\n\n## Tips for Large Genomes\n- **HDF5**: Always set `hdf5 = TRUE` in `GenoGAMDataSet` for organisms larger than yeast to prevent memory crashes.\n- **Parallelization**: Use `SnowParam` instead of `MulticoreParam` on large datasets to manage memory more efficiently across cores.\n- **Knots**: The default knot spacing (`bpknots`) is 20bp. Increasing this (e.g., to 40bp) speeds up computation but reduces resolution.\n\n## Reference documentation\n- [Modeling ChIP-Seq data with GenoGAM 2.0: A Genome-wide generalized additive model](./references/GenoGAM.Rmd)\n- [GenoGAM: Genome-wide generalized additive models](./references/GenoGAM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-genogam",
+    "description": "GenoGAM performs statistical analysis of genome-wide data like ChIP-Seq using Generalized Additive Models to represent protein occupancy. Use when user asks to model protein occupancy, perform differential binding analysis, call peaks with confidence bands, or normalize and fit genomic data using GAMs.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/GenoGAM.html"
+  }
+}

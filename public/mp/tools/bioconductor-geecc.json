@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-geecc",
+  "category": "bioconductor",
+  "name": "bioconductor-geecc",
+  "description": "Bioconductor-geecc performs gene set enrichment analysis using log-linear models for 2x2 and 2x2x2 contingency tables. Use when user asks to perform enrichment analysis between two or three categories, detect mutual or joint independence between genomic variables, or account for biases like sequence length and GC content in gene sets.",
+  "overview": "The `geecc` package (Gene Set Enrichment with Contingency Tables) extends standard gene set enrichment analysis by allowing the inclusion of a third category. While traditional tools use 2x2 tables (e.g., Gene in List vs. Gene in GO Term), `geecc` uses log-linear models to analyze 2x2x2 tables. This helps identify if enrichment patterns are biased by a third factor, such as sequence length, chromosomal position, or GC content, effectively addressing Simpson's Paradox in genomic data.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/geecc.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geecc/overview",
+  "github": "N/A",
+  "conda_downloads": "22.9K",
+  "conda_downloads_num": 22900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "geecc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/geecc.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-geecc/overview",
+    "github": "N/A",
+    "conda_downloads": "22.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-geecc\n\nname: bioconductor-geecc\ndescription: Gene Set Enrichment Analysis (GSEA) using log-linear models for 2x2 and 2x2x2 contingency tables. Use this skill to perform enrichment analysis between two or three categories (e.g., differentially expressed genes, GO terms, and a third variable like sequence length or GC content) to detect mutual independence, joint independence, or three-way interactions.\n\n# bioconductor-geecc\n\n## Overview\n\nThe `geecc` package (Gene Set Enrichment with Contingency Tables) extends standard gene set enrichment analysis by allowing the inclusion of a third category. While traditional tools use 2x2 tables (e.g., Gene in List vs. Gene in GO Term), `geecc` uses log-linear models to analyze 2x2x2 tables. This helps identify if enrichment patterns are biased by a third factor, such as sequence length, chromosomal position, or GC content, effectively addressing Simpson's Paradox in genomic data.\n\n## Core Workflow\n\n### 1. Data Preparation\nData must be organized into a named list of lists. Each top-level list represents a category, and the inner lists represent variables (levels) within that category containing gene IDs.\n\n```R\nlibrary(geecc)\nlibrary(GO.db)\n\n# Category 1: Differential Expression (Variables: up, down)\ncat_deg <- list(up = c(\"gene1\", \"gene2\"), down = c(\"gene3\", \"gene4\"))\n\n# Category 2: Gene Sets (Variables: GO IDs)\n# GO2list is a helper to convert DB mappings to the required list format\ncat_go <- GO2list(db = hgu133plus2GO2PROBE, go.cat = \"CC\")\n\n# Category 3: Sequence Length (Variables: quantiles)\n# Split genes into bins (e.g., 0-33%, 33-66%, 66-100%)\ncat_len <- split(all_genes, length_factor)\n\n# Combine into a master list\nCatList <- list(deg = cat_deg, go = cat_go, len = cat_len)\n```\n\n### 2. Initialize Objects\nYou must define a `concubfilter` (to set thresholds) and a `concub` object (to define the model).\n\n```R\n# Define filters\nCCF.obj <- new(\"concubfilter\", \n               names = names(CatList), \n               p.value = 0.05, \n               test.direction = \"two.sided\")\n\n# Define the analysis model\n# null.model options: \n# ~deg+go (2-way)\n# ~deg+go+len (3-way mutual independence)\n# ~deg+go*len (3-way joint independence)\n# ~len*go+deg*go+deg*len (3-way no interaction)\nCC.obj <- new(\"concub\", \n              categories = CatList, \n              population = all_gene_ids, \n              null.model = ~deg+go+len)\n```\n\n### 3. Run and Filter Tests\nThe `runConCub` function performs the statistical tests (hypergeometric or chi-squared), and `filterConCub` applies the filters and p-value adjustments.\n\n```R\n# Run tests (supports parallel processing)\nCC.obj2 <- runConCub(obj = CC.obj, filter = CCF.obj, nthreads = 4)\n\n# Apply multiple testing correction (e.g., Benjamini-Hochberg)\nCC.obj3 <- filterConCub(obj = CC.obj2, filter = CCF.obj, p.adjust.method = \"BH\")\n```\n\n### 4. Visualization and Results\nResults are typically visualized as heatmaps where colors represent log2 odds ratios and stars indicate significance levels.\n\n```R\n# Plot heatmap\nplotConCub(obj = CC.obj3, filter = CCF.obj, col = list(range = c(-5, 5)))\n\n# Extract results as a data frame\nresults_table <- getTable(obj = CC.obj3, na.rm = TRUE)\n```\n\n## Key Null Models for 3-Way Analysis\n\n| Model Formula | Description |\n| :--- | :--- |\n| `~A+B+C` | **Mutual Independence**: All three categories are independent. |\n| `~A+B*C` | **Joint Independence**: Category A is independent of the joint distribution of B and C. |\n| `~A*B+B*C+A*C` | **Homogenous Association**: No three-way interaction; pairwise associations exist but are consistent across the third variable. |\n\n## Tips\n- **Test Direction**: Use `\"greater\"` for over-representation, `\"less\"` for under-representation, or `\"two.sided\"` for both.\n- **Ordinal Variables**: If a category is ordinal (like sequence length bins), use `options = list(category_name = list(grouping = \"cumf\"))` in the `concub` object to perform cumulative tests.\n- **Small Samples**: The package automatically switches between hypergeometric tests (accurate for small counts) and chi-squared approximations (faster for large tables) based on the `approx` parameter.\n\n## Reference documentation\n- [geecc - searching for associations between gene sets](./references/geecc.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-geecc",
+    "description": "Bioconductor-geecc performs gene set enrichment analysis using log-linear models for 2x2 and 2x2x2 contingency tables. Use when user asks to perform enrichment analysis between two or three categories, detect mutual or joint independence between genomic variables, or account for biases like sequence length and GC content in gene sets.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/geecc.html"
+  }
+}

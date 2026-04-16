@@ -1,0 +1,41 @@
+{
+  "id": "r-numbat",
+  "category": "R",
+  "name": "r-numbat",
+  "description": "r-numbat performs haplotype-aware copy number variation analysis and clonal phylogeny reconstruction from single-cell RNA-seq or spatial transcriptomics data. Use when user asks to infer allele-specific CNVs, differentiate tumor from normal cells, or reconstruct tumor clonal architecture.",
+  "overview": "Numbat is a computational method for inferring copy number variations (CNVs) from scRNA-seq and spatial transcriptomics data. It integrates signals from gene expression, allelic ratio, and population-derived haplotype structures to accurately infer allele-specific CNVs in single cells and reconstruct their lineage relationship. It does not require paired DNA or genotype data, operating solely on donor scRNA-seq data (e.g., 10x Cell Ranger output).",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-numbat\n\nname: r-numbat\ndescription: Haplotype-aware CNV analysis from single-cell RNA-seq (scRNA-seq) and spatial transcriptomics. Use this skill to infer allele-specific copy number variations, differentiate tumor vs. normal cells, and reconstruct tumor phylogeny/clonal architecture. It integrates gene expression, allelic ratio, and population-derived haplotype information.\n\n# r-numbat\n\n## Overview\nNumbat is a computational method for inferring copy number variations (CNVs) from scRNA-seq and spatial transcriptomics data. It integrates signals from gene expression, allelic ratio, and population-derived haplotype structures to accurately infer allele-specific CNVs in single cells and reconstruct their lineage relationship. It does not require paired DNA or genotype data, operating solely on donor scRNA-seq data (e.g., 10x Cell Ranger output).\n\n## Installation\n```R\n# Install from CRAN\ninstall.packages('numbat', dependencies = TRUE)\n\n# Or install the development version from GitHub\n# devtools::install_github(\"kharchenkolab/numbat\")\n```\n\n## Core Workflow\n\n### 1. Prepare Input Data\nNumbat requires three main inputs:\n- **Count Matrix**: Gene x cell integer UMI count matrix.\n- **Allele Dataframe**: Phased allele counts (typically generated via the `pileup_and_phase.R` script provided with the package).\n- **Expression Reference**: Gene x cell type matrix of normalized expression values.\n\n```R\nlibrary(numbat)\n\n# Create a reference from internal normal cells if available\n# count_mat: gene x cell raw counts; cell_annot: df with \"cell\" and \"group\"\nref_internal = aggregate_counts(count_mat, cell_annot)\n\n# Or use the built-in HCA reference\n# data(\"ref_hca\")\n```\n\n### 2. Run Numbat Inference\nThe primary interface is `run_numbat()`.\n\n```R\nout = run_numbat(\n    count_mat,      # gene x cell integer UMI count matrix \n    ref_hca,        # reference expression profile\n    df_allele,      # allele dataframe\n    genome = \"hg38\",\n    t = 1e-5,       # transition probability\n    ncores = 4,\n    plot = TRUE,\n    out_dir = './numbat_out'\n)\n```\n\n### 3. Key Parameters\n- `t`: Transition probability (lower `t` for complex landscapes/subclonal events; higher `t` to reduce false positives).\n- `gamma`: Overdispersion in allele counts (default 20 for 10x; use ~5 for noisier data like SMART-Seq).\n- `min_LLR`: Minimum log-likelihood ratio to filter CNVs (default 5).\n- `max_entropy`: Filter for single-cell CNV uncertainty (default 0.5).\n- `call_clonal_loh`: Set to `TRUE` for high-purity samples without matched normal cells.\n\n## Analysis and Visualization\nUse the `Numbat` R6 class to interact with results.\n\n```R\nnb = Numbat$new(out_dir = './numbat_out')\n\n# Integrated phylogeny and CNV heatmap\nnb$plot_phylo_heatmap(clone_bar = TRUE, p_min = 0.9)\n\n# Plot pseudobulk CNV profiles by clone\nnb$bulk_clones %>% plot_bulks(min_LLR = 10)\n\n# Refine subclones by cutting the tree\nnb$cutree(n_cut = 3)\n\n# Plot mutation history (clone level)\nnb$plot_mut_history()\n```\n\n## Specialized Workflows\n\n### Spatial Transcriptomics (Visium)\nNumbat treats spatial spots as \"cells.\"\n- Set `max_entropy` higher (e.g., 0.8) due to sparser allele coverage.\n- Use `nb$clone_post$p_cnv` to delineate tumor/normal boundaries in spatial coordinates.\n\n### Mouse Data (F1 Hybrids)\nFor F1 hybrid mice (e.g., C57BL/6 x Sv129):\n- Set `genome = \"mm10\"`.\n- Set `nu = 0` to disable phase switching (since haplotypes are perfectly known).\n\n### Numbat-multiome\nSupports joint RNA and ATAC CNV analysis using binned inputs.\n- Requires a `binGR` (GRanges object of genomic bins).\n- Use `run_numbat_multiome.R` logic for combined modality inference.\n\n## Reference documentation\n- [Output descriptions](./references/descriptions.md)\n- [Mouse tutorial](./references/mouse.md)\n- [Numbat-multiome guide](./references/numbat-multiome.md)\n- [Main User Guide](./references/numbat.md)\n- [Interpreting results](./references/results.md)\n- [Spatial transcriptomics](./references/spatial-rna.md)",
+  "skill_front_matter": {
+    "name": "r-numbat",
+    "description": "r-numbat performs haplotype-aware copy number variation analysis and clonal phylogeny reconstruction from single-cell RNA-seq or spatial transcriptomics data. Use when user asks to infer allele-specific CNVs, differentiate tumor from normal cells, or reconstruct tumor clonal architecture.",
+    "homepage": "https://cran.r-project.org/web/packages/numbat/index.html"
+  }
+}

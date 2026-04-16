@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-recount",
+  "category": "bioconductor",
+  "name": "bioconductor-recount",
+  "description": "This tool provides access to pre-processed RNA-seq data from the recount project, including gene, exon, and junction-level counts for thousands of human samples. Use when user asks to download RangedSummarizedExperiment objects from SRA or GEO, scale counts for differential expression analysis, perform annotation-agnostic analysis with expressed regions, or query exon-exon junctions via Snaptron.",
+  "overview": "The `recount` package provides an interface to the recount project, offering secondary analysis-ready RNA-seq data. It allows users to download pre-processed expression data (gene, exon, and junction levels) that has been processed with a uniform pipeline (Rail-RNA). The package is designed to work seamlessly with `SummarizedExperiment` and downstream differential expression tools like `DESeq2` and `edgeR`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/recount.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/leekgroup/recount",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "recount"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/recount.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/leekgroup/recount",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-recount\n\nname: bioconductor-recount\ndescription: Access and analyze RNA-seq data from the recount project, including gene, exon, and junction-level counts for over 70,000 human samples. Use this skill when the user needs to download RangedSummarizedExperiment objects from SRA/GEO studies, scale counts for differential expression, perform annotation-agnostic analysis with expressed regions, or query exon-exon junctions via Snaptron.\n\n# bioconductor-recount\n\n## Overview\nThe `recount` package provides an interface to the recount project, offering secondary analysis-ready RNA-seq data. It allows users to download pre-processed expression data (gene, exon, and junction levels) that has been processed with a uniform pipeline (Rail-RNA). The package is designed to work seamlessly with `SummarizedExperiment` and downstream differential expression tools like `DESeq2` and `edgeR`.\n\n## Core Workflow\n\n### 1. Finding and Downloading Data\nSearch for studies using keywords or accessions, then download the `RangedSummarizedExperiment` (RSE) objects.\n\n```r\nlibrary(recount)\n\n# Search for a study (e.g., by GEO ID)\nproject_info <- abstract_search(\"GSE32465\")\n\n# Download gene-level data (creates a directory with the project ID)\ndownload_study(\"SRP009615\", type = \"rse-gene\")\n\n# Load the data\nload(file.path(\"SRP009615\", \"rse_gene.Rdata\"))\n```\n\n### 2. Pre-processing and Scaling\nRecount stores raw base-pair coverage. These must be scaled to library size (e.g., 40 million reads) before differential expression analysis.\n\n```r\n# Scale counts to a target library size (default 40 million)\nrse <- scale_counts(rse_gene)\n\n# Alternatively, get raw read counts\nrse_reads <- read_counts(rse_gene)\n```\n\n### 3. Phenotype Metadata\nEnhance the `colData` with curated characteristics or predicted phenotypes.\n\n```r\n# Extract GEO characteristics into a usable data frame\ngeochar <- lapply(split(colData(rse_gene), seq_len(nrow(colData(rse_gene)))), geo_characteristics)\ngeochar <- do.call(rbind, geochar)\n\n# Add predicted phenotypes (e.g., tissue, sex)\nrse <- add_predictions(rse)\n```\n\n### 4. Differential Expression (DESeq2 Example)\nIntegrate directly with `DESeq2` for statistical testing.\n\n```r\nlibrary(DESeq2)\n\n# Create DESeqDataSet from RSE\ndds <- DESeqDataSet(rse, design = ~ condition)\n\n# Run DE analysis\ndds <- DESeq(dds, test = \"LRT\", reduced = ~ 1)\nres <- results(dds)\n```\n\n## Advanced Features\n\n### Annotation-Agnostic Analysis\nIdentify \"expressed regions\" (ERs) directly from BigWig files without relying on gene models.\n\n```r\n# Define regions on a specific chromosome\nregions <- expressed_regions(\"SRP009615\", \"chrY\", cutoff = 5L)\n\n# Compute a coverage matrix for these regions\nrse_ER <- coverage_matrix(\"SRP009615\", \"chrY\", regions)\n```\n\n### Exon-Exon Junctions and Snaptron\nQuery specific junctions across thousands of samples using the Snaptron API.\n\n```r\nlibrary(GenomicRanges)\njunctions <- GRanges(seqnames = \"chr2\", IRanges(start = 28971711, end = 29462418))\n\n# Query Intropolis/GTEx/TCGA via Snaptron\nsnap_res <- snaptron_query(junctions)\n```\n\n### FANTOM-CAT and Brain Metadata\nAccess specialized quantifications or curated brain metadata.\n\n```r\n# Download FANTOM-CAT quantifications\ndownload_study(\"DRP000366\", type = \"rse-fc\")\n\n# Add curated brain metadata\nrse <- add_metadata(rse, source = 'recount_brain_v2')\n```\n\n## Tips for Success\n- **Memory Management**: RSE objects for large studies (e.g., GTEx) can be massive. Use `SciServer` or high-memory environments if downloading \"all\" data.\n- **Coordinate Systems**: Note that `recount2` uses Gencode v25 (GRCh38) by default. Ensure your custom annotations match this assembly.\n- **Scaling**: Always use `scale_counts()` or `read_counts()` before DE; do not use the raw `assays(rse)$counts` directly as they represent area-under-coverage (AUC).\n\n## Reference documentation\n- [Basic DESeq2 results exploration](./references/SRP009615-results.md)\n- [recount quick start guide (Rmd)](./references/recount-quickstart.Rmd)\n- [recount quick start guide (md)](./references/recount-quickstart.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-recount",
+    "description": "This tool provides access to pre-processed RNA-seq data from the recount project, including gene, exon, and junction-level counts for thousands of human samples. Use when user asks to download RangedSummarizedExperiment objects from SRA or GEO, scale counts for differential expression analysis, perform annotation-agnostic analysis with expressed regions, or query exon-exon junctions via Snaptron.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/recount.html"
+  }
+}

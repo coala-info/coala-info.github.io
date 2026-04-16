@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msstatsbig",
+  "category": "bioconductor",
+  "name": "bioconductor-msstatsbig",
+  "description": "MSstatsBig processes large-scale proteomics datasets by performing data filtering and preprocessing on disk using the arrow backend to overcome memory limitations. Use when user asks to convert large FragPipe or Spectronaut outputs, filter big DIA datasets on disk, or prepare massive proteomics files for MSstats statistical analysis.",
+  "overview": "`MSstatsBig` is an extension of the `MSstats` ecosystem designed to handle \"big data\" proteomics experiments, particularly large Data-Independent Acquisition (DIA) datasets. It addresses memory limitations by performing data filtering and preprocessing on disk using the `arrow` backend. The primary goal is to reduce the raw PSM-level data into a manageable size that can then be \"collected\" into R's memory for standard `MSstats` statistical analysis (protein summarization and differential express",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MSstatsBig.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MSstatsBig"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSstatsBig.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msstatsbig\n\n## Overview\n\n`MSstatsBig` is an extension of the `MSstats` ecosystem designed to handle \"big data\" proteomics experiments, particularly large Data-Independent Acquisition (DIA) datasets. It addresses memory limitations by performing data filtering and preprocessing on disk using the `arrow` backend. The primary goal is to reduce the raw PSM-level data into a manageable size that can then be \"collected\" into R's memory for standard `MSstats` statistical analysis (protein summarization and differential expression).\n\n## Core Workflow\n\n### 1. Data Conversion (Large Scale)\nInstead of loading a massive CSV into R, use the `MSstatsBig` converters. These functions read the input file in chunks, filter features, and write the output to a new file.\n\n**For FragPipe:**\n```r\nlibrary(MSstatsBig)\n\n# Convert large FragPipe output to MSstats format on disk\nconverted_arrow <- bigFragPipetoMSstatsFormat(\n  input = \"path/to/msstats.csv\",\n  output_file = \"filtered_data.csv\",\n  backend = \"arrow\",\n  max_feature_count = 20 # Filters to top N features per protein to save space\n)\n```\n\n**For Spectronaut:**\n```r\nconverted_arrow <- bigSpectronauttoMSstatsFormat(\n  input = \"path/to/spectronaut_report.csv\",\n  output_file = \"filtered_data.csv\",\n  backend = \"arrow\"\n)\n```\n\n### 2. Loading Data into Memory\nOnce the data is filtered and reduced by the converter, it can be loaded into a standard R data frame for downstream analysis.\n\n```r\n# Option A: Collect from the arrow object returned by the converter\nmsstats_df <- as.data.frame(dplyr::collect(converted_arrow))\n\n# Option B: Read the resulting filtered CSV\nmsstats_df <- read.csv(\"filtered_data.csv\")\n```\n\n### 3. Downstream MSstats Analysis\nAfter conversion, use the standard `MSstats` package functions.\n\n```r\nlibrary(MSstats)\n\n# Protein Summarization\nsummarized <- dataProcess(msstats_df, use_log_file = FALSE)\n\n# Statistical Inference (Differential Expression)\n# Define contrast matrix based on conditions in the data\ncomparison <- matrix(c(-1, 1), nrow=1)\nrow.names(comparison) <- \"Test-Control\"\ncolnames(comparison) <- c(\"Control\", \"Test\")\n\nresults <- groupComparison(contrast.matrix = comparison, data = summarized)\n```\n\n## Key Functions and Parameters\n\n- `bigFragPipetoMSstatsFormat()` / `bigSpectronauttoMSstatsFormat()`: Main entry points for large files.\n- `backend = \"arrow\"`: Uses the Apache Arrow framework to process data without loading the full file into RAM.\n- `max_feature_count`: A critical parameter for \"Big\" data. It limits the number of features (peptides/charge states) per protein, significantly reducing the memory footprint of the summarized object.\n- `MSstatsPreprocessBig()`: The underlying engine used for custom formats (e.g., DIA-NN) if the data is already in a long-format compatible with MSstats.\n\n## Tips for Large Experiments\n- **Temporary Directory**: Ensure the `tempdir()` or the working directory has enough disk space to hold the intermediate `.csv` or arrow files.\n- **Memory Management**: Always use `dplyr::collect()` only *after* the `MSstatsBig` converter has finished its filtering, as the raw input is likely too large for `read.csv()`.\n- **Feature Selection**: If the dataset is still too large after conversion, decrease `max_feature_count` (e.g., to 10 or 20) to keep only the most informative features.\n\n## Reference documentation\n- [MSstatsBig Workflow](./references/MSstatsBig_Workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msstatsbig",
+    "description": "MSstatsBig processes large-scale proteomics datasets by performing data filtering and preprocessing on disk using the arrow backend to overcome memory limitations. Use when user asks to convert large FragPipe or Spectronaut outputs, filter big DIA datasets on disk, or prepare massive proteomics files for MSstats statistical analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MSstatsBig.html"
+  }
+}

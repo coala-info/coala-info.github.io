@@ -1,0 +1,45 @@
+{
+  "id": "mgems",
+  "category": "CLI",
+  "name": "mgems",
+  "description": "mGEMS partitions sequencing reads from mixed samples into separate bins corresponding to different strains or species using a probabilistic framework. Use when user asks to bin mixed genomic reads, extract reads for specific taxonomic groups, or perform abundance-based read partitioning.",
+  "overview": "mGEMS (mixed Genomic Epidemiology with Mixed Samples) is a tool for partitioning sequencing reads from a mixed sample into separate bins corresponding to different strains or species. It utilizes a probabilistic framework to assign reads to their most likely source group. This skill provides the necessary command-line patterns to execute the full binning pipeline, including integration with its required upstream dependencies, Themisto and mSWEEP.",
+  "homepage": "https://github.com/PROBIC/mGEMS",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/mgems/overview",
+  "github": "https://github.com/PROBIC/mGEMS",
+  "conda_downloads": "4.2K",
+  "conda_downloads_num": 4200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mgems_mGEMS"
+    ],
+    "description": "mGEMS is a tool for extracting sequencing reads belonging to specific taxonomic groups from metagenomic datasets using pseudoalignments and posterior probabilities.",
+    "docker_image": "quay.io/biocontainers/mgems:1.3.3--h13024bc_2",
+    "homepage": "https://github.com/PROBIC/mGEMS",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/mgems/overview",
+    "github": "https://github.com/PROBIC/mGEMS",
+    "conda_downloads": "4.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "mgems_mGEMS.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# mgems\n\n## Overview\nmGEMS (mixed Genomic Epidemiology with Mixed Samples) is a tool for partitioning sequencing reads from a mixed sample into separate bins corresponding to different strains or species. It utilizes a probabilistic framework to assign reads to their most likely source group. This skill provides the necessary command-line patterns to execute the full binning pipeline, including integration with its required upstream dependencies, Themisto and mSWEEP.\n\n## Core Workflow\nThe mGEMS pipeline typically follows a four-step process: indexing, pseudoalignment, abundance estimation, and finally, binning.\n\n### 1. Indexing (Themisto)\nBefore binning, you must create a k-mer index of your reference sequences.\n```bash\nthemisto build -k 31 -i references.fasta -o themisto_index/index --temp-dir tmp/\n```\n\n### 2. Pseudoalignment (Themisto)\nAlign your paired-end reads to the index. The `--sort-output` flag is mandatory for mGEMS compatibility.\n```bash\nthemisto pseudoalign -q reads_1.fastq.gz -o aln_1.aln -i themisto_index/index --sort-output --gzip-output\nthemisto pseudoalign -q reads_2.fastq.gz -o aln_2.aln -i themisto_index/index --sort-output --gzip-output\n```\n\n### 3. Abundance Estimation (mSWEEP)\nGenerate the probability matrix and abundance estimates required by mGEMS.\n```bash\nmSWEEP --themisto-1 aln_1.aln.gz --themisto-2 aln_2.aln.gz -i reference_grouping.txt --write-probs -o msweep_out\n```\n\n### 4. Binning and Extraction (mGEMS)\nThe primary `mGEMS` command performs both binning (assignment) and extraction (writing FASTQ files).\n```bash\nmGEMS -r reads_1.fastq.gz,reads_2.fastq.gz \\\n      -i reference_grouping.txt \\\n      --themisto-alns aln_1.aln.gz,aln_2.aln.gz \\\n      --probs msweep_out_probs.csv \\\n      -a msweep_out_abundances.txt \\\n      --index themisto_index \\\n      -o mgems_output_dir/\n```\n\n## Advanced CLI Patterns\n\n### Selective Extraction\nTo save time and disk space, extract only specific groups of interest or filter by abundance:\n- **Specific groups**: `--groups group_A,group_B`\n- **Abundance threshold**: `--min-abundance 0.05` (extracts only groups with >5% relative abundance)\n\n### Two-Step Processing\nIf you want to perform assignment first and extract reads later (or on a different machine):\n1. **Bin only**: `mGEMS bin [options] -o output_dir/`\n2. **Extract later**: `mGEMS extract --bins output_dir/group_A.bin -r reads_1.fastq.gz,reads_2.fastq.gz -o final_fastq/`\n\n### Debugging and Validation\n- **Assignment Table**: Use `--write-assignment-table` to output a `reads_to_groups.tsv` file, which is useful for auditing exactly where each read was placed.\n- **Unassigned Reads**: Use `--write-unassigned` to capture reads that aligned to the reference but could not be confidently placed in a specific group.\n- **Unique Assignments**: Use `--unique-only` to discard reads that map to multiple groups with similar probabilities, increasing the purity of the resulting bins.\n\n## Expert Tips\n- **Thread Management**: On Linux systems, use the undocumented `-t` flag to increase thread count for faster processing.\n- **Memory Efficiency**: mGEMS is designed to handle large datasets, but ensure your temporary directory (`--temp-dir` in Themisto) has sufficient space, as pseudoalignment files can be quite large before compression.\n- **Assembly Recommendation**: For downstream assembly of mGEMS bins, use **shovill** for standard cases. If the strains in your mixture are very closely related, consider **MEGAHIT**, which often handles fine-scale differences better.\n\n## Reference documentation\n- [mGEMS GitHub Repository](./references/github_com_PROBIC_mGEMS.md)\n- [mGEMS Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_mgems_overview.md)",
+  "skill_front_matter": {
+    "name": "mgems",
+    "description": "mGEMS partitions sequencing reads from mixed samples into separate bins corresponding to different strains or species using a probabilistic framework. Use when user asks to bin mixed genomic reads, extract reads for specific taxonomic groups, or perform abundance-based read partitioning.",
+    "homepage": "https://github.com/PROBIC/mGEMS"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msexperiment",
+  "category": "bioconductor",
+  "name": "bioconductor-msexperiment",
+  "description": "This tool manages mass spectrometry experiment data in R by linking raw spectra, quantified features, and experimental design metadata. Use when user asks to create MsExperiment objects, link samples to data files, or organize proteomics and metabolomics workflows.",
+  "overview": "The `MsExperiment` package provides a flexible, light-weight container for all data related to a mass spectrometry experiment. Unlike older containers, it separates the storage of raw spectra, quantified features (e.g., `SummarizedExperiment`), and experimental design, while providing a mechanism to \"link\" these components. This allows for consistent subsetting and filtering across the entire experiment.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MsExperiment.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RforMassSpectrometry/MsExperiment",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MsExperiment"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MsExperiment.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RforMassSpectrometry/MsExperiment",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msexperiment\n\nname: bioconductor-msexperiment\ndescription: Comprehensive management of mass spectrometry (MS) experiments in R. Use this skill to create, populate, and link data in MsExperiment objects, including raw spectra, quantified features, and experimental design metadata. It is ideal for organizing proteomics or metabolomics workflows where samples must be explicitly linked to raw data files and results.\n\n## Overview\n\nThe `MsExperiment` package provides a flexible, light-weight container for all data related to a mass spectrometry experiment. Unlike older containers, it separates the storage of raw spectra, quantified features (e.g., `SummarizedExperiment`), and experimental design, while providing a mechanism to \"link\" these components. This allows for consistent subsetting and filtering across the entire experiment.\n\n## Core Workflow\n\n### 1. Initialization and File Management\nStart by creating an empty experiment or defining the files involved.\n\n```r\nlibrary(MsExperiment)\nlibrary(Spectra)\n\n# Create empty object\nmsexp <- MsExperiment()\n\n# Manage external files (mzML, fasta, etc.)\nfls <- c(\"file1.mzML\", \"file2.mzML\")\nexperimentFiles(msexp) <- MsExperimentFiles(mzmls = fls, fasta = \"human.fasta\")\n```\n\n### 2. Adding Experimental Design\nThe `sampleData` slot (a `DataFrame`) describes the samples.\n\n```r\nsampleData(msexp) <- DataFrame(\n    sample_id = c(\"S1\", \"S2\"),\n    group = c(\"Control\", \"Treatment\")\n)\n```\n\n### 3. Adding Data (Spectra and Quantified Results)\nYou can add `Spectra` objects for raw data and `SummarizedExperiment` or `QFeatures` for quantified data.\n\n```r\n# Add Spectra\nsps <- Spectra(fls)\nspectra(msexp) <- sps\n\n# Add Quantified Data (qdata)\n# se is a SummarizedExperiment object\nqdata(msexp) <- se\n```\n\n### 4. Linking Samples to Data\nLinking is the most critical step. It ensures that subsetting the experiment by sample also subsets the associated spectra and files.\n\n**Manual Linking:**\nLink by index (e.g., sample 1 to file 1).\n```r\nmsexp <- linkSampleData(msexp, with = \"experimentFiles.mzmls\", \n                        sampleIndex = c(1, 2), withIndex = c(1, 2))\n```\n\n**Join-style Linking:**\nLink using matching columns (SQL-like syntax).\n```r\n# Link spectra to samples using file names\nsampleData(msexp)$file_path <- normalizePath(fls)\nmsexp <- linkSampleData(msexp, with = \"sampleData.file_path = spectra.dataOrigin\")\n```\n\n## Data Manipulation\n\n### Subsetting\nSubsetting an `MsExperiment` by index or logical vector operates on the **samples**. Because of the links established above, all associated data is subset simultaneously.\n\n```r\n# Keep only the first sample and its linked spectra/files\nmse_sub <- msexp[1]\n\n# Access linked quantified data for the subset\nassay(qdata(mse_sub))\n```\n\n### Filtering Spectra\nUse `filterSpectra` to apply `Spectra`-based filters (like RT or m/z range) while maintaining experiment integrity.\n\n```r\n# Filter spectra by retention time\nres <- filterSpectra(msexp, filterRt, rt = c(200, 300))\n```\n\n## SQL Integration for Large Experiments\nFor large-scale data, use `MsBackendSql` to store data on disk while keeping the `MsExperiment` interface.\n\n```r\nlibrary(MsBackendSql)\nlibrary(RSQLite)\n\n# Create SQL database from files\ncon <- dbConnect(SQLite(), \"experiment.db\")\ncreateMsBackendSqlDatabase(con, fls)\n\n# Load as Spectra with SQL backend\nsps <- Spectra(\"experiment.db\", source = MsBackendOfflineSql(), drv = SQLite())\n\n# Create experiment and write sample metadata to the DB\nmse <- MsExperiment(spectra = sps, sampleData = sdata)\ndbWriteSampleData(mse)\n```\n\n## Tips for Success\n- **Address Syntax**: When linking, use the format `slotName.elementName` (e.g., `experimentFiles.mzmls` or `qdata.sample_id`).\n- **Consistency**: Always check file existence using `existMsExperimentFiles(msexp)`.\n- **Metadata**: Use the `metadata()` slot to store processing logs or command-line strings used in third-party tools (e.g., search engine parameters).\n- **Spectra Variables**: Before linking, ensure the `Spectra` object has a variable (like `dataOrigin`) that matches a column in `sampleData`.\n\n## Reference documentation\n- [Managing Mass Spectrometry Experiments](./references/MsExperiment.Rmd)\n- [MsExperiment](./references/MsExperiment.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msexperiment",
+    "description": "This tool manages mass spectrometry experiment data in R by linking raw spectra, quantified features, and experimental design metadata. Use when user asks to create MsExperiment objects, link samples to data files, or organize proteomics and metabolomics workflows.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MsExperiment.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-redisparam",
+  "category": "bioconductor",
+  "name": "bioconductor-redisparam",
+  "description": "RedisParam is a BiocParallel back-end that uses a Redis database to manage asynchronous communication between a manager and distributed workers. Use when user asks to perform parallel computing with resilient worker management, scale R tasks across independent containers or sessions, or manage job queues via a Redis server.",
+  "overview": "`RedisParam` is a `BiocParallel` back-end that uses a Redis database to manage communication between a manager (the main R session) and workers. Unlike standard socket or fork-based back-ends, `RedisParam` allows for asynchronous worker management, meaning workers can join or leave a job queue at any time. It is highly resilient to worker loss and data resets on the Redis server.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RedisParam.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RedisParam"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RedisParam.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-redisparam\n\n## Overview\n\n`RedisParam` is a `BiocParallel` back-end that uses a Redis database to manage communication between a manager (the main R session) and workers. Unlike standard socket or fork-based back-ends, `RedisParam` allows for asynchronous worker management, meaning workers can join or leave a job queue at any time. It is highly resilient to worker loss and data resets on the Redis server.\n\n## Basic Usage\n\nTo use `RedisParam`, you must have a Redis server running. By default, it connects to `127.0.0.1:6379`.\n\n### Single Session Workflow\nIn a single R session, you can initialize and use `RedisParam` just like `MulticoreParam` or `SnowParam`.\n\n```r\nlibrary(RedisParam)\nlibrary(BiocParallel)\n\n# Define the param with a specific number of workers\np <- RedisParam(workers = 5, jobname = \"my_job\")\n\n# Use with standard BiocParallel functions\nresult <- bplapply(1:10, function(i) {\n    Sys.sleep(1)\n    i^2\n}, BPPARAM = p)\n```\n\n### Independent Worker Workflow\nThis is the preferred method for cloud/container orchestration.\n\n**1. Start the Worker(s):**\nIn one or more separate R sessions (or containers):\n```r\nlibrary(RedisParam)\n# is.worker = TRUE tells this session to listen for tasks\np <- RedisParam(jobname = \"cloud_compute\", is.worker = TRUE)\nbpstart(p) \n```\n\n**2. Start the Manager:**\nIn your main analysis session:\n```r\nlibrary(RedisParam)\np <- RedisParam(jobname = \"cloud_compute\", is.worker = FALSE)\n\n# Tasks are sent to the Redis queue and picked up by available workers\nresult <- bplapply(1:100, function(x) heavy_calc(x), BPPARAM = p)\n\n# Optional: Stop all workers remotely when finished\nrpstopall(p)\n```\n\n## Key Functions\n\n- `RedisParam()`: Constructor for the parameter object. Key arguments:\n    - `jobname`: Unique identifier for the job queue.\n    - `is.worker`: Logical; TRUE for worker sessions, FALSE for the manager.\n    - `hostname` / `port`: Connection details for the Redis server.\n    - `password`: If the Redis server requires authentication.\n- `bpstart()`: Starts the worker listener or initializes the manager connection.\n- `rpstopall()`: Sends a termination signal to all workers attached to the specific `jobname`.\n- `rpworkers()`: Returns the number of workers currently registered in the Redis queue.\n\n## Best Practices and Tips\n\n- **Job Names:** Always use a unique `jobname` if multiple users or processes are sharing the same Redis server to avoid task collisions.\n- **Resilience:** If a worker dies, the manager can detect the missing task and resubmit it. If the Redis server loses data, the manager will fail the current job but the queue remains functional for new tasks.\n- **Serialization:** Large objects used across all tasks should be handled carefully. `RedisParam` uses a \"constant queue\" to store data that does not vary across tasks to minimize network overhead.\n- **Scaling:** You can add more workers (by starting new R sessions with `is.worker = TRUE`) even while a `bplapply` call is currently running.\n\n## Reference documentation\n\n- [RedisParam Developer Guide](./references/RedisParamDeveloperGuide.md)\n- [RedisParam User Guide](./references/RedisParamUserGuide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-redisparam",
+    "description": "RedisParam is a BiocParallel back-end that uses a Redis database to manage asynchronous communication between a manager and distributed workers. Use when user asks to perform parallel computing with resilient worker management, scale R tasks across independent containers or sessions, or manage job queues via a Redis server.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RedisParam.html"
+  }
+}

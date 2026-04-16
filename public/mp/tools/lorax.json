@@ -1,0 +1,55 @@
+{
+  "id": "lorax",
+  "category": "CLI",
+  "name": "lorax",
+  "description": "Lorax is a specialized toolbox for identifying and extracting read evidence for complex structural rearrangements and pan-genome graph operations in long-read sequencing data. Use when user asks to identify templated insertion threads, analyze telomere-associated rearrangements, select reads for targeted amplicon assembly, or manipulate GFA and GAF files.",
+  "overview": "Lorax is a specialized toolbox designed for the targeted analysis of long-read sequencing data. While it is not a general-purpose structural variant (SV) caller, it excels at identifying and extracting the underlying read evidence for complex rearrangements that are often missed by standard pipelines. It provides specific workflows for identifying templated insertion threads, analyzing telomere-associated SVs, and selecting reads for targeted amplicon assembly. Additionally, Lorax supports pan-g",
+  "homepage": "https://github.com/tobiasrausch/lorax",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/lorax/overview",
+  "github": "https://github.com/tobiasrausch/lorax",
+  "conda_downloads": "8.8K",
+  "conda_downloads_num": 8800,
+  "last_updated": "2025-07-02",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lorax_tithreads",
+      "lorax_amplicon",
+      "lorax_pct",
+      "lorax_extract",
+      "lorax_telomere",
+      "lorax_repeat"
+    ],
+    "description": "Tells you the ploidy of a tumor sample based on its BAM file.",
+    "docker_image": "quay.io/biocontainers/lorax:0.5.1--h4d20210_0",
+    "homepage": "https://github.com/tobiasrausch/lorax",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/lorax/overview",
+    "github": "https://github.com/tobiasrausch/lorax",
+    "conda_downloads": "8.8K",
+    "last_updated": "2025-07-02",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "lorax_amplicon.cwl",
+    "lorax_extract.cwl",
+    "lorax_pct.cwl",
+    "lorax_repeat.cwl",
+    "lorax_telomere.cwl",
+    "lorax_tithreads.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# lorax\n\n## Overview\n\nLorax is a specialized toolbox designed for the targeted analysis of long-read sequencing data. While it is not a general-purpose structural variant (SV) caller, it excels at identifying and extracting the underlying read evidence for complex rearrangements that are often missed by standard pipelines. It provides specific workflows for identifying templated insertion threads, analyzing telomere-associated SVs, and selecting reads for targeted amplicon assembly. Additionally, Lorax supports pan-genome workflows, allowing users to manipulate GFA files, convert graph alignments to BAM format, and calculate node coverage.\n\n## Common CLI Patterns\n\n### Templated Insertion Analysis\nIdentify source sequences and adjacencies for templated insertions.\n```bash\n# Identify threads using a control and tumor BAM\nlorax tithreads -g reference.fa -o output.bed -m control.bam tumor.bam\n\n# Visualize the resulting graph\ncut -f 4,9 output.bed | sed -e '1s/^/graph {\\n/' | sed -e '$a}' > graph.dot\ndot -Tpdf graph.dot -o insertions.pdf\n```\n\n### Telomere Rearrangements\nCluster reads into telomere junctions for local assembly.\n```bash\n# Analyze telomere-associated SVs (T2T reference recommended)\nlorax telomere -g chm13.fa -o telomere_out tumor.bam\n```\n*Tip: Use the reference maps provided in the `maps/` directory of the source to filter common mis-mapping artifacts.*\n\n### Targeted Amplicon Assembly\nExtract reads belonging to specific amplicons using phased variants.\n```bash\n# Select reads based on amplicon regions and phased VCF\nlorax amplicon -g reference.fa -s sample_id -v phased.bcf -b regions.bed tumor.bam\n\n# Extract the actual FASTA sequences for the selected reads\n# Note: Use -a if the read list contains hashes (standard output from 'amplicon')\ntail -n +2 output.reads | cut -f 1 | sort | uniq > reads.lst\nlorax extract -a -g reference.fa -r reads.lst tumor.bam\n```\n\n### Pan-Genome Graph Operations\nWork with GFA (Graphical Fragment Assembly) and GAF (Graph Alignment Format) files.\n```bash\n# Convert GAF alignments to BAM\nlorax convert -g pangenome.gfa.gz -f reads.fastq.gz alignments.gaf.gz | samtools sort -o graph_aligned.bam -\n\n# Calculate node coverage\nlorax ncov -g pangenome.gfa.gz alignments.gaf.gz > coverage.tsv\n\n# Visualize a subgraph\nlorax gfa2dot -s sample_id -r 3 pangenome.gfa.gz > subgraph.dot\ndot -Tpng subgraph.dot > subgraph.png\n```\n\n## Expert Tips and Best Practices\n\n*   **Reference Selection**: For the `telomere` subcommand, always prefer a Telomere-to-Telomere (T2T) assembly like CHM13 over GRCh38 to minimize false positives caused by incomplete telomeric sequences in older references.\n*   **Read Extraction**: The `extract` subcommand is highly efficient for pulling specific read evidence out of massive BAM files once Lorax has identified the relevant read IDs or hashes.\n*   **Graph Visualization**: Lorax subcommands often output BED files where specific columns represent graph edges. Use the `dot` utility from the Graphviz package to transform these into visual representations of complex rearrangements.\n*   **SV Calling Distinction**: Do not use Lorax for primary SV calling (e.g., finding simple deletions or inversions). Use a dedicated caller like Delly for discovery, then use Lorax to resolve the complex structure of the identified variants.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| lorax amplicon | Amplicon analysis tool |\n| lorax extract | Extracts reads from a BAM file based on a list of reads and a reference genome. |\n| lorax repeat | Finds tandem repeats in a reference genome. |\n| lorax telomere | Identify telomeric repeats in BAM or FASTA files. |\n| lorax tithreads | Tells you the ploidy of a tumor sample based on its BAM file. |\n| lorax_pct | Calculate and output statistics about the alignment of a sample to a reference genome or pan-genome graph. |\n\n## Reference documentation\n- [Lorax GitHub README](./references/github_com_tobiasrausch_lorax_blob_main_README.md)\n- [Lorax Repository Overview](./references/github_com_tobiasrausch_lorax.md)\n- [Lorax Dockerfile (Environment/Dependencies)](./references/github_com_tobiasrausch_lorax_blob_main_Dockerfile.md)",
+  "skill_front_matter": {
+    "name": "lorax",
+    "description": "Lorax is a specialized toolbox for identifying and extracting read evidence for complex structural rearrangements and pan-genome graph operations in long-read sequencing data. Use when user asks to identify templated insertion threads, analyze telomere-associated rearrangements, select reads for targeted amplicon assembly, or manipulate GFA and GAF files.",
+    "homepage": "https://github.com/tobiasrausch/lorax"
+  }
+}

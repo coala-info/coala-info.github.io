@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spatialde",
+  "category": "bioconductor",
+  "name": "bioconductor-spatialde",
+  "description": "This package identifies genes with significant spatial variation in expression levels across tissue samples using a statistical framework. Use when user asks to identify spatially variable genes, stabilize expression variance, regress out library size effects, or cluster genes into spatial patterns using automatic expression histology.",
+  "overview": "The `spatialDE` package is an R wrapper for the SpatialDE Python method. It provides a statistical framework to identify genes that exhibit spatial variation in expression levels across a tissue. It decomposes gene expression variance into a spatial component and a non-spatial noise component. Key features include variance stabilization, regression of library size effects, significance testing for spatial variability, and automatic expression histology (AEH) to cluster genes into spatial pattern",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/spatialDE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/sales-lab/spatialDE",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "spatialDE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spatialDE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/sales-lab/spatialDE",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spatialde\n\n## Overview\n\nThe `spatialDE` package is an R wrapper for the SpatialDE Python method. It provides a statistical framework to identify genes that exhibit spatial variation in expression levels across a tissue. It decomposes gene expression variance into a spatial component and a non-spatial noise component. Key features include variance stabilization, regression of library size effects, significance testing for spatial variability, and automatic expression histology (AEH) to cluster genes into spatial patterns.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a gene expression matrix (genes as rows, spots/cells as columns) and a corresponding data frame of spatial coordinates.\n\n```r\nlibrary(spatialDE)\n\n# Load example data\ndata(\"Rep11_MOB_0\") # Expression matrix\ndata(\"MOB_sample_info\") # Metadata with 'x' and 'y' columns\n\n# Filter lowly expressed genes\ncounts <- Rep11_MOB_0[rowSums(Rep11_MOB_0) >= 3, ]\n\n# Extract coordinates\nX <- MOB_sample_info[, c(\"x\", \"y\")]\n```\n\n### 2. Normalization and Pre-processing\nSpatialDE assumes normally distributed data. Use Anscombe's transformation and regress out library size effects.\n\n```r\n# 1. Stabilize variance (Anscombe's approximation)\nnorm_expr <- stabilize(counts)\n\n# 2. Regress out total counts (library size)\nresid_expr <- regress_out(norm_expr, sample_info = MOB_sample_info)\n```\n\n### 3. Identifying Spatially Variable Genes (SVGs)\nThe `run` function performs the significance test.\n\n```r\n# Run SpatialDE test\nresults <- spatialDE::run(resid_expr, coordinates = X)\n\n# Filter for significant SVGs (e.g., q-value < 0.05)\nde_results <- results[results$qval < 0.05, ]\n```\n\n### 4. Model Search and Spatial Patterns\nClassify genes into interpretable DE classes (e.g., linear, periodic) and group them into spatial patterns using Automatic Expression Histology (AEH).\n\n```r\n# Classify DE classes\nms_results <- model_search(resid_expr, coordinates = X, de_results = de_results)\n\n# Group into spatial patterns\nsp <- spatial_patterns(resid_expr, coordinates = X, de_results = de_results, \n                       n_patterns = 4L, length = 1.5)\n# Access pattern membership\nprint(sp$pattern_results)\n```\n\n## SpatialExperiment Integration\n\nIf using the `SpatialExperiment` (SPE) class, the package provides high-level wrappers that handle the internal transpositions and metadata extraction.\n\n```r\nlibrary(SpatialExperiment)\n\n# Run full pipeline on SPE object\nout <- spatialDE(spe, assay_type = \"counts\")\n\n# Classify and cluster within SPE workflow\nmsearch <- modelSearch(spe, de_results = out, qval_thresh = 0.05)\nspatterns <- spatialPatterns(spe, de_results = out, qval_thresh = 0.05, n_patterns = 4L)\n```\n\n## Visualization\n\nThe package includes utilities to visualize spatial variance and multi-gene expression patterns.\n\n```r\n# Plot Fraction Spatial Variance (FSV) vs Q-value\nFSV_sig(results, ms_results)\n\n# Plot top significant genes\nmultiGenePlots(norm_expr, coordinates = X, genes = de_results$g[1:6])\n```\n\n## Tips and Best Practices\n- **Transposition**: The `stabilize` and `regress_out` functions expect samples in columns and genes in rows (standard Bioconductor format), but the underlying Python engine often transposes these. The R wrappers handle this, but ensure your input matrix is correctly oriented.\n- **Performance**: Running `spatialDE::run` on the full genome can be time-consuming (approx. 10-20 minutes for 15k genes). Consider pre-filtering or testing on a subset of highly variable genes first.\n- **Length Scale**: In `spatial_patterns`, the `length` parameter controls the smoothness of the patterns. Adjust this based on the expected scale of biological features in your tissue.\n\n## Reference documentation\n- [Introduction to spatialDE](./references/spatialDE.Rmd)\n- [Introduction to spatialDE (Markdown)](./references/spatialDE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spatialde",
+    "description": "This package identifies genes with significant spatial variation in expression levels across tissue samples using a statistical framework. Use when user asks to identify spatially variable genes, stabilize expression variance, regress out library size effects, or cluster genes into spatial patterns using automatic expression histology.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/spatialDE.html"
+  }
+}

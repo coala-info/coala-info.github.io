@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nanomethviz",
+  "category": "bioconductor",
+  "name": "bioconductor-nanomethviz",
+  "description": "NanoMethViz is an R package for the visualization and analysis of DNA methylation data from long-read sequencing. Use when user asks to visualize per-read methylation patterns, plot methylation levels for specific genes or genomic regions, or convert long-read methylation calls into formats for differential analysis.",
+  "overview": "`NanoMethViz` is an R package designed for the visualization and analysis of DNA methylation data derived from long-read sequencing (Oxford Nanopore Technologies). It specializes in handling per-read methylation calls, allowing for high-resolution plots that show both population-level averages and individual read patterns (heatmaps). It supports various upstream callers including dorado (modBAM), modkit, Megalodon, Nanopolish, and f5c.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NanoMethViz.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/shians/NanoMethViz",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NanoMethViz"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NanoMethViz.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/shians/NanoMethViz",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nanomethviz\n\n## Overview\n`NanoMethViz` is an R package designed for the visualization and analysis of DNA methylation data derived from long-read sequencing (Oxford Nanopore Technologies). It specializes in handling per-read methylation calls, allowing for high-resolution plots that show both population-level averages and individual read patterns (heatmaps). It supports various upstream callers including dorado (modBAM), modkit, Megalodon, Nanopolish, and f5c.\n\n## Installation\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\n\nBiocManager::install(\"NanoMethViz\")\nlibrary(NanoMethViz)\n```\n\n## Data Import and Preparation\n\n### 1. Working with modBAM (Dorado/Modkit)\nModern ONT pipelines produce BAM files with `Mm` and `Ml` tags. These can be used directly.\n```r\n# Define BAM files and sample names\nbam_files <- ModBamFiles(\n    samples = c(\"sample1\", \"sample2\"),\n    paths = c(\"path/to/s1.bam\", \"path/to/s2.bam\")\n)\n\n# Create the result object\nmbr <- ModBamResult(\n    methy = bam_files,\n    samples = data.frame(sample = c(\"sample1\", \"sample2\"), group = c(\"A\", \"B\")),\n    exons = get_exons_mm10() # or get_exons_hg19()\n)\n```\n\n### 2. Converting Tabular Data to Tabix\nFor Nanopolish, Megalodon, or modkit TSV exports, data must be converted to a sorted, bgzipped tabix format for efficient access.\n```r\n# Convert raw caller output to NanoMethViz tabix format\ncreate_tabix_file(\n    input_files = c(\"sample1_calls.tsv.gz\", \"sample2_calls.tsv.gz\"),\n    output_file = \"methy_data.bgz\",\n    samples = c(\"sample1\", \"sample2\")\n)\n```\n\n### 3. Constructing NanoMethResult\nThe core object requires methylation data (tabix), sample metadata, and exon annotations.\n```r\n# 1. Methylation data path\nmethy <- \"methy_data.bgz\"\n\n# 2. Sample annotation (must match 'sample' column in data)\nsample_anno <- data.frame(\n    sample = c(\"sample1\", \"sample2\"),\n    group = c(\"Control\", \"Treatment\")\n)\n\n# 3. Exon annotation (tibble with gene_id, chr, strand, start, end, transcript_id, symbol)\nexon_tibble <- get_exons_mm10()\n\nnmr <- NanoMethResult(methy, sample_anno, exon_tibble)\n```\n\n## Visualization\n\n### Gene and Region Plotting\nPlots include a smoothed average methylation line and an optional read-level heatmap.\n```r\n# Plot by gene symbol\nplot_gene(nmr, \"Peg3\", heatmap = TRUE)\n\n# Plot a specific genomic region\nplot_region(nmr, chr = \"chr11\", start = 101463573, end = 101470000)\n\n# Highlight specific regions (e.g., DMRs)\nplot_gene(nmr, \"Peg3\", anno_regions = my_dmr_dataframe)\n```\n\n### Customizing Plots\n- `spaghetti = TRUE`: Show individual read lines instead of a heatmap.\n- `compare = FALSE`: Plot samples individually rather than grouped.\n- `span`: Adjust smoothing (smaller values = more detail).\n\n## Downstream Analysis\n\n### Exporting to Other Packages\nConvert `NanoMethResult` to formats used by differential methylation tools.\n```r\n# To bsseq (for DSS or general smoothing)\nbss <- methy_to_bsseq(nmr)\n\n# To edgeR (for site-level or region-level differential analysis)\ngene_regions <- exons_to_genes(NanoMethViz::exons(nmr))\nedger_mat <- bsseq_to_edger(bss, gene_regions)\n```\n\n### Dimensionality Reduction\nVisualize sample similarities using Log-Methylation Ratios (LMR).\n```r\n# 1. Create LMR matrix (aggregated by gene)\ngene_anno <- exons_to_genes(NanoMethViz::exons(nmr))\nlmr <- bsseq_to_log_methy_ratio(bss, regions = gene_anno)\n\n# 2. Plot\nplot_mds(lmr, groups = sample_anno$group)\nplot_pca(lmr, groups = sample_anno$group)\n```\n\n## Package Options\n- **Site Filtering**: Remove low-coverage sites to reduce noise (default is 3).\n  `options(\"NanoMethViz.site_filter\" = 5)`\n- **Highlight Color**: Change the color of `anno_regions`.\n  `options(\"NanoMethViz.highlight_col\" = \"red\")`\n\n## Reference documentation\n- [UsersGuide](./references/UsersGuide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nanomethviz",
+    "description": "NanoMethViz is an R package for the visualization and analysis of DNA methylation data from long-read sequencing. Use when user asks to visualize per-read methylation patterns, plot methylation levels for specific genes or genomic regions, or convert long-read methylation calls into formats for differential analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NanoMethViz.html"
+  }
+}

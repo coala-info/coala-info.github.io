@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnvfilter",
+  "category": "bioconductor",
+  "name": "bioconductor-cnvfilter",
+  "description": "CNVfilteR identifies and removes false positive germline CNV calls by analyzing SNV allele frequencies within the called regions. Use when user asks to filter CNV calls, reduce false discovery rates in CNV detection, or cross-reference CNVs with SNV data.",
+  "overview": "CNVfilteR is a Bioconductor package designed to reduce false discovery rates in germline CNV detection. It works by cross-referencing CNV calls with SNV calls (typically from the same NGS pipeline). The core logic relies on the fact that SNV allele frequencies should shift predictably in the presence of a true CNV (e.g., ~33% or ~66% for duplications, or a loss of heterozygosity for deletions). If SNVs within a called CNV region behave like normal diploid variants (e.g., ~50% frequency), the CNV",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVfilteR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/jpuntomarcos/CNVfilteR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNVfilteR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVfilteR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/jpuntomarcos/CNVfilteR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnvfilter\n\n## Overview\n\nCNVfilteR is a Bioconductor package designed to reduce false discovery rates in germline CNV detection. It works by cross-referencing CNV calls with SNV calls (typically from the same NGS pipeline). The core logic relies on the fact that SNV allele frequencies should shift predictably in the presence of a true CNV (e.g., ~33% or ~66% for duplications, or a loss of heterozygosity for deletions). If SNVs within a called CNV region behave like normal diploid variants (e.g., ~50% frequency), the CNV is flagged as a false positive.\n\n## Workflow and Core Functions\n\n### 1. Loading CNV Calls\nLoad CNV data into a `GRanges` object. The package provides `loadCNVcalls()` to parse CSV/TSV files.\n\n```r\nlibrary(CNVfilteR)\n\n# Load from file\ncnvs.gr <- loadCNVcalls(cnvs.file = \"path/to/calls.csv\", \n                        chr.column = \"Chromosome\", \n                        start.column = \"Start\", \n                        end.column = \"End\", \n                        cnv.column = \"CNV.type\", \n                        sample.column = \"Sample\", \n                        genome = \"hg19\")\n```\n*   **Note:** Use `deletion` and `duplication` parameters if your file uses custom labels (e.g., `deletion = \"Loss\"`).\n*   **Coordinates:** If location is in one column (e.g., \"1:500-1000\"), use the `coord.column` parameter.\n\n### 2. Loading Variant (SNV) Data\nLoad VCF files using `loadVCFs()`. It automatically supports VarScan2, Strelka, freeBayes, GATK (HaplotypeCaller/UnifiedGenotyper), and Torrent Variant Caller.\n\n```r\nvcf.files <- c(\"sample1.vcf.gz\", \"sample2.vcf.gz\")\nvcfs <- loadVCFs(vcf.files, cnvs.gr = cnvs.gr, genome = \"hg19\")\n```\n\n**Optimization Tips:**\n*   **Depth:** Use `min.total.depth` (default 10) to filter low-quality SNVs. Increase this for high-coverage panels.\n*   **Exclusions:** Use `regions.to.exclude` (GRanges) to ignore pseudogenes or repetitive regions.\n*   **INDELs:** By default, `exclude.indels = TRUE` is recommended as their allele frequency is less stable for this specific filtering logic.\n\n### 3. Identifying False Positives\nThe `filterCNVs()` function performs the analysis and returns an S3 object containing the results.\n\n```r\nresults <- filterCNVs(cnvs.gr, vcfs)\n\n# View CNVs flagged for removal\nfiltered_out <- results$cnvs[results$cnvs$filter == TRUE]\n```\n\n**Filtering Logic:**\n*   **Deletions:** Filtered out if the percentage of heterozygous variants in the region exceeds `ht.deletions.threshold` (default 30%).\n*   **Duplications:** Uses a fuzzy-logic scoring model. If the total `score` (based on proximity of SNVs to 50% vs 33/66% frequency) is >= `dup.threshold.score` (default 0.5), the CNV is discarded.\n\n### 4. Visualizing Results\nVisualize specific CNVs to inspect the SNV allele frequencies manually.\n\n```r\n# Plot a specific CNV by its ID\nplotVariantsForCNV(results, cnv.id = \"3\")\n\n# Plot all CNVs across the genome\nplotAllCNVs(cnvs.gr)\n```\n\n## Advanced Configuration\n\n### Scoring Model\nThe duplication scoring model uses sigmoids. You can adjust the sensitivity by modifying `filterCNVs()` parameters:\n*   `expected.ht.mean`: Expected freq for normal diploid (default 0.5).\n*   `expected.dup.ht.mean1` / `mean2`: Expected freq for duplication (default 0.33 and 0.66).\n*   `margin.pct`: Percentage of the CNV ends to ignore (default 10%). Increase this if your CNV caller has \"fuzzy\" boundaries.\n\n## Reference documentation\n\n- [CNVfilteR vignette](./references/CNVfilteR.md)\n- [CNVfilteR RMarkdown Source](./references/CNVfilteR.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnvfilter",
+    "description": "CNVfilteR identifies and removes false positive germline CNV calls by analyzing SNV allele frequencies within the called regions. Use when user asks to filter CNV calls, reduce false discovery rates in CNV detection, or cross-reference CNVs with SNV data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVfilteR.html"
+  }
+}

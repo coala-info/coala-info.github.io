@@ -1,0 +1,55 @@
+{
+  "id": "entrez-direct",
+  "category": "CLI",
+  "name": "entrez-direct",
+  "description": "Entrez Direct provides a suite of Unix terminal tools for programmatically searching, retrieving, and parsing data from NCBI's Entrez databases. Use when user asks to search biological databases, link related records across databases, download sequences or abstracts, and extract specific XML fields into structured tables.",
+  "overview": "Entrez Direct (EDirect) is a powerful suite of Unix terminal tools designed for programmatic interaction with NCBI's Entrez databases. It allows for sophisticated data mining by piping the output of one command (like a search) into another (like a filter or data fetcher). This skill provides the syntax and logic required to navigate these databases, handle XML record hierarchies, and transform raw biological data into clean, structured reports without writing complex custom scripts.",
+  "homepage": "https://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/versions/24.0.20250527/README",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/entrez-direct/overview",
+  "github": "N/A",
+  "conda_downloads": "1.5M",
+  "conda_downloads_num": 1500000,
+  "last_updated": "2025-05-28",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "entrez-direct_esearch",
+      "entrez-direct_efilter",
+      "entrez-direct_elink",
+      "entrez-direct_efetch",
+      "entrez-direct_xtract",
+      "entrez-direct_nquire"
+    ],
+    "description": "Query Specification",
+    "docker_image": "quay.io/biocontainers/entrez-direct:24.0--he881be0_0",
+    "homepage": "https://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/versions/24.0.20250527/README",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/entrez-direct/overview",
+    "github": "N/A",
+    "conda_downloads": "1.5M",
+    "last_updated": "2025-05-28",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "entrez-direct_efetch.cwl",
+    "entrez-direct_efilter.cwl",
+    "entrez-direct_elink.cwl",
+    "entrez-direct_esearch.cwl",
+    "entrez-direct_nquire.cwl",
+    "entrez-direct_xtract.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# entrez-direct\n\n## Overview\nEntrez Direct (EDirect) is a powerful suite of Unix terminal tools designed for programmatic interaction with NCBI's Entrez databases. It allows for sophisticated data mining by piping the output of one command (like a search) into another (like a filter or data fetcher). This skill provides the syntax and logic required to navigate these databases, handle XML record hierarchies, and transform raw biological data into clean, structured reports without writing complex custom scripts.\n\n## Core Navigation Commands\nEDirect operations typically follow a pipeline pattern: `esearch` (find) -> `elink` (relate) -> `efilter` (refine) -> `efetch` (download) -> `xtract` (parse).\n\n- **esearch**: Initiates a search.\n  - `esearch -db pubmed -query \"long covid AND brain fog\"`\n  - Use bracketed fields for precision: `esearch -db nuccore -query \"human [ORGN] AND insulin [PROT]\"`\n- **elink**: Finds related records in the same or different databases.\n  - Find related articles: `elink -related`\n  - Find protein sequences for a gene: `esearch -db gene -query \"BRCA1\" | elink -target protein`\n- **efilter**: Limits existing results by date, organism, or molecule type.\n  - `efilter -organism mouse -mindate 2020 -maxdate 2023`\n- **efetch**: Retrieves the actual data in specific formats (abstract, fasta, xml, gbc, etc.).\n  - `efetch -format fasta` or `efetch -format abstract`\n\n## Data Extraction with xtract\nThe `xtract` tool is the primary method for converting NCBI's complex XML into tab-delimited tables.\n\n### Basic Extraction\n- **-pattern**: Defines the record boundary (the \"row\").\n- **-element**: Selects the specific data field (the \"column\").\n- **Example**: `efetch -db pubmed -id 12345 -format xml | xtract -pattern PubmedArticle -element PMID ArticleTitle`\n\n### Handling Hierarchies (Exploration)\nXML often has nested structures (e.g., multiple authors per paper). Use exploration commands to maintain data associations:\n- **-block**: Creates a sub-loop within a pattern.\n  - `xtract -pattern PubmedArticle -block Author -element LastName Initials` (Prints each author on a new line associated with the paper).\n- **-group / -subset**: Used for deeper nesting, such as Features and Qualifiers in GenBank records.\n  - Hierarchy: `-pattern` > `-group` > `-block` > `-subset` > `-element`.\n\n### Formatting and Transformation\n- **-sep**: Changes the separator for multiple instances of the same element (default is tab).\n- **-tab**: Changes the column separator.\n- **-first / -last**: Grabs specific instances (e.g., `-first Author`).\n- **-wrp**: Wraps the output in a specific XML tag.\n- **Variables**: Store a value from a higher level to use in a lower block.\n  - `xtract -pattern INSDSeq -ACC INSDSeq_accession -group INSDFeature -element \"&ACC\" INSDFeature_key`\n\n## Expert Tips\n- **API Keys**: Always set `export NCBI_API_KEY=your_key` in the environment to allow higher request rates (up to 10 per second).\n- **Piping Logic**: EDirect commands pass a \"WebEnv\" cookie through the pipe, meaning you only need to specify the `-db` in the initial `esearch`.\n- **No Loops Needed**: EDirect is designed to handle thousands of IDs at once. Avoid writing Bash `for` loops; instead, pipe a list of IDs or a search result directly into `efetch`.\n- **Complex Parsing**: Use `transmute -j2x` if you encounter JSON data that needs to be converted to XML for `xtract` processing.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| efetch | Fetch records from NCBI databases. |\n| efilter | Filters search results based on various criteria. |\n| elink | Finds links between records in different databases or within the same database. |\n| esearch | Query Specification |\n| nquire | Query Commands |\n| xtract | Xtract uses command-line arguments to convert XML data into a tab-delimited table. |\n\n## Reference documentation\n- [ENTREZ DIRECT: COMMAND LINE ACCESS TO NCBI ENTREZ DATABASES](./references/anaconda_org_channels_bioconda_packages_entrez-direct_overview.md)\n- [Entrez Direct README](./references/ftp_ncbi_nlm_nih_gov_entrez_entrezdirect_versions_24.0.20250527_README.md)",
+  "skill_front_matter": {
+    "name": "entrez-direct",
+    "description": "Entrez Direct provides a suite of Unix terminal tools for programmatically searching, retrieving, and parsing data from NCBI's Entrez databases. Use when user asks to search biological databases, link related records across databases, download sequences or abstracts, and extract specific XML fields into structured tables.",
+    "homepage": "https://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/versions/24.0.20250527/README"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gmapr",
+  "category": "bioconductor",
+  "name": "bioconductor-gmapr",
+  "description": "This tool provides an R interface for genomic mapping, alignment, and variant tallying using the GMAP/GSNAP suite. Use when user asks to create genome indices, align sequencing reads with GSNAP, or generate nucleotide-level variant tallies from BAM files.",
+  "overview": "The `gmapR` package provides an R interface to the GMAP suite of tools. Its primary utilities include **GSNAP** (Genomic Short-read Nucleotide Alignment Program) for alignment and **bam_tally** for summarizing alignments into variant counts and coverage. It is particularly effective for RNA-seq alignment due to its sophisticated handling of splice sites and SNP-tolerant mapping.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/gmapR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gmapr/overview",
+  "github": "N/A",
+  "conda_downloads": "33.6K",
+  "conda_downloads_num": 33600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gmapR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gmapR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gmapr/overview",
+    "github": "N/A",
+    "conda_downloads": "33.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gmapr\n\nname: bioconductor-gmapr\ndescription: Genomic mapping, alignment, and variant tallying using the GMAP/GSNAP suite. Use this skill when you need to create genome indices, align short or long sequencing reads (RNA-seq or DNA-seq), or generate nucleotide-level summaries (tallies) from BAM files within an R environment.\n\n# bioconductor-gmapr\n\n## Overview\n\nThe `gmapR` package provides an R interface to the GMAP suite of tools. Its primary utilities include **GSNAP** (Genomic Short-read Nucleotide Alignment Program) for alignment and **bam_tally** for summarizing alignments into variant counts and coverage. It is particularly effective for RNA-seq alignment due to its sophisticated handling of splice sites and SNP-tolerant mapping.\n\n## Core Workflows\n\n### 1. Creating a GmapGenome Index\n\nBefore alignment, you must create a genome index. This can be built from a `BSgenome` object or a FASTA file.\n\n```r\nlibrary(gmapR)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Define where the index will be stored\ngenome_dir <- GmapGenomeDirectory(\"path/to/indices\", create = TRUE)\n\n# Create the GmapGenome object\ngmap_genome <- GmapGenome(genome = Hsapiens,\n                          directory = genome_dir,\n                          name = \"hg19\",\n                          create = TRUE,\n                          k = 12L)\n```\n\n### 2. Adding Splice Sites\n\nFor RNA-seq, adding known splice sites improves alignment accuracy across junctions.\n\n```r\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ntxdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\nexons <- exonsBy(txdb)\n\n# Assign splice sites to the genome object\nspliceSites(gmap_genome, \"knownGene\") <- exons\n```\n\n### 3. Aligning Reads with GSNAP\n\nAlignment is controlled by a `GsnapParam` object, which defines penalties, splicing behavior, and output constraints.\n\n```r\n# Configure parameters\nparams <- GsnapParam(genome = gmap_genome,\n                     unique_only = TRUE,\n                     novelsplicing = TRUE,\n                     splicing = \"knownGene\",\n                     npaths = 1L)\n\n# Run alignment\n# input_a and input_b are used for paired-end reads\noutput <- gsnap(input_a = \"reads_1.fastq\",\n                input_b = \"reads_2.fastq\",\n                params = params)\n\n# Access BAM files\nbam_files <- path(output)\n```\n\n### 4. Summarizing Variants with bam_tally\n\nThe `bam_tally` function provides nucleotide-level counts (reference vs. alternative) for a genomic region.\n\n```r\n# Define tally parameters\ntally_param <- BamTallyParam(gmap_genome,\n                             minimum_mapq = 20L,\n                             concordant_only = TRUE,\n                             indels = TRUE)\n\n# Execute tallying\ntallies <- bam_tally(\"aligned_reads.bam\", tally_param)\n\n# Convert to a VRanges object for variant analysis\nvariants <- variantSummary(tallies)\n```\n\n### 5. Creating Genome Packages\n\nTo share or version a specific genome index, you can wrap it into a standard R data package.\n\n```r\nmakeGmapGenomePackage(gmapGenome = gmap_genome,\n                      version = \"1.0.0\",\n                      maintainer = \"Name <email@example.com>\",\n                      author = \"Author Name\",\n                      destDir = \".\",\n                      license = \"Artistic-2.0\",\n                      pkgName = \"GmapGenome.Hsapiens.UCSC.hg19\")\n```\n\n## Tips and Best Practices\n\n- **Memory Management**: Creating indices for large genomes (like Human) is resource-intensive. Ensure sufficient RAM is available during the `GmapGenome(..., create = TRUE)` step.\n- **K-mer Size**: The `k` parameter (default 12) affects sensitivity and memory. Smaller values increase sensitivity for very short reads but use more memory.\n- **GsnapOutput**: The object returned by `gsnap()` contains paths to multiple BAM files (e.g., unique, multireads, translocations) depending on the `split_output` parameter.\n- **TP53Genome**: For testing and examples, `gmapR` provides a `TP53Genome()` function that returns a small, ready-to-use genome object.\n\n## Reference documentation\n- [gmapR](./references/gmapR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gmapr",
+    "description": "This tool provides an R interface for genomic mapping, alignment, and variant tallying using the GMAP/GSNAP suite. Use when user asks to create genome indices, align sequencing reads with GSNAP, or generate nucleotide-level variant tallies from BAM files.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/gmapR.html"
+  }
+}

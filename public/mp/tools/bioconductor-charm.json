@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-charm",
+  "category": "bioconductor",
+  "name": "bioconductor-charm",
+  "description": "The charm package analyzes DNA methylation data from the CHARM platform to estimate methylation percentages and identify differentially methylated regions. Use when user asks to process raw Nimblegen files, perform quality control on methylation arrays, normalize DNA methylation data, or find differentially methylated regions between experimental groups.",
+  "overview": "The `charm` package is designed for the analysis of DNA methylation data, specifically optimized for the CHARM (Comprehensive High-throughput Arrays for Relative Methylation) platform. It processes raw Nimblegen `.xys` files to produce percentage methylation estimates and identifies differentially methylated regions (DMRs) between experimental groups. The package supports batch effect correction via Surrogate Variable Analysis (SVA) and handles both independent and paired sample designs.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/charm.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-charm/overview",
+  "github": "N/A",
+  "conda_downloads": "2.8K",
+  "conda_downloads_num": 2800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "charm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/charm.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-charm/overview",
+    "github": "N/A",
+    "conda_downloads": "2.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-charm\n\n## Overview\n\nThe `charm` package is designed for the analysis of DNA methylation data, specifically optimized for the CHARM (Comprehensive High-throughput Arrays for Relative Methylation) platform. It processes raw Nimblegen `.xys` files to produce percentage methylation estimates and identifies differentially methylated regions (DMRs) between experimental groups. The package supports batch effect correction via Surrogate Variable Analysis (SVA) and handles both independent and paired sample designs.\n\n## Core Workflow\n\n### 1. Data Loading and Validation\nThe package requires a phenodata file (sample description) and raw `.xys` files.\n\n```R\nlibrary(charm)\n# Read sample description\npd <- read.delim(\"phenodata.txt\")\n# Validate sample description (checks for filename and sampleID columns)\nres <- validatePd(pd)\n\n# Read raw data (assumes 532.xys for untreated and 635.xys for methyl-depleted)\nrawData <- readCharm(files=pd$filename, path=\"data_dir\", sampleKey=pd)\n```\n\n### 2. Quality Control\nAssess array quality based on the signal strength of genomic probes relative to background (anti-genomic) probes.\n\n```R\n# Generate a PDF QC report and get quality scores\nqual <- qcReport(rawData, file=\"qcReport.pdf\")\n\n# Filter low quality arrays (e.g., score < 78)\nrawData <- rawData[, qual$pmSignal >= 78]\n\n# Identify high-quality probes\npmq <- pmQuality(rawData)\nokqc <- which(rowMeans(pmq) > 75)\n```\n\n### 3. Normalization and Methylation Estimation\nIdentify control probes (CpG-free regions) and estimate methylation percentages.\n\n```R\nlibrary(BSgenome.Hsapiens.UCSC.hg18) # Use appropriate genome\n# Find control probes\nctrlIdx <- getControlIndex(rawData, subject=Hsapiens, noCpGWindow=600)\n\n# Estimate methylation (p-values)\np <- methp(rawData, controlIndex=ctrlIdx, plotDensity=\"density.pdf\")\n```\n\n### 4. Finding Differentially Methylated Regions (DMRs)\n\n#### Pipeline 1: Regression-based (Recommended)\nThis method uses SVA to account for batch effects and technical variation.\n\n```R\n# 1. Prepare design matrices\nmod0 = matrix(1, nrow=nrow(pData(rawData)), ncol=1)\nmod = model.matrix(~1 + factor(pData(rawData)$tissue))\n\n# 2. Define clusters and filter probes\npns = clusterMaker(pmChr(rawData), pmPosition(rawData))\nIndex = setdiff(okqc, ctrlIdx)\n\n# 3. Find DMRs\nthedmrs = dmrFind(p=p[Index,], mod=mod, mod0=mod0, coeff=2, \n                  pns=pns[Index], chr=pmChr(rawData)[Index], \n                  pos=pmPosition(rawData)[Index])\n\n# 4. Calculate FDR q-values\nwithq = qval(p=p[Index,], dmr=thedmrs, numiter=500)\n```\n\n#### Pipeline 2: Simple Pairwise Comparison\nUse `dmrFinder` for simpler analyses without batch correction.\n\n```R\ndmr <- dmrFinder(rawData, p=p, groups=pd$tissue, \n                 compare=c(\"group1\", \"group2\"))\n```\n\n### 5. Visualization\nVisualize DMRs with genomic context, including CpG island locations.\n\n```R\n# Plot DMRs from dmrFind\nplotDMRs(dmrs=thedmrs, Genome=Hsapiens, cpg.islands=cpg_table, \n         exposure=pd$tissue, outfile=\"dmr_plots.pdf\")\n\n# Plot specific regions\nplotRegions(thetable=my_regions, cleanp=thedmrs$cleanp, \n            chr=chr, pos=pos, Genome=Hsapiens)\n```\n\n## Key Functions\n- `readCharm`: Reads Nimblegen `.xys` files into a `TilingFeatureSet`.\n- `qcReport`: Generates quality metrics and spatial artifact plots.\n- `methp`: Performs normalization and calculates percentage methylation.\n- `dmrFind`: Advanced DMR identification using SVA and smoothing.\n- `dmrFinder`: Basic DMR identification for pairwise or paired comparisons.\n- `clusterMaker`: Groups probes into potential regions based on genomic distance.\n\n## Reference documentation\n- [Using the charm package to estimate DNA methylation levels and find differentially methylated regions](./references/charm.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-charm",
+    "description": "The charm package analyzes DNA methylation data from the CHARM platform to estimate methylation percentages and identify differentially methylated regions. Use when user asks to process raw Nimblegen files, perform quality control on methylation arrays, normalize DNA methylation data, or find differentially methylated regions between experimental groups.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/charm.html"
+  }
+}

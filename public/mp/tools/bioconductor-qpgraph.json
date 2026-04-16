@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-qpgraph",
+  "category": "bioconductor",
+  "name": "bioconductor-qpgraph",
+  "description": "This package infers molecular regulatory networks from high-throughput data using Gaussian graphical models and non-rejection rates. Use when user asks to estimate gene regulatory networks, calculate non-rejection rates, map eQTL networks, or perform network inference when the number of variables exceeds the number of samples.",
+  "overview": "The `qpgraph` package is designed for the reverse engineering of molecular regulatory networks from high-throughput data, particularly when the number of variables (genes) $p$ is much larger than the number of samples $n$. It utilizes limited-order partial correlations and a quantity called the **non-rejection rate (NRR)** to distinguish between direct and indirect interactions. It also supports the estimation of eQTL networks using mixed graphical Markov models.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/qpgraph.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/rcastelo/qpgraph",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "qpgraph"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qpgraph.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/rcastelo/qpgraph",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-qpgraph\n\nname: bioconductor-qpgraph\ndescription: Inference of molecular regulatory networks from high-throughput data (microarray, RNA-seq, eQTL) using Gaussian graphical models and non-rejection rates. Use this skill when you need to estimate gene regulatory networks, calculate partial correlations, or map eQTL networks using the qpgraph R package.\n\n# bioconductor-qpgraph\n\n## Overview\nThe `qpgraph` package is designed for the reverse engineering of molecular regulatory networks from high-throughput data, particularly when the number of variables (genes) $p$ is much larger than the number of samples $n$. It utilizes limited-order partial correlations and a quantity called the **non-rejection rate (NRR)** to distinguish between direct and indirect interactions. It also supports the estimation of eQTL networks using mixed graphical Markov models.\n\n## Typical Workflow\n\n### 1. Data Preparation\nThe package works with `ExpressionSet` objects or numeric matrices.\n```R\nlibrary(qpgraph)\nlibrary(Biobase)\n\n# Load example E. coli data\ndata(EcoliOxygen)\n# gds680.eset is an ExpressionSet with 4205 genes and 43 samples\n```\n\n### 2. Estimating Non-Rejection Rates (NRR)\nThe NRR is the probability of not rejecting the null hypothesis of zero partial correlation between two genes, given a random subset of other genes.\n- **Specific Order ($q$):** Use `qpNrr()` for a fixed number of conditioning variables.\n- **Average NRR:** Use `qpAvgNrr()` to average over multiple orders, which is generally more robust.\n\n```R\n# Estimate NRR with q=3\nnrr_matrix <- qpNrr(gds680.eset, q=3, clusterSize=8)\n\n# Estimate Average NRR (recommended)\navg_nrr <- qpAvgNrr(gds680.eset, clusterSize=8)\n```\n\n### 3. Network Inference\nOnce NRRs are calculated, threshold them to create a graph.\n```R\n# Check graph density at different thresholds\nqpGraphDensity(avg_nrr, title=\"Density Plot\")\n\n# Create a graphNEL object at a specific threshold (e.g., 0.1)\ng <- qpGraph(avg_nrr, threshold=0.1, return.type=\"graphNEL\")\n\n# Extract top pairs\ntop_pairs <- qpTopPairs(avg_nrr, n=20)\n```\n\n### 4. eQTL Network Mapping\nFor genetical genomics data (genotypes + expression), use the eQTL workflow.\n```R\n# 1. Define parameters\nparam <- eQTLnetworkEstimationParam(cross_obj, physicalMap=pMap, \n                                    geneAnnotation=annot, genome=genome)\n\n# 2. Estimate marginal associations\neqtl_net <- eQTLnetworkEstimate(param, ~ marker + gene)\n\n# 3. Refine with NRR (q=3)\neqtl_net_refined <- eQTLnetworkEstimate(param, ~ marker + gene | gene(q=3), \n                                        estimate=eqtl_net)\n\n# 4. Filter by FDR and NRR epsilon\nfinal_net <- eQTLnetworkEstimate(param, estimate=eqtl_net_refined, \n                                 p.value=0.05, method=\"fdr\", epsilon=0.1)\n```\n\n### 5. Visualization and Analysis\n- **Network Plotting:** Use `qpPlotNetwork(g)` for standard graphs.\n- **Hive Plots:** Use `plot(final_net, type=\"hive\")` for eQTL networks.\n- **Functional Coherence:** Use `qpFunctionalCoherence()` to validate modules against Gene Ontology.\n\n## Tips and Best Practices\n- **Parallelization:** Most heavy functions support `clusterSize`. Ensure `snow` and `rlecuyer` are loaded to use multiple cores.\n- **Sparsity:** The method assumes the underlying network is sparse. If the resulting graph is too dense, decrease the NRR threshold.\n- **Transcription Factors:** If TFs are known, use `pairup.i` and `pairup.j` in `qpAvgNrr()` to restrict calculations to TF-Target pairs, significantly speeding up the process.\n- **Partial Correlations:** After obtaining a graph structure, use `qpPAC()` to estimate the actual partial correlation coefficients for the edges.\n\n## Reference documentation\n- [Inference of regulatory networks from microarray data with R and the Bioconductor package qpgraph](./references/BasicUsersGuide.md)\n- [Estimate eQTL networks using qpgraph](./references/eQTLnetworks.md)\n- [Reverse engineering transcriptional regulatory networks from gene expression microarray data using qpgraph](./references/qpTxRegNet.md)\n- [Simulating molecular regulatory networks using qpgraph](./references/qpgraphSimulate.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-qpgraph",
+    "description": "This package infers molecular regulatory networks from high-throughput data using Gaussian graphical models and non-rejection rates. Use when user asks to estimate gene regulatory networks, calculate non-rejection rates, map eQTL networks, or perform network inference when the number of variables exceeds the number of samples.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qpgraph.html"
+  }
+}

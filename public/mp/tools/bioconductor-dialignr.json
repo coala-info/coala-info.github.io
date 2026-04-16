@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dialignr",
+  "category": "bioconductor",
+  "name": "bioconductor-dialignr",
+  "description": "DIAlignR performs retention time alignment of targeted mass spectrometry data using MS2 chromatograms to establish peak correspondence across multiple runs. Use when user asks to perform star, MST, or progressive alignment, visualize extracted-ion chromatograms, or extract aligned peak intensities across multiple proteomics or metabolomics runs.",
+  "overview": "DIAlignR is a Bioconductor package designed for the alignment of targeted mass spectrometry data. It uses MS2 chromatograms to establish correspondence between peaks across different runs using a hybrid approach of global and local alignment. It is particularly effective for DIA (Data-Independent Acquisition) data, providing precise retention time (RT) mapping even across distant runs.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/DIAlignR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dialignr/overview",
+  "github": "https://github.com/shubham1637/DIAlignR",
+  "conda_downloads": "19.7K",
+  "conda_downloads_num": 19700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DIAlignR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/DIAlignR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dialignr/overview",
+    "github": "https://github.com/shubham1637/DIAlignR",
+    "conda_downloads": "19.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dialignr\n\nname: bioconductor-dialignr\ndescription: Retention time alignment of targeted mass-spectrometry runs (DIA, SWATH-MS, PRM, SRM) using MS2 chromatograms. Use this skill to perform star, MST, or progressive alignment, visualize XICs, and extract aligned peak intensities across multiple proteomics or metabolomics runs.\n\n# bioconductor-dialignr\n\n## Overview\nDIAlignR is a Bioconductor package designed for the alignment of targeted mass spectrometry data. It uses MS2 chromatograms to establish correspondence between peaks across different runs using a hybrid approach of global and local alignment. It is particularly effective for DIA (Data-Independent Acquisition) data, providing precise retention time (RT) mapping even across distant runs.\n\n## Core Workflow\n\n### 1. Data Preparation\nDIAlignR requires two types of input files located in a specific directory structure:\n- **.osw files**: FDR-scored features (typically from OpenSWATH/PyProphet).\n- **.chrom.sqMass or .chrom.mzML files**: Raw extracted-ion chromatograms (XICs).\n\nThe package expects a `dataPath` containing two subdirectories: `osw/` and `xics/` (or `mzml/`).\n\n```r\nlibrary(DIAlignR)\ndataPath <- \"path/to/your/data\"\nparams <- paramsDIAlignR()\nparams[[\"context\"]] <- \"experiment-wide\" # Recommended for multi-run studies\n```\n\n### 2. Performing Alignment\nThere are three primary strategies for multi-run alignment. All functions return an intensity table.\n\n**Star Alignment**\nAligns all runs to a reference run.\n```r\nalignTargetedRuns(dataPath = dataPath, \n                  outFile = \"results.csv\", \n                  runs = NULL, # NULL aligns all runs in dataPath\n                  oswMerged = TRUE, \n                  params = params)\n```\n\n**MST (Minimum Spanning Tree) Alignment**\nAligns runs based on a similarity tree.\n```r\nmstAlignRuns(dataPath = dataPath, \n             outFile = \"results.csv\", \n             oswMerged = TRUE, \n             params = params)\n```\n\n**Progressive Alignment**\nUses a guide tree (Newick format) for step-by-step alignment.\n```r\nprogAlignRuns(dataPath = dataPath, \n              outFile = \"results.csv\", \n              oswMerged = TRUE, \n              params = params)\n```\n\n### 3. Visualization and Inspection\nTo inspect specific analytes (by ID) across runs:\n\n**Fetch and Plot XICs**\n```r\nruns <- c(\"run_name_1\", \"run_name_2\")\nXICs <- getXICs(analytes = 4618L, runs = runs, dataPath = dataPath, oswMerged = TRUE)\nplotXICgroup(XICs[[1]][[\"4618\"]])\n```\n\n**Visualize Aligned Chromatograms**\nThis shows the experiment run, the reference run, and the experiment run aligned to the reference.\n```r\nAlignObj <- getAlignObjs(analytes = 4618L, runs = runs, dataPath = dataPath, params = params)\nplotAlignedAnalytes(AlignObj, annotatePeak = TRUE)\n```\n\n**Visualize Alignment Path**\n```r\nAlignObjOutput <- getAlignObjs(analytes = 4618L, runs = runs, dataPath = dataPath, objType = \"medium\", params = params)\nplotAlignmentPath(AlignObjOutput)\n```\n\n### 4. Signal Processing\nYou can smooth chromatograms and integrate areas manually if needed.\n```r\n# Smoothing\nXICs.sm <- smoothXICs(XICs_matrix, type = \"sgolay\", samplingTime = 3.42, kernelLen = 9, polyOrd = 3)\n\n# Integration\narea <- areaIntegrator(time_list, intensity_list, left = 5203.7, right = 5268.5, \n                       integrationType = \"intensity_sum\", baselineType = \"base_to_base\")\n```\n\n## Tips for Success\n- **Large-scale studies**: If `pyprophet merge` creates files too large for memory, set `oswMerged = FALSE` and provide the path to the global model via `scoreFile` in the parameters.\n- **File Formats**: While `.chrom.mzML` is supported, `.chrom.sqMass` is often preferred for performance. If using mzML, ensure chromatograms are uncompressed (use OpenMS `FileConverter` if `mzR` throws errors).\n- **Analyte IDs**: Ensure you use the integer ID (e.g., `4618L`) when querying specific analytes in functions like `getXICs` or `getAlignObjs`.\n\n## Reference documentation\n- [MS2 chromatograms based alignment of targeted mass-spectrometry runs](./references/DIAlignR-vignette.Rmd)\n- [MS2 chromatograms based alignment of targeted mass-spectrometry runs (Markdown)](./references/DIAlignR-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dialignr",
+    "description": "DIAlignR performs retention time alignment of targeted mass spectrometry data using MS2 chromatograms to establish peak correspondence across multiple runs. Use when user asks to perform star, MST, or progressive alignment, visualize extracted-ion chromatograms, or extract aligned peak intensities across multiple proteomics or metabolomics runs.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/DIAlignR.html"
+  }
+}

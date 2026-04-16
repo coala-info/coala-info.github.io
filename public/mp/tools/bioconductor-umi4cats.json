@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-umi4cats",
+  "category": "bioconductor",
+  "name": "bioconductor-umi4cats",
+  "description": "\"UMI4Cats processes and analyzes UMI-4C sequencing data to quantify chromatin interactions from a specific viewpoint. Use when user asks to digest a genome in silico, process FASTQ files into UMI-deduplicated counts, call significant chromatin interactions, or perform differential interaction analysis between conditions.\"",
+  "overview": "UMI4Cats is a Bioconductor package designed for the processing and analysis of UMI-4C data. UMI-4C is a targeted technique that uses UMIs to reduce PCR duplication bias, allowing for accurate quantification of chromatin interactions from a specific viewpoint (bait). This skill facilitates the transition from raw sequencing reads to differential interaction discovery and visualization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/UMI4Cats.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Pasquali-lab/UMI4Cats",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "UMI4Cats"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/UMI4Cats.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Pasquali-lab/UMI4Cats",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-umi4cats\n\n## Overview\nUMI4Cats is a Bioconductor package designed for the processing and analysis of UMI-4C data. UMI-4C is a targeted technique that uses UMIs to reduce PCR duplication bias, allowing for accurate quantification of chromatin interactions from a specific viewpoint (bait). This skill facilitates the transition from raw sequencing reads to differential interaction discovery and visualization.\n\n## Core Workflow\n\n### 1. Preparation and Genome Digestion\nBefore processing reads, you must create an in silico digested genome matching the restriction enzyme used in the lab.\n\n```r\nlibrary(UMI4Cats)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Digest genome (e.g., DpnII cuts at GATC, pos 0)\nhg19_dpnii <- digestGenome(\n    res_enz = \"GATC\",\n    cut_pos = 0,\n    name_RE = \"DpnII\",\n    ref_gen = BSgenome.Hsapiens.UCSC.hg19,\n    out_path = \"digested_genome/\"\n)\n```\n\n### 2. Processing FASTQ to Counts\nThe `contactsUMI4C` function handles alignment (via Bowtie2), UMI deduplication, and fragment counting.\n\n```r\ncontactsUMI4C(\n    fastq_dir = \"path/to/fastq\",\n    wk_dir = \"project_folder\",\n    bait_seq = \"GGACAAGCTCCCTGCAACTCA\", # DS primer sequence\n    bait_pad = \"GGACTTGCA\",             # Sequence between primer and RE site\n    res_enz = \"GATC\",\n    cut_pos = 0,\n    digested_genome = hg19_dpnii,\n    bowtie_index = \"path/to/bowtie2_index\",\n    ref_gen = BSgenome.Hsapiens.UCSC.hg19\n)\n```\n\n### 3. Creating the UMI4C Object\nLoad the processed count files into a `UMI4C` object (based on `SummarizedExperiment`).\n\n```r\n# colData must contain: sampleID, replicate, condition, file\numi <- makeUMI4C(\n    colData = colData,\n    viewpoint_name = \"CIITA\",\n    grouping = \"condition\",\n    bait_expansion = 2e6 # Analysis window (2Mb)\n)\n```\n\n### 4. Calling Significant Interactions\nIdentify regions significantly interacting with the viewpoint using Z-scores calculated after Variance Stabilizing Transformation (VST) and monotone smoothing.\n\n```r\n# 1. Generate windows or provide specific query_regions (e.g., enhancers)\nwin_frags <- makeWindowFragments(umi, n_frags = 8)\n\n# 2. Call interactions\ngr_list <- callInteractions(\n    umi4c = umi,\n    design = ~condition,\n    query_regions = win_frags,\n    padj_threshold = 0.01,\n    zscore_threshold = 2\n)\n\n# 3. Extract unique significant regions\ninter <- getSignInteractions(gr_list)\n```\n\n### 5. Differential Analysis\nCompare chromatin contacts between two levels of a condition.\n\n*   **DESeq2 (Wald Test):** Recommended when replicates and high UMI depth are available.\n*   **Fisher's Exact Test:** Use for low depth or limited replicates.\n\n```r\n# DESeq2 approach\numi_wald <- waldUMI4C(\n    umi4c = umi,\n    query_regions = inter,\n    design = ~condition\n)\n\n# Fisher approach\numi_fisher <- fisherUMI4C(\n    umi,\n    query_regions = inter,\n    grouping = \"condition\",\n    filter_low = 20\n)\n\n# Retrieve results\nres <- resultsUMI4C(umi_wald, format = \"data.frame\")\n```\n\n### 6. Visualization\nGenerate integrated plots showing trends, domainograms, gene annotations, and differential results.\n\n```r\nplotUMI4C(umi_wald, \n          grouping = \"condition\", \n          xlim = c(10.7e6, 11.2e6), \n          ylim = c(0, 10))\n```\n\n## Key Functions and Accessors\n*   `demultiplexFastq()`: Split multiplexed FASTQ files by bait barcodes.\n*   `statsUMI4C()`: Generate QC stats (specific reads, mapping, UMI counts).\n*   `bait(umi)`: Get bait coordinates.\n*   `trend(umi)`: Get adaptive smoothing trend data.\n*   `groupsUMI4C(umi)`: Access grouped UMI4C objects (e.g., merged replicates).\n\n## Reference documentation\n- [Analyzing UMI-4C data with UMI4Cats](./references/UMI4Cats.Rmd)\n- [Analyzing UMI-4C data with UMI4Cats](./references/UMI4Cats.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-umi4cats",
+    "description": "UMI4Cats processes and analyzes UMI-4C sequencing data to quantify chromatin interactions from a specific viewpoint. Use when user asks to digest a genome in silico, process FASTQ files into UMI-deduplicated counts, call significant chromatin interactions, or perform differential interaction analysis between conditions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/UMI4Cats.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pepsnmr",
+  "category": "bioconductor",
+  "name": "bioconductor-pepsnmr",
+  "description": "This tool pre-processes raw 1H NMR metabolomic data to transform Bruker FID signals into interpretable spectra. Use when user asks to read Bruker FIDs, perform group delay correction, suppress solvent signals, apply apodization, or execute a complete NMR spectral processing workflow.",
+  "overview": "The `PepsNMR` package provides a comprehensive suite of tools for the pre-processing of 1H NMR (Nuclear Magnetic Resonance) spectroscopy data. It is designed to transform raw Free Induction Decays (FIDs) into high-quality spectra suitable for metabolomic analysis. The package follows a modular approach where each step of the NMR pre-processing pipeline is handled by a specific function, allowing for fine-tuned control over the data transformation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PepsNMR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ManonMartin/PepsNMR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PepsNMR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PepsNMR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ManonMartin/PepsNMR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pepsnmr\n\nname: bioconductor-pepsnmr\ndescription: Pre-processing of 1H NMR metabolomic data using the PepsNMR package. Use this skill to transform raw Bruker FID signals into interpretable spectra through a complete workflow including group delay correction, solvent suppression, apodization, Fourier transform, phase correction, baseline correction, and normalization.\n\n# bioconductor-pepsnmr\n\n## Overview\n\nThe `PepsNMR` package provides a comprehensive suite of tools for the pre-processing of 1H NMR (Nuclear Magnetic Resonance) spectroscopy data. It is designed to transform raw Free Induction Decays (FIDs) into high-quality spectra suitable for metabolomic analysis. The package follows a modular approach where each step of the NMR pre-processing pipeline is handled by a specific function, allowing for fine-tuned control over the data transformation.\n\n## Installation\n\nTo install the package from Bioconductor:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\n\nBiocManager::install(\"PepsNMR\")\n# PepsNMRData is recommended for example datasets\nBiocManager::install(\"PepsNMRData\")\n```\n\n## Data Importation\n\nThe primary function for loading raw Bruker data is `ReadFids`. It expects a path to a directory containing Bruker NMR experiments.\n\n```r\nlibrary(PepsNMR)\n# path should point to the parent folder of Bruker experiment numbers\nfidList <- ReadFids(path_to_data) \n\nFid_data <- fidList[[\"Fid_data\"]] # Matrix of complex FIDs\nFid_info <- fidList[[\"Fid_info\"]] # Metadata required for subsequent steps\n```\n\n## Standard Pre-processing Workflow\n\nThe recommended sequence of operations is as follows:\n\n1.  **Group Delay Correction**: Removes Bruker digital filter artifacts.\n    ```r\n    Fid_GDC <- GroupDelayCorrection(Fid_data, Fid_info)\n    ```\n2.  **Solvent Suppression**: Removes residual water/solvent signals using Whittaker smoothing.\n    ```r\n    Fid_SS <- SolventSuppression(Fid_GDC)$Fid_data\n    ```\n3.  **Apodization**: Increases Signal-to-Noise ratio (usually via exponential decay).\n    ```r\n    Fid_A <- Apodization(Fid_SS, Fid_info)\n    ```\n4.  **Zero Filling**: Improves digital resolution.\n    ```r\n    Fid_ZF <- ZeroFilling(Fid_A, fn = ncol(Fid_A))\n    ```\n5.  **Fourier Transform**: Converts time-domain FIDs to frequency-domain spectra (ppm).\n    ```r\n    Spec_FT <- FourierTransform(Fid_ZF, Fid_info)\n    ```\n6.  **Zero Order Phase Correction**: Aligns the real part of the spectrum to absorptive mode.\n    ```r\n    Spec_ZOPC <- ZeroOrderPhaseCorrection(Spec_FT)\n    ```\n7.  **Internal Referencing**: Calibrates the ppm scale (e.g., setting TMSP to 0 ppm).\n    ```r\n    Spec_IR <- InternalReferencing(Spec_ZOPC, Fid_info, ppm.value = 0)$Spectrum_data\n    ```\n8.  **Baseline Correction**: Removes the spectral baseline using Asymmetric Least Squares.\n    ```r\n    Spec_BC <- BaselineCorrection(Spec_IR, lambda.bc = 1e8, p.bc = 0.01)$Spectrum_data\n    ```\n9.  **Negative Values Zeroing**: Sets non-physical negative intensities to zero.\n    ```r\n    Spec_NVZ <- NegativeValuesZeroing(Spec_BC)\n    ```\n10. **Warping**: Aligns peaks across samples using Semi-Parametric Time Warping.\n    ```r\n    Spec_W <- Warping(Spec_NVZ, reference.choice = \"fixed\")$Spectrum_data\n    ```\n\n## Post-processing and Analysis\n\nAfter the core pre-processing, data reduction and normalization are typically performed:\n\n*   **Window Selection**: `WindowSelection(Spec_W, from.ws = 10, to.ws = 0.2)`\n*   **Bucketing**: `Bucketing(Spec_WS, intmeth = \"t\")`\n*   **Region Removal**: `RegionRemoval(Spec_B, typeofspectra = \"serum\")` (removes water region).\n*   **Normalization**: `Normalization(Spec_RR, type.norm = \"mean\")`\n\n## Visualization\n\nUse the `Draw` function to inspect signals or perform exploratory analysis:\n\n```r\n# Plot spectra\nDraw(Spec_N, type.draw = \"signal\", subtype = \"stacked\")\n\n# PCA Analysis\nDraw(Spec_N, type.draw = \"pca\", type.pca = \"scores\", Class = metadata_groups)\n```\n\n## Reference documentation\n\n- [Application of PepsNMR on the Human Serum dataset](./references/PepsNMR_minimal_example.Rmd)\n- [Application of PepsNMR on the Human Serum dataset (Markdown)](./references/PepsNMR_minimal_example.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-pepsnmr",
+    "description": "This tool pre-processes raw 1H NMR metabolomic data to transform Bruker FID signals into interpretable spectra. Use when user asks to read Bruker FIDs, perform group delay correction, suppress solvent signals, apply apodization, or execute a complete NMR spectral processing workflow.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PepsNMR.html"
+  }
+}

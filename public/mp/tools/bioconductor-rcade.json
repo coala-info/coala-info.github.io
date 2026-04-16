@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rcade",
+  "category": "bioconductor",
+  "name": "bioconductor-rcade",
+  "description": "This tool integrates ChIP-seq data with differential expression analysis using a Bayesian framework to identify direct transcription factor targets. Use when user asks to integrate TF binding evidence with gene expression changes, quantify ChIP-seq signal in genomic bins, or identify genes that exhibit both binding activity and differential expression.",
+  "overview": "Rcade (R-based analysis of ChIP-seq And Differential Expression data) integrates ChIP-seq results with an existing Differential Expression (DE) analysis. It uses a fully Bayesian modelling approach, focusing on log-odds values (B-values) to quantify the probability that a gene is a direct target of a transcription factor (TF). Unlike peak-calling methods, Rcade quantifies binding activity within user-defined genomic bins (e.g., around transcription start sites).",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/Rcade.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Rcade"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/Rcade.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rcade\n\nname: bioconductor-rcade\ndescription: Analysis of ChIP-seq data coupled with Differential Expression (DE) analysis to infer direct transcription factor targets. Use when integrating TF binding evidence (ChIP-seq) with gene expression changes (DE) using a Bayesian framework to identify genes that exhibit both binding activity and differential expression.\n\n# bioconductor-rcade\n\n## Overview\n\nRcade (R-based analysis of ChIP-seq And Differential Expression data) integrates ChIP-seq results with an existing Differential Expression (DE) analysis. It uses a fully Bayesian modelling approach, focusing on log-odds values (B-values) to quantify the probability that a gene is a direct target of a transcription factor (TF). Unlike peak-calling methods, Rcade quantifies binding activity within user-defined genomic bins (e.g., around transcription start sites).\n\n## Simple Workflow\n\n### 1. Prepare Differential Expression (DE) Data\nRcade requires a DE matrix with Bayesian information. Compatible sources include `limma` (via `topTable`) and `baySeq`.\n\n```r\n# DE matrix must contain: geneID, logFC, and B (log-odds)\nDE <- read.csv(\"DE_results.csv\")\n\n# Define a lookup list to map Rcade fields to your DE columns\nDElookup <- list(GeneID=\"ENSG\", logFC=\"logFC\", B=\"B\")\n```\n\n### 2. Prepare ChIP-seq Targets\nCreate a targets matrix describing your `.bam` files.\n\n```r\n# Required fields: fileID, sampleID, factor, filepath\n# Note: Control files must have factor = \"Input\"\ntargets <- data.frame(\n  fileID = c(\"Input1\", \"ChIP1\", \"ChIP2\"),\n  sampleID = c(\"Input1\", \"ChIP1\", \"ChIP2\"),\n  factor = c(\"Input\", \"Stat1\", \"Stat1\"),\n  filepath = c(\"input.bam\", \"chip1.bam\", \"chip2.bam\"),\n  shift = 0\n)\n```\n\n### 3. Define Genomic Bins\nDefine the regions where ChIP-seq signal will be quantified, typically around Transcription Start Sites (TSS).\n\n```r\nlibrary(Rcade)\n# anno should contain: ENSG, chr, start, end, str\n# zone defines the range relative to the feature (e.g., -1500bp to +1500bp)\nChIPannoZones <- defineBins(anno, zone=c(-1500, 1500), geneID=\"ENSG\")\n```\n\n### 4. Run Rcade Analysis\nSpecify priors to reflect the dependency between ChIP-seq signal and DE status.\n\n```r\n# Example priors: genes with ChIP signal (D|C) are more likely to be DE\nprior <- c(\"D|C\" = 0.05, \"D|notC\" = 0.005)\n\nRcade <- RcadeAnalysis(DE, ChIPannoZones, \n                       annoZoneGeneidName=\"ENSG\",\n                       ChIPtargets=targets, \n                       ChIPfileDir = \".\",\n                       DE.prior=0.01, \n                       prior=prior,\n                       DElookup=DElookup)\n```\n\n### 5. Access and Export Results\nResults are stored in an Rcade object and can be extracted or exported to CSV.\n\n```r\n# Extract the combined table\nresults <- getRcade(Rcade)\n\n# Export top targets to disk\nexportRcade(Rcade, directory=\"RcadeOutput\", cutoffArg=1000)\n```\n\n## Visualization and QC\n\nRcade provides specific plotting functions to validate the integration:\n\n*   `plotPCA(Rcade)`: PCA on ChIP-seq counts to check sample clustering.\n*   `plotMM(Rcade)`: Log-ratios of DE vs. ChIP-seq; points are colored by the probability of being a target.\n*   `plotBBB(Rcade)`: A 3D plot (requires `rgl`) comparing log-odds of ChIP-seq, DE, and the combined analysis.\n\n## Key Considerations\n*   **B-values**: Rcade uses log-odds ($B = \\log(\\frac{PP}{1-PP})$). These are not p-values.\n*   **Independence Assumption**: Rcade assumes that, conditional on a gene being a target, the ChIP-seq and DE data are independent.\n*   **Parallelization**: Use the `cl` argument in `RcadeAnalysis` with a cluster object from the `parallel` package to speed up count processing.\n\n## Reference documentation\n- [Rcade](./references/Rcade.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rcade",
+    "description": "This tool integrates ChIP-seq data with differential expression analysis using a Bayesian framework to identify direct transcription factor targets. Use when user asks to integrate TF binding evidence with gene expression changes, quantify ChIP-seq signal in genomic bins, or identify genes that exhibit both binding activity and differential expression.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/Rcade.html"
+  }
+}

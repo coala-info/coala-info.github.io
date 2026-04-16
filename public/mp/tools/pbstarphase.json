@@ -1,0 +1,49 @@
+{
+  "id": "pbstarphase",
+  "category": "CLI",
+  "name": "pbstarphase",
+  "description": "pbstarphase is a pharmacogenomic diplotyper that uses phased PacBio HiFi sequencing data to accurately assign star-allele nomenclature to genes. Use when user asks to call PGx diplotypes, identify star alleles from long-read data, or generate PharmCAT-compatible outputs.",
+  "overview": "`pbstarphase` is a specialized pharmacogenomic diplotyper designed specifically for PacBio HiFi sequencing data. It addresses the challenges of PGx analysis by being \"phase-aware,\" using the long-range information inherent in PacBio reads to accurately assign variants to specific haplotypes. This is particularly critical for complex genes like *CYP2D6*, where structural variations, gene conversions, and pseudogenes often confound short-read or non-phased callers. The tool supports a wide range o",
+  "homepage": "https://github.com/PacificBiosciences/pb-StarPhase",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/pbstarphase/overview",
+  "github": "https://github.com/PacificBiosciences/pb-StarPhase",
+  "conda_downloads": "21.6K",
+  "conda_downloads_num": 21600,
+  "last_updated": "2025-12-09",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "pbstarphase_build",
+      "pbstarphase_db-stat",
+      "pbstarphase_diplotype"
+    ],
+    "description": "Download and build the database for StarPhase",
+    "docker_image": "quay.io/biocontainers/pbstarphase:2.0.1--h9ee0642_0",
+    "homepage": "https://github.com/PacificBiosciences/pb-StarPhase",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/pbstarphase/overview",
+    "github": "https://github.com/PacificBiosciences/pb-StarPhase",
+    "conda_downloads": "21.6K",
+    "last_updated": "2025-12-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "pbstarphase_build.cwl",
+    "pbstarphase_db-stat.cwl",
+    "pbstarphase_diplotype.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# pbstarphase\n\n## Overview\n\n`pbstarphase` is a specialized pharmacogenomic diplotyper designed specifically for PacBio HiFi sequencing data. It addresses the challenges of PGx analysis by being \"phase-aware,\" using the long-range information inherent in PacBio reads to accurately assign variants to specific haplotypes. This is particularly critical for complex genes like *CYP2D6*, where structural variations, gene conversions, and pseudogenes often confound short-read or non-phased callers. The tool supports a wide range of genes defined by CPIC and PharmVar, providing standardized star-allele nomenclature and outputs compatible with downstream tools like PharmCAT.\n\n## Tool Usage and Best Practices\n\n### Database Management\n\nThe tool relies on a JSON-formatted database containing allele definitions. While pre-built databases are provided, you can generate or update them using the `build` command.\n\n- **Update with API Keys**: When running `pbstarphase build`, provide a PharmVar API key via `--api-keys {JSON}` to ensure the latest sub-allele definitions are included. Without this, PharmVar-specific gene queries may be skipped.\n- **Verify Database Integrity**: Use the `db-stat` sub-command to inspect a database file. This provides high-level summaries of gene, allele, and variant counts, which is useful for verifying that specific genes of interest (e.g., *NAT2*, *CYP2C19*) are present.\n\n### Diplotyping Workflow\n\nThe primary function of `pbstarphase` is to call diplotypes from aligned PacBio data.\n\n- **Input Requirements**: Provide high-quality phased VCFs (from callers like DeepVariant or SmallVar) and, if applicable, structural variant (SV) VCFs.\n- **Sample Handling**: If working with multi-sample VCFs, explicitly specify the target sample using the `--sample-name` flag. Ensure that if both a small-variant VCF and an SV VCF are provided, they use the same sample name.\n- **Structural Variants**: For genes with known large deletions or duplications (like *CYP2D6* or *DPYD*), ensure SV calling is performed and the results are passed to the tool. The `--max-sv-length` parameter defaults to 1 Mbp, which is sufficient for most PGx applications.\n\n### Interpreting Outputs\n\nThe tool produces a primary JSON output containing the diplotype calls.\n\n- **Exact vs. Inexact Matches**: \n    - The `diplotypes` field contains exact matches to the database. \n    - If no exact match is found, check the `inexact_diplotypes` field. This reports the closest matching allele combinations, which is vital for identifying novel or rare variants not yet codified in star-allele databases.\n- **Sub-allele Resolution**: In version 2.0+, the tool prioritizes PharmVar sub-alleles (e.g., `*2.001`) if they can be uniquely identified on both haplotypes. If ambiguity exists at the sub-allele level, it falls back to the core allele (e.g., `*2`).\n- **PharmCAT Integration**: The tool generates a PharmCAT-compatible TSV file. Note that this file typically contains only core alleles to maintain compatibility with PharmCAT's interpretation engine.\n- **Debugging Complex Loci**: For *CYP2D6* analysis, use the `--output-debug` flag to generate a specialized VCF (`cyp2d6_alleles.vcf.gz`). This file treats each identified *CYP2D6* allele as a separate sample, allowing for manual inspection of the phased variants contributing to the call.\n\n### Performance and Constraints\n\n- **Targeted vs. WGS**: The tool is optimized for both targeted (amplicon) and whole-genome sequencing. For targeted data, ensure the alignment covers the full gene body and flanking regions required for phasing.\n- **HLA Calling**: The tool supports *HLA-A* and *HLA-B*. If HLA results are unexpected, consult the `hla_debug.json` for internal consensus mapping statistics.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| pbstarphase build | Download and build the database for StarPhase |\n| pbstarphase db-stat | Generate statistics about a database file |\n| pbstarphase diplotype | Run the diplotyper on a dataset |\n\n## Reference documentation\n\n- [pb-StarPhase README](./references/github_com_PacificBiosciences_pb-StarPhase_blob_main_README.md)\n- [User Guide](./references/github_com_PacificBiosciences_pb-StarPhase_blob_main_docs_user_guide.md)\n- [Database Guide](./references/github_com_PacificBiosciences_pb-StarPhase_blob_main_docs_database.md)\n- [Changelog and Version History](./references/github_com_PacificBiosciences_pb-StarPhase_blob_main_CHANGELOG.md)",
+  "skill_front_matter": {
+    "name": "pbstarphase",
+    "description": "pbstarphase is a pharmacogenomic diplotyper that uses phased PacBio HiFi sequencing data to accurately assign star-allele nomenclature to genes. Use when user asks to call PGx diplotypes, identify star alleles from long-read data, or generate PharmCAT-compatible outputs.",
+    "homepage": "https://github.com/PacificBiosciences/pb-StarPhase"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "id": "cath-tools",
+  "category": "CLI",
+  "name": "cath-tools",
+  "description": "The cath-tools suite provides high-performance C++ implementations for protein structural alignment, superposition, domain hit resolution, and clustering. Use when user asks to align protein structures using SSAP, generate structure superpositions, resolve overlapping domain hits into architectures, or perform complete-linkage clustering.",
+  "overview": "The `cath-tools` suite provides high-performance C++ implementations of algorithms used in the curation of the CATH protein structure database. This skill enables the structural comparison of proteins through the SSAP (Sequential Structure Alignment Program) algorithm, the generation of high-quality superpositions that focus on conserved regions, and the resolution of overlapping domain hits into optimal architectures. It also includes utilities for complete-linkage clustering and mapping betwee",
+  "homepage": "https://github.com/UCLOrengoGroup/cath-tools",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/cath-tools/overview",
+  "github": "https://github.com/UCLOrengoGroup/cath-tools",
+  "conda_downloads": "11.4K",
+  "conda_downloads_num": 11400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cath-tools_cath-ssap",
+      "cath-tools_cath-resolve-hits",
+      "cath-tools_cath-superpose",
+      "cath-tools_cath-cluster",
+      "cath-tools_cath-refine-align",
+      "cath-tools_cath-score-align"
+    ],
+    "description": "Run a SSAP pairwise structural alignment",
+    "docker_image": "quay.io/biocontainers/cath-tools:0.16.5--h78a066a_0",
+    "homepage": "https://github.com/UCLOrengoGroup/cath-tools",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/cath-tools/overview",
+    "github": "https://github.com/UCLOrengoGroup/cath-tools",
+    "conda_downloads": "11.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "cath-tools_cath-cluster.cwl",
+    "cath-tools_cath-refine-align.cwl",
+    "cath-tools_cath-resolve-hits.cwl",
+    "cath-tools_cath-score-align.cwl",
+    "cath-tools_cath-ssap.cwl",
+    "cath-tools_cath-superpose.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# cath-tools\n\n## Overview\n\nThe `cath-tools` suite provides high-performance C++ implementations of algorithms used in the curation of the CATH protein structure database. This skill enables the structural comparison of proteins through the SSAP (Sequential Structure Alignment Program) algorithm, the generation of high-quality superpositions that focus on conserved regions, and the resolution of overlapping domain hits into optimal architectures. It also includes utilities for complete-linkage clustering and mapping between different cluster partitions.\n\n## Core Tools and CLI Patterns\n\n### Structural Alignment (cath-ssap)\nUse `cath-ssap` to align a pair of protein structures. It automatically switches between fast secondary-structure-based alignment and slower residue-level alignment based on score thresholds.\n\n*   **Basic Alignment**: `cath-ssap <protein1> <protein2>`\n*   **PDB Path Configuration**: Set the environment variable `CATH_TOOLS_PDB_PATH` to avoid repeating `--pdb-path` in every command.\n*   **Specific Regions**: Use the format `D[id]start-stop:chain` to align specific domains.\n    *   Example: `cath-ssap --align-regions 'D[1cukA01]10-150:A' --align-regions 'D[1bvsA01]15-155:A' 1cukA01 1bvsA01`\n\n### Structure Superposition (cath-superpose)\nUnlike standard RMSD-minimizing tools, `cath-superpose` focuses on well-aligned regions to produce more biologically meaningful visualizations.\n\n*   **Automatic All-vs-All**: `cath-superpose --do-the-ssaps --pdb-infile <file1> --pdb-infile <file2>`\n*   **Using Existing Alignments**: Provide a `.list` file from `cath-ssap`.\n    *   `cath-superpose --ssap-aln-infile alignment.list --pdb-infile p1.pdb --pdb-infile p2.pdb --sup-to-pymol`\n*   **Output Formats**:\n    *   `--sup-to-pdb-file output.pdb`: Single PDB with faked chain codes.\n    *   `--sup-to-pymol-file script.pml`: Generates a PyMOL script for high-quality rendering.\n\n### Resolving Domain Hits (cath-resolve-hits)\nCollapses multiple (potentially overlapping) domain matches into the best non-overlapping architecture by maximizing the total score.\n\n*   **HMMER Integration**: Directly process HMMER output.\n    *   `cath-resolve-hits --input-format hmmer_domtblout <hits_file>`\n*   **Performance Tip**: If hits are already sorted by query ID, use `--input-hits-are-grouped` to significantly reduce memory usage.\n*   **Overlap Control**: Use `--overlap-trim-spec 30/10` to allow minor overlaps (up to 10 residues for segments of 30) by trimming segment boundaries.\n\n### Clustering and Mapping (cath-cluster & cath-map-clusters)\n*   **Clustering**: Perform complete-linkage clustering on distance or strength data.\n    *   `cath-cluster --link_dirn DISTANCE --levels 35,60,95,100 <input_file>`\n*   **Mapping**: Map entities between different versions of clusters, accounting for slight residue-range variations.\n    *   `cath-map-clusters --map-from-clustmemb-file old_clusters.txt new_clusters.txt`\n\n## Expert Tips and Best Practices\n\n1.  **Environment Variables**: Streamline workflows by exporting `CATH_TOOLS_PDB_PATH`, `CATH_TOOLS_PDB_PREFIX`, and `CATH_TOOLS_PDB_SUFFIX`.\n2.  **Alignment Refining**: When superposing multiple structures, use `--align-refining HEAVY` in `cath-superpose` to improve the quality of the \"glued\" multiple alignment, though it increases computation time.\n3.  **Visualization**: Use `--gradient-colour-alignment` in `cath-superpose` to color the structure from blue to red along the alignment length, highlighting structural conservation vs. divergence.\n4.  **DSSP Handling**: While `cath-ssap` can calculate secondary structure internally from PDBs, providing pre-calculated DSSP files via `CATH_TOOLS_DSSP_PATH` can speed up large-scale batch processing.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| cath-cluster | Cluster items based on the links between them. |\n| cath-refine-align | Iteratively refine an existing alignment by attempting to optimise SSAP score |\n| cath-resolve-hits | Collapse a list of domain matches to your query sequence(s) down to the non-overlapping subset (ie domain architecture) that maximises the sum of the hits' scores. |\n| cath-score-align | Score an existing alignment using structural data |\n| cath-ssap | Run a SSAP pairwise structural alignment |\n| cath-superpose | Superpose protein structures using an existing alignment |\n\n## Reference documentation\n- [cath-ssap](./references/cath-tools_readthedocs_io_en_latest_tools_cath-ssap.md)\n- [cath-superpose](./references/cath-tools_readthedocs_io_en_latest_tools_cath-superpose.md)\n- [cath-resolve-hits](./references/cath-tools_readthedocs_io_en_latest_tools_cath-resolve-hits.md)\n- [cath-cluster](./references/cath-tools_readthedocs_io_en_latest_tools_cath-cluster.md)\n- [cath-map-clusters](./references/cath-tools_readthedocs_io_en_latest_tools_cath-map-clusters.md)",
+  "skill_front_matter": {
+    "name": "cath-tools",
+    "description": "The cath-tools suite provides high-performance C++ implementations for protein structural alignment, superposition, domain hit resolution, and clustering. Use when user asks to align protein structures using SSAP, generate structure superpositions, resolve overlapping domain hits into architectures, or perform complete-linkage clustering.",
+    "homepage": "https://github.com/UCLOrengoGroup/cath-tools"
+  }
+}

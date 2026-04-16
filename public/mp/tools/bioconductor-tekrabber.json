@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tekrabber",
+  "category": "bioconductor",
+  "name": "bioconductor-tekrabber",
+  "description": "TEKRABber analyzes the relationship between gene expression and transposable elements using RNA-seq data for comparative transcriptomics. Use when user asks to compare gene and transposable element correlations between species, perform differential expression analysis on transposable elements, or investigate gene-TE interactions in control and treatment groups.",
+  "overview": "TEKRABber is an R package designed to investigate the relationship between genes and transposable elements (TEs). It facilitates the comparison of Gene:TE correlations across different biological contexts, such as evolutionary comparisons between species or experimental comparisons within a single species.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TEKRABber.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ferygood/TEKRABber",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TEKRABber"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TEKRABber.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ferygood/TEKRABber",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tekrabber\n\nname: bioconductor-tekrabber\ndescription: Analyze correlations between gene expression and transposable elements (TEs) using RNA-seq data. Use this skill to perform comparative transcriptomics between two species (ortholog-based) or between control and experimental groups within the same species. It provides workflows for normalization, differential expression analysis, and correlation estimation.\n\n# bioconductor-tekrabber\n\n## Overview\n\nTEKRABber is an R package designed to investigate the relationship between genes and transposable elements (TEs). It facilitates the comparison of Gene:TE correlations across different biological contexts, such as evolutionary comparisons between species or experimental comparisons within a single species.\n\n## Installation\n\nInstall the package via BiocManager:\n\n```r\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\n\nBiocManager::install(\"TEKRABber\")\nlibrary(TEKRABber)\n```\n\n## Workflow 1: Comparing Two Species\n\nThis workflow handles orthology mapping and scaling factors required for cross-species comparisons.\n\n### 1. Prepare Data\nInput tables must have Ensembl gene IDs for genes and TE names for TEs in the first column.\n\n### 2. Query Orthologs and Scale Data\nUse `orthologScale()` to fetch orthology information and calculate scaling factors.\n- Use `prepareRMSK(\"ref_db\", \"compare_db\")` to get RepeatMasker annotations from UCSC.\n- Use Ensembl abbreviations for species names (e.g., \"hsapiens\", \"ptroglodytes\").\n\n```r\n# Example using human (ref) and chimp (compare)\nfetchData <- orthologScale(\n    speciesRef = \"hsapiens\",\n    speciesCompare = \"ptroglodytes\",\n    geneCountRef = hmGene,\n    geneCountCompare = chimpGene,\n    teCountRef = hmTE,\n    teCountCompare = chimpTE,\n    rmsk = hg38_panTro6_rmsk\n)\n```\n\n### 3. Generate Inputs and Run DE Analysis\nUse `DECorrInputs()` to format data and `DEgeneTE()` for differential expression. Set `expDesign = TRUE` for two-species comparisons.\n\n```r\ninputBundle <- DECorrInputs(fetchData)\n\n# Create metadata with 'species' column\nmeta <- data.frame(\n    species = factor(c(rep(\"human\", n1), rep(\"chimpanzee\", n2)))\n)\nrownames(meta) <- colnames(inputBundle$geneInputDESeq2)\n\nresultsDE <- DEgeneTE(\n    geneTable = inputBundle$geneInputDESeq2,\n    teTable = inputBundle$teInputDESeq2,\n    metadata = meta,\n    expDesign = TRUE\n)\n```\n\n### 4. Estimate Correlations\nCalculate correlations for each group using `corrOrthologTE()`.\n\n```r\ncorrRef <- corrOrthologTE(\n    geneInput = resultsDE$geneCorrInputRef,\n    teInput = resultsDE$teCorrInputRef,\n    corrMethod = \"pearson\",\n    padjMethod = \"fdr\"\n)\n```\n\n## Workflow 2: Control vs. Treatment (Same Species)\n\nUse this workflow when comparing different conditions within the same species.\n\n### 1. Run DE Analysis\nSet `expDesign = FALSE` and ensure metadata contains an `experiment` column.\n\n```r\nmetaExp <- data.frame(experiment = factor(c(rep(\"control\", 5), rep(\"treatment\", 5))))\nrownames(metaExp) <- colnames(geneInputDE)\n\nresultDE <- DEgeneTE(\n    geneTable = geneInputDE,\n    teTable = teInputDE,\n    metadata = metaExp,\n    expDesign = FALSE\n)\n```\n\n### 2. Estimate Correlations\nRun `corrOrthologTE()` separately for the control and treatment inputs provided in the `resultDE` object.\n\n## Visualization\n\nUse the interactive Shiny app to explore Gene:TE pairs, scatterplots, and DE results.\n\n```r\n# Requires gridlayout, plotly, bslib, and shiny\nappTEKRABber(\n    corrRef = controlCorr,\n    corrCompare = treatmentCorr,\n    DEobject = resultDE\n)\n```\n\n## Tips for Efficiency\n\n- **Subsetting**: Correlation analysis is computationally expensive. Subset your gene/TE lists to those of interest or those passing DE thresholds before running `corrOrthologTE()`.\n- **Parallelization**: Use the `numCore` parameter in `corrOrthologTE()` to speed up calculations on multi-core systems.\n- **Species Names**: Verify Ensembl species names using `biomaRt::listDatasets(biomaRt::useEnsembl(biomart=\"genes\"))`.\n\n## Reference documentation\n\n- [TEKRABber Vignette (Rmd)](./references/TEKRABber.Rmd)\n- [TEKRABber Vignette (Markdown)](./references/TEKRABber.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tekrabber",
+    "description": "TEKRABber analyzes the relationship between gene expression and transposable elements using RNA-seq data for comparative transcriptomics. Use when user asks to compare gene and transposable element correlations between species, perform differential expression analysis on transposable elements, or investigate gene-TE interactions in control and treatment groups.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TEKRABber.html"
+  }
+}

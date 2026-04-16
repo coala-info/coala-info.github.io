@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-baynorm",
+  "category": "bioconductor",
+  "name": "bioconductor-baynorm",
+  "description": "This tool provides a Bayesian approach for normalizing single-cell RNA-seq data by estimating gene-specific priors and cell-specific capture efficiencies. Use when user asks to normalize scRNA-seq counts, estimate capture efficiencies, or generate posterior distributions of transcript counts for downstream analysis.",
+  "overview": "The `bayNorm` package provides a Bayesian approach for normalizing single-cell RNA-seq (scRNA-seq) data. It addresses the high level of noise and dropout events by estimating gene-specific prior parameters (mean $\\mu$ and dispersion $\\phi$) and cell-specific capture efficiencies ($\\beta$). It produces a posterior distribution of original transcript counts, allowing for more robust downstream analyses compared to simple global scaling.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/bayNorm.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-baynorm/overview",
+  "github": "https://github.com/WT215/bayNorm",
+  "conda_downloads": "29.7K",
+  "conda_downloads_num": 29700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bayNorm"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bayNorm.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-baynorm/overview",
+    "github": "https://github.com/WT215/bayNorm",
+    "conda_downloads": "29.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-baynorm\n\n## Overview\nThe `bayNorm` package provides a Bayesian approach for normalizing single-cell RNA-seq (scRNA-seq) data. It addresses the high level of noise and dropout events by estimating gene-specific prior parameters (mean $\\mu$ and dispersion $\\phi$) and cell-specific capture efficiencies ($\\beta$). It produces a posterior distribution of original transcript counts, allowing for more robust downstream analyses compared to simple global scaling.\n\n## Core Workflow\n\n### 1. Data Preparation\n`bayNorm` accepts `SummarizedExperiment`, `SingleCellExperiment`, or standard R matrices (genes as rows, cells as columns).\n\n```r\nlibrary(bayNorm)\nlibrary(SummarizedExperiment)\n\n# Example with a matrix\ndata('EXAMPLE_DATA_list')\nraw_matrix <- EXAMPLE_DATA_list$inputdata[, 1:30]\nse <- SummarizedExperiment(assays = list(counts = raw_matrix))\n```\n\n### 2. Estimating Capture Efficiencies ($\\beta$)\nCapture efficiency represents the probability that an original transcript is observed. You can provide a vector of $\\beta$ values or estimate them using `BetaFun`.\n\n```r\n# Estimate beta assuming a mean capture efficiency of 6%\nBETA_est <- BetaFun(Data = se, MeanBETA = 0.06)\nbeta_vector <- BETA_est$BETA\n```\n\n### 3. Running bayNorm\nThe main function `bayNorm` performs prior estimation and generates normalized data.\n\n*   **3D Array (Samples):** Set `S` > 1 to draw multiple samples from the posterior.\n*   **2D Matrix (MAP):** Set `mode_version = TRUE`.\n*   **2D Matrix (Mean):** Set `mean_version = TRUE`.\n\n```r\n# Generate a 2D MAP (Maximum A Posteriori) normalized matrix\nbayNorm_map <- bayNorm(\n    Data = se,\n    BETA_vec = beta_vector,\n    mode_version = TRUE,\n    mean_version = FALSE,\n    verbose = FALSE,\n    parallel = TRUE\n)\n\nnormalized_counts <- bayNorm_map$Bay_out\n```\n\n### 4. Multi-group Normalization\nIf cells belong to different conditions, use the `Conditions` parameter to estimate priors locally (\"LL\" procedure), which is recommended for Differential Expression (DE) analysis.\n\n```r\n# Conditions is a vector of group labels\nconditions <- c(rep(\"Group1\", 15), rep(\"Group2\", 15))\nbayNorm_local <- bayNorm(\n    Data = se,\n    Conditions = conditions,\n    Prior_type = \"LL\",\n    mode_version = TRUE\n)\n```\n\n### 5. Non-UMI Data\nFor non-UMI datasets, provide a scaling factor `UMI_sffl`. The data is divided by this factor and rounded to mimic UMI-like distributions.\n\n```r\nbayNorm_nonUMI <- bayNorm(\n    Data = se,\n    UMI_sffl = 20, # Example scaling factor\n    mode_version = TRUE\n)\n```\n\n## Supplementary Functions\n\n### bayNorm_sup\nUse `bayNorm_sup` to generate different output formats (e.g., switching from 3D samples to 2D MAP) without re-estimating prior parameters.\n\n```r\n# Using priors from a previous 3D run to get a 2D mean matrix\nbayNorm_mean <- bayNorm_sup(\n    Data = se,\n    PRIORS = bayNorm_3D$PRIORS,\n    input_params = bayNorm_3D$input_params,\n    mode_version = FALSE,\n    mean_version = TRUE\n)\n```\n\n### SyntheticControl\nSimulates control data based on estimated parameters to help identify \"noisy\" genes that deviate from technical noise models.\n\n```r\n# Simulate control data\ncontrol_data <- SyntheticControl(Data = se, BETA_vec = beta_vector)\n```\n\n## Tips for Success\n*   **Parallelization:** Set `parallel = TRUE` for large datasets to speed up the computationally intensive prior estimation.\n*   **Prior Type:** Use `Prior_type = \"GG\"` (Global) to remove batch effects across all cells, or `\"LL\"` (Local) to preserve/amplify biological differences between conditions for DE testing.\n*   **Memory:** 3D arrays (multiple samples) consume significantly more memory than 2D matrices. Use 2D versions for standard visualization and clustering.\n\n## Reference documentation\n- [Introduction to bayNorm](./references/bayNorm.md)\n- [bayNorm R Markdown Source](./references/bayNorm.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-baynorm",
+    "description": "This tool provides a Bayesian approach for normalizing single-cell RNA-seq data by estimating gene-specific priors and cell-specific capture efficiencies. Use when user asks to normalize scRNA-seq counts, estimate capture efficiencies, or generate posterior distributions of transcript counts for downstream analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bayNorm.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-discordant",
+  "category": "bioconductor",
+  "name": "bioconductor-discordant",
+  "description": "This tool identifies pairs of features that are differentially correlated between two phenotypic groups using a mixture model approach. Use when user asks to perform differential correlation analysis, identify discordant co-expression patterns, or integrate two different omics datasets to find feature pairs with changing correlations.",
+  "overview": "The `discordant` package identifies differential correlation between two phenotypic groups using a mixture model approach. It \"bins\" feature pairs into classes based on their co-expression patterns (negative, positive, or no correlation) in each group. The primary output is a posterior probability (PP) that a pair is differentially correlated. It supports both \"within-omics\" (e.g., gene-gene) and \"between-omics\" (e.g., miRNA-gene) analyses and is compatible with various data types, including mic",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/discordant.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-discordant/overview",
+  "github": "https://github.com/siskac/discordant",
+  "conda_downloads": "35.1K",
+  "conda_downloads_num": 35100,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "discordant"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/discordant.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-discordant/overview",
+    "github": "https://github.com/siskac/discordant",
+    "conda_downloads": "35.1K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-discordant\n\nname: bioconductor-discordant\ndescription: Identify pairs of features (genes, miRNAs, metabolites) that correlate differently between two phenotypic groups (e.g., case vs. control) using mixture models. Use this skill when performing differential correlation analysis within a single -omics dataset or between two different -omics datasets (e.g., miRNA-mRNA integration).\n\n# bioconductor-discordant\n\n## Overview\n\nThe `discordant` package identifies differential correlation between two phenotypic groups using a mixture model approach. It \"bins\" feature pairs into classes based on their co-expression patterns (negative, positive, or no correlation) in each group. The primary output is a posterior probability (PP) that a pair is differentially correlated. It supports both \"within-omics\" (e.g., gene-gene) and \"between-omics\" (e.g., miRNA-gene) analyses and is compatible with various data types, including microarray and sequencing data.\n\n## Workflow and Functions\n\n### 1. Data Preprocessing and Outlier Filtering\nOutliers can significantly skew correlation results. Use `splitMADOutlier()` for non-normal data (like sequencing counts).\n\n```r\nlibrary(discordant)\n# filter0 = TRUE removes features with any zero counts\n# threshold = 4 is the number of MADs from the median\nmat_filtered <- splitMADOutlier(your_data_matrix, filter0 = TRUE, threshold = 4)\n```\n\n### 2. Create Correlation Vectors\nGenerate correlation coefficients for each group. This function handles the pairing logic.\n\n```r\n# group: vector of 1s and 2s matching columns of x (and y)\ngroups <- c(rep(1, n_control), rep(2, n_treat))\n\n# Within-omics (pairs all features in x)\nvectors <- createVectors(x = data_matrix, groups = groups, cor.method = \"spearman\")\n\n# Between-omics (pairs features in x with features in y)\nvectors <- createVectors(x = matrix_x, y = matrix_y, groups = groups, cor.method = \"spearman\")\n```\n*   **Supported Methods**: `\"spearman\"` (default, recommended for sequencing), `\"pearson\"`, `\"bwmc\"` (biweight midcorrelation), and `\"sparcc\"`.\n\n### 3. Run Discordant Algorithm\nThe `discordantRun()` function fits the mixture model using the EM algorithm.\n\n```r\n# For within-omics\nresult <- discordantRun(v1 = vectors$v1, v2 = vectors$v2, x = data_matrix)\n\n# For between-omics\nresult <- discordantRun(v1 = vectors$v1, v2 = vectors$v2, x = matrix_x, y = matrix_y)\n```\n\n### 4. Interpreting Results\nThe output object contains several useful components:\n\n*   `discordPPVector`: A named vector of posterior probabilities for differential correlation. High values (e.g., > 0.8) indicate strong evidence of differential correlation.\n*   `discordPPMatrix`: The same probabilities in matrix format.\n*   `classVector`: The most likely class (1-9) for each pair.\n    *   **Diagonal (1, 5, 9)**: Equivalent correlation.\n    *   **Off-diagonal (2, 3, 4, 6, 7, 8)**: Differential correlation.\n*   `probMatrix`: All 9 posterior probabilities for every pair.\n\n## Advanced Options\n\n### Subsampling\nFor very large datasets, use `subsampling = TRUE` to speed up the EM algorithm by using a random sample of independent feature pairs.\n\n```r\nset.seed(123)\nresult <- discordantRun(v1, v2, x, subsampling = TRUE, iter = 100)\n```\n\n### Five-Component Model\nBy default, the model uses 3 components (-, 0, +). You can expand this to 5 (--, -, 0, +, ++) to identify \"elevated\" differential correlation, though this requires more features and may reduce performance.\n\n```r\nresult <- discordantRun(v1, v2, x, components = 5)\n```\n\n## Tips\n*   **Sample Matching**: For between-omics analysis, columns in matrix `x` and matrix `y` must represent the same samples in the same order.\n*   **Data Size**: If you encounter an \"Insufficient data\" error, it means there aren't enough features to estimate the mixture components. Increase the number of features or stick to the 3-component model.\n*   **Transformation**: For RNA-seq data, it is often beneficial to use `voom` transformed counts or similar normalized values before running `discordant`.\n\n## Reference documentation\n- [The discordant R Package: A Novel Approach to Differential Correlation](./references/Using_discordant.md)\n- [The discordant R Package: A Novel Approach to Differential Correlation (RMarkdown Source)](./references/Using_discordant.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-discordant",
+    "description": "This tool identifies pairs of features that are differentially correlated between two phenotypic groups using a mixture model approach. Use when user asks to perform differential correlation analysis, identify discordant co-expression patterns, or integrate two different omics datasets to find feature pairs with changing correlations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/discordant.html"
+  }
+}

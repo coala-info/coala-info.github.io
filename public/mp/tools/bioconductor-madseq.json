@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-madseq",
+  "category": "bioconductor",
+  "name": "bioconductor-madseq",
+  "description": "The bioconductor-madseq package detects and quantifies mosaic aneuploidy by fitting Bayesian models to alternative allele frequencies and normalized sequencing coverage. Use when user asks to detect mosaic chromosomal abnormalities, estimate the fraction of aneuploid cells, or perform model selection for whole-chromosome aneuploidy.",
+  "overview": "The `MADSEQ` package provides a robust framework for detecting and quantifying mosaic aneuploidy at the whole-chromosome level. It utilizes two primary data sources: the distribution of Alternative Allele Frequencies (AAF) at heterozygous sites and normalized sequencing coverage. The package fits five competing models (Normal, Monosomy, Mitotic Trisomy, Meiotic Trisomy, and Loss of Heterozygosity) and uses Bayesian Information Criteria (BIC) to determine the best fit and estimate the fraction of",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MADSEQ.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ykong2/MADSEQ",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MADSEQ"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MADSEQ.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ykong2/MADSEQ",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-madseq\n\n## Overview\n\nThe `MADSEQ` package provides a robust framework for detecting and quantifying mosaic aneuploidy at the whole-chromosome level. It utilizes two primary data sources: the distribution of Alternative Allele Frequencies (AAF) at heterozygous sites and normalized sequencing coverage. The package fits five competing models (Normal, Monosomy, Mitotic Trisomy, Meiotic Trisomy, and Loss of Heterozygosity) and uses Bayesian Information Criteria (BIC) to determine the best fit and estimate the fraction of aneuploid cells.\n\n## Workflow\n\n### 1. Data Preparation\nYou require a sorted/indexed BAM file, a bgzipped VCF (containing DP and AD fields), and a BED file of targeted regions (or genomic bins for WGS).\n\n```r\nlibrary(MADSEQ)\n\n# Prepare coverage and GC content\n# genome can be \"hg19\" or \"hg38\"\nsample_cov <- prepareCoverageGC(target_bed = \"target.bed\", \n                                 bam = \"sample.bam\", \n                                 genome = \"hg19\")\n\n# Prepare heterozygous sites from VCF\nsample_hetero <- prepareHetero(vcf = \"sample.vcf.gz\", \n                               target_bed = \"target.bed\",\n                               genome = \"hg19\", \n                               writeToFile = FALSE)\n```\n\n### 2. Coverage Normalization\nNormalization corrects for GC bias and calculates expected coverage. Providing a normal control sample is recommended for better accuracy.\n\n```r\n# Option A: Single sample (GC correction only)\nnormed_data <- normalizeCoverage(sample_cov, writeToFile = FALSE)\n\n# Option B: With a normal control\nnormed_data <- normalizeCoverage(sample_cov, control = control_cov, writeToFile = FALSE)\n\n# Extract the specific normalized GRanges\ntarget_normed_cov <- normed_data[[1]]\n```\n\n### 3. Model Fitting and Aneuploidy Detection\nThe `runMadSeq` function performs MCMC sampling. Because this is computationally intensive, it is recommended to run chromosomes in parallel.\n\n```r\n# Run models for a specific chromosome (e.g., chr18)\n# Default MCMC settings are recommended for production\nres <- runMadSeq(hetero = sample_hetero, \n                 coverage = target_normed_cov, \n                 target_chr = \"chr18\",\n                 nChain = 2, nStep = 2000)\n\n# View summary and model selection\nprint(res)\n```\n\n### 4. Interpreting Results\n*   **Model Selection**: The model with the lowest BIC is selected.\n*   **Delta BIC**: A `deltaBIC > 20` indicates high confidence in the selected model against the next best alternative.\n*   **Aneuploidy Fraction**: The parameter `f` in the posterior distribution represents the estimated fraction of mosaic cells.\n\n### 5. Visualization\n```r\n# Plot posterior distributions of parameters\nplotMadSeq(res)\n\n# Plot the estimated fraction of aneuploidy with confidence intervals\nplotFraction(res, prob = 0.95)\n\n# Plot the AAF distribution as fitted by the model\nplotMixture(res)\n```\n\n## Tips for Success\n*   **Sex Chromosomes**: When normalizing multiple samples, process males and females separately to avoid bias in sex chromosome coverage.\n*   **MCMC Convergence**: For real data, do not reduce `nStep` or `nChain` below defaults unless testing, as mosaicism estimates require stable posterior distributions.\n*   **File Output**: Setting `writeToFile = TRUE` in preparation functions is recommended for large datasets to save memory and allow easy re-loading.\n\n## Reference documentation\n- [R Package MADSEQ](./references/MADSEQ-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-madseq",
+    "description": "The bioconductor-madseq package detects and quantifies mosaic aneuploidy by fitting Bayesian models to alternative allele frequencies and normalized sequencing coverage. Use when user asks to detect mosaic chromosomal abnormalities, estimate the fraction of aneuploid cells, or perform model selection for whole-chromosome aneuploidy.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MADSEQ.html"
+  }
+}

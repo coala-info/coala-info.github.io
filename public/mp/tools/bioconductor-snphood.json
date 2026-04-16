@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-snphood",
+  "category": "bioconductor",
+  "name": "bioconductor-snphood",
+  "description": "SNPhood analyzes and visualizes the molecular phenotype shape and binding patterns in the genomic neighborhood of SNPs or other regions of interest. Use when user asks to investigate allele-specific binding, bin read counts around genomic regions, integrate genotype data with molecular phenotypes, or cluster regions based on their binding profiles.",
+  "overview": "SNPhood is a Bioconductor package designed to analyze the molecular phenotype (e.g., chromatin marks, TF binding) in the immediate vicinity of genomic regions, typically SNPs. Unlike peak callers that reduce signal to a single value, SNPhood preserves the \"shape\" of the binding by binning the neighborhood around each ROI. It supports allele-specific analysis (using maternal/paternal read groups), normalization via input DNA or library size, and integration with VCF-based genotype data.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SNPhood.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SNPhood"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SNPhood.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-snphood\n\n## Overview\nSNPhood is a Bioconductor package designed to analyze the molecular phenotype (e.g., chromatin marks, TF binding) in the immediate vicinity of genomic regions, typically SNPs. Unlike peak callers that reduce signal to a single value, SNPhood preserves the \"shape\" of the binding by binning the neighborhood around each ROI. It supports allele-specific analysis (using maternal/paternal read groups), normalization via input DNA or library size, and integration with VCF-based genotype data.\n\n## Core Workflow\n\n### 1. Setup and Parameter Configuration\nEvery analysis starts with a parameter list. Use `getDefaultParameterList` to initialize settings.\n\n```r\nlibrary(SNPhood)\n# Define path to BED file (ROI)\nroi_file <- \"path/to/snps.bed\"\n# Create default parameters\npar.l <- getDefaultParameterList(path_userRegions = roi_file, isPairedEndData = TRUE)\n\n# Common adjustments\npar.l$regionSize <- 500      # Extension on each side (Total window = 2*size + 1)\npar.l$binSize <- 25         # Resolution of the analysis\npar.l$readGroupSpecific <- TRUE # Set TRUE for allele-specific analysis\npar.l$poolDatasets <- TRUE  # Combine replicates for more power\n```\n\n### 2. Data Collection\nOrganize your BAM files into a structured data frame. The `collectFiles` function helps automate this.\n\n```r\n# Pattern for BAM files\nfiles.df <- collectFiles(patternFiles = \"*.bam\")\n\n# Manually assign metadata for pooling/genotypes\nfiles.df$individual <- c(\"Ind1\", \"Ind1\", \"Ind2\", \"Ind2\")\n```\n\n### 3. Quality Control\nBefore full processing, check the correlation of raw read counts across your regions to identify outlier datasets.\n\n```r\n# Run preliminary correlation check\nsnphood.qc <- analyzeSNPhood(par.l, files.df, onlyPrepareForDatasetCorrelation = TRUE)\nsnphood.qc <- plotAndCalculateCorrelationDatasets(snphood.qc)\n```\n\n### 4. Main Analysis\nExecute the full pipeline to extract reads, bin them, and normalize.\n\n```r\nsnphood.o <- analyzeSNPhood(par.l, files.df)\n```\n\n### 5. Allele-Specific Binding (ASB) Tests\nIf your BAM files contain read groups (e.g., maternal/paternal), test for significant differences in binding.\n\n```r\nsnphood.o <- testForAllelicBiases(snphood.o, \n                                 readGroups = c(\"paternal\", \"maternal\"),\n                                 calcBackgroundDistr = TRUE, \n                                 nRepetitions = 100)\n\n# View FDR results\nfdr_res <- results(snphood.o, type = \"allelicBias\", elements = \"FDR_results\")\n```\n\n### 6. Genotype Integration\nAssociate VCF data with your SNPhood object to investigate genotype-dependent binding patterns.\n\n```r\ngenotype_map <- data.frame(samples = annotationDatasets(snphood.o),\n                           genotypeFile = \"path/to/genotypes.vcf.gz\",\n                           sampleName = c(\"NA12878\", \"NA12891\"))\nsnphood.o <- associateGenotypes(snphood.o, genotype_map)\n```\n\n### 7. Clustering and Visualization\nCluster regions based on their binding profiles to identify common shapes.\n\n```r\n# Cluster based on paternal allele signal\nsnphood.o <- plotAndClusterMatrix(snphood.o, readGroup = \"paternal\", nClustersVec = 3)\n\n# Visualize specific bins\nplotBinCounts(snphood.o, regions = 1, plotGenotypeRatio = TRUE)\n\n# Overview of allelic bias across a chromosome\nplotAllelicBiasResultsOverview(snphood.o, plotChr = \"chr21\", signThreshold = 0.01)\n```\n\n## Key Functions and Objects\n- **SNPhood Object**: The central S4 class. Access data using `counts()`, `enrichment()`, `annotationRegions()`, and `parameters()`.\n- **Normalization**: Controlled by `normByInput` (requires input DNA BAMs) or `normAmongEachOther` (DESeq2-style library size normalization).\n- **Effective Genome Size**: SNPhood automatically estimates mappability based on read length and assembly (hg19, hg38, mm10, etc.).\n\n## Tips for Large Datasets\n- **Parallelization**: Increase `par.l$nCores` for faster read extraction.\n- **Memory**: Set `keepAllReadCounts = FALSE` when pooling replicates to save RAM.\n- **Subsetting**: Use `linesToParse` in the parameter list to run pilot analyses on a subset of SNPs.\n\n## Reference documentation\n- [Introduction and Methodological Details](./references/IntroductionToSNPhood.md)\n- [Example Workflow](./references/workflow.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-snphood",
+    "description": "SNPhood analyzes and visualizes the molecular phenotype shape and binding patterns in the genomic neighborhood of SNPs or other regions of interest. Use when user asks to investigate allele-specific binding, bin read counts around genomic regions, integrate genotype data with molecular phenotypes, or cluster regions based on their binding profiles.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SNPhood.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-atacseqqc",
+  "category": "bioconductor",
+  "name": "bioconductor-atacseqqc",
+  "description": "This tool performs quality control and preprocessing for ATAC-seq data, including fragment size analysis and Tn5 transposase bias correction. Use when user asks to assess library complexity, calculate TSS enrichment scores, shift read coordinates, or split BAM files into nucleosome-free and nucleosome-bound fractions.",
+  "overview": "ATACseqQC provides a suite of tools for diagnostic monitoring and preprocessing of ATAC-seq data. It helps researchers evaluate data quality according to published standards (e.g., ENCODE) and prepares data for downstream analysis like peak calling or footprinting by adjusting for Tn5 transposase insertion bias and classifying fragments by nucleosome occupancy.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ATACseqQC.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-atacseqqc/overview",
+  "github": "N/A",
+  "conda_downloads": "41.9K",
+  "conda_downloads_num": 41900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ATACseqQC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ATACseqQC.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-atacseqqc/overview",
+    "github": "N/A",
+    "conda_downloads": "41.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-atacseqqc\n\nname: bioconductor-atacseqqc\ndescription: Quality control and preprocessing for ATAC-seq data. Use this skill to assess library complexity, fragment size distribution, TSS enrichment, and nucleosome positioning. It provides tools for shifting read coordinates to account for Tn5 transposase bias, splitting BAM files into nucleosome-free and nucleosome-bound fractions, and generating transcription factor footprints and V-plots.\n\n# bioconductor-atacseqqc\n\n## Overview\nATACseqQC provides a suite of tools for diagnostic monitoring and preprocessing of ATAC-seq data. It helps researchers evaluate data quality according to published standards (e.g., ENCODE) and prepares data for downstream analysis like peak calling or footprinting by adjusting for Tn5 transposase insertion bias and classifying fragments by nucleosome occupancy.\n\n## Core Workflow\n\n### 1. Initial Quality Assessment\nBefore processing, evaluate the library complexity and fragment size distribution. A high-quality ATAC-seq library should show clear periodicity in fragment sizes representing nucleosome-free regions (NFR) and nucleosome-bound DNA.\n\n```r\nlibrary(ATACseqQC)\n\n# Estimate library complexity\nestimateLibComplexity(readsDupFreq(bamfile))\n\n# Plot fragment size distribution\n# Expect a large peak <100bp (NFR) and periodic peaks (nucleosomes)\nfragSize <- fragSizeDist(bamfile, \"Sample_Label\")\n```\n\n### 2. Coordinate Shifting (Tn5 Adjustment)\nTn5 transposase inserts adaptors separated by 9 bp. To accurately map the center of the open chromatin, reads must be shifted: +4 bp for the positive strand and -5 bp for the negative strand.\n\n```r\n# Define tags to preserve (optional but recommended)\ntags <- c(\"AS\", \"NM\", \"MD\")\n\n# Read BAM and shift\ngal <- readBamFile(bamfile, tag=tags, asMates=TRUE, bigFile=TRUE)\nshiftedBamfile <- file.path(outPath, \"shifted.bam\")\ngal1 <- shiftGAlignmentsList(gal, outbam=shiftedBamfile)\n```\n\n### 3. Enrichment Scoring\nCalculate standard metrics to determine if the signal is enriched at expected genomic features.\n\n*   **TSSEscore**: TSS Enrichment Score. ENCODE recommends >10 for high-quality human data.\n*   **PTscore**: Promoter/Transcript body score.\n*   **NFRscore**: Nucleosome Free Regions score.\n\n```r\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ntxs <- transcripts(TxDb.Hsapiens.UCSC.hg19.knownGene)\n\n# Calculate TSS Enrichment\ntsse <- TSSEscore(gal1, txs)\ntsse$TSSEscore\n\n# Calculate NFR score\nnfr <- NFRscore(gal1, txs)\n```\n\n### 4. Fragment Splitting\nSplit the shifted reads into different bins based on fragment length (NFR, mononucleosome, dinucleosome, etc.). This is essential for visualizing nucleosome phasing.\n\n```r\n# Split by fragment length and (optionally) conservation\n# Conservation requires phastCons packages\nobjs <- splitGAlignmentsByCut(gal1, txs=txs, outPath = outPath)\n\n# Resulting files: NucleosomeFree.bam, mononucleosome.bam, etc.\n```\n\n### 5. Footprinting and V-plots\nIdentify transcription factor (TF) occupancy by analyzing the \"shadow\" left by the protein on the DNA.\n\n```r\n# Generate footprint for a specific motif (PFM)\nlibrary(MotifDb)\nctcf_motif <- query(MotifDb, \"CTCF\")[[1]]\n\nsigs <- factorFootprints(shiftedBamfile, pfm=ctcf_motif,\n                         genome=Hsapiens,\n                         min.score=\"90%\",\n                         upstream=100, downstream=100)\n\n# Generate V-plot (fragment midpoint vs length)\nvp <- vPlot(shiftedBamfile, pfm=ctcf_motif,\n            genome=Hsapiens, min.score=\"90%\")\n```\n\n## Tips and Best Practices\n*   **Genome Matching**: Ensure that the `BSgenome`, `TxDb`, and (optional) `phastCons` packages match your alignment reference exactly (e.g., hg19 vs hg38).\n*   **Memory Management**: For large BAM files, use the `which` parameter in `readBamFile` to process data chromosome by chromosome or use `bigFile=TRUE`.\n*   **Peak Calling**: Always use the **shifted** BAM file for peak calling (e.g., with MACS2) to ensure peaks are centered on the actual transposase insertion sites.\n*   **Conservation**: Including conservation scores in `splitGAlignmentsByCut` improves classification accuracy but significantly increases computation time.\n\n## Reference documentation\n- [ATACseqQC Guide](./references/ATACseqQC.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-atacseqqc",
+    "description": "This tool performs quality control and preprocessing for ATAC-seq data, including fragment size analysis and Tn5 transposase bias correction. Use when user asks to assess library complexity, calculate TSS enrichment scores, shift read coordinates, or split BAM files into nucleosome-free and nucleosome-bound fractions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ATACseqQC.html"
+  }
+}

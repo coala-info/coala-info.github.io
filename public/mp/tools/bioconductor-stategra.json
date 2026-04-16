@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-stategra",
+  "category": "bioconductor",
+  "name": "bioconductor-stategra",
+  "description": "\"STATegRa is a framework for the integration and analysis of multiple omics datasets using component analysis, clustering, and differential expression. Use when user asks to integrate multi-omics data, decompose variability into common and distinctive components, cluster features across different data types, or combine p-values using non-parametric combination.\"",
+  "overview": "The `STATegRa` package provides a framework for the integration of multiple omics datasets. It focuses on three main analytical pillars:\n1.  **Component Analysis**: Decomposing variability into \"common\" (shared across omics) and \"distinctive\" (specific to one omic) structures.\n2.  **Omics Clustering**: Clustering features (e.g., genes and miRNAs) together by using mapping information to create a unified distance metric.\n3.  **omicsNPC**: A holistic approach to differential expression that combin",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/STATegRa.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "STATegRa"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/STATegRa.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-stategra\n\n## Overview\n\nThe `STATegRa` package provides a framework for the integration of multiple omics datasets. It focuses on three main analytical pillars:\n1.  **Component Analysis**: Decomposing variability into \"common\" (shared across omics) and \"distinctive\" (specific to one omic) structures.\n2.  **Omics Clustering**: Clustering features (e.g., genes and miRNAs) together by using mapping information to create a unified distance metric.\n3.  **omicsNPC**: A holistic approach to differential expression that combines p-values from different omics types using Non-Parametric Combination (NPC) to account for inter-dataset correlations.\n\n## Typical Workflows\n\n### 1. Omics Component Analysis\nUsed to distinguish between underlying biological mechanisms affecting all datasets versus those affecting each dataset separately.\n\n**Data Preparation:**\nConvert matrices to `ExpressionSet` objects.\n```R\nlibrary(STATegRa)\nB1 <- createOmicsExpressionSet(Data=matrix1, pData=metadata, pDataDescr=c(\"condition\"))\nB2 <- createOmicsExpressionSet(Data=matrix2, pData=metadata, pDataDescr=c(\"condition\"))\ninput_list <- list(B1, B2)\n```\n\n**Model Selection:**\nDetermine the optimal number of common and distinctive components.\n```R\nms <- modelSelection(Input=input_list, Rmax=3, fac.sel=\"single%\", \n                     varthreshold=0.03, center=TRUE, scale=TRUE, weight=TRUE)\n# ms$common contains suggested common components\n# ms$dist contains suggested distinctive components\n```\n\n**Analysis:**\nApply DISCO-SCA, JIVE, or O2PLS.\n```R\n# Example using DISCO-SCA\nres <- omicsCompAnalysis(Input=input_list, method=\"DISCOSCA\", \n                         Rcommon=2, Rspecific=c(2, 2),\n                         center=TRUE, scale=TRUE, weight=TRUE)\n\n# Access results\ngetScores(res, part=\"common\")\ngetLoadings(res, part=\"distinctive\", block=1)\nplotVAF(res)\nplotRes(res, comps=c(1, 2), what=\"scores\", type=\"common\")\n```\n\n### 2. Omics Clustering\nUsed to find similarities between features of different types (e.g., which miRNAs behave like which genes).\n\n**Workflow:**\n1.  **Compute Reference Distances**: Calculate distances for the primary feature (e.g., mRNA).\n2.  **Define Mapping**: Create a `bioMap` object linking surrogate features (miRNA) to reference features (mRNA).\n3.  **Compute Surrogate Distances**: Use `bioDist` to project surrogate data onto reference features.\n4.  **Weighted Integration**: Combine distances using `bioDistW`.\n\n```R\n# 1. Reference distance\ndistmRNA <- bioDistclass(name=\"mRNA\", distance=cor(t(exprs(mRNA.ds)), method=\"spearman\"))\n\n# 2. Mapping\nmapObj <- bioMap(name=\"miRNA-to-Gene\", map=mapping_dataframe)\n\n# 3. Surrogate distance\ndistMiRNA <- bioDist(referenceFeatures=rownames(mRNA.ds), mapping=mapObj, \n                     surrogateData=miRNA.ds, referenceData=mRNA.ds, distance=\"spearman\")\n\n# 4. Weighted combination\nwList <- bioDistW(referenceFeatures=rownames(mRNA.ds), \n                  bioDistList=list(distmRNA, distMiRNA), \n                  weights=matrix(c(0.5, 0.5), 1, 2))\n\n# Visualization\nbioDistWPlot(referenceFeatures=rownames(mRNA.ds), listDistW=wList)\n```\n\n### 3. omicsNPC (Differential Expression)\nUsed to identify genes differentially expressed across all modalities.\n\n```R\n# dataInput is a list of ExpressionSets\n# dataTypes: 'count' (for RNAseq/voom) or 'continuous' (for arrays)\ndataTypes <- c(\"count\", \"continuous\")\ncombMethods <- c(\"Fisher\", \"Liptak\", \"Tippett\")\n\nresults <- omicsNPC(dataInput=my_list, dataTypes=dataTypes, \n                    combMethods=combMethods, numPerms=1000)\n\n# results$pvaluesNPC contains the combined global p-values\n```\n\n## Tips for Success\n-   **Weighting**: Always set `weight=TRUE` in `omicsCompAnalysis` if the number of features differs significantly between blocks (e.g., 20,000 genes vs 500 miRNAs).\n-   **NPC Interpretation**: \n    -   *Tippett*: Significant if at least one omic shows a signal.\n    -   *Liptak*: Significant if most omics show a signal.\n    -   *Fisher*: Intermediate behavior.\n-   **Mapping**: For Omics Clustering, ensure the mapping covers at least 15-25% of the reference features for reliable results.\n\n## Reference documentation\n- [STATegRa User’s Guide](./references/STATegRa.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-stategra",
+    "description": "STATegRa is a framework for the integration and analysis of multiple omics datasets using component analysis, clustering, and differential expression. Use when user asks to integrate multi-omics data, decompose variability into common and distinctive components, cluster features across different data types, or combine p-values using non-parametric combination.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/STATegRa.html"
+  }
+}

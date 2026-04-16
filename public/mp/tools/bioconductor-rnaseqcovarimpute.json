@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rnaseqcovarimpute",
+  "category": "bioconductor",
+  "name": "bioconductor-rnaseqcovarimpute",
+  "description": "This tool performs linear model analysis for RNA-seq data using multiple imputation to handle missing covariate information. Use when user asks to perform differential expression analysis with missing metadata, impute missing values in RNA-seq covariates using PCA or gene binning, or run limma-voom on multiple imputed datasets.",
+  "overview": "The `RNAseqCovarImpute` package integrates the `limma-voom` pipeline with multiple imputation (MI) via the `mice` package. It solves the \"high-dimensional outcome\" problem in MI by either reducing gene expression to Principal Components (PCs) or binning genes into small groups. This ensures that gene expression information is included in the imputation model for covariates, which is a requirement for unbiased estimates.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAseqCovarImpute.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/brennanhilton/RNAseqCovarImpute",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RNAseqCovarImpute"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAseqCovarImpute.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/brennanhilton/RNAseqCovarImpute",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rnaseqcovarimpute\n\nname: bioconductor-rnaseqcovarimpute\ndescription: Perform linear model analysis for RNA-seq read counts with multiple imputation (MI) of missing covariates. Use this skill when analyzing RNA-seq data (DGEList objects) where covariate data (metadata) contains missing values (NAs) and you want to avoid the bias or power loss of complete-case analysis. Supports two workflows: a fast PCA-based method and a gene-binning method.\n\n# bioconductor-rnaseqcovarimpute\n\n## Overview\n\nThe `RNAseqCovarImpute` package integrates the `limma-voom` pipeline with multiple imputation (MI) via the `mice` package. It solves the \"high-dimensional outcome\" problem in MI by either reducing gene expression to Principal Components (PCs) or binning genes into small groups. This ensures that gene expression information is included in the imputation model for covariates, which is a requirement for unbiased estimates.\n\n## Core Workflows\n\n### 1. MI PCA Method (Recommended)\nThis is the most computationally efficient approach. It uses PCA to capture the variance of the expression data and includes the top PCs as predictors in the covariate imputation.\n\n```r\nlibrary(RNAseqCovarImpute)\nlibrary(limma)\nlibrary(PCAtools)\nlibrary(mice)\n\n# 1. Prepare PCA data from DGEList\npca_data <- limma::voom(example_DGE)$E\np <- PCAtools::pca(pca_data)\n\n# 2. Select PCs (e.g., those explaining >80% variance)\nnum_pcs <- which(cumsum(p$variance) > 80)[1]\npcs <- p$rotated[, 1:num_pcs]\n\n# 3. Append PCs to covariate data and run MI\ndata_with_pcs <- cbind(example_data, pcs)\nimp <- mice::mice(data_with_pcs, m = 10) # m=30-100 recommended for production\n\n# 4. Run limma-voom on imputed sets and pool\nmi_pca_res <- limmavoom_imputed_data_pca(\n  imp = imp,\n  DGE = example_DGE,\n  voom_formula = \"~x + y + z + a + b\"\n)\n\n# 5. Extract and adjust results\nresults_x <- mi_pca_res %>%\n  dplyr::arrange(x_p) %>%\n  dplyr::mutate(x_p_adj = p.adjust(x_p, method = \"fdr\"))\n```\n\n### 2. Gene Binning Method\nUse this method if you prefer to impute covariates using local gene expression information. It bins genes into small groups and runs MI/limma separately for each bin.\n\n```r\n# 1. Define gene bins (default ratio is 1 gene per 10 samples)\nintervals <- get_gene_bin_intervals(example_DGE, example_data)\n\n# 2. Randomize gene order to avoid chromosomal/sequential bias\nexample_DGE <- example_DGE[sample(nrow(example_DGE)), ]\n\n# 3. Impute covariates per gene bin\ngene_bin_impute <- impute_by_gene_bin(\n  example_data,\n  intervals,\n  example_DGE,\n  m = 5\n)\n\n# 4. Run limma-voom on the list of imputed datasets\ncoef_se <- limmavoom_imputed_data_list(\n  gene_intervals = intervals,\n  DGE = example_DGE,\n  imputed_data_list = gene_bin_impute,\n  m = 5,\n  voom_formula = \"~x + y + z + a + b\"\n)\n\n# 5. Pool results using Rubin's rules and apply Empirical Bayes\nfinal_res <- combine_rubins(\n  DGE = example_DGE,\n  model_results = coef_se,\n  predictor = \"x\"\n)\n```\n\n## Key Functions\n\n- `limmavoom_imputed_data_pca()`: The primary wrapper for the PCA workflow. It handles the parallel execution of `voom`, `lmFit`, and pooling.\n- `impute_by_gene_bin()`: Performs MI separately for subsets of genes.\n- `combine_rubins()`: Pools results from multiple imputations. Crucially, it applies `limma::squeezeVar` (Empirical Bayes) *before* pooling to ensure variance shrinkage is handled correctly in the MI context.\n- `get_gene_bin_intervals()`: Calculates start/end indices for gene bins based on sample size.\n\n## Tips for Success\n\n- **Parallelization**: Both workflows support `BiocParallel`. Use the `BPPARAM` argument (e.g., `BPPARAM = MulticoreParam(4)`) to speed up the imputation and model fitting steps.\n- **Number of Imputations (m)**: While examples use `m = 3` for speed, use at least `m = 20` to `m = 100` for publication-quality results to ensure stable standard error estimates.\n- **Predictor Specification**: In `combine_rubins()`, the `predictor` argument must match the column name in the design matrix. For factors, this is usually `VariableNameLevelName` (e.g., `GroupB`).\n- **Data Prep**: Ensure your `DGEList` and covariate `data.frame` have matching sample IDs and order before starting the pipeline.\n\n## Reference documentation\n\n- [Example Data for RNAseqCovarImpute](./references/Example_Data_for_RNAseqCovarImpute.md)\n- [Impute Covariate Data in RNA-sequencing Studies](./references/Impute_Covariate_Data_in_RNA_sequencing_Studies.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rnaseqcovarimpute",
+    "description": "This tool performs linear model analysis for RNA-seq data using multiple imputation to handle missing covariate information. Use when user asks to perform differential expression analysis with missing metadata, impute missing values in RNA-seq covariates using PCA or gene binning, or run limma-voom on multiple imputed datasets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RNAseqCovarImpute.html"
+  }
+}

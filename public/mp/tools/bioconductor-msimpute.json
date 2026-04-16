@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msimpute",
+  "category": "bioconductor",
+  "name": "bioconductor-msimpute",
+  "description": "This tool imputes missing peptide intensities in proteomics data using low-rank approximation while preserving biological signals. Use when user asks to diagnose missingness patterns, perform structured imputation for MAR or MNAR data, or assess imputation quality using structural metrics.",
+  "overview": "The `msImpute` package provides a framework for imputing missing peptide intensities in proteomics data. It is particularly effective because it uses low-rank approximation to recover missing values while preserving the biological signal. It includes tools to determine if missing values are Missing At Random (MAR) or Missing Not At Random (MNAR), allowing users to choose the most appropriate imputation strategy (e.g., supervised MNAR imputation using experimental design).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/msImpute.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/DavisLaboratory/msImpute",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "msImpute"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msImpute.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/DavisLaboratory/msImpute",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msimpute\n\nname: bioconductor-msimpute\ndescription: Imputation of peptide intensity in proteomics experiments using low-rank approximation. Use this skill when you need to diagnose missingness patterns (MAR vs MNAR) in mass spectrometry data, perform structured imputation, or assess the impact of imputation on data distribution and structural metrics.\n\n## Overview\n\nThe `msImpute` package provides a framework for imputing missing peptide intensities in proteomics data. It is particularly effective because it uses low-rank approximation to recover missing values while preserving the biological signal. It includes tools to determine if missing values are Missing At Random (MAR) or Missing Not At Random (MNAR), allowing users to choose the most appropriate imputation strategy (e.g., supervised MNAR imputation using experimental design).\n\n## Core Workflow\n\n### 1. Data Preparation and Normalization\nData should be log-transformed. If zero values exist, add a small offset before transformation.\n\n```r\nlibrary(msImpute)\nlibrary(limma)\n\n# Load data (example using package data)\ndata(pxd014777)\ny <- pxd014777\n\n# Log transformation with offset if zeros are present\ny <- log2(y + 0.25)\n\n# Normalization (e.g., quantile or cyclic loess)\ny <- normalizeBetweenArrays(y, method = \"quantile\")\n```\n\n### 2. Diagnosing Missingness Patterns\nUse `selectFeatures` to identify peptides with structured missingness. This helps determine if the data is MNAR (e.g., batch-specific or group-specific dropouts).\n\n```r\n# Define experimental groups\nbatch <- as.factor(gsub(\"(2018.*)_RF.*\",\"\\\\1\", colnames(y)))\n\n# Identify informative features\n# method=\"ebm\" (Entropy-based) detects peptides missing in specific groups (NaN EBM)\n# method=\"hvp\" (High Variable Proportion) detects high dropout at high abundance\nhdp <- selectFeatures(y, method = \"ebm\", group = batch)\n\n# Check for structured missingness (NaN values in EBM column)\ntable(is.nan(hdp$EBM))\n```\n\n### 3. Imputation\nChoose the method based on the diagnosis from step 2.\n\n*   **MAR Data:** Use `method = \"v2\"`. No design matrix required.\n*   **MNAR Data:** Use `method = \"v2-mnar\"`. Requires a `design` matrix or `group` factor to perform supervised imputation.\n\n```r\n# For MNAR data\ngroup <- as.factor(sample_annot$group)\ndesign <- model.matrix(~0+group)\ny_imputed <- msImpute(y, method = \"v2-mnar\", design = design)\n\n# For MAR data\ny_imputed_mar <- msImpute(y, method = \"v2\")\n```\n\n### 4. Post-Imputation Assessment\nEvaluate the quality of imputation using structural metrics and CV plots.\n\n```r\n# 1. Visual assessment of Variance preservation\npar(mfrow=c(1,2))\nplotCV2(y, main = \"Original\")\nplotCV2(y_imputed, main = \"Imputed\")\n\n# 2. Structural Metrics (Withinness, Betweenness)\n# Returns metrics measuring preservation of local and global structures\nmetrics <- computeStructuralMetrics(y_imputed, group, y = NULL)\nprint(metrics$withinness)\nprint(metrics$betweenness)\n```\n\n## Key Functions\n\n*   `selectFeatures(y, method, group)`: Identifies informative peptides for missingness diagnosis.\n*   `msImpute(y, method, design, rank.max)`: Main imputation function. `rank.max` can be adjusted (default is determined automatically).\n*   `plotCV2(y)`: Diagnostic plot of $CV^2$ vs mean log-expression to check for variance inflation.\n*   `computeStructuralMetrics(y_imputed, group, y_raw)`: Calculates \"withinness\" (local structure) and \"betweenness\" (global structure). Can also compute Gromov-Wasserstein (GW) distance if a Python environment with `POT` is configured.\n\n## Tips\n*   **Filtering:** It is recommended to retain peptides with at least 4 observed values across all samples before running `msImpute`.\n*   **MNAR vs MAR:** If only a very small fraction of missing peptides show structured patterns (e.g., < 10%), the MAR method (`v2`) may be sufficient and more robust.\n*   **Low-Rank Approximation:** This method is generally superior to simple constant or distribution-based imputation (like QRILC) because it doesn't drastically inflate the variance of the peptides.\n\n## Reference documentation\n- [msImpute: Imputation of peptide intensity by low-rank approximation](./references/msImpute-vignette.md)\n- [msImpute: proteomics missing values imputation and diagnosis](./references/msImpute-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-msimpute",
+    "description": "This tool imputes missing peptide intensities in proteomics data using low-rank approximation while preserving biological signals. Use when user asks to diagnose missingness patterns, perform structured imputation for MAR or MNAR data, or assess imputation quality using structural metrics.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/msImpute.html"
+  }
+}

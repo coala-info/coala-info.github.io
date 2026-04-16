@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mslp",
+  "category": "bioconductor",
+  "name": "bioconductor-mslp",
+  "description": "This tool identifies mutation-specific synthetic lethal partners by integrating patient genomic and transcriptomic data with cell-line genetic screens. Use when user asks to predict consensus synthetic lethal partners, identify overexpressed genes in mutated patients, or correlate gene expression with mutations to find therapeutic targets.",
+  "overview": "The `mslp` package provides an unsupervised pipeline to identify Synthetic Lethal Partners (SLPs) for specific cancer mutations. It operates on two primary assumptions:\n1. **Compensation**: Over-expression of an SLP compensates for the loss of function of a mutation.\n2. **Correlation**: Expression of mutations correlates with SLPs in wild-type patients.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/mslp.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mslp"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mslp.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mslp\n\nname: bioconductor-mslp\ndescription: Identify Mutation-specific Synthetic Lethal Partners (SLPs) using the mslp R package. Use this skill to integrate genomic (mutations, CNA) and transcriptomic (RNA-seq) data from patients with genetic screen data (DepMap, Project Drive) to predict consensus SLPs for loss-of-function mutations in cancer.\n\n# bioconductor-mslp\n\n## Overview\n\nThe `mslp` package provides an unsupervised pipeline to identify Synthetic Lethal Partners (SLPs) for specific cancer mutations. It operates on two primary assumptions:\n1. **Compensation**: Over-expression of an SLP compensates for the loss of function of a mutation.\n2. **Correlation**: Expression of mutations correlates with SLPs in wild-type patients.\n\nThe package integrates patient-level omics data with cell-line genetic screens to identify \"consensus SLPs\" that show consistent impact on cell viability across different models.\n\n## Installation\n\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"mslp\")\n```\n\n## Typical Workflow\n\n### 1. Data Preprocessing\nThe package expects mutation profiles, Copy Number Alteration (CNA) profiles, and RNA-seq expression/Z-scores (typically from cBioPortal/TCGA).\n\n```R\nlibrary(mslp)\n# P_mut, P_cna, P_expr, P_z are paths to standard cBioPortal text files\nres <- pp_tcga(P_mut, P_cna, P_expr, P_z)\n\n# Extract processed data\nmut_data <- res$mut_data\nexpr_data <- res$expr_data\nzscore_data <- res$zscore_data\n```\n\n### 2. Predicting Primary SLPs\nPrimary SLPs are identified using two complementary modules. It is highly recommended to use `future` for parallel processing.\n\n**Compensation Module:** Identifies overexpressed genes in mutated patients using the Rank Products algorithm.\n```R\nlibrary(future)\nplan(multisession, workers = 2)\nres_comp <- comp_slp(zscore_data, mut_data)\n```\n\n**Correlation Module:** Uses GENIE3 to select potential SLPs correlated with mutations in wild-type patients.\n```R\nres_corr <- corr_slp(expr_data, mut_data)\n\n# Filter by importance threshold (default robust value is 0.0016)\nres_f <- res_corr[im >= 0.0016]\n```\n\n### 3. Estimating Importance Thresholds\nFor specific cancer types, use `est_im` to calculate a custom importance threshold via permutation.\n```R\n# Run corr_slp on random mutations multiple times\nres_random <- lapply(1:3, function(x) corr_slp(expr_data, random_mut_data))\nim_res <- est_im(res_random)\nthreshold <- mean(im_res$roc_thresh)\n```\n\n### 4. Calling Consensus SLPs\nConsensus SLPs are primary SLPs that are also hits in genetic screens (e.g., CRISPR/RNAi) and show consistency across cell lines.\n\n```R\n# 1. Merge primary results\nmerged_res <- merge_slp(res_comp, res_corr)\n\n# 2. Identify screen hits (requires screen_hit and mut_info data frames)\n# screen_hit: columns [screen_entrez, screen_symbol, cell_line]\n# mut_info: columns [mut_entrez, cell_line]\nscr_res <- lapply(unique_cell_lines, scr_slp, screen_hit, mut_info, merged_res)\nscr_res <- data.table::rbindlist(scr_res)\n\n# 3. Calculate consensus using Cohen's kappa\nk_res <- cons_slp(scr_res, merged_res)\n\n# 4. Filter for high-confidence partners\nfinal_slps <- k_res[kappa_value >= 0.6 & padj <= 0.1]\n```\n\n## Key Functions\n\n- `pp_tcga()`: Preprocesses standard TCGA/cBioPortal files.\n- `comp_slp()`: Predicts SLPs based on the compensation hypothesis.\n- `corr_slp()`: Predicts SLPs based on the correlation hypothesis (GENIE3).\n- `est_im()`: Estimates the importance threshold for filtering correlation results.\n- `merge_slp()`: Combines results from compensation and correlation modules.\n- `scr_slp()`: Filters SLPs against genetic screen hits.\n- `cons_slp()`: Calculates consensus SLPs across multiple cell lines.\n\n## Reference documentation\n\n- [mslp](./references/mslp.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mslp",
+    "description": "This tool identifies mutation-specific synthetic lethal partners by integrating patient genomic and transcriptomic data with cell-line genetic screens. Use when user asks to predict consensus synthetic lethal partners, identify overexpressed genes in mutated patients, or correlate gene expression with mutations to find therapeutic targets.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/mslp.html"
+  }
+}

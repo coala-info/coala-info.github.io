@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metaarray",
+  "category": "bioconductor",
+  "name": "bioconductor-metaarray",
+  "description": "This tool performs statistical meta-analysis of microarray data using latent variable models and Probability of Expression transformations. Use when user asks to perform cross-study microarray analysis, merge disparate datasets, calculate inter-study reproducibility scores, or identify robust gene signatures across independent studies.",
+  "overview": "The `metaArray` package provides a suite of tools for large-scale meta-analysis of microarray data. It focuses on transforming data into a common scale (Probability of Expression), filtering genes based on inter-study concordance, and calculating meta-analytic differential expression statistics. It is particularly useful for identifying robust gene signatures across multiple independent cancer studies.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/metaArray.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "metaArray"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/metaArray.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metaarray\n\nname: bioconductor-metaarray\ndescription: Statistical meta-analysis of microarray data using latent variable models, Probability of Expression (POE) transformations, and integrative correlation. Use this skill when performing cross-study microarray analysis, merging disparate datasets, or calculating inter-study reproducibility scores and posterior mean differential expression (z-statistics).\n\n## Overview\n\nThe `metaArray` package provides a suite of tools for large-scale meta-analysis of microarray data. It focuses on transforming data into a common scale (Probability of Expression), filtering genes based on inter-study concordance, and calculating meta-analytic differential expression statistics. It is particularly useful for identifying robust gene signatures across multiple independent cancer studies.\n\n## Core Workflows\n\n### 1. Data Preparation and Merging\nTo perform meta-analysis, datasets must be combined into a `mergeExprSet` object. This often requires finding common genes across studies.\n\n```r\nlibrary(metaArray)\nlibrary(MergeMaid) # Often used in conjunction\n\n# Find common genes across datasets (e.g., study1, study2)\ncommon_genes <- intersect(rownames(study1), rownames(study2))\n\n# Subset and align datasets\nstudy1_sub <- study1[match(common_genes, rownames(study1)), ]\nstudy2_sub <- study2[match(common_genes, rownames(study2)), ]\n\n# Create ExpressionSet objects for each study\n# (Requires phenoData/AnnotatedDataFrame setup)\nexp1 <- new(\"ExpressionSet\", exprs = study1_sub, phenoData = pdata1)\nexp2 <- new(\"ExpressionSet\", exprs = study2_sub, phenoData = pdata2)\n\n# Merge into a single object\nmerged_data <- mergeExprs(exp1, exp2)\n```\n\n### 2. Probability of Expression (POE) Transformation\nPOE transforms raw expression values into a [-1, 1] scale, representing the probability that a gene is under-expressed (-1) or over-expressed (1) relative to a reference distribution.\n\n- **MCMC Method (`poe.mcmc`)**: More accurate as it borrows information across genes, but computationally intensive. Recommended for batch mode.\n- **EM Method (`poe.em`)**: Faster, fits genes separately. Suitable for very large datasets (10k+ genes).\n\n```r\n# Using EM for speed\n# Note: Input is typically the expression matrix\npoe_results <- poe.em(exprs(merged_data))\n\n# Visualize the EM fit for a specific gene\nem.draw(as.numeric(exprs(merged_data)[1,]), cl = ncol(merged_data))\n```\n\n### 3. Integrative Correlation Analysis\nUse `intcor` to identify genes that show consistent co-expression patterns across different studies. This serves as a reproducibility filter.\n\n```r\n# Calculate reproducibility scores\ncor_scores <- intcor(merged_data)$avg.cor\n\n# Filter merged data for genes above the median reproducibility\nhigh_rep_data <- merged_data[cor_scores > median(cor_scores), ]\n```\n\n### 4. Posterior Mean Differential Expression (Z-score)\nThe `Zscore` function implements a Bayesian approach to combine differential expression evidence across studies.\n\n```r\n# Calculate z-scores for the merged studies\n# Set permute > 0 to generate a permutation distribution for significance\nz_stats <- Zscore(merged_data, permute = 0)\n```\n\n## Key Functions\n\n- `mergeExprs`: Combines multiple `ExpressionSet` objects into a `mergeExprSet`.\n- `poe.mcmc` / `poe.em`: Transforms data to the Probability of Expression scale.\n- `intcor`: Calculates gene-specific reproducibility scores across studies (handles large datasets better than `MergeMaid::intCor`).\n- `Zscore`: Calculates the posterior mean differential expression statistic.\n- `em.draw`: Provides diagnostic plots for the EM algorithm fit (likelihood trajectory, mixture density, and POE vs. raw expression).\n\n## Tips for Success\n- **Memory Management**: For more than 2,000 common genes, use `intcor` from this package rather than `MergeMaid` to avoid memory allocation errors.\n- **Batch Processing**: If using `poe.mcmc`, run the script in a non-interactive R session (`R --no-save < script.R &`) as it can take significant time.\n- **Scale-Free Analysis**: POE transformation is highly recommended when studies use different platforms or have high raw-scale variation that masks biological signals.\n\n## Reference documentation\n- [metaArray](./references/metaArray.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metaarray",
+    "description": "This tool performs statistical meta-analysis of microarray data using latent variable models and Probability of Expression transformations. Use when user asks to perform cross-study microarray analysis, merge disparate datasets, calculate inter-study reproducibility scores, or identify robust gene signatures across independent studies.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/metaArray.html"
+  }
+}

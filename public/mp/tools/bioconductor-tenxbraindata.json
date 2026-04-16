@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tenxbraindata",
+  "category": "bioconductor",
+  "name": "bioconductor-tenxbraindata",
+  "description": "This package provides access to the 1.3 million mouse brain cell scRNA-seq dataset from 10X Genomics for memory-efficient analysis. Use when user asks to download the 1.3 million mouse brain dataset, perform memory-efficient analysis using HDF5-backed DelayedArrays, or implement parallelized chunk-wise processing for large-scale single-cell data.",
+  "overview": "The `TENxBrainData` package provides a Bioconductor resource for the 1.3 million mouse brain cell single-cell RNA-seq dataset. To manage the massive scale of this data (28k genes x 1.3M cells), the package utilizes `HDF5Array` and `DelayedArray` frameworks. This allows the count matrix to remain on disk in HDF5 format, loading only specific subsets into memory as needed, which prevents memory exhaustion on standard machines.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/TENxBrainData.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TENxBrainData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/TENxBrainData.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tenxbraindata\n\nname: bioconductor-tenxbraindata\ndescription: Access and explore the 1.3 million mouse brain cell scRNA-seq dataset from 10X Genomics. Use this skill to download the data as a SingleCellExperiment object, perform memory-efficient analysis using HDF5-backed DelayedArrays, and implement parallelized chunk-wise processing for large-scale single-cell data.\n\n# bioconductor-tenxbraindata\n\n## Overview\n\nThe `TENxBrainData` package provides a Bioconductor resource for the 1.3 million mouse brain cell single-cell RNA-seq dataset. To manage the massive scale of this data (28k genes x 1.3M cells), the package utilizes `HDF5Array` and `DelayedArray` frameworks. This allows the count matrix to remain on disk in HDF5 format, loading only specific subsets into memory as needed, which prevents memory exhaustion on standard machines.\n\n## Loading the Data\n\nThe primary entry point is the `TENxBrainData()` function, which retrieves the data via `ExperimentHub`.\n\n```r\nlibrary(TENxBrainData)\n\n# Downloads (first time) and loads the dataset\ntenx <- TENxBrainData()\n\n# Inspect the SingleCellExperiment object\ntenx\n```\n\nThe resulting object contains:\n- **Assays**: A `counts` matrix (DelayedMatrix).\n- **rowData**: Ensembl IDs and Gene Symbols.\n- **colData**: Barcodes, Sequence, Library, and Mouse identifiers.\n\n## Memory Management and Performance\n\nBecause the data is stored on disk, standard operations can be slow if the data is read multiple times.\n\n### Increasing Block Size\nTo speed up processing, increase the `DelayedArray` block size to utilize more available RAM for disk-to-memory transfers.\n\n```r\noptions(DelayedArray.block.size = 2e9) # Use 2 GB for loading chunks\n```\n\n### Efficient Chunk-wise Processing\nAvoid calling `colSums()` or `rowMeans()` directly on the full 1.3M cell matrix for complex operations. Instead, iterate through the data in chunks.\n\n```r\n# Example: Calculate library sizes for a subset (e.g., first 20k cells)\ntenx20k <- tenx[, 1:20000]\nchunksize <- 5000\ncidx <- snow::splitIndices(ncol(tenx20k), ncol(tenx20k) / chunksize)\n\nlib.sizes <- numeric(ncol(tenx20k))\nfor (i in cidx) {\n    # Load specific chunk into memory as a dense matrix\n    m <- as.matrix(counts(tenx20k)[, i, drop = FALSE])\n    lib.sizes[i] <- colSums(m)\n}\n```\n\n## Parallel Computation\n\nUse `BiocParallel` to process chunks in parallel. This is highly recommended for calculating statistics across the entire 1.3M cell dataset.\n\n```r\nlibrary(BiocParallel)\n\n# Setup parallel workers\nregister(SnowParam(workers = 5))\n\n# Define an iterator for column ranges\niterator <- function(tenx, cols_per_chunk = 5000) {\n    start <- seq(1, ncol(tenx), by = cols_per_chunk)\n    end <- c(tail(start, -1) - 1L, ncol(tenx))\n    i <- 0L\n    function() {\n        if (i == length(start)) return(NULL)\n        i <<- i + 1L\n        c(start[i], end[i])\n    }\n}\n\n# Define the worker function\nworker_fun <- function(crng, counts) {\n    library(TENxBrainData)\n    m <- as.matrix(counts[, seq(crng[1], crng[2])])\n    list(n = colSums(m != 0), sum = colSums(m))\n}\n\n# Execute parallel iteration\nresults <- bpiterate(ITER = iterator(tenx), FUN = worker_fun, counts = counts(tenx))\n```\n\n## Accessing Raw HDF5 Components\n\nIf you need to bypass the `SingleCellExperiment` wrapper to work with the sparse HDF5 data directly (e.g., using `data.table` for speed):\n\n```r\nlibrary(ExperimentHub)\nhub <- ExperimentHub()\nfname <- hub[[\"EH1039\"]] # HDF5 file path\n\n# List HDF5 structure\nrhdf5::h5ls(fname)\n\n# Read specific pointers (e.g., indptr for sparse format)\nindptr <- rhdf5::h5read(fname, \"/mm10/indptr\", start = 1, count = 1001)\n```\n\n## Reference documentation\n- [Exploring the 1.3 million brain cell scRNA-seq data from 10X Genomics](./references/TENxBrainData.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tenxbraindata",
+    "description": "This package provides access to the 1.3 million mouse brain cell scRNA-seq dataset from 10X Genomics for memory-efficient analysis. Use when user asks to download the 1.3 million mouse brain dataset, perform memory-efficient analysis using HDF5-backed DelayedArrays, or implement parallelized chunk-wise processing for large-scale single-cell data.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/TENxBrainData.html"
+  }
+}

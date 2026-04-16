@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-pdatk",
+  "category": "bioconductor",
+  "name": "bioconductor-pdatk",
+  "description": "This package provides a framework for survival analysis and risk prediction in pancreatic cancer using transcriptomic biomarkers. Use when user asks to perform survival analysis, build PCOSP models, conduct permutation testing, or compare molecular classifiers with clinical models.",
+  "overview": "PDATK is a Bioconductor package designed for estimating patient risk in Pancreatic Ductal Adenocarcinoma (PDAC) using transcriptomic biomarkers. It provides a standardized framework for survival analysis by wrapping molecular data and survival metadata into specialized S4 classes. The package facilitates the creation of ensemble classifiers (PCOSP), permutation-based validation, and meta-analysis comparisons between genomic signatures and clinical variables.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PDATK.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/bhklab/PDATK",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PDATK"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PDATK.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/bhklab/PDATK",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-pdatk\n\nname: bioconductor-pdatk\ndescription: Expert guidance for the PDATK (Pancreatic Ductal Adenocarcinoma ToolKit) R package. Use this skill to perform survival analysis, build Pancreatic Cancer Overall Survival Predictor (PCOSP) models, conduct permutation testing (RLS/RGA models), and compare molecular classifiers with clinical models.\n\n# bioconductor-pdatk\n\n## Overview\nPDATK is a Bioconductor package designed for estimating patient risk in Pancreatic Ductal Adenocarcinoma (PDAC) using transcriptomic biomarkers. It provides a standardized framework for survival analysis by wrapping molecular data and survival metadata into specialized S4 classes. The package facilitates the creation of ensemble classifiers (PCOSP), permutation-based validation, and meta-analysis comparisons between genomic signatures and clinical variables.\n\n## Core Data Structures\nThe package relies on three primary S4 classes:\n- **SurvivalExperiment**: Extends `SummarizedExperiment`. Requires `colData` columns for `survival_time` (days) and `event_occurred` (binary status).\n- **CohortList**: A container for multiple `SurvivalExperiment` objects, often used to group training and validation cohorts.\n- **SurvivalModel**: A class that holds training data, model parameters, and eventually the trained model, validation statistics, and validation data.\n\n## Typical Workflow\n\n### 1. Data Preparation\nLoad your data into `SurvivalExperiment` objects and group them into a `CohortList`.\n```R\nlibrary(PDATK)\n# Create SurvivalExperiment\nse <- SurvivalExperiment(assays=SimpleList(rna=assay_matrix),\n                         colData=clinical_df,\n                         survival_time='os_days',\n                         event_occurred='os_status')\n\n# Create CohortList\ncohorts <- CohortList(list(Study1=se1, Study2=se2), mDataTypes=c('rna_seq', 'rna_micro'))\n\n# Pre-processing: Find common genes and drop non-informative patients\ncommonGenes <- findCommonGenes(cohorts)\ncohorts <- subset(cohorts, subset=commonGenes)\ncohorts <- dropNotCensored(cohorts)\n```\n\n### 2. Building and Training a PCOSP Model\nThe PCOSP model uses an ensemble of binary classifiers (KTSP) to predict survival.\n```R\n# Initialize model\npcosp_model <- PCOSP(training_cohorts, minDaysSurvived=365, randomSeed=1987)\n\n# Train model (numModels should be >= 1000 for production)\ntrained_model <- trainModel(pcosp_model, numModels=15, minAccuracy=0.6)\n```\n\n### 3. Prediction and Validation\nApply the trained model to validation cohorts to generate risk scores and assess performance.\n```R\n# Predict risk scores (PCOSP_prob_good)\npred_cohorts <- predictClasses(validation_cohorts, model=trained_model)\n\n# Validate and calculate statistics (AUC, D-index, C-index)\nvalidated_model <- validateModel(trained_model, valData=pred_cohorts)\n\n# Access statistics\nstats <- validationStats(validated_model)\n```\n\n### 4. Model Comparison and Visualization\nCompare the PCOSP model against clinical models or existing signatures (GeneFu).\n```R\n# Clinical Model\nclin_model <- ClinicalModel(train_se, formula='prognosis ~ age + sex + grade')\ntrained_clin <- trainModel(clin_model)\nval_clin <- validateModel(trained_clin, predictClasses(val_cohorts, model=trained_clin))\n\n# Compare and Plot\ncomparison <- compareModels(validated_model, val_clin)\nforestPlot(comparison, stat='concordance_index')\n```\n\n## Permutation Testing\nTo ensure model performance is better than random chance, use:\n- **RLSModel**: Random Label Shuffling (shuffles prognosis labels).\n- **RGAModel**: Random Gene Assignment (shuffles gene labels).\nUse `densityPlotModelComparison()` to visualize the PCOSP model's performance against these null distributions.\n\n## Pathway Analysis\nExtract top features from a validated model and run Gene Set Enrichment Analysis:\n```R\ntop_genes <- getTopFeatures(validated_model, numModels=10)\n# Requires geneSets data.table (e.g., from msigdbr)\ngsea_results <- runGSEA(validated_model, geneSets)\n```\n\n## Reference documentation\n- [PCOSP: Pancreatic Cancer Overall Survival Predictor](./references/PCOSP_model_analysis.md)\n- [An Introduction to PDATK Classes and Methods](./references/PDATK_introduction.md)\n- [PCOSP Model Analysis Source](./references/PCOSP_model_analysis.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-pdatk",
+    "description": "This package provides a framework for survival analysis and risk prediction in pancreatic cancer using transcriptomic biomarkers. Use when user asks to perform survival analysis, build PCOSP models, conduct permutation testing, or compare molecular classifiers with clinical models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PDATK.html"
+  }
+}

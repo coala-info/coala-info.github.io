@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-slinky",
+  "category": "bioconductor",
+  "name": "bioconductor-slinky",
+  "description": "The slinky package provides a streamlined interface for analyzing LINCS L1000 transcriptional data by integrating local expression files with the clue.io API. Use when user asks to query the clue.io API, load GCTX expression data into SummarizedExperiment objects, or perform differential expression analysis using the characteristic direction method on L1000 datasets.",
+  "overview": "The `slinky` package provides a streamlined interface for working with the Library of Integrated Network-Based Cellular Signatures (LINCS) L1000 dataset. It simplifies the complex task of integrating three disparate resources: large HDF5-based expression files (.gctx), tab-delimited metadata (.info), and the clue.io web API. It is designed to handle the 1.3 million+ instances of the L1000 dataset efficiently by using disk-backed access via `rhdf5`, allowing for sophisticated queries and differen",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/slinky.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "slinky"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/slinky.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-slinky\n\nname: bioconductor-slinky\ndescription: Expert guidance for the Bioconductor R package 'slinky' to analyze LINCS L1000 transcriptional data. Use this skill when you need to query the clue.io API, filter metadata, load GCTX expression data, identify same-plate controls, or perform differential expression analysis (characteristic direction) on L1000 datasets.\n\n# bioconductor-slinky\n\n## Overview\nThe `slinky` package provides a streamlined interface for working with the Library of Integrated Network-Based Cellular Signatures (LINCS) L1000 dataset. It simplifies the complex task of integrating three disparate resources: large HDF5-based expression files (.gctx), tab-delimited metadata (.info), and the clue.io web API. It is designed to handle the 1.3 million+ instances of the L1000 dataset efficiently by using disk-backed access via `rhdf5`, allowing for sophisticated queries and differential expression analysis without requiring massive RAM.\n\n## Core Workflow\n\n### 1. Initialization\nTo use `slinky`, you need a clue.io API key and paths to the L1000 data files.\n\n```r\nlibrary(slinky)\n# Define paths and key\nkey <- \"YOUR_API_KEY\" \ngctx <- \"path/to/data.gctx\"\ninfo <- \"path/to/metadata.txt\"\n\n# Initialize the Slinky object\nsl <- Slinky(key, gctx, info)\n```\n\n### 2. Data Selection and Querying\nYou can identify instances (samples) using local metadata or the clue.io API.\n\n*   **Local Metadata:** Access the `metadata(sl)` slot. Subsetting the `Slinky` object is faster than subsetting the loaded data.\n    ```r\n    col.ix <- which(metadata(sl)$pert_iname == \"amoxicillin\" & metadata(sl)$cell_id == \"MCF7\")\n    sl_subset <- sl[, col.ix]\n    ```\n*   **API Querying:** Use `clueInstances` for complex filters (e.g., \"gold\" status).\n    ```r\n    # Find gold-standard amoxicillin instances\n    ids <- clueInstances(sl, where_clause = list(pert_type = \"trt_cp\", \n                                                 pert_iname = \"amoxicillin\", \n                                                 is_gold = TRUE))\n    ```\n\n### 3. Loading Data\nConvert selected instances into standard Bioconductor objects.\n\n*   **SummarizedExperiment:** The preferred way to load data with annotations.\n    ```r\n    # Load specific IDs with controls automatically identified\n    se <- loadL1K(sl, ids = ids, controls = TRUE)\n    \n    # Load only landmark genes (first 978 rows)\n    se_landmark <- loadL1K(sl, ids = ids, inferred = FALSE)\n    ```\n\n### 4. Differential Expression (Characteristic Direction)\nThe `diffexp` function automates the identification of same-plate controls and calculates the \"characteristic direction\" vector.\n\n```r\n# Calculate differential expression for a perturbagen\ncd_vector <- diffexp(sl, treat = \"amoxicillin\", split_by_plate = FALSE)\n\n# Analysis split by plate (returns a matrix)\ncd_matrix <- diffexp(sl, treat = \"E2F3\", \n                     where_clause = list(pert_type = \"trt_sh\", cell_id = \"MCF7\"), \n                     split_by_plate = TRUE)\n```\n\n## Key Functions\n- `Slinky()`: Constructor for the Slinky object.\n- `loadL1K()`: High-level function to fetch data and metadata into a `SummarizedExperiment`.\n- `clueInstances()`: Query the clue.io API for specific instance IDs.\n- `clueVehicle()` / `controls()`: Identify appropriate control instances (e.g., DMSO) for treated samples.\n- `readGCTX()`: Low-level reading of the GCTX HDF5 file.\n- `diffexp()`: Performs differential expression using the characteristic direction method.\n- `download()`: Utility to fetch L1000 expression or info files.\n\n## Tips and Best Practices\n- **Memory Efficiency:** Always subset the `Slinky` object (e.g., `sl[rows, cols]`) before calling `readGCTX` or `as(sl, \"SummarizedExperiment\")` to avoid loading the entire dataset into RAM.\n- **Landmark Genes:** The first 978 rows of a standard LINCS GCTX file are the measured \"landmark\" genes; the rest are computationally inferred.\n- **Batch Effects:** L1000 data is highly susceptible to plate-based batch effects. Always use same-plate controls (via `controls = TRUE` in `loadL1K` or using `diffexp`) when possible.\n- **API Syntax:** When querying via `where_clause`, use Loopback framework syntax (e.g., `list(pert_iname = list(inq = c(\"drugA\", \"drugB\")))` for \"IN\" queries).\n\n## Reference documentation\n- [LINCS analysis with slinky](./references/LINCS-analysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-slinky",
+    "description": "The slinky package provides a streamlined interface for analyzing LINCS L1000 transcriptional data by integrating local expression files with the clue.io API. Use when user asks to query the clue.io API, load GCTX expression data into SummarizedExperiment objects, or perform differential expression analysis using the characteristic direction method on L1000 datasets.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/slinky.html"
+  }
+}

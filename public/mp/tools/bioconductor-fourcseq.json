@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-fourcseq",
+  "category": "bioconductor",
+  "name": "bioconductor-fourcseq",
+  "description": "This tool analyzes 4C-seq data to identify chromatin interactions and detect differential interactions between experimental conditions. Use when user asks to analyze 4C-seq data, generate fragment libraries, count reads at fragment ends, calculate Z-scores for interaction detection, or perform differential interaction analysis.",
+  "overview": "FourCSeq is a specialized Bioconductor package for the analysis of 4C-seq data. It manages the complex workflow of in-silico genome digestion, mapping reads to specific restriction fragment ends, and applying statistical models to identify significant chromatin interactions. It integrates with `SummarizedExperiment` and `DESeq2` for robust statistical testing of differential interactions across multiple experimental conditions.",
+  "homepage": "https://bioconductor.org/packages/3.12/bioc/html/FourCSeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fourcseq/overview",
+  "github": "N/A",
+  "conda_downloads": "42.7K",
+  "conda_downloads_num": 42700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "FourCSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.12/bioc/html/FourCSeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-fourcseq/overview",
+    "github": "N/A",
+    "conda_downloads": "42.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-fourcseq\n\nname: bioconductor-fourcseq\ndescription: Analysis of 4C (Circularized Chromosome Conformation Capture) sequencing data to detect DNA element interactions and differential interactions between conditions. Use this skill when analyzing 4C-seq data starting from BAM files, including fragment library generation, read counting at fragment ends, Z-score calculation for interaction detection, and differential analysis using DESeq2-based methods.\n\n## Overview\nFourCSeq is a specialized Bioconductor package for the analysis of 4C-seq data. It manages the complex workflow of in-silico genome digestion, mapping reads to specific restriction fragment ends, and applying statistical models to identify significant chromatin interactions. It integrates with `SummarizedExperiment` and `DESeq2` for robust statistical testing of differential interactions across multiple experimental conditions.\n\n## Core Workflow\n\n### 1. Initialization\nCreate a `FourC` object by defining metadata (paths and enzyme sequences) and colData (sample information).\n\n```r\nlibrary(FourCSeq)\n\nmetadata <- list(\n  projectPath = \"project_dir\",\n  fragmentDir = \"re_fragments\",\n  referenceGenomeFile = \"path/to/genome.fa\",\n  reSequence1 = \"GATC\", # First restriction enzyme\n  reSequence2 = \"CATG\", # Second restriction enzyme\n  primerFile = \"path/to/primers.fa\",\n  bamFilePath = \"path/to/bam_files\"\n)\n\ncolData <- DataFrame(\n  viewpoint = \"vp1\",\n  condition = factor(c(\"cond1\", \"cond1\", \"cond2\", \"cond2\")),\n  replicate = c(1, 2, 1, 2),\n  bamFile = c(\"s1.bam\", \"s2.bam\", \"s3.bam\", \"s4.bam\"),\n  sequencingPrimer = \"first\" # \"first\" or \"second\" cutter side\n)\n\nfc <- FourC(colData, metadata)\n```\n\n### 2. Fragment Reference and Viewpoints\nGenerate the in-silico digestion and locate the viewpoint fragments.\n\n```r\nfc <- addFragments(fc)\nfindViewpointFragments(fc)\nfc <- addViewpointFrags(fc)\n```\n\n### 3. Counting and Smoothing\nCount reads mapping to fragment ends. Use `trim` to remove restriction site sequences if they are still present in the BAM reads.\n\n```r\n# Count reads at fragment ends\nfc <- countFragmentOverlaps(fc, trim = 4, minMapq = 30)\nfc <- combineFragEnds(fc)\n\n# Optional: Smooth counts for visualization\nfc <- smoothCounts(fc)\n\n# Export tracks\nwriteTrackFiles(fc, format = \"bw\")\n```\n\n### 4. Detecting Interactions (Z-scores)\nIdentify significant interactions within samples by fitting the decay of 4C signal over distance.\n\n```r\n# Calculate Z-scores\nfcf <- getZScores(fc)\n\n# Call peaks (interactions)\n# Requires z-score > 3 in both replicates and FDR < 0.01 in at least one\nfcf <- addPeaks(fcf, zScoreThresh = 3, fdrThresh = 0.01)\n\n# Visualize fits and Z-scores\nplotFits(fcf[,1])\nplotZScores(fcf[,1:2], txdb = TxDb.Dmelanogaster.UCSC.dm3.ensGene)\n```\n\n### 5. Differential Interactions\nCompare interaction frequencies between conditions using `getDifferences`.\n\n```r\n# referenceCondition defines the baseline for log2 fold changes\nfcf <- getDifferences(fcf, referenceCondition = \"cond1\")\n\n# Extract results\nres <- getAllResults(fcf)\n\n# Visualize differences\nplotDifferences(fcf, txdb = TxDb.Dmelanogaster.UCSC.dm3.ensGene)\n```\n\n## Key Functions and Data Structures\n- `FourC`: Constructor for the main data object.\n- `addFragments`: Performs in-silico digestion of the reference genome.\n- `countFragmentOverlaps`: Assigns BAM reads to fragment ends based on orientation.\n- `getZScores`: Fits the distance-dependent decay and calculates Z-scores for interaction detection.\n- `getDifferences`: Uses DESeq2 framework to test for differential interactions between conditions.\n- `assays(fc)`: Access count matrices (`counts`, `countsLeftFragmentEnd`, `countsRightFragmentEnd`).\n\n## Tips for Success\n- **Enzyme Sequences**: Ensure `reSequence1` is the cutter used for the initial circularization and `reSequence2` is the secondary cutter.\n- **Primer Orientation**: The `sequencingPrimer` column in `colData` is critical; it tells the package which end of the fragment the reads originate from.\n- **Filtering**: `getZScores` filters fragments with low median counts (default 40). Adjust this if your library depth is low.\n- **Visualization**: Use `plotScatter` to check reproducibility between replicates before proceeding to differential analysis.\n\n## Reference documentation\n- [FourCSeq analysis workflow](./references/FourCSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-fourcseq",
+    "description": "This tool analyzes 4C-seq data to identify chromatin interactions and detect differential interactions between experimental conditions. Use when user asks to analyze 4C-seq data, generate fragment libraries, count reads at fragment ends, calculate Z-scores for interaction detection, or perform differential interaction analysis.",
+    "homepage": "https://bioconductor.org/packages/3.12/bioc/html/FourCSeq.html"
+  }
+}

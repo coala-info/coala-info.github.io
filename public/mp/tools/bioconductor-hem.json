@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-hem",
+  "category": "bioconductor",
+  "name": "bioconductor-hem",
+  "description": "This tool fits the Heterogeneous Error Model to identify differentially expressed genes in microarray data while accounting for biological and experimental error variances. Use when user asks to identify differentially expressed genes, analyze microarray data with multiple error layers, or estimate false discovery rates using Bayesian hierarchical models.",
+  "overview": "The `HEM` package implements a Bayesian hierarchical error model designed to identify differentially expressed genes while accounting for heterogeneous error variances across genes and conditions. It is particularly effective for microarray datasets with a small number of replicates. The package decomposes error into experimental and biological components (two-layer) or a single total error term (one-layer) and uses Markov Chain Monte Carlo (MCMC) for parameter estimation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/HEM.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hem/overview",
+  "github": "N/A",
+  "conda_downloads": "42.7K",
+  "conda_downloads_num": 42700,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "HEM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HEM.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-hem/overview",
+    "github": "N/A",
+    "conda_downloads": "42.7K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-hem\n\nname: bioconductor-hem\ndescription: Fits the Heterogeneous Error Model (HEM) to identify differentially expressed genes in microarray data. Use this skill when analyzing gene expression data with multiple biological conditions and either one layer (biological/experimental confounded) or two layers (separate biological and experimental replicates) of error.\n\n# bioconductor-hem\n\n## Overview\n\nThe `HEM` package implements a Bayesian hierarchical error model designed to identify differentially expressed genes while accounting for heterogeneous error variances across genes and conditions. It is particularly effective for microarray datasets with a small number of replicates. The package decomposes error into experimental and biological components (two-layer) or a single total error term (one-layer) and uses Markov Chain Monte Carlo (MCMC) for parameter estimation.\n\n## Core Workflow\n\n### 1. Data Preparation and Preprocessing\nData should be a matrix or data frame where rows are genes and columns are replicates.\n\n```r\nlibrary(HEM)\ndata(pbrain) # Example dataset\n\n# Preprocess: IQR normalization and log2-transformation\npbrain.nor <- hem.preproc(pbrain[, 2:13])\n```\n\n### 2. Defining the Design Matrix\nThe design matrix is critical for mapping columns to conditions and replicates.\n\n- **Two-layer HEM:** Requires 3 columns: `[Condition, Biological Replicate, Experimental Replicate]`.\n- **One-layer HEM:** Requires 2 columns: `[Condition, Replicate]`.\n\n```r\n# Example for Two-layer\ncond <- c(1,1,1,1,1,1,2,2,2,2,2,2)\nind  <- c(1,1,2,2,3,3,1,1,2,2,3,3)\nrep  <- c(1,2,1,2,1,2,1,2,1,2,1,2)\ndesign <- data.frame(cond, ind, rep)\n```\n\n### 3. Empirical Bayes (EB) Prior Specification (Optional)\nFor datasets with few replicates, use EB priors to improve variance estimation.\n\n```r\n# Calculate EB priors\n# method.var.e: \"neb\" (nonparametric), \"peb\" (parametric), or \"gam\" (gamma)\npbrain.eb <- hem.eb.prior(pbrain.nor, n.layer=2, design=design,\n                          method.var.e=\"neb\", method.var.b=\"peb\")\n```\n\n### 4. Fitting the Model\nThe `hem` function performs the MCMC sampling and calculates H-scores (the statistic for differential expression).\n\n```r\n# Fit model using EB priors calculated above\npbrain.hem <- hem(pbrain.nor, n.layer=2, design=design,\n                  method.var.e=\"neb\", method.var.b=\"peb\",\n                  var.e=pbrain.eb$var.e, var.b=pbrain.eb$var.b)\n\n# Access H-scores\nh_scores <- pbrain.hem$H\n```\n\n### 5. False Discovery Rate (FDR) Evaluation\nDetermine significance thresholds using resampling-based FDR estimates.\n\n```r\npbrain.fdr <- hem.fdr(pbrain.nor, n.layer=2, design=design,\n                      hem.out=pbrain.hem, eb.out=pbrain.eb)\n\n# View critical values for target FDRs\nprint(pbrain.fdr$targets)\n\n# Plot FDR curve\nplot(pbrain.fdr$fdr)\n```\n\n## Function Reference\n\n- `hem()`: Main fitting function. Parameters include `burn.ins` (default 1000) and `n.samples` (default 3000).\n- `hem.eb.prior()`: Estimates prior variances. `q` (default 0.01) sets the gene bin size for pooling.\n- `hem.fdr()`: Calculates FDR by generating null data via resampling.\n- `hem.preproc()`: Utility for normalization and log-transformation.\n\n## Key Parameters for `hem()`\n- `n.layer`: `1` for confounded error, `2` for separate biological/experimental error.\n- `method.var.*`: Set to `\"gam\"` for standard Gamma priors, `\"peb\"` for parametric EB, or `\"neb\"` for nonparametric EB.\n- `var.g`, `var.c`, `var.r`: Variance priors for gene, condition, and interaction effects (default is 1).\n\n## Reference documentation\n- [HEM](./references/HEM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-hem",
+    "description": "This tool fits the Heterogeneous Error Model to identify differentially expressed genes in microarray data while accounting for biological and experimental error variances. Use when user asks to identify differentially expressed genes, analyze microarray data with multiple error layers, or estimate false discovery rates using Bayesian hierarchical models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/HEM.html"
+  }
+}

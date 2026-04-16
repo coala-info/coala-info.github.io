@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-plrs",
+  "category": "bioconductor",
+  "name": "bioconductor-plrs",
+  "description": "This tool models the association between DNA copy number and gene expression using piecewise linear regression splines. Use when user asks to model cis-relationships between genomic data, perform model selection using OSAIC, test association strength via likelihood ratio tests, or generate confidence bands for genomic regressions.",
+  "overview": "The `plrs` package implements piecewise linear regression splines to model the relationship between DNA copy number (aCGH) and mRNA expression. It is specifically designed to handle the discrete nature of copy number states (loss, normal, gain, amplification) while allowing for continuous relationships within and across those states.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/plrs.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "plrs"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/plrs.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-plrs\n\nname: bioconductor-plrs\ndescription: Analysis of the association between DNA copy number and gene expression using Piecewise Linear Regression Splines (PLRS). Use this skill to model cis-relationships, perform model selection (OSAIC), test association strength via likelihood ratio tests, and generate uniform confidence bands for genomic data.\n\n## Overview\n\nThe `plrs` package implements piecewise linear regression splines to model the relationship between DNA copy number (aCGH) and mRNA expression. It is specifically designed to handle the discrete nature of copy number states (loss, normal, gain, amplification) while allowing for continuous relationships within and across those states.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package expects gene expression data (typically an `ExpressionSet`) and copy number data (typically a `cghCall` object). Features must be matched by genomic location before analysis.\n\n```r\nlibrary(plrs)\n# Load example data\ndata(neveCN17)\ndata(neveGE17)\n\n# Extract data for a single gene\nidx <- which(fData(neveGE17)$Symbol == \"PITPNA\")[1]\nrna <- exprs(neveGE17)[idx,]\ncghseg <- segmented(neveCN17)[idx,]\ncghcall <- calls(neveCN17)[idx,]\n\n# Extract posterior probabilities for knots\nprobloss <- probloss(neveCN17)[idx,]\nprobnorm <- probnorm(neveCN17)[idx,]\nprobgain <- probgain(neveCN17)[idx,]\nprobamp <- probamp(neveCN17)[idx,]\n```\n\n### 2. Single Relationship Analysis\nUse `plrs()` to fit the model. By default, it applies inequality constraints to ensure biological plausibility (e.g., non-negative slopes).\n\n```r\n# Fit the model\nmodel <- plrs(rna, cghseg, cghcall, probloss, probnorm, probgain, probamp)\n\n# Model Selection (using OSAIC for constrained models)\nmodelSelection <- plrs.select(model)\nselectedModel <- modelSelection@model\n\n# Testing Association (Likelihood Ratio Test)\n# Note: Test should be performed on the full model for correct inference\nmodelTest <- plrs.test(model, alpha = 0.05)\n\n# Confidence Bands\nmodelCB <- plrs.cb(modelTest, alpha = 0.05)\n\n# Visualization\nplot(modelCB)\n```\n\n### 3. High-Throughput Screening\nFor analyzing multiple genes simultaneously, use `plrs.series()`.\n\n```r\n# Screen first 200 genes\n# control.select=NULL skips model selection for speed\nresults <- plrs.series(neveGE17[1:200,], neveCN17[1:200,])\n\n# View summary of rejected null hypotheses\nsummary(results)\n\n# Access results\nhead(results@test)         # P-values and statistics\nhead(results@coefficients) # Spline coefficients\n```\n\n## Key Parameters and Constraints\n\n- **min.obs**: Minimum samples per state (default is 3). Use `modify.conf()` or the `min.obs` argument in `plrs()` to merge or discard states with insufficient data.\n- **continuous**: If `FALSE` (default), allows state-specific intercepts (discontinuities).\n- **constr.slopes**: \n    - `1`: All slopes non-negative.\n    - `2` (default): Normal state slope non-negative; others $\\ge$ normal slope.\n- **OSAIC**: The preferred selection criterion for constrained models.\n\n## Tips for Success\n\n- **Identifiability**: Always check the number of observations per copy number state using `table(cghcall)`. If a state has fewer than 3 observations, the model cannot be fit without merging or discarding that state.\n- **Inference**: For statistically valid p-values and confidence bands, ensure you pass the full model (or an object where `@selected` is `TRUE`) to `plrs.test()` and `plrs.cb()`.\n- **Input Objects**: While `plrs.series` accepts `ExpressionSet` and `cghCall` objects directly, the single-gene `plrs()` function requires extracted vectors and probability matrices.\n\n## Reference documentation\n- [PLRS: Piecewise Linear Regression Splines for the association between DNA copy number and gene expression](./references/plrs_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-plrs",
+    "description": "This tool models the association between DNA copy number and gene expression using piecewise linear regression splines. Use when user asks to model cis-relationships between genomic data, perform model selection using OSAIC, test association strength via likelihood ratio tests, or generate confidence bands for genomic regressions.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/plrs.html"
+  }
+}

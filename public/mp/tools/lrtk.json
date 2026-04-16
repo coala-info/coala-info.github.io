@@ -1,0 +1,56 @@
+{
+  "id": "lrtk",
+  "category": "CLI",
+  "name": "lrtk",
+  "description": "LRTK is a toolkit for processing and analyzing linked-read sequencing data from various platforms. Use when user asks to simulate linked-reads, correct barcodes, perform barcode-aware alignment, reconstruct DNA fragments, or detect genomic variants.",
+  "overview": "LRTK (Linked-Read ToolKit) is a versatile, platform-agnostic suite designed to handle the complexities of linked-read sequencing. Unlike standard NGS tools, LRTK utilizes barcode information to reconstruct long-range genomic information from short-read data. It supports a full workflow from raw FASTQ processing to structural variant detection and metagenome assembly, providing specialized algorithms for barcode-aware alignment and fragment reconstruction.",
+  "homepage": "https://github.com/ericcombiolab/LRTK",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/lrtk/overview",
+  "github": "https://github.com/ericcombiolab/LRTK",
+  "conda_downloads": "17.8K",
+  "conda_downloads_num": 17800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "lrtk_mkfq",
+      "lrtk_fqconver",
+      "lrtk_align",
+      "lrtk_rlf",
+      "lrtk_snv",
+      "lrtk_sv",
+      "lrtk_phase",
+      "lrtk_assembly",
+      "lrtk_wgs",
+      "lrtk_mwgs"
+    ],
+    "description": "No inputs — do not generate CWL.",
+    "docker_image": "quay.io/biocontainers/lrtk:2.0--pyh7cba7a3_0",
+    "homepage": "https://github.com/ericcombiolab/LRTK",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/lrtk/overview",
+    "github": "https://github.com/ericcombiolab/LRTK",
+    "conda_downloads": "17.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "lrtk_fqconver.cwl",
+    "lrtk_mwgs.cwl",
+    "lrtk_phase.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# lrtk\n\n## Overview\n\nLRTK (Linked-Read ToolKit) is a versatile, platform-agnostic suite designed to handle the complexities of linked-read sequencing. Unlike standard NGS tools, LRTK utilizes barcode information to reconstruct long-range genomic information from short-read data. It supports a full workflow from raw FASTQ processing to structural variant detection and metagenome assembly, providing specialized algorithms for barcode-aware alignment and fragment reconstruction.\n\n## Core Workflows and CLI Patterns\n\n### 1. Data Simulation (MKFQ)\nUse this to generate synthetic linked-reads for benchmarking or pipeline testing.\n- **Command**: `lrtk MKFQ -CF <config_dir> -IT <platform>`\n- **Platforms**: `10x`, `stLFR`.\n- **Tip**: Ensure the configuration directory contains the required diploid configuration files.\n\n### 2. Barcode Correction and Conversion (FQCONVER)\nEssential for preparing raw data for alignment, especially for TELL-Seq which requires an index file.\n- **Standard (10x/stLFR)**: `lrtk FQCONVER -I1 <R1.fq> -I2 <R2.fq> -IT <platform> -O1 <out1.fq> -O2 <out2.fq> -B <whitelist>`\n- **TELL-Seq**: Requires the `-ID` flag for the index FASTQ containing barcode sequences.\n- **Best Practice**: Always provide a barcode whitelist (`-B`) for 10x data to ensure high-quality correction.\n\n### 3. Barcode-Aware Alignment (ALIGN)\nMaps reads to a reference genome while preserving barcode associations.\n- **Command**: `lrtk ALIGN -FQ1 <R1.fq> -FQ2 <R2.fq> -R <ref.fa> -O <out.bam> -RG <RG_string> -P <platform> -A <aligner>`\n- **Aligners**: Supports `ema` and `lariat`.\n- **Read Groups**: The `-RG` string is mandatory (e.g., `'@RG\\tID:sample1\\tSM:sample1'`).\n\n### 4. Fragment Reconstruction (RLF)\nReconstructs the original long DNA fragments (read clouds) from aligned BAM files.\n- **Command**: `lrtk RLF -B <input.bam> -D <distance> -O <output_fragments>`\n- **Parameter Tip**: The `-D` (distance) parameter defines the seed extension limit. A common default for human genomes is `200000` (200kb).\n\n### 5. Variant Detection (SNV & SV)\nLRTK wraps several specialized callers to leverage linked-read data.\n- **Small Variants**: `lrtk SNV -B <input.bam> -R <ref.fa> -A <caller> -O <output.vcf>`\n  - Callers: `FreeBayes`, `Samtools`, or `GATK`.\n- **Structural Variants**: `lrtk SV -B <input.bam> -R <ref.fa> -A <caller> -O <output.vcf>`\n  - Callers: `Aquila`, `LinkedSV`, or `VALOR`.\n\n### 6. Automated Pipelines\nFor end-to-end analysis, use the wrapper commands:\n- **Human WGS**: `lrtk WGS [options]`\n- **Metagenomics**: `lrtk MWGS [options]`\n\n## Expert Tips and Best Practices\n\n- **Reference Preparation**: Ensure your reference FASTA is indexed with BWA and Samtools before running `ALIGN` or `SNV` modules.\n- **Memory Management**: Metagenome assembly (`ASSEMBLY`) and SV calling are resource-intensive. Ensure your environment has sufficient RAM for the specific caller (e.g., Aquila requires significant memory for assembly-based SV detection).\n- **Platform Specifics**: Always match the `-IT` (Input Type) or `-P` (Platform) flag to your specific library prep (10x, stLFR, or TELLSeq), as barcode structures differ significantly between them.\n- **Parallelization**: Use the `-T` flag across most modules to specify the number of threads for faster processing.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| lrtk | lrtk version 2.0 |\n| lrtk | lrtk version 2.0 |\n| lrtk | lrtk version 2.0 |\n\n## Reference documentation\n- [LRTK GitHub Repository Overview](./references/github_com_ericcombiolab_LRTK.md)\n- [LRTK README and Usage Guide](./references/github_com_ericcombiolab_LRTK_blob_main_README.md)\n- [LRTK Bioconda Package Information](./references/anaconda_org_channels_bioconda_packages_lrtk_overview.md)",
+  "skill_front_matter": {
+    "name": "lrtk",
+    "description": "LRTK is a toolkit for processing and analyzing linked-read sequencing data from various platforms. Use when user asks to simulate linked-reads, correct barcodes, perform barcode-aware alignment, reconstruct DNA fragments, or detect genomic variants.",
+    "homepage": "https://github.com/ericcombiolab/LRTK"
+  }
+}

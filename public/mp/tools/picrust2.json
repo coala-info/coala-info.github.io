@@ -1,0 +1,51 @@
+{
+  "id": "picrust2",
+  "category": "CLI",
+  "name": "picrust2",
+  "description": "PICRUSt2 predicts the functional potential of microbial communities by mapping marker gene sequences to reference genomes and inferring metabolic pathway abundances. Use when user asks to estimate metagenome content from 16S rRNA data, predict functional profiles of microbial samples, or add human-readable descriptions to predicted gene families and pathways.",
+  "overview": "PICRUSt2 (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a bioinformatics toolset that estimates the functional potential of a microbial community based on marker gene sequences. It functions by placing user-provided sequences into a reference phylogenetic tree, predicting the genomic content of those sequences using hidden-state prediction, and then normalizing these predictions by marker gene copy number to produce estimated metagenomes and pathway abundan",
+  "homepage": "https://github.com/picrust/picrust2",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/picrust2/overview",
+  "github": "https://github.com/picrust/picrust2",
+  "conda_downloads": "61.9K",
+  "conda_downloads_num": 61900,
+  "last_updated": "2026-02-20",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "picrust2_picrust2_pipeline.py",
+      "picrust2_add_descriptions.py",
+      "picrust2_place_seqs.py",
+      "picrust2_hsp.py"
+    ],
+    "description": "Wrapper for full PICRUSt2 pipeline to be run with two different domains. This is intended for use with the new separate bacteria and archaea trees and reference trait tables. Run sequence placement with EPA-NG and GAPPA to place study sequences (i.e. OTUs and ASVs) into a reference tree. Then runs hidden-state prediction with the castor R package to predict NSTI and marker gene copy number for each study sequence. The domain that best fits each study sequence will then be chosen and hidden-state prediction with the castor R package will be used to predict traits for each genome. Predicted traits for all genomes are combined for both domains Metagenome profiles are then generated, which can be optionally stratified by the contributing sequence. Finally, pathway abundances are predicted based on metagenome profiles. By default, output files include predictions for Enzyme Commission (EC) numbers, KEGG Orthologs (KOs), and MetaCyc pathway abundances. However, this script enables users to use custom reference and trait tables to customize analyses. If you wish to run the previous version of PICRUSt2 (i.e. a single reference for all prokaryotes, please use the picrust2_pipeline.py script. This version was designed for running the separate bacterial and archaeal trees, but could be used for any two domains. If you know that your study sequences only contain bacteria, or only contain archaea, you may wish to run the picrust2_pipeline.py script but specifying bacteria/archaea as the reference database to use.",
+    "docker_image": "quay.io/biocontainers/picrust2:2.6.3--pyhdfd78af_1",
+    "homepage": "https://github.com/picrust/picrust2",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/picrust2/overview",
+    "github": "https://github.com/picrust/picrust2",
+    "conda_downloads": "61.9K",
+    "last_updated": "2026-02-20",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "picrust2_add_descriptions.py.cwl",
+    "picrust2_hsp.py.cwl",
+    "picrust2_picrust2_pipeline.py.cwl",
+    "picrust2_place_seqs.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# picrust2\n\n## Overview\n\nPICRUSt2 (Phylogenetic Investigation of Communities by Reconstruction of Unobserved States) is a bioinformatics toolset that estimates the functional potential of a microbial community based on marker gene sequences. It functions by placing user-provided sequences into a reference phylogenetic tree, predicting the genomic content of those sequences using hidden-state prediction, and then normalizing these predictions by marker gene copy number to produce estimated metagenomes and pathway abundances.\n\n## Core Workflow and CLI Patterns\n\n### 1. Running the Full Pipeline\nThe most common entry point is the wrapper script which executes sequence placement, hidden-state prediction, metagenome prediction, and pathway inference in one command.\n\n```bash\npicrust2_pipeline.py -s study_seqs.fna -i study_table.biom -o picrust2_out -p 4\n```\n- `-s`: FASTA file of representative sequences (ASVs or OTUs).\n- `-i`: Abundance table (BIOM or TSV format).\n- `-o`: Output directory.\n- `-p`: Number of processes/cores to use.\n\n### 2. Adding Functional Descriptions\nOutput tables often contain only IDs (e.g., K00001). Use `add_descriptions.py` to append human-readable names.\n\n```bash\n# For KEGG Orthologs (KO)\nadd_descriptions.py -i KO_metagenome_out/pred_metagenome_unstrat.tsv.gz -m KO \\\n                    -o KO_metagenome_out/pred_metagenome_unstrat_descrip.tsv.gz\n\n# For MetaCyc Pathways\nadd_descriptions.py -i pathways_out/path_abun_unstrat.tsv.gz -m METACYC \\\n                    -o pathways_out/path_abun_unstrat_descrip.tsv.gz\n```\n\n### 3. Combining Domain-Specific Predictions\nWhen using the PICRUSt2-SC (Single-Cell) database, predictions for Bacteria and Archaea may be generated separately. Use `combine_domains.py` to merge them.\n\n```bash\ncombine_domains.py --table_dom1 bac_KO_predicted.tsv.gz \\\n                   --table_dom2 arc_KO_predicted.tsv.gz \\\n                   -o combined_KO_predicted.tsv.gz\n```\n\n## Expert Tips and Best Practices\n\n- **Input Quality**: Use Amplicon Sequence Variants (ASVs) from pipelines like DADA2 or Deblur rather than 97% OTUs for higher resolution and better phylogenetic placement.\n- **NSTI Values**: Always check the Weighted Nearest Sequenced Taxon Index (NSTI) values in the output. High NSTI values (e.g., > 0.15) indicate that the study sequences are distantly related to available reference genomes, making predictions less reliable.\n- **Stratification**: By default, PICRUSt2 produces \"unstratified\" outputs (total community function). Use the `--stratified` flag in the pipeline script if you need to know which specific ASVs are contributing to which predicted functions.\n- **Database Selection**: Ensure you are using the PICRUSt2-SC database for modern workflows, as it significantly expands the reference genome set compared to older versions.\n- **Sequence Placement**: If the default `epa-ng` placement fails or is too memory-intensive, consider using the `--placement_tool sepp` option.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| add_descriptions.py | Add descriptions to PICRUSt2 output files. |\n| hsp.py | Calculates the functional profile of a microbial community based on a phylogenetic tree and marker gene information. |\n| picrust2_pipeline.py | Wrapper for full PICRUSt2 pipeline to be run with two different domains. This is intended for use with the new separate bacteria and archaea trees and reference trait tables. Run sequence placement with EPA-NG and GAPPA to place study sequences (i.e. OTUs and ASVs) into a reference tree. Then runs hidden-state prediction with the castor R package to predict NSTI and marker gene copy number for each study sequence. The domain that best fits each study sequence will then be chosen and hidden-state prediction with the castor R package will be used to predict traits for each genome. Predicted traits for all genomes are combined for both domains Metagenome profiles are then generated, which can be optionally stratified by the contributing sequence. Finally, pathway abundances are predicted based on metagenome profiles. By default, output files include predictions for Enzyme Commission (EC) numbers, KEGG Orthologs (KOs), and MetaCyc pathway abundances. However, this script enables users to use custom reference and trait tables to customize analyses. If you wish to run the previous version of PICRUSt2 (i.e. a single reference for all prokaryotes, please use the picrust2_pipeline.py script. This version was designed for running the separate bacterial and archaeal trees, but could be used for any two domains. If you know that your study sequences only contain bacteria, or only contain archaea, you may wish to run the picrust2_pipeline.py script but specifying bacteria/archaea as the reference database to use. |\n| place_seqs.py | Place query sequences onto a reference tree and generate a new tree. |\n\n## Reference documentation\n- [Home](./references/github_com_picrust_picrust2_wiki.md)\n- [Full pipeline script](./references/github_com_picrust_picrust2_wiki_Full-pipeline-script.md)\n- [Add descriptions](./references/github_com_picrust_picrust2_wiki_Add-descriptions.md)\n- [Combine files from Hidden State Prediction](./references/github_com_picrust_picrust2_wiki_Combine-files-from-Hidden-State-Prediction-PICRUSt2_E2_80_90SC-database.md)\n- [How does PICRUSt2 work?](./references/github_com_picrust_picrust2_wiki_How-does-PICRUSt2-work_3F-What-does-it-do_3F.md)",
+  "skill_front_matter": {
+    "name": "picrust2",
+    "description": "PICRUSt2 predicts the functional potential of microbial communities by mapping marker gene sequences to reference genomes and inferring metabolic pathway abundances. Use when user asks to estimate metagenome content from 16S rRNA data, predict functional profiles of microbial samples, or add human-readable descriptions to predicted gene families and pathways.",
+    "homepage": "https://github.com/picrust/picrust2"
+  }
+}

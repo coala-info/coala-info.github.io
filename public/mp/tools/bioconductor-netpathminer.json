@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-netpathminer",
+  "category": "bioconductor",
+  "name": "bioconductor-netpathminer",
+  "description": "NetPathMiner constructs, processes, and mines genome-scale biological networks by integrating pathway data with experimental results. Use when user asks to convert pathway files into igraph objects, manage biological annotations, transform metabolic networks into gene-centric representations, or rank active biological paths using gene expression data.",
+  "overview": "NetPathMiner is an R/Bioconductor package designed for the construction, processing, and mining of genome-scale biological networks. It supports multiple pathway formats (KGML, SBML, BioPAX) and provides a modular workflow to convert bipartite metabolic networks into reaction or gene-centric networks. Its core strength lies in \"path mining\"—identifying highly correlated biological paths by weighting network edges with experimental data (e.g., gene expression) and using probabilistic or p-value-b",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NetPathMiner.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ahmohamed/NetPathMiner",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NetPathMiner"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NetPathMiner.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ahmohamed/NetPathMiner",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-netpathminer\n\n## Overview\nNetPathMiner is an R/Bioconductor package designed for the construction, processing, and mining of genome-scale biological networks. It supports multiple pathway formats (KGML, SBML, BioPAX) and provides a modular workflow to convert bipartite metabolic networks into reaction or gene-centric networks. Its core strength lies in \"path mining\"—identifying highly correlated biological paths by weighting network edges with experimental data (e.g., gene expression) and using probabilistic or p-value-based ranking methods.\n\n## Core Workflow\n\n### 1. Database Extraction & Network Construction\nNetPathMiner converts pathway files into `igraph` objects.\n\n```r\nlibrary(NetPathMiner)\n\n# Load from KGML (KEGG)\ngraph <- KGML2igraph(filename = \"pathway.xml\")\n\n# Load from SBML (requires libSBML)\ngraph <- SBML2igraph(filename = \"pathway.sbml\", miriam = \"all\")\n\n# Load from BioPAX (requires rBiopaxParser)\nlibrary(rBiopaxParser)\nbiopax <- readBiopax(\"pathway.owl\")\ngraph <- BioPAX2igraph(biopax = biopax)\n\n# Signaling network (genes as vertices)\nsig_graph <- KGML2igraph(filename = \"pathway.xml\", parse.as = \"signaling\")\n```\n\n### 2. Handling Annotations\nAnnotations are stored in the `attr` attribute of vertices. Use these functions to manage biological identifiers (MIRIAM).\n\n```r\n# List available attribute names\ngetAttrNames(graph)\n\n# Check coverage of specific attributes (e.g., UniProt, KEGG)\ngetAttrStatus(graph, pattern = \"^miriam.\")\n\n# Fetch missing annotations via BridgeDb (requires RCurl)\ngraph <- fetchAttribute(graph, organism = \"Homo sapiens\", \n                        target.attr = \"miriam.ncbigene\", \n                        source.attr = \"miriam.uniprot\")\n```\n\n### 3. Network Representation Conversion\nConvert bipartite metabolic networks (compounds and reactions) into simpler forms for analysis.\n\n```r\n# Create Reaction Network (metabolites become edge attributes)\nrgraph <- makeReactionNetwork(graph, simplify = TRUE)\n\n# Create Gene Network (expand complexes to individual genes)\nggraph <- makeGeneNetwork(rgraph)\n\n# Expand complexes manually\nggraph <- expandComplexes(rgraph, v.attr = \"miriam.uniprot\")\n```\n\n### 4. Weighting and Path Ranking\nIntegrate gene expression data to find active biological paths.\n\n```r\n# Assign weights based on Pearson correlation\n# microarray: matrix with genes as rows, samples as columns\nrgraph <- assignEdgeWeights(microarray = exp_data, graph = rgraph, \n                            weight.method = \"cor\", use.attr = \"miriam.uniprot\")\n\n# Rank paths using Probabilistic Shortest Path\nranked.p <- pathRanker(rgraph, method = \"prob.shortest.path\", K = 25, minPathSize = 6)\n\n# Extract paths as Edge IDs for further analysis\neids <- getPathsAsEIDs(paths = ranked.p, graph = rgraph)\n```\n\n### 5. Clustering and Classification\nGroup similar paths or identify paths that discriminate between sample groups.\n\n```r\n# Convert paths to binary matrix for clustering\nybinpaths <- pathsToBinary(ranked.p)\n\n# Cluster paths\np.cluster <- pathCluster(ybinpaths, M = 2)\nplotClusters(ybinpaths, p.cluster)\n\n# Classify paths based on sample labels (e.g., \"Disease\" vs \"Control\")\np.class <- pathClassifier(ybinpaths, target.class = \"BCR/ABL\", M = 2)\n```\n\n### 6. Visualization\nNetPathMiner provides specialized plotting functions for networks and ranked paths.\n\n```r\n# Plot network colored by cellular compartment\nplotNetwork(rgraph, vertex.color = \"compartment.name\")\n\n# Highlight ranked paths on the network\nplotPaths(ranked.p, rgraph, path.clusters = p.class)\n\n# Layout vertices by attribute (e.g., group by pathway)\nlayout.c <- clusterVertexByAttr(rgraph, \"pathway\", cluster.strength = 3)\nplotPaths(ranked.p, rgraph, layout = layout.c)\n```\n\n## Tips for Success\n- **Prerequisites**: Ensure `libxml2` is installed on your system. SBML support requires `libSBML`.\n- **Attribute Mapping**: Always check `getAttrStatus` before weighting. If coverage is low, use `fetchAttribute` to map identifiers (e.g., mapping UniProt to Affymetrix IDs).\n- **Memory Management**: For genome-scale networks, use `simplifyReactionNetwork` to remove reactions missing gene annotations (like spontaneous reactions) to reduce complexity.\n- **Integration**: Use `toGraphNEL(graph)` to convert `igraph` objects to Bioconductor `graphNEL` objects for compatibility with other BioC packages.\n\n## Reference documentation\n- [NetPathMiner Vignette](./references/NPMVignette.md)\n- [NetPathMiner RMarkdown Source](./references/NPMVignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-netpathminer",
+    "description": "NetPathMiner constructs, processes, and mines genome-scale biological networks by integrating pathway data with experimental results. Use when user asks to convert pathway files into igraph objects, manage biological annotations, transform metabolic networks into gene-centric representations, or rank active biological paths using gene expression data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NetPathMiner.html"
+  }
+}

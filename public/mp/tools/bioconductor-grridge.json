@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-grridge",
+  "category": "bioconductor",
+  "name": "bioconductor-grridge",
+  "description": "The GRridge package performs adaptive group-regularized ridge regression for high-dimensional data by incorporating external co-data to estimate group-specific penalties. Use when user asks to perform group-regularized ridge regression, incorporate co-data into predictive models, create feature partitions, or select relevant features from high-dimensional biological datasets.",
+  "overview": "The `GRridge` package implements adaptive group-regularized ridge regression. It is designed for high-dimensional data (like DNA methylation or RNA-seq) where external information about the features—referred to as **co-data**—is available. By grouping features based on this co-data, the package estimates group-specific penalties, allowing more relevant feature groups to contribute more to the model.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GRridge.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-grridge/overview",
+  "github": "N/A",
+  "conda_downloads": "22.1K",
+  "conda_downloads_num": 22100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GRridge"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GRridge.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-grridge/overview",
+    "github": "N/A",
+    "conda_downloads": "22.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-grridge\n\n## Overview\n\nThe `GRridge` package implements adaptive group-regularized ridge regression. It is designed for high-dimensional data (like DNA methylation or RNA-seq) where external information about the features—referred to as **co-data**—is available. By grouping features based on this co-data, the package estimates group-specific penalties, allowing more relevant feature groups to contribute more to the model.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a primary data matrix (features in rows, samples in columns) and a response vector (binary, continuous, or survival).\n\n```R\nlibrary(GRridge)\ndata(dataFarkas)\n# datcenFarkas: matrix of features\n# respFarkas: factor/vector of response\n```\n\n### 2. Creating Partitions (Co-data)\nPartitions define how features are grouped.\n- **Categorical co-data:** Use `CreatePartition()` on a factor.\n- **Continuous co-data:** Use `CreatePartition()` on a numeric vector (e.g., standard deviations) to create rank-based groups.\n- **Overlapping groups:** Use `matchGeneSets()` for pathways where a gene may belong to multiple sets.\n\n```R\n# Categorical partition\npart1 <- CreatePartition(CpGannFarkas)\n\n# Numeric partition (e.g., by SD)\nsds <- apply(datcenFarkas, 1, sd)\npart2 <- CreatePartition(sds, decreasing=FALSE, uniform=TRUE, grsize=5000)\n\n# Combine into a list\npartitions <- list(cpg=part1, sds=part2)\n```\n\n### 3. Model Fitting\nThe `grridge()` function fits the model. It automatically detects the regression type (linear, logistic, or survival).\n\n```R\n# monotone=TRUE enforces that penalties follow the order of the groups\nmonotone_settings <- c(FALSE, TRUE) \n\ngrModel <- grridge(datcenFarkas, respFarkas, partitions, \n                   monotone = monotone_settings,\n                   comparelasso = TRUE)\n```\n\n### 4. Validation and Feature Selection\n- **Cross-validation:** Use `grridgeCV()` to assess performance (AUC/ROC).\n- **Feature Selection:** Enable `selectionEN=TRUE` in the `grridge()` call to perform post-hoc selection via a group-weighted Elastic Net.\n\n```R\n# 10-fold Cross-validation\ncvResults <- grridgeCV(grModel, datcenFarkas, respFarkas, outerfold=10)\n\n# Access selected features (if selectionEN=TRUE was used)\nselected_indices <- grModel$resEN$whichEN\n```\n\n## Advanced Features\n\n### Merging Groups\nIf a partition has too many groups (e.g., thousands of pathways), use `mergeGroups()` to cluster them into a smaller, more stable number of groups based on data-driven hierarchical clustering.\n\n```R\nmerged <- mergeGroups(highdimdata = datStd, initGroups = gseTF, maxGroups = 5)\nnew_partition <- merged$newGroups\n```\n\n### Partition Selection\nIf multiple co-data sources are available, `PartitionsSelection()` uses a forward-selection procedure based on cross-validated likelihood to determine which partitions actually improve the model.\n\n```R\noptPart <- PartitionsSelection(datStd, resp, partitions = partitionsWurdinger, optl = 160.5)\n# Use optPart$ordPar to subset your partitions list\n```\n\n## Tips for Success\n- **Standardization:** GRridge can learn whether feature variance should impact penalties. If you don't standardize, consider using a monotone constraint on a partition based on feature standard deviations.\n- **Computational Efficiency:** For large datasets, pre-calculate the global lambda (`optl`) or use a subset of data to find it before running the full `grridge()` or `grridgeCV()` functions.\n- **Response Types:** Ensure `resp` is a factor for logistic regression, numeric for linear, and a `Surv` object for survival analysis.\n\n## Reference documentation\n- [GRridge](./references/GRridge.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-grridge",
+    "description": "The GRridge package performs adaptive group-regularized ridge regression for high-dimensional data by incorporating external co-data to estimate group-specific penalties. Use when user asks to perform group-regularized ridge regression, incorporate co-data into predictive models, create feature partitions, or select relevant features from high-dimensional biological datasets.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/GRridge.html"
+  }
+}

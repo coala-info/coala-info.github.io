@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-caen",
+  "category": "bioconductor",
+  "name": "bioconductor-caen",
+  "description": "The bioconductor-caen package implements a feature selection method for single-cell RNA-seq data using category number encoding and Spearman correlation. Use when user asks to select differentially expressed genes, estimate classification error rates, or perform zero-inflated Poisson linear discriminant analysis.",
+  "overview": "The `CAEN` package implements a feature selection method specifically designed for single-cell RNA-seq (scRNA-seq) data. It operates by encoding category numbers to account for both inter-class differences and intra-category variability. The workflow typically involves data pre-processing, feature selection via Spearman correlation with encoded categories, and classification error estimation using the selected features.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CAEN.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-caen/overview",
+  "github": "N/A",
+  "conda_downloads": "10.5K",
+  "conda_downloads_num": 10500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CAEN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CAEN.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-caen/overview",
+    "github": "N/A",
+    "conda_downloads": "10.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-caen\n\n## Overview\n\nThe `CAEN` package implements a feature selection method specifically designed for single-cell RNA-seq (scRNA-seq) data. It operates by encoding category numbers to account for both inter-class differences and intra-category variability. The workflow typically involves data pre-processing, feature selection via Spearman correlation with encoded categories, and classification error estimation using the selected features.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package works with `SummarizedExperiment` objects. Ensure your expression data is formatted accordingly, where rows are transcripts/genes and columns are samples.\n\n```r\nlibrary(CAEN)\nlibrary(SummarizedExperiment)\n\n# Load example data\ndata(\"realData\")\n# x: SummarizedExperiment object\n# y: Numeric vector of class labels (e.g., 1, 1, 2, 2)\ny <- c(rep(1, 18), rep(2, 18))\n```\n\n### 2. Estimating Parameters\nBefore feature selection, estimate the probability parameters required for the classification model.\n\n```r\n# Estimate parameters for training and testing sets\nprob <- estimatep(x = realData, y = y, xte = realData, beta = 1, type = \"mle\")\n```\n\n### 3. Feature Selection with CAEN\nThe `CAEN` function identifies the most differentially expressed genes.\n\n```r\n# K: Number of classes\n# gene_no_list: Number of top features to select\nmyscore <- CAEN(dataTable = realData, y = y, K = 2, gene_no_list = 100)\n\n# Results\n# myscore$r  : Correlation coefficients for all genes\n# myscore$np : Indices of the top selected features\n```\n\n### 4. Classification and Error Rate\nUse the selected features to perform classification using Zero-Inflated Poisson Linear Discriminant Analysis (ZIPLDA).\n\n```r\n# Extract selected features\nselected_indices <- myscore$np\ndatx <- t(assay(realData)[selected_indices, ])\nprobb <- prob[selected_indices, ]\n\n# Cross-validation to find the best rho (tuning parameter)\nzipldacv.out <- ZIPLDA.cv(x = datx, y = y, prob0 = t(probb))\n\n# Final classification\nZIPLDA.out <- ZIPLDA(x = datx, y = y, xte = datx, \n                     transform = FALSE, \n                     prob0 = t(probb), \n                     rho = zipldacv.out$bestrho)\n\n# Predicted classes\nclassResult <- ZIPLDA.out$ytehat\n```\n\n## Simulation Utilities\nYou can generate synthetic datasets to test workflows using `newCountDataSet`.\n\n```r\n# n: samples, p: features, K: classes\ndat <- newCountDataSet(n = 100, p = 500, K = 4, param = 10, sdsignal = 2, drate = 0.2)\n\n# Access simulated data\ntrain_data <- dat$sim_train_data\nis_de_label <- dat$isDE # True differential gene labels\n```\n\n## Usage Tips\n- **Category Encoding**: The CAEN method is particularly robust because it considers intra-category differences, making it suitable for heterogeneous single-cell populations.\n- **Data Transformation**: When using `ZIPLDA`, the `transform` parameter determines if the data should be transformed. For raw count data, `FALSE` is often appropriate as the model handles the Poisson distribution.\n- **Memory**: For very large scRNA-seq datasets, ensure the `SummarizedExperiment` object is handled efficiently, as the correlation calculations can be memory-intensive.\n\n## Reference documentation\n- [CAEN Tutorial](./references/CAEN.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-caen",
+    "description": "The bioconductor-caen package implements a feature selection method for single-cell RNA-seq data using category number encoding and Spearman correlation. Use when user asks to select differentially expressed genes, estimate classification error rates, or perform zero-inflated Poisson linear discriminant analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CAEN.html"
+  }
+}

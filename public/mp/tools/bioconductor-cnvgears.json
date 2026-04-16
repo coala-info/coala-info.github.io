@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnvgears",
+  "category": "bioconductor",
+  "name": "bioconductor-cnvgears",
+  "description": "CNVgears provides a framework for integrating, filtering, and analyzing copy number variation results from multiple calling algorithms, with a focus on family-based cohorts. Use when user asks to load PED files, filter CNV calls, detect de novo or inherited patterns, merge inter-method results, or compute consensus CNV regions.",
+  "overview": "CNVgears provides an extensible framework for integrating and analyzing CNV calling results from various pipelines (SNP arrays or NGS). It is optimized for family-based studies (trios/quads) but supports general cohort analysis. The package leverages `data.table` for high-performance processing of large genomic datasets and provides tools for filtering, inheritance detection, and inter-method consensus merging.",
+  "homepage": "https://bioconductor.org/packages/3.13/bioc/html/CNVgears.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/SinomeM/CNVgears",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNVgears"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.13/bioc/html/CNVgears.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/SinomeM/CNVgears",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnvgears\n\nname: bioconductor-cnvgears\ndescription: Analysis of Copy Number Variation (CNV) calling and segmentation results, particularly for human family-based cohorts. Use this skill to load PED files and marker data, pre-process and filter CNV calls from multiple algorithms (e.g., PennCNV, QuantiSNP), detect inheritance patterns (de novo vs. inherited), merge inter-method results, and compute CNV regions (CNVRs).\n\n# bioconductor-cnvgears\n\n## Overview\nCNVgears provides an extensible framework for integrating and analyzing CNV calling results from various pipelines (SNP arrays or NGS). It is optimized for family-based studies (trios/quads) but supports general cohort analysis. The package leverages `data.table` for high-performance processing of large genomic datasets and provides tools for filtering, inheritance detection, and inter-method consensus merging.\n\n## Typical Workflow\n\n### 1. Data Loading\nLoad cohort metadata (PED format) and marker locations (SNP positions or NGS intervals).\n\n```r\nlibrary(CNVgears)\n\n# Load cohort metadata\ncohort <- read_metadt(DT_path = \"path/to/cohort.ped\",\n                      sample_ID_col = \"Individual ID\", \n                      fam_ID_col = \"Family ID\",\n                      sex_col = \"Gender\", role_col = \"Role\")\n\n# Load marker locations (e.g., SNP PFB file)\nSNP_markers <- read_finalreport_snps(\"path/to/SNP.pfb\",\n                                     mark_ID_col = \"Name\", \n                                     chr_col = \"Chr\", \n                                     pos_col = \"Position\")\n```\n\n### 2. Importing CNV Results\nImport results from different callers. Use `read_results` for standard formats or `cnmops_to_CNVresults` for `cn.mops` output.\n\n```r\npenn <- read_results(DT_path = \"penn_cnvs.txt\", \n                     res_type = \"file\", DT_type = \"TSV/CSV\",\n                     chr_col = \"chr\", start_col = \"posStart\", \n                     end_col = \"posEnd\", CN_col = \"CN\", \n                     samp_ID_col = \"Sample_ID\", \n                     sample_list = cohort, \n                     markers = SNP_markers, \n                     method_ID = \"P\")\n```\n\n### 3. Exploration and Filtering\nGenerate summary statistics to identify over-segmented samples and apply filters based on length or number of markers (NP).\n\n```r\n# Summary stats\nstats <- summary(object = penn, sample_list = cohort, markers = SNP_markers)\n\n# Filter: min length 10kb, min 10 markers\npenn_filt <- cleaning_filter(results = penn, min_len = 10000, min_NP = 10)\n\n# Optional: Filter by blacklists (telomeres/centromeres)\nhg19telom <- telom_centrom(hg19_start_end_centromeres, centrom = FALSE)\n# Use data.table syntax to filter results against these regions\n```\n\n### 4. Inheritance Detection\nIdentify *de novo* candidates by comparing offspring calls against parental raw data (Log2R/CopyRatio). Requires raw data processed into RDS format via `read_finalreport_raw`.\n\n```r\n# Detect inheritance (requires raw_path to RDS files)\npenn_inh <- cnvs_inheritance(results = penn_filt, \n                             sample_list = cohort, \n                             markers = SNP_markers, \n                             raw_path = \"path/to/RDS_dir\")\n\n# Extract de novo events\nde_novo <- penn_inh[inheritance == \"denovo\", ]\n```\n\n### 5. Inter-Method Merging and CNVRs\nCombine results from multiple callers to find consensus calls and define CNV Regions (CNVRs).\n\n```r\n# Merge results from multiple methods (e.g., Penn, Quanti, IPattern)\nmerged_res <- inter_res_merge(res_list = list(penn_filt, quanti_filt, ipn_filt),\n                              sample_list = cohort, \n                              chr_arms = hg19_chr_arms)\n\n# Compute CNV Regions (CNVRs)\ncnvrs <- cnvrs_create(cnvs = merged_res, chr_arms = hg19_chr_arms)\n```\n\n## Key Functions and Tips\n- **Parallelization**: Set threads using `data.table::setDTthreads(n)`. Optimal performance is usually between 4 and 8 threads.\n- **Annotation**: Use `genic_load(DT_in, mart)` to annotate CNVs with genes (requires `biomaRt`). Use `genomic_locus()` for cytogenetic bands.\n- **Visualization**: Use `lrr_trio_plot()` to visually inspect *de novo* candidates alongside parental Log2R signals.\n- **Data Export**: Since objects are `data.table` based, use `fwrite(df, \"file.tsv\", sep=\"\\t\")` for export. Use `CNVresults_to_GRanges()` to interface with other Bioconductor packages.\n\n## Reference documentation\n- [CNVgears package](./references/CNVgears.md)\n- [CNVgears Vignette](./references/CNVgears.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnvgears",
+    "description": "CNVgears provides a framework for integrating, filtering, and analyzing copy number variation results from multiple calling algorithms, with a focus on family-based cohorts. Use when user asks to load PED files, filter CNV calls, detect de novo or inherited patterns, merge inter-method results, or compute consensus CNV regions.",
+    "homepage": "https://bioconductor.org/packages/3.13/bioc/html/CNVgears.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spatialcpie",
+  "category": "bioconductor",
+  "name": "bioconductor-spatialcpie",
+  "description": "SpatialCPie evaluates and visualizes cluster assignments in spatial transcriptomics data across multiple resolutions. Use when user asks to explore cluster ancestry, visualize spatial distributions of clusters using pie charts, or interactively assess cluster granularity.",
+  "overview": "SpatialCPie (Cluster Propagation and Interactive Exploration) is a tool for evaluating cluster assignments in spatial transcriptomics data. It addresses the challenge of selecting an appropriate cluster resolution by visualizing how clusters split and merge across different levels of granularity. The package provides a Shiny gadget for interactive exploration and functions to generate static plots of cluster \"ancestry\" and spatial distributions.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialCPie.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SpatialCPie"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialCPie.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spatialcpie\n\n## Overview\nSpatialCPie (Cluster Propagation and Interactive Exploration) is a tool for evaluating cluster assignments in spatial transcriptomics data. It addresses the challenge of selecting an appropriate cluster resolution by visualizing how clusters split and merge across different levels of granularity. The package provides a Shiny gadget for interactive exploration and functions to generate static plots of cluster \"ancestry\" and spatial distributions.\n\n## Core Workflow\n\n### 1. Data Preparation\nSpatialCPie requires three main components:\n- **Counts**: A gene expression matrix (genes as rows, spots as columns). Data should be normalized (e.g., using Seurat's `SCTransform`).\n- **Image**: A JPEG image of the tissue section (loaded via `jpeg::readJPEG`).\n- **Spot Coordinates**: A data frame with `x` and `y` pixel coordinates for each spot, where row names match the column names of the count matrix.\n\n```r\nlibrary(SpatialCPie)\n\n# Load spot coordinates\nspots <- parseSpotFile(\"path/to/spot_data.tsv\")\n\n# Subset counts to match spots under tissue\ncounts <- counts[, colnames(counts) %in% rownames(spots)]\n```\n\n### 2. Interactive Exploration\nThe primary entry point is `runCPie`. This launches a Shiny gadget that computes clusters at multiple resolutions and allows for interactive visualization.\n\n```r\nresult <- runCPie(\n    counts,\n    image = tissue_image,\n    spotCoordinates = spots,\n    resolutions = 2:6, # Range of cluster numbers to evaluate\n    assignmentFunction = function(k, x) cluster::pam(x, k = k)$clustering # Optional: custom clustering\n)\n```\n\n### 3. Visualizing Results\nThe object returned by `runCPie` contains both the cluster assignments and ggplot2 objects.\n\n- **Cluster Graph**: Shows the relationship between resolutions. Nodes represent clusters; edges represent the flow of spots between resolutions.\n  ```r\n  result$clusterGraph\n  ```\n- **Spatial Array Plots**: Displays spots on the tissue image. Each spot is a pie chart showing its affinity to various clusters.\n  ```r\n  # View spatial plot for resolution 4\n  result$arrayPlot$`4`\n  ```\n\n### 4. Sub-clustering\nTo refine an analysis, you can extract specific spots from a cluster of interest and re-run the pipeline.\n\n```r\nlibrary(dplyr)\n\n# Extract spots assigned to clusters 1 and 4 at resolution 4\nsub_spots <- result$clusters %>%\n    filter(resolution == 4, cluster %in% c(1, 4)) %>%\n    pull(unit)\n\n# Re-run analysis on subset\nsub_result <- runCPie(\n    counts = counts[, sub_spots],\n    image = tissue_image,\n    spotCoordinates = spots\n)\n```\n\n## Key Parameters\n- `resolutions`: Numeric vector specifying the number of clusters ($k$) to compute.\n- `margin`: Either `\"spot\"` (default) or `\"gene\"`. Determines how cluster affinity scores are calculated.\n- `assignmentFunction`: A function taking `(k, x)` and returning cluster labels. Defaults to `kmeans`.\n- `scoreMultiplier` ($\\lambda$): Used to tune the contrast in pie charts. High values (e.g., 10.0) lead to \"harder\" cluster assignments in the visualization.\n\n## Reference documentation\n- [Spatial transcriptomics cluster analysis with SpatialCPie](./references/SpatialCPie.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spatialcpie",
+    "description": "SpatialCPie evaluates and visualizes cluster assignments in spatial transcriptomics data across multiple resolutions. Use when user asks to explore cluster ancestry, visualize spatial distributions of clusters using pie charts, or interactively assess cluster granularity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SpatialCPie.html"
+  }
+}

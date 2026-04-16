@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-nxtirfcore",
+  "category": "bioconductor",
+  "name": "bioconductor-nxtirfcore",
+  "description": "NxtIRFcore is an R/Bioconductor package for the quantification and differential analysis of intron retention and alternative splicing events. Use when user asks to build genomic references, quantify splicing from BAM files using the IRFinder engine, collate results into NxtSE objects, perform differential splicing analysis, or visualize RNA-seq coverage.",
+  "overview": "NxtIRFcore is a comprehensive R/Bioconductor pipeline for quantifying and analyzing Intron Retention (IR) and other Alternative Splicing (AS) events. It integrates the IRFinder C++ engine into R, allowing for cross-platform execution. The workflow typically involves building a reference, quantifying BAM files, collating data into a `NxtSE` object (which extends `SummarizedExperiment`), and performing statistical testing and visualization.",
+  "homepage": "https://bioconductor.org/packages/3.14/bioc/html/NxtIRFcore.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/alexchwong/NxtIRFcore",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NxtIRFcore"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.14/bioc/html/NxtIRFcore.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/alexchwong/NxtIRFcore",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-nxtirfcore\n\nname: bioconductor-nxtirfcore\ndescription: Analysis of Differential Alternative Splicing (DAS) and Intron Retention (IR) using the NxtIRFcore R package. Use this skill to build genomic references, quantify IR/DAS from BAM files using the IRFinder algorithm, collate results into NxtSE objects, and perform differential analysis using limma, DESeq2, or DoubleExpSeq.\n\n## Overview\nNxtIRFcore is a comprehensive R/Bioconductor pipeline for quantifying and analyzing Intron Retention (IR) and other Alternative Splicing (AS) events. It integrates the IRFinder C++ engine into R, allowing for cross-platform execution. The workflow typically involves building a reference, quantifying BAM files, collating data into a `NxtSE` object (which extends `SummarizedExperiment`), and performing statistical testing and visualization.\n\n## Core Workflow\n\n### 1. Building the Reference\nA NxtIRF reference is required for quantification and visualization. It uses a genome FASTA and a GTF annotation.\n\n```r\nlibrary(NxtIRFcore)\n\nref_path = \"./NxtIRF_Reference\"\n\n# Build from local files\nBuildReference(\n    reference_path = ref_path,\n    fasta = \"genome.fa\",\n    gtf = \"annotation.gtf\",\n    genome_type = \"hg38\" # Supports hg38, hg19, mm10, mm9 for mappability exclusions\n)\n\n# Build using AnnotationHub resources\nBuildReference(\n    reference_path = ref_path,\n    fasta = \"AH65745\",\n    gtf = \"AH64631\",\n    genome_type = \"hg38\"\n)\n```\n\n### 2. Quantification (IRFinder)\nQuantify IR and splice junctions from BAM files. This step produces `.txt.gz` and `.COV` files.\n\n```r\n# Find BAM files recursively\nbams = Find_Bams(\"./bam_dir\", level = 1)\n\nIRFinder(\n    bamfiles = bams$path,\n    sample_names = bams$sample,\n    reference_path = ref_path,\n    output_path = \"./IRFinder_output\",\n    n_threads = 4\n)\n```\n\n### 3. Data Collation and NxtSE Object Creation\nCollate individual sample outputs into a unified experiment structure.\n\n```r\n# Locate IRFinder outputs\nexpr = Find_IRFinder_Output(\"./IRFinder_output\")\n\n# Collate into a NxtIRF experiment\nCollateData(\n    Experiment = expr,\n    reference_path = ref_path,\n    output_path = \"./NxtIRF_collated\"\n)\n\n# Create the NxtSE object\nse = MakeSE(\"./NxtIRF_collated\", RemoveOverlapping = TRUE)\n```\n\n### 4. Filtering and Differential Analysis\nFilter for expressed events and perform DAS analysis.\n\n```r\n# Apply default filters (Depth > 20, etc.)\nse.filtered = se[apply_filters(se, get_default_filters()), ]\n\n# Add metadata\ncolData(se.filtered)$condition = rep(c(\"Control\", \"Treat\"), each = 3)\n\n# Differential analysis (Limma)\nres = limma_ASE(\n    se = se.filtered,\n    test_factor = \"condition\",\n    test_nom = \"Treat\",\n    test_denom = \"Control\"\n)\n\n# Also available: DESeq_ASE() and DoubleExpSeq_ASE()\n```\n\n## Visualization\n\n### Coverage Plots\nNxtIRFcore uses `.COV` files for high-performance coverage visualization, allowing for group-based normalization.\n\n```r\n# Plot a specific event by condition\np = Plot_Coverage(\n    se = se.filtered,\n    Event = res$EventName[1],\n    condition = \"condition\",\n    tracks = c(\"Control\", \"Treat\"),\n    stack_tracks = TRUE,\n    t_test = TRUE\n)\n\n# Convert to static ggplot for display\nas_egg_ggplot(p)\n```\n\n### Heatmaps and Matrices\n```r\n# Create a PSI matrix for top events\nmat = make_matrix(\n    se.filtered,\n    event_list = res$EventName[1:10],\n    method = \"PSI\"\n)\n\npheatmap::pheatmap(mat, annotation_col = as.data.frame(colData(se.filtered)))\n```\n\n## Tips and Best Practices\n- **Memory Management**: For large datasets, use the `colData` argument in `MakeSE()` to load only a subset of samples.\n- **IRMode**: The default `SpliceOverMax` in `CollateData` is recommended as it accounts for complex overlapping splice events.\n- **Mappability**: For non-human/mouse species, use `BuildReference_Full()` with `use_STAR_mappability = TRUE` if STAR is available to calculate low-mappability regions de-novo.\n- **COV Files**: These are proprietary compressed formats. Use `BAM2COV()` if you only need coverage visualization without full IR quantification.\n\n## Reference documentation\n- [NxtIRFcore: Differential Alternative Splicing and Intron Retention analysis](./references/NxtIRF.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-nxtirfcore",
+    "description": "NxtIRFcore is an R/Bioconductor package for the quantification and differential analysis of intron retention and alternative splicing events. Use when user asks to build genomic references, quantify splicing from BAM files using the IRFinder engine, collate results into NxtSE objects, perform differential splicing analysis, or visualize RNA-seq coverage.",
+    "homepage": "https://bioconductor.org/packages/3.14/bioc/html/NxtIRFcore.html"
+  }
+}

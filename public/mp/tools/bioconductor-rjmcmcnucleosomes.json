@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rjmcmcnucleosomes",
+  "category": "bioconductor",
+  "name": "bioconductor-rjmcmcnucleosomes",
+  "description": "This tool performs Bayesian profiling of nucleosome positions from MNase-Seq data using a Reversible Jump Markov Chain Monte Carlo approach. Use when user asks to predict nucleosome locations, segment genomic regions for analysis, or perform automated whole-chromosome nucleosome profiling.",
+  "overview": "The `RJMCMCNucleosomes` package implements a fully Bayesian hierarchical model for nucleosome positioning. It uses a t-mixture model where the number of nucleosomes is a random variable estimated via Reversible Jump Markov Chain Monte Carlo (RJMCMC). This approach is particularly effective for identifying both well-positioned and fuzzy nucleosomes from high-throughput short-read data (typically MNase-Seq).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RJMCMCNucleosomes.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ArnaudDroitLab/RJMCMCNucleosomes",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RJMCMCNucleosomes"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RJMCMCNucleosomes.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ArnaudDroitLab/RJMCMCNucleosomes",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rjmcmcnucleosomes\n\nname: bioconductor-rjmcmcnucleosomes\ndescription: Bayesian profiling of nucleosome positions from MNase-Seq data using Reversible Jump Markov Chain Monte Carlo (RJMCMC). Use this skill to segment genomic regions, predict nucleosome locations with a t-mixture model, and post-process results to merge closely positioned nucleosomes.\n\n# bioconductor-rjmcmcnucleosomes\n\n## Overview\n\nThe `RJMCMCNucleosomes` package implements a fully Bayesian hierarchical model for nucleosome positioning. It uses a t-mixture model where the number of nucleosomes is a random variable estimated via Reversible Jump Markov Chain Monte Carlo (RJMCMC). This approach is particularly effective for identifying both well-positioned and fuzzy nucleosomes from high-throughput short-read data (typically MNase-Seq).\n\n## Core Workflow\n\n### 1. Data Preparation\nInput reads must be provided as a `GRanges` object. If you have a data frame of reads, convert it first:\n\n```r\nlibrary(RJMCMCNucleosomes)\nlibrary(GenomicRanges)\n\n# Example: converting a data frame with chr, start, end, strand\nreads_gr <- GRanges(seqnames = df$chr, \n                    ranges = IRanges(start = df$start, end = df$end), \n                    strand = df$strand)\n```\n\n### 2. Region Segmentation\nTo improve performance and ensure convergence, large genomic regions should be split into smaller segments. Note: `rjmcmc` functions process one chromosome at a time.\n\n```r\n# zeta: nucleosome size (default 147)\n# delta: minimum distance between nucleosomes\n# maxLength: maximum size of a segment\nsegments <- segmentation(reads = reads_gr, zeta = 147, delta = 40, maxLength = 1000)\n```\n\n### 3. Nucleosome Prediction (Manual/Segmented)\nRun the RJMCMC algorithm on individual segments. For real data, high iteration counts (e.g., 1,000,000) are recommended.\n\n```r\nresult <- rjmcmc(reads = segments[[1]], \n                 nbrIterations = 100000, \n                 lambda = 3, \n                 kMax = 30,\n                 minInterval = 100, \n                 maxInterval = 200, \n                 minReads = 5)\n\n# Access predicted positions\nprint(result$mu)\n```\n\n### 4. Automated Whole-Chromosome Analysis\nThe `rjmcmcCHR` function automates segmentation, prediction, merging, and post-processing for an entire chromosome.\n\n```r\nresult_chr <- rjmcmcCHR(reads = reads_gr, \n                        seqName = \"chr1\", \n                        nbrIterations = 100000,\n                        nbCores = 2, # Use parallel processing\n                        dirOut = \"results_dir\")\n```\n\n### 5. Post-Processing and Merging\nIf segments were processed individually, merge the results and apply `postTreatment` to correct over-splitting by merging nucleosomes that are too close.\n\n```r\n# Merging RDS files from a directory\nmerged_results <- mergeAllRDSFilesFromDirectory(\"results_dir\")\n\n# Post-treatment (run on the entire region, not segments)\nfinal_positions <- postTreatment(reads = reads_gr,\n                                 resultRJMCMC = merged_results,\n                                 extendingSize = 15,\n                                 chrLength = max(end(reads_gr)))\n```\n\n### 6. Visualization\nCompare different prediction sets (e.g., before and after post-treatment) against the read coverage.\n\n```r\n# Combine results into a GRangesList\nplot_list <- GRangesList(Raw = merged_results$mu, \n                         Processed = final_positions)\n\nplotNucleosomes(nucleosomePositions = plot_list, \n                reads = reads_gr,\n                names = c(\"Before Post-Treatment\", \"After Post-Treatment\"))\n```\n\n## Key Parameters\n- `nbrIterations`: Number of MCMC iterations. Higher values increase accuracy but take longer.\n- `lambda`: Prior for the number of nucleosomes.\n- `kMax`: Maximum number of nucleosomes allowed in a segment.\n- `extendingSize`: Used in `postTreatment`; keep low (under 20) to avoid merging distinct true nucleosomes.\n\n## Reference documentation\n- [Nucleosome Positioning](./references/RJMCMCNucleosomes.md)\n- [Nucleosome Positioning (Rmd Source)](./references/RJMCMCNucleosomes.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-rjmcmcnucleosomes",
+    "description": "This tool performs Bayesian profiling of nucleosome positions from MNase-Seq data using a Reversible Jump Markov Chain Monte Carlo approach. Use when user asks to predict nucleosome locations, segment genomic regions for analysis, or perform automated whole-chromosome nucleosome profiling.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RJMCMCNucleosomes.html"
+  }
+}

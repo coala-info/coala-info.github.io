@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ruvseq",
+  "category": "bioconductor",
+  "name": "bioconductor-ruvseq",
+  "description": "This tool removes unwanted variation and batch effects from RNA-Seq data using control genes, replicates, or residuals. Use when user asks to normalize read counts, remove technical noise, or estimate hidden factors of variation for differential expression analysis.",
+  "overview": "RUVSeq (Remove Unwanted Variation from RNA-Seq data) provides methods to estimate and remove factors of unwanted variation from RNA-Seq read counts. It operates within a Generalized Linear Model (GLM) framework, regressing counts on both known covariates of interest (e.g., treatment) and unknown factors of unwanted variation (e.g., batch effects).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVSeq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/drisso/RUVSeq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RUVSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVSeq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/drisso/RUVSeq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ruvseq\n\nname: bioconductor-ruvseq\ndescription: Normalization of RNA-Seq data to remove unwanted variation (batch effects, technical noise, or other nuisance effects) using the RUVSeq package. Use this skill when performing differential expression analysis where hidden factors or batch effects are suspected, or when exploratory plots (PCA/RLE) show sample clustering driven by non-biological factors.\n\n# bioconductor-ruvseq\n\n## Overview\n\nRUVSeq (Remove Unwanted Variation from RNA-Seq data) provides methods to estimate and remove factors of unwanted variation from RNA-Seq read counts. It operates within a Generalized Linear Model (GLM) framework, regressing counts on both known covariates of interest (e.g., treatment) and unknown factors of unwanted variation (e.g., batch effects).\n\nThe package provides three main methods to estimate these factors ($W$):\n1.  **RUVg**: Uses negative control genes (genes with constant expression across samples).\n2.  **RUVs**: Uses replicate samples (technical or biological replicates where the covariate of interest is constant).\n3.  **RUVr**: Uses residuals from a first-pass GLM regression.\n\n## Core Workflow\n\n### 1. Data Preparation and EDA\nRUVSeq works with `matrix` objects or `SeqExpressionSet` objects (from the `EDASeq` package).\n\n```r\nlibrary(RUVSeq)\nlibrary(EDASeq)\n\n# Create a SeqExpressionSet\n# counts: matrix of raw integer counts\n# x: factor representing the experimental condition\nset <- newSeqExpressionSet(as.matrix(counts),\n                           phenoData = data.frame(x, row.names=colnames(counts)))\n\n# Exploratory Data Analysis (EDA)\n# Relative Log Expression (RLE) plot\nplotRLE(set, outline=FALSE, col=as.numeric(x))\n# Principal Component Analysis (PCA) plot\nplotPCA(set, col=as.numeric(x))\n```\n\n### 2. Estimating Unwanted Variation\n\n#### Method A: RUVg (Control Genes)\nUse this when you have a set of negative control genes (e.g., ERCC spike-ins, housekeeping genes, or \"in-silico\" empirical controls).\n\n```r\n# spikes: vector of row names for control genes\n# k: number of factors of unwanted variation to estimate\nset1 <- RUVg(set, spikes, k=1)\n\n# Access estimated factors in phenoData\nfactors <- pData(set1) # Contains W_1, W_2, etc.\n```\n\n#### Method B: RUVs (Replicate Samples)\nUse this when you have replicates (e.g., multiple samples of the same treatment).\n\n```r\n# Create a groups matrix where each row contains indices of replicates\n# makeGroups is a helper for this\ndifferences <- makeGroups(x)\n\n# genes: genes to use for estimation (often all genes)\nset_s <- RUVs(set, genes, k=1, differences)\n```\n\n#### Method C: RUVr (Residuals)\nUse this after a first-pass DE analysis to capture variation not explained by the model.\n\n```r\n# 1. Run first-pass GLM (e.g., with edgeR) to get residuals\n# 2. res: matrix of deviance residuals\nset_r <- RUVr(set, genes, k=1, res)\n```\n\n### 3. Differential Expression Analysis\n**Important:** Do not use the normalized counts returned by RUVSeq for differential expression testing. Instead, include the estimated factors ($W$) as covariates in your DE model (edgeR or DESeq2) using the original raw counts.\n\n#### Using edgeR\n```r\nlibrary(edgeR)\n# Add W_1 to the design matrix\ndesign <- model.matrix(~x + W_1, data=pData(set1))\ny <- DGEList(counts=counts(set1), group=x)\ny <- calcNormFactors(y, method=\"upperquartile\")\ny <- estimateGLMCommonDisp(y, design)\ny <- estimateGLMTagwiseDisp(y, design)\nfit <- glmFit(y, design)\nlrt <- glmLRT(fit, coef=2) # Test for effect of x\n```\n\n#### Using DESeq2\n```r\nlibrary(DESeq2)\ndds <- DESeqDataSetFromMatrix(countData = counts(set1),\n                              colData = pData(set1),\n                              design = ~ W_1 + x)\ndds <- DESeq(dds)\nres <- results(dds)\n```\n\n## Tips and Best Practices\n\n*   **Choosing k**: The number of factors ($k$) is a tuning parameter. Start with $k=1$ and increase it if PCA/RLE plots still show unwanted structure. Be careful not to over-fit, which can remove biological signal.\n*   **Normalized Counts**: The `normCounts(set)` function returns counts adjusted for $W$. These are excellent for visualization (PCA, Heatmaps) but should not be used for statistical testing.\n*   **Empirical Controls**: If no spike-ins exist, run a standard DE analysis first and use the least significantly changed genes (e.g., bottom 5,000 by p-value) as \"empirical\" controls for `RUVg`.\n*   **Upper-Quartile Normalization**: It is often recommended to perform upper-quartile (UQ) normalization (via `EDASeq::betweenLaneNormalization`) before running RUVSeq methods.\n\n## Reference documentation\n\n- [RUVSeq: Remove Unwanted Variation from RNA-Seq Data](./references/RUVSeq.md)\n- [RUVSeq Vignette (Rmd)](./references/RUVSeq.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-ruvseq",
+    "description": "This tool removes unwanted variation and batch effects from RNA-Seq data using control genes, replicates, or residuals. Use when user asks to normalize read counts, remove technical noise, or estimate hidden factors of variation for differential expression analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVSeq.html"
+  }
+}

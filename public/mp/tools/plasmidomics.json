@@ -1,0 +1,43 @@
+{
+  "id": "plasmidomics",
+  "category": "library",
+  "name": "plasmidomics",
+  "description": "The plasmidomics tool analyzes plasmid sequences to identify functional characteristics and evolutionary relationships through integrated bioinformatics workflows. Use when user asks to annotate plasmid databases, perform MobMess network analysis, generate Mashtree dendrograms, or conduct functional enrichment studies.",
+  "overview": "The plasmidomics skill provides a structured workflow for analyzing plasmid sequences to uncover their functional characteristics and evolutionary relationships. It integrates several bioinformatics tools—primarily Anvi’o, MobMess, and Mashtree—to transform raw plasmid contigs into annotated databases, classified networks (backbone, compound, fragment, and maximal clusters), and comparative pangenomic models. This skill is particularly useful for researchers investigating the \"plasmidome\" of spe",
+  "homepage": "https://github.com/braddmg/Plasmidome-analysis",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/plasmidomics/overview",
+  "github": "https://github.com/braddmg/Plasmidome-analysis",
+  "conda_downloads": "N/A",
+  "conda_downloads_num": 0,
+  "last_updated": "N/A",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "plasmidomics"
+    ],
+    "description": "[Errno 2] No such file or directory: 'plasmidomics'; fallback failed: [Errno 2] No such file or directory: 'plasmidomics'",
+    "docker_image": "Not found",
+    "homepage": "https://github.com/braddmg/Plasmidome-analysis",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/plasmidomics/overview",
+    "github": "https://github.com/braddmg/Plasmidome-analysis",
+    "conda_downloads": "N/A",
+    "last_updated": "N/A",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# plasmidomics\n\n## Overview\nThe plasmidomics skill provides a structured workflow for analyzing plasmid sequences to uncover their functional characteristics and evolutionary relationships. It integrates several bioinformatics tools—primarily Anvi’o, MobMess, and Mashtree—to transform raw plasmid contigs into annotated databases, classified networks (backbone, compound, fragment, and maximal clusters), and comparative pangenomic models. This skill is particularly useful for researchers investigating the \"plasmidome\" of specific bacterial species to identify potential pathogenicity factors or mobile genetic elements.\n\n## Core Workflows and CLI Patterns\n\n### 1. Database Generation and Annotation\nBefore functional analysis, plasmid sequences must be formatted and annotated using the Anvi’o framework.\n\n*   **Reformat and Filter**: Remove short contigs (typically < 1000 bp) to improve assembly quality.\n    ```bash\n    anvi-script-reformat-fasta plasmids.fasta -o plasmids.fa -l 1000 --seq-type NT\n    ```\n*   **Generate Contigs Database**:\n    ```bash\n    anvi-gen-contigs-database -f plasmids.fa -o plasmids.db\n    ```\n*   **Functional Annotation**: Run HMMs and assign COG/Pfam functions.\n    ```bash\n    anvi-run-hmms -c plasmids.db\n    anvi-run-ncbi-cogs -c plasmids.db -T 64 --cog-version COG14\n    anvi-run-pfams -c plasmids.db -T 64\n    ```\n*   **Export Calls**: Extract gene calls and functions for downstream tools like MobMess.\n    ```bash\n    anvi-export-gene-calls --gene-caller prodigal -c plasmids.db -o plasmids-gene-calls.txt\n    anvi-export-functions --annotation-sources COG14_FUNCTION,Pfam -c plasmids.db -o plasmids-cogs-and-pfams.txt\n    ```\n\n### 2. MobMess Network Analysis\nMobMess classifies plasmids into networks based on shared gene content.\n\n*   **System Generation**:\n    ```bash\n    mobmess systems --sequences plasmids.fa --complete plasmids.txt --output mobmess --threads 64\n    ```\n*   **Network Visualization**: To visualize specific plasmid relationships, provide a comma-separated list of contig IDs.\n    ```bash\n    mobmess visualize -s plasmids.fa -a plasmids-cogs-and-pfams.txt -g plasmids-gene-calls.txt -o output_dir/ --contigs ID1,ID2,ID3 --align-blocks-height 1\n    ```\n\n### 3. Comparative Phylogeny (Mashtree)\nGenerate distance-based dendrograms using Mash distances to visualize plasmid clusters.\n\n*   **Subsampling**: Create a non-redundant (nr) set of representative plasmids.\n    ```bash\n    seqtk subseq plasmids.fa representative.txt > nrplasmids.fasta\n    ```\n*   **Dendrogram Generation**: Use Mashtree on individual FASTA files (split from the main set).\n    ```bash\n    mashtree --mindepth 0 *.fasta --outtree plasmid_relationships.tree\n    ```\n\n### 4. Functional Enrichment Analysis\nIdentify functions that are statistically overrepresented in specific plasmid groups.\n\n*   **Pangenome Setup**:\n    ```bash\n    anvi-gen-genomes-storage -e external-genomes.txt -o GENOMES.db\n    anvi-pan-genome -g GENOMES.db --project-name PlasmidPan --num-threads 32\n    ```\n*   **Compute Enrichment**:\n    ```bash\n    anvi-compute-functional-enrichment -p PlasmidPan/PlasmidPan-PAN.db -g GENOMES.db -o enrichment_results.txt --category-variable group --annotation-source COG14_FUNCTION\n    ```\n\n## Expert Tips\n*   **Thread Optimization**: Tools like `anvi-run-ncbi-cogs` and `mobmess` are computationally intensive; always utilize the `--threads` or `-T` flag based on available hardware.\n*   **Sequence Splitting**: When running Mashtree, ensure the `nrplasmids.fasta` is split into individual files (one per plasmid) using a helper script like `sep.py` to ensure the distance matrix is calculated correctly between individual entities.\n*   **Database Paths**: Ensure the `--cog-data-dir` and `--pfam-data-dir` paths in Anvi'o commands point to the local installation of these databases.\n\n## Reference documentation\n- [Pipeline for plasmidomic analyses](./references/github_com_braddmg_Plasmidome-analysis.md)",
+  "skill_front_matter": {
+    "name": "plasmidomics",
+    "description": "The plasmidomics tool analyzes plasmid sequences to identify functional characteristics and evolutionary relationships through integrated bioinformatics workflows. Use when user asks to annotate plasmid databases, perform MobMess network analysis, generate Mashtree dendrograms, or conduct functional enrichment studies.",
+    "homepage": "https://github.com/braddmg/Plasmidome-analysis"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "mummer4",
+  "category": "CLI",
+  "name": "mummer4",
+  "description": "MUMmer4 is a high-performance alignment system designed for comparing large DNA sequences and entire genomes. Use when user asks to align whole genomes, compare nucleotide or protein sequences, identify SNPs, or generate dot plots for sequence comparisons.",
+  "overview": "MUMmer4 is a high-performance alignment system designed for comparing large DNA sequences, such as entire bacterial or eukaryotic genomes. It excels at identifying maximal exact matches (MUMs) and clustering them into longer alignments. You should use this skill to navigate the modular nature of the MUMmer package, selecting the appropriate tool (nucmer for nucleotides, promer for amino acids, or dnadiff for automated comparative statistics) based on the evolutionary distance and quality of your",
+  "homepage": "https://mummer4.github.io/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/mummer4/overview",
+  "github": "https://github.com/mummer4/mummer",
+  "conda_downloads": "65.1K",
+  "conda_downloads_num": 65099,
+  "last_updated": "2025-04-22",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "mummer4_nucmer",
+      "mummer4_promer",
+      "mummer4_dnadiff",
+      "mummer4_show-coords",
+      "mummer4_show-snps",
+      "mummer4_mummerplot",
+      "mummer4_show-tiling",
+      "mummer4_delta-filter"
+    ],
+    "description": "generates nucleotide alignments between two mutli-FASTA input files. The out.delta output file lists the distance between insertions and deletions that produce maximal scoring alignments between each sequence. The show-* utilities know how to read this format.",
+    "docker_image": "quay.io/biocontainers/mummer4:4.0.1--pl5321h9948957_0",
+    "homepage": "https://mummer4.github.io/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/mummer4/overview",
+    "github": "https://github.com/mummer4/mummer",
+    "conda_downloads": "65.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "mummer4_delta-filter.cwl",
+    "mummer4_dnadiff.cwl",
+    "mummer4_mummerplot.cwl",
+    "mummer4_nucmer.cwl",
+    "mummer4_promer.cwl",
+    "mummer4_show-coords.cwl",
+    "mummer4_show-snps.cwl",
+    "mummer4_show-tiling.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# mummer4\n\n## Overview\nMUMmer4 is a high-performance alignment system designed for comparing large DNA sequences, such as entire bacterial or eukaryotic genomes. It excels at identifying maximal exact matches (MUMs) and clustering them into longer alignments. You should use this skill to navigate the modular nature of the MUMmer package, selecting the appropriate tool (nucmer for nucleotides, promer for amino acids, or dnadiff for automated comparative statistics) based on the evolutionary distance and quality of your input sequences.\n\n## Core Workflows\n\n### 1. Nucleotide Alignment (nucmer)\nUse `nucmer` for comparing highly similar sequences (e.g., different strains of the same species or mapping contigs to a reference).\n\n*   **Basic Usage**: `nucmer -p <prefix> <reference.fasta> <query.fasta>`\n*   **Key Options**:\n    *   `--mum`: Use only matches that are unique in both reference and query.\n    *   `--mumreference`: (Default) Use matches unique in the reference.\n    *   `--maxmatch`: Use all matches regardless of uniqueness (use with caution in repetitive genomes).\n    *   `-c <int>`: Minimum cluster size. Increase this to reduce noise in draft assemblies.\n\n### 2. Protein-Level Alignment (promer)\nUse `promer` for divergent sequences where DNA similarity is low but protein conservation remains. It translates sequences in all 6 frames before aligning.\n\n*   **Basic Usage**: `promer -p <prefix> <reference.fasta> <query.fasta>`\n*   **Note**: Coordinates in output are still nucleotide-based, but delta values represent amino acids.\n\n### 3. Automated Comparison (dnadiff)\nUse `dnadiff` for a comprehensive \"all-in-one\" report of differences between two similar genomes or assemblies.\n\n*   **Usage**: `dnadiff <reference.fasta> <query.fasta>`\n*   **Outputs**: Generates `.report` (summary statistics), `.snps` (mismatches), and `.qdiff/.rdiff` (structural breakpoints).\n\n## Processing Alignment Output\nMUMmer produces `.delta` files which must be parsed by helper utilities to become human-readable.\n\n*   **show-coords**: Converts delta files to a tabular coordinate format.\n    *   `show-coords -r -c -l <file.delta> > <file.coords>`\n    *   `-r`: Sort by reference.\n    *   `-c`: Include percent coverage.\n*   **show-snps**: Extracts SNPs and indels.\n    *   `show-snps -C <file.delta>` (-C ensures only SNPs from unique regions are reported).\n*   **delta-filter**: Filters alignments to find the \"best\" set.\n    *   `delta-filter -m <file.delta>`: Many-to-many alignment (allows for duplications).\n    *   `delta-filter -1 <file.delta>`: One-to-one alignment (best for SNP finding).\n*   **show-tiling**: Generates a minimal set of contigs to cover the reference.\n    *   `show-tiling <file.delta>`\n\n## Visualization\n*   **mummerplot**: Generates dot plots for gnuplot.\n    *   `mummerplot -p <prefix> <file.delta>`\n    *   Use `-postscript` or `-png` to specify output format.\n    *   Forward matches appear as red lines (slope 1); reverse matches appear as green/blue lines (slope -1).\n\n## Expert Tips\n*   **Memory Management**: MUMmer4 is memory-efficient, but for extremely large genomes, ensure you have sufficient RAM for the suffix tree construction.\n*   **Draft Assemblies**: When aligning hundreds of contigs, always use `show-coords -rcl` to see which contigs have the best coverage and identity relative to the reference.\n*   **Tandem Repeats**: Use the `exact-tandems` utility for quick detection of repetitive units within a single FASTA file.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| delta-filter | Reads a delta alignment file from either nucmer or promer and filters the alignments based on the command-line switches, leaving only the desired alignments which are output to stdout in the same delta format as the input. |\n| dnadiff | Run comparative analysis of two sequence sets using nucmer and its associated utilities with recommended parameters. See MUMmer documentation for a more detailed description of the output. Produces the following output files: |\n| mummerplot | mummerplot generates plots of alignment data produced by mummer, nucmer, promer or show-tiling by using the GNU gnuplot utility. After generating the appropriate scripts and datafiles, mummerplot will attempt to run gnuplot to generate the plot. If this attempt fails, a warning will be output and the resulting .gp and .[frh]plot files will remain so that the user may run gnuplot independently. If the attempt succeeds, either an interactive gnuplot window will be spawned (default) or an additional output file will be generated (e.g., .ps or .png depending on the selected terminal with -t). Feel free to edit the resulting gnuplot script (.gp) and rerun gnuplot to change line thinkness, labels, colors, plot size etc. |\n| nucmer | generates nucleotide alignments between two mutli-FASTA input files. The out.delta output file lists the distance between insertions and deletions that produce maximal scoring alignments between each sequence. The show-* utilities know how to read this format. |\n| promer | promer generates amino acid alignments between two mutli-FASTA DNA input files. The out.delta output file lists the distance between insertions and deletions that produce maximal scoring alignments between each sequence. The show-* utilities know how to read this format. The DNA input is translated into all 6 reading frames in order to generate the output, but the output coordinates reference the original DNA input. |\n| show-coords | Output is to stdout, and consists of a list of coordinates, percent identity, and other useful information regarding the alignment data contained in the .delta file used as input. |\n| show-snps | Output is to stdout, and consists of a list of SNPs (or amino acid substitutions for promer) with positions and other useful info. |\n| show-tiling | Output is to stdout, and consists of the predicted location of each aligning query contig as mapped to the reference sequences. These coordinates reference the extent of the entire query contig, even when only a certain percentage of the contig was actually aligned (unless the -a option is used). Columns are, start in ref, end in ref, distance to next contig, length of this contig, alignment coverage, identity, orientation, and ID respectively. |\n\n## Reference documentation\n- [MUMmer4 Manual](./references/mummer4_github_io_manual_manual.html.md)\n- [MUMmer4 Tutorials](./references/mummer4_github_io_tutorial_tutorial.html.md)\n- [MUMmer4 GitHub Wiki](./references/github_com_mummer4_mummer_wiki.md)",
+  "skill_front_matter": {
+    "name": "mummer4",
+    "description": "MUMmer4 is a high-performance alignment system designed for comparing large DNA sequences and entire genomes. Use when user asks to align whole genomes, compare nucleotide or protein sequences, identify SNPs, or generate dot plots for sequence comparisons.",
+    "homepage": "https://mummer4.github.io/"
+  }
+}

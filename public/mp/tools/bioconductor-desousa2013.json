@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-desousa2013",
+  "category": "bioconductor",
+  "name": "bioconductor-desousa2013",
+  "description": "This package provides a pipeline for the molecular classification of colon cancer into three distinct subtypes using microarray data. Use when user asks to identify colon cancer subtypes, perform consensus clustering, build a PAM classifier, or conduct survival analysis on colorectal cancer datasets.",
+  "overview": "The DeSousa2013 package provides the data and pipeline used to identify three molecularly distinct subtypes of colon cancer. It is primarily built around the AMC-AJCCII-90 dataset (90 stage II colon cancer patients). The package allows users to perform the entire bioinformatic workflow from raw microarray preprocessing to clinical characterization via survival analysis.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/DeSousa2013.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-desousa2013/overview",
+  "github": "N/A",
+  "conda_downloads": "24.8K",
+  "conda_downloads_num": 24800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DeSousa2013"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/DeSousa2013.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-desousa2013/overview",
+    "github": "N/A",
+    "conda_downloads": "24.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-desousa2013\n\nname: bioconductor-desousa2013\ndescription: Molecular classification of colon cancer using the DeSousa2013 Bioconductor package. Use this skill to reproduce the identification of three distinct colon cancer subtypes (CCS1, CCS2, CCS3) from microarray data, perform GAP statistic calculations, consensus clustering, PAM classifier construction, and survival analysis.\n\n## Overview\n\nThe DeSousa2013 package provides the data and pipeline used to identify three molecularly distinct subtypes of colon cancer. It is primarily built around the AMC-AJCCII-90 dataset (90 stage II colon cancer patients). The package allows users to perform the entire bioinformatic workflow from raw microarray preprocessing to clinical characterization via survival analysis.\n\n## Core Workflow\n\n### 1. Loading Data and Pipeline Execution\nThe simplest way to run the entire analysis is using the `CRCPipeLine` function.\n\n```r\nlibrary(DeSousa2013)\ndata(AMC)\n\n# Run the full pipeline (skipping preprocessing by default for speed)\nCRCPipeLine(celpath=\".\", \n            AMC_sample_head, \n            AMC_CRC_clinical, \n            preprocess=FALSE, \n            savepath=\".\")\n```\n\n### 2. Subtype Identification Steps\n\nIf running steps manually for finer control:\n\n**Preprocessing and GAP Statistic:**\nDetermine the optimal number of clusters (k) using the GAP statistic.\n```r\n# Load preprocessed data if not running geneExpPre\ndata(AMC)\n# ge.CRC is the expression matrix\ngaps <- compGapStats(ge.CRC, ntops=c(2, 4, 8, 12, 16, 20)*1000, K.max=6, nboot=100)\nfigGAP(gaps[[\"gapsmat\"]], gaps[[\"gapsSE\"]])\n```\n\n**Consensus Clustering:**\nIdentify stable clusters using the most variable probesets.\n```r\n# Select top variable genes (MAD > 0.5)\nsdat <- selTopVarGenes(ge.CRC, MADth=0.5)\n\n# Perform consensus clustering\nclus <- conClust(sdat, maxK=12, reps=1000)\n```\n\n**Feature Selection:**\nFilter for the most predictive genes using SAM (Significance Analysis of Microarrays) and AUC (Area Under Curve).\n```r\n# Collapse probesets to unique genes\nuniGenes <- pbs2unigenes(ge.CRC, sdat)\n\n# Filter samples with positive silhouette width\nsamp.f <- filterSamples(sdat, uniGenes, clus)\nsdat.f <- samp.f[[\"sdat.f\"]]\nclus.f <- samp.f[[\"clus.f\"]]\n\n# Find differential genes (SAM)\ndiffGenes <- findDiffGenes(sdat.f, clus.f, pvalth=0.01)\n\n# Filter by AUC (> 0.9)\ndiffGenes.f <- filterDiffGenes(sdat.f, clus.f, diffGenes, aucth=0.9)\n```\n\n### 3. Building and Applying the Classifier\nTrain a PAM (Prediction Analysis for Microarrays) classifier to categorize samples.\n```r\nsigMat <- sdat.f[diffGenes.f, names(clus.f)]\nclassifier <- buildClassifier(sigMat, clus.f, nfold=10, nboot=100)\n\n# Classify samples\npamcl <- pamClassify(datsel, classifier[[\"signature\"]], classifier[[\"pam.rslt\"]], classifier[[\"thresh\"]])\n```\n\n### 4. Survival Analysis\nCharacterize the prognosis of the identified subtypes. CCS3 typically shows significantly poorer disease-free survival (DFS).\n```r\n# Perform survival analysis\nprog <- progAMC(AMC_CRC_clinical, AMC_sample_head, pamcl[[\"clu.pred\"]])\n\n# Plot Kaplan-Meier curves\nfigKM(prog[[\"surv\"]], prog[[\"survstats\"]])\n```\n\n## Key Functions\n- `CRCPipeLine()`: Wrapper for the entire analysis.\n- `geneExpPre()`: Preprocesses .CEL files using fRMA and ComBat.\n- `compGapStats()`: Calculates GAP statistics to find the optimal number of clusters.\n- `conClust()`: Performs consensus clustering.\n- `buildClassifier()`: Trains the PAM classifier.\n- `progAMC()`: Performs disease-free survival analysis on the AMC dataset.\n\n## Reference documentation\n- [DeSousa2013-Vignette](./references/DeSousa2013-Vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-desousa2013",
+    "description": "This package provides a pipeline for the molecular classification of colon cancer into three distinct subtypes using microarray data. Use when user asks to identify colon cancer subtypes, perform consensus clustering, build a PAM classifier, or conduct survival analysis on colorectal cancer datasets.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/DeSousa2013.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-alphabeta",
+  "category": "bioconductor",
+  "name": "bioconductor-alphabeta",
+  "description": "This tool estimates epimutation rates and spectra from high-throughput DNA methylation data using pedigree-based models. Use when user asks to calculate methylation gain and loss rates, estimate selection coefficients, or analyze methylome divergence in mutation accumulation lines and clonal lineages.",
+  "overview": "AlphaBeta is an R package designed to estimate epimutation rates (the rate at which cytosine methylation states change) using pedigree-based DNA methylation data. It supports two primary experimental contexts:\n1. **Selfing/Sexual Systems**: Mutation accumulation (MA) lines derived from a common founder.\n2. **Somatic/Clonal Systems**: Branching structures in trees or clonally propagated lineages.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AlphaBeta.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alphabeta/overview",
+  "github": "N/A",
+  "conda_downloads": "19.7K",
+  "conda_downloads_num": 19700,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AlphaBeta"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AlphaBeta.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-alphabeta/overview",
+    "github": "N/A",
+    "conda_downloads": "19.7K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-alphabeta\n\nname: bioconductor-alphabeta\ndescription: Computational method for estimating epimutation rates and spectra from high-throughput DNA methylation data. Use when analyzing \"germline\" epimutations in mutation accumulation (MA) lines or \"somatic\" epimutations in long-lived perennials (trees) to calculate methylation gain/loss rates and selection coefficients.\n\n# bioconductor-alphabeta\n\n## Overview\n\nAlphaBeta is an R package designed to estimate epimutation rates (the rate at which cytosine methylation states change) using pedigree-based DNA methylation data. It supports two primary experimental contexts:\n1. **Selfing/Sexual Systems**: Mutation accumulation (MA) lines derived from a common founder.\n2. **Somatic/Clonal Systems**: Branching structures in trees or clonally propagated lineages.\n\nThe package fits various mathematical models (neutral vs. selection) to observed methylome divergence across generations or time to infer the rates of spontaneous methylation gain ($\\alpha$) and loss ($\\beta$).\n\n## Workflow\n\n### 1. Input Preparation\n\nAlphaBeta requires two pedigree-defining files and methylome data files.\n\n**Pedigree Files:**\n- **Nodelist**: Defines nodes (sampled $S^*$ and unsampled $S$), generation/time, and whether methylome data exists.\n- **Edgelist**: Defines ancestral relationships (from/to) and optionally generation differences.\n\n**Methylome Files:**\nExpected in `methimpute` format (tab-delimited).\n- Required columns: `seqnames`, `start`, `strand`, `context` (CG, CHG, or CHH), `status` (0=unmethylated, 1=methylated), and `posteriorMax`.\n- For non-methimpute data: Set `posteriorMax = 1` and `rc.meth.lvl = methylated_counts / total_counts`.\n\n### 2. Building the Pedigree\n\nUse `buildPedigree` to calculate the divergence time ($\\Delta t$) and methylome divergence ($D$) between all pairs of samples.\n\n```r\nlibrary(AlphaBeta)\n\n# For MA-lines\noutput <- buildPedigree(nodelist = \"nodelist.fn\", \n                        edgelist = \"edgelist.fn\", \n                        cytosine = \"CG\", \n                        posteriorMaxFilter = 0.99)\n\n# Access divergence data\npedigree_data <- output$Pdata\ninitial_unmethylated_prop <- output$tmpp0\n```\n\n### 3. Visualization and Diagnostics\n\nVerify the pedigree topology and inspect for outliers.\n\n```r\n# Plot the pedigree structure\nplotPedigree(nodelist = \"nodelist.fn\", \n             edgelist = \"edgelist.fn\", \n             sampling.design = \"progenitor.endpoint\") # or \"tree\", \"sibling\"\n\n# Plot Divergence vs Delta.t\ndt <- pedigree_data[,2] + pedigree_data[,3] - 2*pedigree_data[,1]\nplot(dt, pedigree_data[,\"D.value\"], xlab=\"Delta T\", ylab=\"Divergence\")\n```\n\n### 4. Model Fitting\n\n#### Selfing Systems (MA-lines)\n- `ABneutral`: Assumes no selection.\n- `ABselectMM`: Selection against gain of methylation.\n- `ABselectUU`: Selection against loss of methylation.\n- `ABnull`: Null model (no accumulation).\n\n```r\n# Fit neutral model\nfit_neutral <- ABneutral(pedigree.data = pedigree_data, \n                         p0uu = initial_unmethylated_prop, \n                         Nstarts = 50, \n                         out.dir = getwd(), \n                         out.name = \"neutral_model\")\n```\n\n#### Somatic/Clonal Systems (Trees)\n- `ABneutralSOMA`: Neutral somatic epimutations.\n- `ABselectMMSOMA`: Selection against somatic methylation gain.\n- `ABselectUUSOMA`: Selection against somatic methylation loss.\n\n```r\nfit_soma <- ABneutralSOMA(pedigree.data = pedigree_data, \n                          p0uu = initial_unmethylated_prop, \n                          Nstarts = 50, \n                          out.dir = getwd(), \n                          out.name = \"soma_model\")\n```\n\n### 5. Model Comparison and Bootstrapping\n\nUse an F-test to determine if selection models fit significantly better than the neutral model.\n\n```r\n# Compare Neutral vs Null\ncomparison <- FtestRSS(pedigree.select = \"neutral_model.Rdata\", \n                       pedigree.null = \"null_model.Rdata\")\nprint(comparison$Ftest)\n\n# Estimate confidence intervals via bootstrapping\nboot_results <- BOOTmodel(pedigree.data = \"neutral_model.Rdata\", \n                          Nboot = 100, \n                          out.dir = getwd(), \n                          out.name = \"boot_results\")\n```\n\n### 6. Plotting Results\n\nVisualize the model fit against the observed data.\n\n```r\nABplot(pedigree.names = \"neutral_model.Rdata\", \n       output.dir = getwd(), \n       out.name = \"fit_plot\")\n```\n\n## Tips for Success\n- **Nstarts**: For final results, use `Nstarts = 50` or higher to ensure the optimization reaches the global maximum.\n- **Filtering**: Use `posteriorMaxFilter` (e.g., 0.99) in `buildPedigree` to ensure only high-confidence methylation calls are used.\n- **Context**: Epimutation rates vary significantly by context (CG, CHG, CHH). Run separate analyses for each.\n- **Tree Data**: For trees with multiple stems, ensure the `stem` column is correctly populated in the `edgelist`.\n\n## Reference documentation\n- [AlphaBeta](./references/AlphaBeta.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-alphabeta",
+    "description": "This tool estimates epimutation rates and spectra from high-throughput DNA methylation data using pedigree-based models. Use when user asks to calculate methylation gain and loss rates, estimate selection coefficients, or analyze methylome divergence in mutation accumulation lines and clonal lineages.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AlphaBeta.html"
+  }
+}

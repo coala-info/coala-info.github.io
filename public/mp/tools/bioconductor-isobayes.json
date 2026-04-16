@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-isobayes",
+  "category": "bioconductor",
+  "name": "bioconductor-isobayes",
+  "description": "IsoBayes performs Bayesian inference for protein isoform-level quantification and presence estimation using mass spectrometry data. Use when user asks to estimate protein isoform abundance, integrate transcriptomics data as informative priors, or identify discrepancies between protein and transcript relative abundances.",
+  "overview": "IsoBayes is a Bayesian framework for protein isoform-level inference. It addresses two major challenges in mass spectrometry (MS) proteomics: peptide identification uncertainty (via Posterior Error Probabilities - PEP) and peptide-to-isoform mapping ambiguity (degenerate peptides). It provides posterior probabilities of isoform presence, absolute abundance estimates with credible intervals, and relative abundance (Pi) metrics.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/IsoBayes.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-isobayes/overview",
+  "github": "https://github.com/SimoneTiberi/IsoBayes",
+  "conda_downloads": "1.8K",
+  "conda_downloads_num": 1800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IsoBayes"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/IsoBayes.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-isobayes/overview",
+    "github": "https://github.com/SimoneTiberi/IsoBayes",
+    "conda_downloads": "1.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-isobayes\n\nname: bioconductor-isobayes\ndescription: Bayesian inference for single protein isoforms using MS data (PSM counts or intensities). Use this skill to estimate protein isoform presence/absence and abundance, integrate transcriptomics (TPM) data as informative priors, and identify discrepancies between protein and transcript relative abundances.\n\n# bioconductor-isobayes\n\n## Overview\nIsoBayes is a Bayesian framework for protein isoform-level inference. It addresses two major challenges in mass spectrometry (MS) proteomics: peptide identification uncertainty (via Posterior Error Probabilities - PEP) and peptide-to-isoform mapping ambiguity (degenerate peptides). It provides posterior probabilities of isoform presence, absolute abundance estimates with credible intervals, and relative abundance (Pi) metrics.\n\n## Core Workflow\n\n### 1. Data Preparation\nIsoBayes requires MS data (PSM counts or intensities) and optionally transcriptomics data (TPM).\n\n```r\nlibrary(IsoBayes)\n\n# Define paths to data\ndata_dir <- system.file(\"extdata\", package = \"IsoBayes\")\npath_psm <- paste0(data_dir, \"/AllPeptides.psmtsv\")\npath_tpm <- paste0(data_dir, \"/jurkat_isoform_kallisto.tsv\") # Optional\n```\n\n### 2. Generating the SummarizedExperiment (SE)\nUse `generate_SE` to structure input files based on the source (MetaMorpheus, OpenMS/Percolator, or custom).\n\n*   **MetaMorpheus (PSM):**\n    ```r\n    SE <- generate_SE(path_to_peptides_psm = path_psm, \n                      abundance_type = \"psm\", \n                      input_type = \"metamorpheus\")\n    ```\n*   **MetaMorpheus (Intensities):**\n    ```r\n    SE <- generate_SE(path_to_peptides_psm = path_psm,\n                      path_to_peptides_intensities = \"path/to/AllQuantifiedPeptides.tsv\",\n                      abundance_type = \"intensities\",\n                      input_type = \"metamorpheus\")\n    ```\n*   **Custom Data:** Provide a data.frame with columns `Y` (abundance), `EC` (Equivalent Classes, e.g., \"iso1|iso2\"), and optionally `PEP` and `sequence`.\n\n### 3. Pre-processing and Inference\nLoad the SE and TPM data, then run the MCMC-based inference.\n\n```r\n# Pre-process\ndata_loaded <- input_data(SE, path_to_tpm = path_tpm)\n\n# Run Inference\n# Use n_cores for speed on large datasets\nset.seed(123)\nresults <- inference(data_loaded, n_cores = 1, traceplot = TRUE)\n```\n\n### 4. Gene-Level Normalization\nTo analyze alternative splicing within genes, provide a mapping file (2 columns: Isoform, Gene).\n\n```r\npath_map <- paste0(data_dir, \"/map_iso_gene.csv\")\nresults_norm <- inference(data_loaded, map_iso_gene = path_map, traceplot = TRUE)\n```\n\n## Interpreting Results\nThe output is a list containing:\n*   `isoform_results`: Main table with `Prob_present`, `Abundance`, `Pi` (relative abundance), and `Log2_FC` (protein vs. transcript).\n*   `normalized_isoform_results`: Relative abundances normalized to sum to 1 within each gene.\n*   `gene_abundance`: Aggregated absolute abundance at the gene level.\n\n## Visualization and Diagnostics\n\n### Relative Abundance Plots\nCompare protein and transcript levels for a specific gene:\n```r\nplot_relative_abundances(results_norm, gene_id = \"TUBB\", normalize_gene = TRUE)\n```\n\n### Convergence Diagnostics\nCheck MCMC traceplots for specific isoforms:\n```r\nplot_traceplot(results_norm, \"TUBB-205\")\n```\n\n## Key Tips\n*   **PEP vs FDR:** It is recommended to use PEP (Posterior Error Probability) with a relaxed FDR threshold (0.1) to allow the model to account for identification uncertainty rather than hard-filtering at FDR 0.01.\n*   **TPM Matching:** Ensure isoform names in the TPM file match the protein isoform names in the MS data exactly.\n*   **Intensities:** Using intensities generally provides a marginal performance boost over PSM counts.\n\n## Reference documentation\n- [IsoBayes](./references/IsoBayes.md)\n- [IsoBayes Vignette Source](./references/IsoBayes.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-isobayes",
+    "description": "IsoBayes performs Bayesian inference for protein isoform-level quantification and presence estimation using mass spectrometry data. Use when user asks to estimate protein isoform abundance, integrate transcriptomics data as informative priors, or identify discrepancies between protein and transcript relative abundances.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/IsoBayes.html"
+  }
+}

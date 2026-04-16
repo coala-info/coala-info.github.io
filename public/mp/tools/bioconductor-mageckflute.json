@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-mageckflute",
+  "category": "bioconductor",
+  "name": "bioconductor-mageckflute",
+  "description": "MAGeCKFlute performs downstream analysis and visualization of CRISPR/Cas9 screen data. Use when user asks to process MAGeCK RRA or MLE results, perform quality control on CRISPR read counts, normalize beta scores, identify essential genes, or conduct functional enrichment analysis.",
+  "overview": "MAGeCKFlute is a Bioconductor package designed for the integrative analysis of pooled CRISPR functional genetic screens. It serves as a downstream companion to MAGeCK and MAGeCK-VISPR, providing tools for quality control, data normalization (including cell-cycle effect removal), and biological interpretation. It supports identifying essential, non-essential, and treatment-associated genes through various visualization techniques and enrichment analysis methods.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MAGeCKFlute.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MAGeCKFlute"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MAGeCKFlute.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-mageckflute\n\nname: bioconductor-mageckflute\ndescription: Downstream analysis and visualization of CRISPR/Cas9 screen data. Use this skill to process MAGeCK RRA or MLE results, perform quality control on read counts, normalize beta scores, identify essential genes, and conduct functional enrichment analysis (GO, KEGG, CORUM).\n\n## Overview\n\nMAGeCKFlute is a Bioconductor package designed for the integrative analysis of pooled CRISPR functional genetic screens. It serves as a downstream companion to MAGeCK and MAGeCK-VISPR, providing tools for quality control, data normalization (including cell-cycle effect removal), and biological interpretation. It supports identifying essential, non-essential, and treatment-associated genes through various visualization techniques and enrichment analysis methods.\n\n## Core Workflows\n\n### 1. Quality Control of Read Counts\nBefore gene-level analysis, evaluate the quality of the library and sequencing.\n```r\nlibrary(MAGeCKFlute)\ndata(\"countsummary\") # Example data\n\n# Visualize mapping rates\nMapRatesView(countsummary)\n\n# Check library evenness (Gini Index)\nIdentBarView(countsummary, x = \"Label\", y = \"GiniIndex\", ylab = \"Gini index\", main = \"Evenness of sgRNA reads\")\n\n# Check for missed sgRNAs (Zero counts)\ncountsummary$Missed = log10(countsummary$Zerocounts)\nIdentBarView(countsummary, x = \"Label\", y = \"Missed\", fill = \"#394E80\", ylab = \"Log10 missed gRNAs\")\n```\n\n### 2. MAGeCK RRA Analysis (Two-condition comparison)\nUse RRA results to identify genes with significant positive or negative selection.\n```r\ndata(\"rra.gene_summary\")\ndata(\"rra.sgrna_summary\")\n\n# Automated pipeline\nFluteRRA(rra.gene_summary, rra.sgrna_summary, prefix=\"RRA\", organism=\"hsa\")\n\n# Manual visualization\ndd.rra = ReadRRA(rra.gene_summary, organism = \"hsa\")\nVolcanoView(dd.rra, x = \"LFC\", y = \"FDR\", Label = \"Official\")\n\n# Rank view of top hits\ngeneList = dd.rra$LFC\nnames(geneList) = dd.rra$Official\nRankView(geneList, top = 10, bottom = 10)\n```\n\n### 3. MAGeCK MLE Analysis (Multi-condition/Beta Scores)\nMLE provides beta scores representing the degree of selection.\n\n**Normalization and Batch Correction:**\n```r\ndata(\"mle.gene_summary\")\ndd = ReadBeta(mle.gene_summary, organism=\"hsa\")\n\n# Remove batch effects if necessary\n# edata1 = BatchRemove(edata, batchMat)\n\n# Normalize beta scores (cell_cycle method is recommended for CRISPR screens)\ndd_essential = NormalizeBeta(dd, samples=c(\"dmso\", \"plx\"), method=\"cell_cycle\")\n\n# Visualize distribution after normalization\nDensityView(dd_essential, samples=c(\"dmso\", \"plx\"))\n```\n\n**Identifying Hits and 9-Square Model:**\nThe 9-square model groups genes based on their selection status in control vs. treatment.\n```r\n# Scatter plot of Control vs Treatment\nScatterView(dd_essential, \"dmso\", \"plx\")\n\n# 9-square model visualization\np3 = SquareView(dd_essential, label = \"Gene\")\n# Access grouped data\nsquare_data = p3$data \n```\n\n### 4. Functional Enrichment Analysis\nPerform enrichment on selected gene sets using Over-Representation Test (ORT), GSEA, or Hypergeometric Test (HGT).\n```r\n# Example: HGT enrichment for CORUM complexes\nuniverse = dd.rra$EntrezID\ngeneList = dd.rra$LFC\nnames(geneList) = universe\n\nenrich = enrich.GSE(geneList = geneList, type = \"CORUM\")\nEnrichedGSEView(slot(enrich, \"result\"))\n\n# KEGG Pathway visualization\ngenedata = dd_essential[, c(\"dmso\", \"plx\")]\n# Visualize specific pathway (e.g., first hit)\nkeggID = gsub(\"KEGG_\", \"\", slot(enrich, \"result\")$ID[1])\narrangePathview(genedata, pathways = keggID, organism = \"hsa\")\n```\n\n## Key Functions\n- `FluteRRA` / `FluteMLE`: Comprehensive wrapper pipelines for RRA and MLE outputs.\n- `ReadBeta` / `ReadRRA`: Parsers for MAGeCK output files.\n- `NormalizeBeta`: Normalizes beta scores using `cell_cycle` or `loess` methods.\n- `SquareView`: Implements the 9-square logic to identify treatment-specific hits.\n- `EnrichedView` / `EnrichedGSEView`: Standardized plotting for enrichment results.\n- `KeggPathwayView`: Overlays screen data onto KEGG pathway maps.\n\n## Tips\n- **Organism Support**: Ensure the `organism` parameter (e.g., \"hsa\" for human, \"mmu\" for mouse) matches your data.\n- **Gene IDs**: The package often requires Entrez IDs for enrichment functions; use `TransID` if conversion is needed.\n- **Cell Cycle Normalization**: Use `method=\"cell_cycle\"` in `NormalizeBeta` to account for different proliferation rates between conditions, which is a common bias in CRISPR screens.\n\n## Reference documentation\n- [Integrative analysis pipeline for pooled CRISPR functional genetic screens - MAGeCKFlute](./references/MAGeCKFlute.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-mageckflute",
+    "description": "MAGeCKFlute performs downstream analysis and visualization of CRISPR/Cas9 screen data. Use when user asks to process MAGeCK RRA or MLE results, perform quality control on CRISPR read counts, normalize beta scores, identify essential genes, or conduct functional enrichment analysis.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/MAGeCKFlute.html"
+  }
+}

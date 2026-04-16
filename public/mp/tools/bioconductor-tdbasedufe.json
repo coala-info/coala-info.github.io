@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tdbasedufe",
+  "category": "bioconductor",
+  "name": "bioconductor-tdbasedufe",
+  "description": "This tool performs tensor decomposition-based unsupervised feature extraction for gene expression and multi-omics data analysis. Use when user asks to identify differentially expressed genes, extract features from multi-dimensional tensors using HOSVD, or perform unsupervised feature selection across multiple omics layers.",
+  "overview": "TDbasedUFE is a Bioconductor package designed for unsupervised feature extraction from complex biological datasets. It utilizes Tucker decomposition (specifically HOSVD) to decompose multi-dimensional tensors into singular value vectors. By selecting vectors that represent specific biological conditions (e.g., disease vs. control), the package identifies features (genes, methylation sites, etc.) that deviate from a Gaussian null distribution. A key strength is its ability to optimize the standar",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TDbasedUFE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/tagtag/TDbasedUFE",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TDbasedUFE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TDbasedUFE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/tagtag/TDbasedUFE",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tdbasedufe\n\nname: bioconductor-tdbasedufe\ndescription: Perform Tensor Decomposition-based Unsupervised Feature Extraction (TDbasedUFE) for gene expression and multi-omics data analysis. Use this skill to identify differentially expressed genes or features across multiple conditions, tissues, or omics layers using HOSVD (Higher Order Singular Value Decomposition) and optimized standard deviation for p-value calculation.\n\n## Overview\nTDbasedUFE is a Bioconductor package designed for unsupervised feature extraction from complex biological datasets. It utilizes Tucker decomposition (specifically HOSVD) to decompose multi-dimensional tensors into singular value vectors. By selecting vectors that represent specific biological conditions (e.g., disease vs. control), the package identifies features (genes, methylation sites, etc.) that deviate from a Gaussian null distribution. A key strength is its ability to optimize the standard deviation (SD) used in p-value calculations to improve feature selection accuracy.\n\n## Installation\n```R\nif (!require(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"TDbasedUFE\")\nlibrary(TDbasedUFE)\n```\n\n## Core Workflow: Gene Expression Analysis\nThis workflow is used for 3D tensors (e.g., Genes x Samples x Conditions).\n\n1. **Prepare Tensor**: Convert count or abundance data into a tensor format.\n   ```R\n   # Z should be a tensor (e.g., 10000 genes x 3 replicates x 2 conditions)\n   Z <- PrepareSummarizedExperimentTensor(sample_matrix, feature_names, data_array)\n   ```\n2. **Compute HOSVD**: Decompose the tensor.\n   ```R\n   HOSVD <- computeHosvd(Z)\n   ```\n3. **Select Singular Value Vectors**: Identify which vectors correspond to the biological signal of interest.\n   ```R\n   # Interactive mode\n   input_all <- selectSingularValueVectorSmall(HOSVD)\n   # Batch mode (e.g., selecting vectors 1 and 2)\n   input_all <- selectSingularValueVectorSmall(HOSVD, input_all = c(1, 2))\n   ```\n4. **Feature Selection**: Calculate p-values and select features based on the optimized SD.\n   ```R\n   index <- selectFeature(HOSVD, input_all)\n   ```\n5. **Results Table**: Extract the top-ranked features.\n   ```R\n   results <- tableFeatures(Z, index)\n   head(results)\n   ```\n\n## Core Workflow: Multi-omics Analysis\nThis workflow uses a \"bundle of linear kernels\" approach for datasets with different feature counts across omics layers.\n\n1. **Prepare Square Tensor**: Create a tensor of kernels (Samples x Samples x Omics).\n   ```R\n   Z <- PrepareSummarizedExperimentTensorSquare(\n       sample = sample_names,\n       feature = list(mRNA = genes, Methyl = sites, ...),\n       value = convertSquare(data_list),\n       sampleData = metadata\n   )\n   ```\n2. **Compute HOSVD**:\n   ```R\n   HOSVD <- computeHosvdSqure(Z)\n   ```\n3. **Select Vectors**:\n   ```R\n   # cond defines the labeling information for selection\n   cond <- list(metadata$gender, metadata$gender, seq_len(num_omics))\n   input_all <- selectSingularValueVectorLarge(HOSVD, cond)\n   ```\n4. **Feature Selection**: Optimize SD for each omics layer.\n   ```R\n   # de provides initial SD guesses for each omics layer\n   index <- selectFeatureSquare(HOSVD, input_all, original_data_list, de = c(0.3, 0.1, ...))\n   ```\n5. **Results Table**: Extract features for a specific omics layer (id).\n   ```R\n   tableFeaturesSquare(Z, index, id = 3) # e.g., mRNA results\n   ```\n\n## Key Functions\n- `PrepareSummarizedExperimentTensor()`: Formats raw data into a tensor.\n- `computeHosvd()` / `computeHosvdSqure()`: Performs the core decomposition.\n- `selectSingularValueVectorSmall()` / `...Large()`: Tools to visualize and pick vectors representing experimental design.\n- `selectFeature()` / `selectFeatureSquare()`: Performs the unsupervised feature extraction using Gaussian distribution as a null hypothesis.\n- `tableFeatures()`: Generates a data frame of selected features with p-values and adjusted p-values (BH method).\n\n## Tips for Success\n- **Vector Selection**: In `selectSingularValueVector`, look for vectors that show a clear separation between groups or follow a known experimental trend (e.g., a constant vector for baseline or a contrast vector for treatment vs. control).\n- **SD Optimization**: If `selectFeature` fails to find a minimum, try adjusting the `de` parameter (initial SD) in the square/multi-omics workflow.\n- **Memory Management**: For very large datasets, consider reducing the number of features (e.g., pre-filtering by variance) before tensor construction to avoid memory issues during HOSVD.\n\n## Reference documentation\n- [QuickStart](./references/QuickStart.md)\n- [TDbasedUFE](./references/TDbasedUFE.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tdbasedufe",
+    "description": "This tool performs tensor decomposition-based unsupervised feature extraction for gene expression and multi-omics data analysis. Use when user asks to identify differentially expressed genes, extract features from multi-dimensional tensors using HOSVD, or perform unsupervised feature selection across multiple omics layers.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TDbasedUFE.html"
+  }
+}

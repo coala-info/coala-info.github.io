@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gmicr",
+  "category": "bioconductor",
+  "name": "bioconductor-gmicr",
+  "description": "This tool builds Gene Module-Immune Cell networks by integrating gene expression data and immune cell signatures using WGCNA and Bayesian Network learning. Use when user asks to build GMIC networks, perform integrative analysis of gene expression and immune cell signatures, or infer causal relationships between gene modules and cell types.",
+  "overview": "GmicR is a Bioconductor package designed to infer causal relationships between gene modules and immune cell signatures. It integrates Weighted Gene Co-expression Network Analysis (WGCNA) for dimensionality reduction of expression data with Bayesian Network (BN) learning and xCell cell signatures. The workflow transforms high-dimensional transcriptomic data into module eigengenes, discretizes them alongside cell signatures, and uses bootstrapping to learn a robust network structure.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/GmicR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gmicr/overview",
+  "github": "N/A",
+  "conda_downloads": "19.6K",
+  "conda_downloads_num": 19600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "GmicR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GmicR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gmicr/overview",
+    "github": "N/A",
+    "conda_downloads": "19.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gmicr\n\nname: bioconductor-gmicr\ndescription: Expert guidance for the GmicR R package to build Gene Module-Immune Cell (GMIC) networks. Use this skill when performing integrative analysis of gene expression data and immune cell signatures using WGCNA and Bayesian Network learning.\n\n# bioconductor-gmicr\n\n## Overview\nGmicR is a Bioconductor package designed to infer causal relationships between gene modules and immune cell signatures. It integrates Weighted Gene Co-expression Network Analysis (WGCNA) for dimensionality reduction of expression data with Bayesian Network (BN) learning and xCell cell signatures. The workflow transforms high-dimensional transcriptomic data into module eigengenes, discretizes them alongside cell signatures, and uses bootstrapping to learn a robust network structure.\n\n## Core Workflow\n\n### 1. Data Preparation and QC\nInput expression data must be normalized (RPKM/FPKM/TPM/RSEM) and annotated with official gene symbols.\n\n```r\nlibrary(GmicR)\nlibrary(WGCNA)\n\n# Transpose so genes are columns\ndatExpr <- data.frame(t(read.delim(\"expression_data.txt\", row.names = 1)))\n\n# Quality Control\ngsg <- goodSamplesGenes(datExpr, verbose = 3)\nif (!gsg$allOK) {\n  # Remove offending genes/samples if necessary\n  datExpr <- datExpr[gsg$goodSamples, gsg$goodGenes]\n}\n```\n\n### 2. Gene Module Detection (WGCNA)\nUse `Auto_WGCNA` as a wrapper for module detection.\n\n```r\nGMIC_Builder <- Auto_WGCNA(datExpr,\n  mergeCutHeight = 0.35, \n  minModuleSize = 10,\n  networkType = \"signed hybrid\", \n  corFnc = \"bicor\")\n\n# Annotate modules with Gene Ontology\nGMIC_Builder <- Query_Prep(GMIC_Builder, calculate_intramodularConnectivity = TRUE, Find_hubs = TRUE)\nGMIC_Builder <- GSEAGO_Builder(GMIC_Builder, species = \"Homo sapiens\", ontology = \"BP\")\nGMIC_Builder <- GO_Module_NameR(GMIC_Builder)\n```\n\n### 3. Integration with xCell Signatures\nGmicR requires cell signature results (typically from the xCell web portal).\n\n```r\n# file_dir should point to the xCell results text file\nGMIC_Builder_disc <- Data_Prep(GMIC_Builder, \n                               xCell_Signatures = \"path/to/xCell_results.txt\",\n                               ibreaks = 10, \n                               Remove_ME0 = TRUE)\n```\n\n### 4. Bayesian Network Learning\nLearn the network structure using tabu search with bootstrapping.\n\n```r\nlibrary(parallel)\ncl <- makeCluster(detectCores() - 1)\n\nGMIC_net <- bn_tabu_gen(GMIC_Builder_disc,\n                        cluster = cl,\n                        bootstraps_replicates = 50, \n                        score = \"bds\") # 'bds' is preferred for sparse data\n\nstopCluster(cl)\n```\n\n### 5. Relationship Inference and Visualization\nIdentify inverse relationships and visualize the resulting GMIC network.\n\n```r\n# Identify positive vs negative relationships\nGMIC_Final <- InverseARCs(GMIC_net, threshold = -0.3)\n\n# Launch Shiny app for visualization\nif(interactive()){\n  Gmic_viz(GMIC_Final)\n}\n```\n\n## Key Functions Reference\n- `Auto_WGCNA()`: Automates the WGCNA pipeline to identify gene modules.\n- `GSEAGO_Builder()`: Builds a library for GO enrichment.\n- `GO_Module_NameR()`: Assigns biological names to modules based on GO terms.\n- `Data_Prep()`: Merges module eigengenes with cell signatures and performs discretization.\n- `bn_tabu_gen()`: Performs Bayesian Network structure learning via bootstrapping.\n- `InverseARCs()`: Calculates the slope of relationships to distinguish activation from inhibition.\n\n## Tips for Success\n- **Gene Symbols**: Ensure your expression matrix uses official Gene Symbols; otherwise, GO annotation will fail.\n- **xCell Data**: The package is specifically tuned for xCell signatures. Ensure you use the \"xCell results\" file provided by the xCell portal.\n- **Computational Load**: Bayesian Network learning with many bootstraps is CPU-intensive. Always use the `cluster` argument in `bn_tabu_gen` to enable parallel processing.\n- **ME0**: Module 0 (ME0) usually contains unassigned genes. It is often recommended to set `Remove_ME0 = TRUE` in `Data_Prep` to reduce noise in the network.\n\n## Reference documentation\n- [GmicR_vignette](./references/GmicR_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gmicr",
+    "description": "This tool builds Gene Module-Immune Cell networks by integrating gene expression data and immune cell signatures using WGCNA and Bayesian Network learning. Use when user asks to build GMIC networks, perform integrative analysis of gene expression and immune cell signatures, or infer causal relationships between gene modules and cell types.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/GmicR.html"
+  }
+}

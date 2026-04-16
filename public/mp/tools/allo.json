@@ -1,0 +1,41 @@
+{
+  "id": "allo",
+  "category": "CLI",
+  "name": "allo",
+  "description": "Allo is a software that allocates multi-mapped reads in gene regulatory data.",
+  "overview": "",
+  "homepage": "https://github.com/seqcode/allo",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/allo/overview",
+  "github": "https://github.com/seqcode/allo",
+  "conda_downloads": "4.0K",
+  "conda_downloads_num": 4000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "allo"
+    ],
+    "description": "Allo is a software that allocates multi-mapped reads in gene regulatory data.",
+    "docker_image": "quay.io/biocontainers/allo:1.2.0--pyhdfd78af_0",
+    "homepage": "https://github.com/seqcode/allo",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/allo/overview",
+    "github": "https://github.com/seqcode/allo",
+    "conda_downloads": "4.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "allo.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "name: allo\ndescription: Multi-mapped read rescue strategy for gene regulatory analyses (ChIP-seq, ATAC-seq, DNase-seq, and RNA-seq). Use when you need to allocate multi-mapped reads (MMRs) to their most likely genomic origins using neural networks or read-count distributions to improve the sensitivity of peak calling and quantification.\n\n# Allo: Multi-Mapped Read Rescue\n\nAllo rescues multi-mapped reads by allocating them based on local uniquely-mapped read (UMR) distributions and pre-trained Convolutional Neural Networks (CNNs).\n\n## Prerequisites\n\n### 1. Alignment Requirements\nAligners must be configured to report multiple locations (e.g., up to 25).\n- **Bowtie1 (SE/PE):** Use `-m 25 -k 25 --best --strata`\n- **Bowtie2 (SE/PE):** Use `-k 25`. For PE, add `--no-mixed --no-discordant`\n- **BWA (SE only):** Use `bwa mem -a`. (BWA Paired-end is NOT supported)\n- **STAR (RNA-seq):** Use `--outSAMmultNmax 25 --outFilterType BySJout`\n\n### 2. Mandatory Sorting\nInput files **must** be sorted by read name, not genomic coordinates.\n```bash\nsamtools collate -o input_sorted.bam input_unsorted.bam\n```\n\n## Core Usage\n\nBasic command structure:\n```bash\nallo <input.bam_or.sam> -seq <se|pe> -o <output_prefix> [options]\n```\n\n### Peak-Based Applications (ChIP-seq, ATAC-seq, DNase-seq)\nSelect the appropriate CNN model for your assay:\n- **Default (Narrow peaks):** `allo input.bam -seq pe -o output`\n- **Histone/Mixed peaks:** Add `--mixed`\n- **DNase-seq:** Add `--dnase`\n- **ATAC-seq:** Add `--atac`\n\n### RNA-seq Applications\nSince CNNs are not trained for RNA-seq, use read-count mode and handle splicing:\n```bash\nallo input.bam -seq pe -o output --readcount --splice\n```\n\n## Expert Tips & Best Practices\n\n### Handling Controls (Input)\nFor ChIP-seq experiments, run Allo on both the target and the control (Input) files. \n- **Recommendation:** Use the `--random` flag for the control file to balance background noise without over-fitting to specific regions.\n\n### Filtering and Downstream Analysis\nAllo adds custom tags to allocated reads in the output BAM:\n- `ZA`: Allocated MMR (value = number of mapping locations).\n- `ZZ`: Randomly assigned MMR (allocated to regions with 0 UMRs).\n\n**To extract only uniquely mapped reads:**\n```bash\nsamtools view -h output.bam | grep -vE \"ZA:|ZZ:\" | samtools view -b > unique_only.bam\n```\n\n**To filter by mapping multiplicity (e.g., max 10 locations):**\nUse the `-max 10` flag during the Allo run to ignore reads mapping to more than 10 locations.\n\n### Performance\n- Use `-p <int>` to specify the number of processes for parallel execution.\n- If memory is an issue, ensure you are using the latest version (v1.2.0+) which utilizes optimized dictionary window sizes.\n\n## Command Options Summary\n\n| Option | Description |\n| :--- | :--- |\n| `-seq` | **Required.** Sequencing mode: `se` (single-end) or `pe` (paired-end). |\n| `--readcount` | Allocates based on UMR counts only (no CNN). Required for RNA-seq. |\n| `--splice` | Removes introns (CIGAR 'N') when calculating UMR density. |\n| `--remove-zeros` | Discards MMRs that only map to regions with zero UMRs. |\n| `--keep-unmap` | Retains unmapped reads in the output file. |\n| `--parser` | Utility to pre-split unique and multi-mapped reads into separate files. |",
+  "skill_front_matter": {}
+}

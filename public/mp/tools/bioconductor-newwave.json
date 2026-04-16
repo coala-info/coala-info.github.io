@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-newwave",
+  "category": "bioconductor",
+  "name": "bioconductor-newwave",
+  "description": "NewWave performs dimensionality reduction and batch effect removal for large-scale single-cell count data using a Negative Binomial model. Use when user asks to perform batch correction on single-cell datasets, reduce data dimensionality, or account for technical covariates in count matrices.",
+  "overview": "NewWave is a Bioconductor package designed for dimensionality reduction and batch effect removal in count data, specifically optimized for large single-cell datasets. It assumes a Negative Binomial distribution and utilizes a PSOCK cluster with shared memory (via the `SharedObject` package) to minimize memory duplication during parallel processing. It is particularly effective for producing a low-dimensional latent representation of data while accounting for known technical covariates (batches) ",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/NewWave.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/fedeago/NewWave",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "NewWave"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NewWave.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/fedeago/NewWave",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-newwave\n\n## Overview\n\nNewWave is a Bioconductor package designed for dimensionality reduction and batch effect removal in count data, specifically optimized for large single-cell datasets. It assumes a Negative Binomial distribution and utilizes a PSOCK cluster with shared memory (via the `SharedObject` package) to minimize memory duplication during parallel processing. It is particularly effective for producing a low-dimensional latent representation of data while accounting for known technical covariates (batches) and biological variables.\n\n## Installation\n\n```r\nif(!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"NewWave\")\nlibrary(NewWave)\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nNewWave requires **raw, non-normalized count data**. It typically accepts a `SingleCellExperiment` object or a matrix.\n\n**Important:** Batch variables in `colData` must be converted to factors for proper correction.\n\n```r\n# Ensure batch is a factor\nsce$Batch <- as.factor(sce$Batch)\n\n# Filter to highly variable genes (HVGs) for speed\n# NewWave works best on raw counts of selected features\nhvg_indices <- order(rowVars(counts(sce)), decreasing = TRUE)[1:500]\nsce_sub <- sce[hvg_indices, ]\n```\n\n### 2. Dimensionality Reduction and Batch Correction\nThe primary function is `newWave()`. You specify the latent space dimension ($K$) and the covariates to adjust for.\n\n```r\n# Standard usage: Adjusting for Batch\n# X: formula for cell-level covariates (e.g., Batch)\n# V: formula for gene-level covariates (optional)\n# K: number of latent dimensions\nres <- newWave(sce_sub, X = \"~Batch\", K = 10, verbose = FALSE)\n```\n\n### 3. Accessing Results\nThe function returns a `SingleCellExperiment` object with the latent representation stored in `reducedDim`.\n\n```r\n# Extract latent dimensions\nlatent_space <- reducedDim(res)\n\n# Use for downstream tasks like t-SNE or Clustering\nlibrary(Rtsne)\ntsne_results <- Rtsne(latent_space)$Y\n\nclusters <- kmeans(latent_space, centers = 10)\n```\n\n## Optimization Strategies\n\nNewWave provides several parameters to handle large datasets efficiently:\n\n### Parallelization\nUse the `children` parameter to specify the number of cores.\n```r\nres <- newWave(sce_sub, X = \"~Batch\", K = 10, children = 4)\n```\n\n### Mini-batch Approaches\nTo speed up convergence on large datasets, use mini-batches (typically 10% of observations).\n* `n_gene_disp`: Genes used for dispersion optimization.\n* `n_cell_par`: Cells used for cell-related parameter optimization.\n* `n_gene_par`: Genes used for gene-related parameter optimization.\n\n```r\n# Fast execution with commonwise dispersion\nres <- newWave(sce_sub, X = \"~Batch\", K = 10, children = 2,\n               n_gene_disp = 100, n_gene_par = 100, n_cell_par = 100)\n```\n\n### Genewise Dispersion\nBy default, NewWave uses commonwise dispersion. For genewise dispersion (more precise but slower):\n```r\nres <- newWave(sce_sub, X = \"~Batch\", K = 10, \n               commondispersion = FALSE,\n               n_gene_par = 100, n_cell_par = 100)\n# Note: Do NOT use n_gene_disp when commondispersion = FALSE\n```\n\n## Tips and Best Practices\n- **Memory:** NewWave uses `SharedObject` to avoid memory duplication across cores. This makes it much more memory-efficient than standard `BiocParallel` setups for large matrices.\n- **Verbosity:** Set `verbose = FALSE` for production runs, as printing progress can slow down computation on very large datasets.\n- **Input:** Always provide raw counts. The Negative Binomial model internally handles the mean-variance relationship inherent in count data.\n\n## Reference documentation\n- [Dimensionality reduction and batch effect removal using NewWave](./references/vignette.md)\n- [NewWave Rmd Source](./references/vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-newwave",
+    "description": "NewWave performs dimensionality reduction and batch effect removal for large-scale single-cell count data using a Negative Binomial model. Use when user asks to perform batch correction on single-cell datasets, reduce data dimensionality, or account for technical covariates in count matrices.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/NewWave.html"
+  }
+}

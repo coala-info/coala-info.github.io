@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-champ",
+  "category": "bioconductor",
+  "name": "bioconductor-champ",
+  "description": "ChAMP is a comprehensive pipeline for the analysis of Illumina Methylation BeadArray data, including 450k and EPIC arrays. Use when user asks to load and filter methylation data, perform quality control and normalization, correct for batch effects, or identify differentially methylated probes, regions, and blocks.",
+  "overview": "ChAMP (Chip Analysis Methylation Pipeline) is a comprehensive R package for analyzing Illumina 450k and EPIC methylation arrays. It integrates various Bioconductor tools into a streamlined workflow, covering everything from raw `.idat` file import to high-level tertiary analyses like pathway enrichment and genomic block detection.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ChAMP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-champ/overview",
+  "github": "N/A",
+  "conda_downloads": "19.6K",
+  "conda_downloads_num": 19600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ChAMP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChAMP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-champ/overview",
+    "github": "N/A",
+    "conda_downloads": "19.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-champ\n\nname: bioconductor-champ\ndescription: Analysis of Illumina Methylation BeadArray data (EPIC and 450k). Use this skill to perform quality control, normalization (BMIQ, SWAN), batch effect correction (ComBat), and identification of differentially methylated probes (DMP), regions (DMR), and blocks. It also supports Gene Set Enrichment Analysis (GSEA), Copy Number Alteration (CNA) inference, and cell-type heterogeneity adjustment.\n\n# bioconductor-champ\n\n## Overview\nChAMP (Chip Analysis Methylation Pipeline) is a comprehensive R package for analyzing Illumina 450k and EPIC methylation arrays. It integrates various Bioconductor tools into a streamlined workflow, covering everything from raw `.idat` file import to high-level tertiary analyses like pathway enrichment and genomic block detection.\n\n## Core Workflow\n\n### 1. Data Loading and Filtering\nThe primary entry point is `champ.load()`, which reads `.idat` files and a `Sample_Sheet.csv` (pd file).\n\n```R\nlibrary(ChAMP)\ntestDir <- system.file(\"extdata\", package=\"ChAMPdata\")\n\n# Load and filter data (detects 450K vs EPIC automatically or via arraytype)\nmyLoad <- champ.load(testDir, arraytype=\"450K\")\n\n# Access components\nbeta <- myLoad$beta\npd <- myLoad$pd\nintensity <- myLoad$intensity\n```\n\n**Filtering Criteria:**\n- Probes with detection p-values > 0.01.\n- Probes with < 3 beads in at least 5% of samples.\n- Non-CpG probes, SNP-related probes, and multi-hit probes.\n- Probes on X and Y chromosomes (optional).\n\n### 2. Quality Control\nUse `champ.QC()` for static plots or `QC.GUI()` for interactive exploration.\n\n```R\nchamp.QC() \n# Or interactive:\nQC.GUI(beta=myLoad$beta, arraytype=\"450K\")\n```\n\n### 3. Normalization\nAdjusts for the bias between Type-I and Type-II probes. BMIQ is the default and recommended method.\n\n```R\n# BMIQ normalization (supports parallel processing)\nmyNorm <- champ.norm(beta=myLoad$beta, arraytype=\"450K\", cores=4)\n```\n\n### 4. Batch Effect Analysis (SVD & ComBat)\nIdentify technical variation using Singular Value Decomposition (SVD) and correct it with ComBat.\n\n```R\n# Identify batches\nchamp.SVD(beta=myNorm, pd=myLoad$pd)\n\n# Correct for a specific batch (e.g., \"Slide\")\nmyCombat <- champ.runCombat(beta=myNorm, pd=myLoad$pd, batchname=c(\"Slide\"))\n```\n\n### 5. Differential Methylation Analysis\nChAMP identifies changes at three levels: Probes (DMP), Regions (DMR), and Blocks.\n\n**DMP (Probes):**\n```R\nmyDMP <- champ.DMP(beta=myNorm, pheno=myLoad$pd$Sample_Group)\nDMP.GUI(DMP=myDMP[[1]], beta=myNorm, pheno=myLoad$pd$Sample_Group)\n```\n\n**DMR (Regions):**\nSupports \"Bumphunter\", \"DMRcate\", or \"ProbeLasso\".\n```R\nmyDMR <- champ.DMR(beta=myNorm, pheno=myLoad$pd$Sample_Group, method=\"DMRcate\")\nDMR.GUI(DMR=myDMR)\n```\n\n**Blocks:**\nIdentifies large hypomethylated regions, typically in open sea areas.\n```R\nmyBlock <- champ.Block(beta=myNorm, pheno=myLoad$pd$Sample_Group)\nBlock.GUI(Block=myBlock, beta=myNorm, pheno=myLoad$pd$Sample_Group)\n```\n\n### 6. Gene Set Enrichment (GSEA)\nTests if differentially methylated genes are enriched in specific pathways.\n\n```R\nmyGSEA <- champ.GSEA(beta=myNorm, DMP=myDMP[[1]], DMR=myDMR, method=\"fisher\")\n```\n\n## Advanced Features\n- **CNA:** Infer copy number alterations using `champ.CNA(intensity=myLoad$intensity, pheno=myLoad$pd$Sample_Group)`.\n- **Cell Heterogeneity:** For whole blood samples, estimate cell counts and adjust beta values using `champ.refbase(beta=myNorm, arraytype=\"450K\")`.\n- **EPIC Support:** For EPIC arrays, ensure `arraytype=\"EPIC\"` is passed to all relevant functions.\n\n## Tips for Success\n- **Memory:** `champ.load()` is memory-intensive. For large datasets (>200 samples), use a server with at least 16GB-32GB RAM.\n- **Interactive GUIs:** Functions ending in `.GUI()` (e.g., `DMP.GUI`) require an X11 forwarding system if running on a remote Linux server.\n- **Beta-only Input:** If you only have a beta matrix (no `.idat`), start with `champ.filter(beta_matrix, pd_file)` instead of `champ.load()`.\n\n## Reference documentation\n- [The Chip Analysis Methylation Pipeline](./references/ChAMP.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-champ",
+    "description": "ChAMP is a comprehensive pipeline for the analysis of Illumina Methylation BeadArray data, including 450k and EPIC arrays. Use when user asks to load and filter methylation data, perform quality control and normalization, correct for batch effects, or identify differentially methylated probes, regions, and blocks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ChAMP.html"
+  }
+}

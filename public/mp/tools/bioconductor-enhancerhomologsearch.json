@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-enhancerhomologsearch",
+  "category": "bioconductor",
+  "name": "bioconductor-enhancerhomologsearch",
+  "description": "This tool identifies orthologous regulatory elements across species by comparing histone marks and transcription factor binding pattern similarity. Use when user asks to identify enhancer homologs, search for orthologous regulatory elements using ENCODE data, or calculate transcription factor binding pattern similarity between species.",
+  "overview": "The `enhancerHomologSearch` package identifies orthologous regulatory elements (enhancers/silencers) across species. Unlike traditional methods that rely on sequence conservation (which often fails in distal regulatory regions), this package uses a functional approach. It identifies candidate regions in target species (Human/Mouse) using ENCODE histone marks and ranks them based on Transcription Factor Binding Pattern Similarity (TFBPS) compared to a query enhancer.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/enhancerHomologSearch.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-enhancerhomologsearch/overview",
+  "github": "https://github.com/jianhong/enhancerHomologSearch",
+  "conda_downloads": "10.1K",
+  "conda_downloads_num": 10100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "enhancerHomologSearch"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/enhancerHomologSearch.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-enhancerhomologsearch/overview",
+    "github": "https://github.com/jianhong/enhancerHomologSearch",
+    "conda_downloads": "10.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-enhancerhomologsearch\n\nname: bioconductor-enhancerhomologsearch\ndescription: Identification of putative mammalian orthologs to enhancers in species lacking whole-genome comparison data (e.g., zebrafish to human/mouse). Use this skill to search for enhancer homologs using ENCODE histone marks (H3K4me1) and Transcription Factor Binding Pattern Similarity (TFBPS).\n\n# bioconductor-enhancerhomologsearch\n\n## Overview\n\nThe `enhancerHomologSearch` package identifies orthologous regulatory elements (enhancers/silencers) across species. Unlike traditional methods that rely on sequence conservation (which often fails in distal regulatory regions), this package uses a functional approach. It identifies candidate regions in target species (Human/Mouse) using ENCODE histone marks and ranks them based on Transcription Factor Binding Pattern Similarity (TFBPS) compared to a query enhancer.\n\n## Core Workflow\n\n### 1. Prepare Query Enhancer\nExtract the DNA sequence of the known enhancer from the source species (e.g., Zebrafish).\n\n```r\nlibrary(BSgenome.Drerio.UCSC.danRer10)\nlibrary(GenomicRanges)\n\n# Define coordinates and extract sequence\nquery_coords <- GRanges(\"chr4\", IRanges(19050041, 19051709))\nquery_seq <- getSeq(BSgenome.Drerio.UCSC.danRer10, query_coords)\n```\n\n### 2. Retrieve ENCODE Candidate Regions\nDownload functional regions from ENCODE for the target species (Human/Mouse), typically filtered by tissue type.\n\n```r\nlibrary(enhancerHomologSearch)\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\n\n# Get H3K4me1 peaks for heart tissue in human\nhs_candidates <- getENCODEdata(genome = Hsapiens, \n                               partialMatch = c(biosample_summary = \"heart\"))\n```\n\n### 3. Calculate Binding Pattern Similarity (TFBPS)\nThis is the core step. It compares the motif binding patterns of the query sequence against all candidates.\n\n```r\n# Load provided motif clusters\ndata(motifs)\nPWMs <- motifs[[\"dist60\"]]\n\n# Search for similarity (use maximalShuffleEnhancers for P-value accuracy)\naln_hs <- searchTFBPS(query_seq, hs_candidates, \n                      PWMs = PWMs, \n                      queryGenome = Drerio,\n                      maximalShuffleEnhancers = 100)\n```\n\n### 4. Filter and Refine Results\nFilter candidates based on P-value and genomic distance from the target gene's Transcription Start Site (TSS).\n\n```r\n# Example: Filter for candidates within 100kb of target gene but >5kb from TSS\n# distance(aln_hs) <- distance(peaks(aln_hs), target_gene_range)\naln_hs_filtered <- subset(aln_hs, pval < 0.1 & distance > 5000)\n```\n\n### 5. Comparative Alignment\nPerform multiple sequence alignment between the query enhancer and the identified homologs from different species.\n\n```r\naln_list <- list(human = aln_hs_filtered, mouse = aln_mm_filtered)\nal <- alignment(query_seq, aln_list, method = \"ClustalW\")\n\n# Export results\nsaveAlignments(al, output_folder = \"results\", format = \"html\")\n```\n\n## Key Functions\n\n- `getENCODEdata()`: Fetches candidate regulatory regions from ENCODE based on histone markers.\n- `searchTFBPS()`: Calculates similarity scores based on TF binding patterns rather than direct sequence alignment.\n- `alignment()`: Creates a `DNAMultipleAlignment` object combining the query and identified homologs.\n- `conservedMotifs()`: Identifies specific TF motifs that are preserved across the orthologous regions.\n\n## Tips for Success\n\n- **Species-Specific Packages**: Ensure you have the correct `BSgenome`, `TxDb`, and `org.db` packages installed for all species involved in the search.\n- **Computational Cost**: `searchTFBPS` is resource-intensive. When testing, subset your candidate regions to a 1MB window around the target homolog gene.\n- **Motif Selection**: The package provides `motifs` data. Using clustered motifs (e.g., `dist60`) reduces redundancy and improves TFBPS calculation speed.\n- **P-values**: Increase `maximalShuffleEnhancers` (default 1000) in `searchTFBPS` for more robust statistical significance, though this increases runtime.\n\n## Reference documentation\n- [enhancerHomologSearch Guide](./references/enhancerHomologSearch.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-enhancerhomologsearch",
+    "description": "This tool identifies orthologous regulatory elements across species by comparing histone marks and transcription factor binding pattern similarity. Use when user asks to identify enhancer homologs, search for orthologous regulatory elements using ENCODE data, or calculate transcription factor binding pattern similarity between species.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/enhancerHomologSearch.html"
+  }
+}

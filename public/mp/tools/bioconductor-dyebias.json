@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-dyebias",
+  "category": "bioconductor",
+  "name": "bioconductor-dyebias",
+  "description": "This tool corrects gene-specific dye bias in two-color microarray data using the GASSCO method. Use when user asks to estimate intrinsic gene-specific dye bias, apply slide-specific bias correction, or visualize dye bias reduction in marray objects.",
+  "overview": "The `dyebias` package implements the GASSCO (Gene-specific dye bias correction) method to correct for gene-specific dye bias in two-channel microarray data. Unlike standard LOESS normalization which handles intensity-dependent bias, GASSCO addresses bias that varies per reporter (probe) and per hybridization.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/dyebias.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dyebias/overview",
+  "github": "N/A",
+  "conda_downloads": "34.2K",
+  "conda_downloads_num": 34200,
+  "last_updated": "2026-02-09",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "dyebias"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dyebias.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-dyebias/overview",
+    "github": "N/A",
+    "conda_downloads": "34.2K",
+    "last_updated": "2026-02-09",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-dyebias\n\nname: bioconductor-dyebias\ndescription: Correct gene-specific dye bias in two-color microarray data using the GASSCO method. Use this skill when working with R marray objects to remove persistent dye artifacts that standard LOESS normalization cannot address.\n\n# bioconductor-dyebias\n\n## Overview\n\nThe `dyebias` package implements the GASSCO (Gene-specific dye bias correction) method to correct for gene-specific dye bias in two-channel microarray data. Unlike standard LOESS normalization which handles intensity-dependent bias, GASSCO addresses bias that varies per reporter (probe) and per hybridization.\n\nThe workflow consists of two main phases:\n1. **Estimation**: Calculating the Intrinsic Gene Specific Dye Bias (iGSDB) using self-self or dye-swapped hybridizations.\n2. **Correction**: Estimating the slide-specific bias and applying the correction to the data.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package primarily works with `marrayRaw` and `marrayNorm` objects. Ensure your data is properly normalized (e.g., LOESS) before applying GASSCO.\n\n```r\nlibrary(marray)\nlibrary(dyebias)\n\n# Note: For estimation, do NOT undo dye-swaps. \n# The orientation must reflect the actual physical dyes used.\n```\n\n### 2. Estimating iGSDB\nThe iGSDB represents the inherent bias of a specific probe sequence.\n\n**Balanced Design (Dye-swaps or Self-Self):**\n```r\niGSDBs <- dyebias.estimate.iGSDBs(data.norm, is.balanced=TRUE)\n```\n\n**Unbalanced Design:**\nUses `limma` to estimate biases.\n```r\niGSDBs <- dyebias.estimate.iGSDBs(data.norm, \n                                  is.balanced=FALSE, \n                                  reference=\"input\")\n```\n\n### 3. Defining Subsets\nIdentify which reporters should be used to estimate slide bias and which should be corrected.\n\n```r\n# Identify 'Experimental' probes to use as estimators\nestimator.subset <- (maInfo(maGnames(data.norm))$reporter.group == \"Experimental\")\n\n# Filter for quality (Signal-to-Noise Ratio and Intensity)\napplication.subset <- dyebias.application.subset(data.raw=data.raw,\n                                                 min.SNR=1.5,\n                                                 maxA=15,\n                                                 use.background=TRUE)\n```\n\n### 4. Applying Correction\nApply the calculated iGSDB to the dataset.\n\n```r\ncorrection <- dyebias.apply.correction(data.norm=data.norm,\n                                       iGSDBs=iGSDBs,\n                                       estimator.subset=estimator.subset,\n                                       application.subset=application.subset)\n\n# Access corrected data\ncorrected.marray <- correction$data.corrected\n# View variance reduction statistics\nprint(correction$summary)\n```\n\n## Visualization and Validation\n\nUse these functions to compare data before and after correction. If the correction is successful, the red and green biased populations should converge.\n\n### RG Plot\n```r\nlayout(matrix(1:2, nrow=1))\ndyebias.rgplot(data=data.norm, slide=1, iGSDBs=iGSDBs, main=\"Uncorrected\")\ndyebias.rgplot(data=correction$data.corrected, slide=1, iGSDBs=iGSDBs, main=\"Corrected\")\n```\n\n### Boxplot (Slide Bias Overview)\n```r\ndyebias.boxplot(data=correction$data.corrected, \n                iGSDBs=iGSDBs, \n                application.subset=application.subset)\n```\n\n### Trend Plot\nVisualizes the linearity of the dye bias across slides.\n```r\ndyebias.trendplot(data=correction$data.corrected, iGSDBs=iGSDBs)\n```\n\n## Implementation Tips\n\n- **Normalization**: GASSCO is a \"fine-tuning\" normalization. Always perform standard normalization (like LOESS) first.\n- **A-values**: If your data only contains M-values (log-ratios), you can \"invent\" A-values (average intensities) by sampling from a uniform distribution (e.g., 2 to 15) to allow the plotting routines to function.\n- **Dye Swaps**: Ensure that the `maM` values reflect the actual Cy5/Cy3 ratio of the physical slide during the estimation phase.\n- **Sample Size**: While 12+ hybridizations are ideal for estimating iGSDB, the method is robust enough to work with as few as 4.\n\n## Reference documentation\n- [Correcting gene specific dye bias](./references/dyebias-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-dyebias",
+    "description": "This tool corrects gene-specific dye bias in two-color microarray data using the GASSCO method. Use when user asks to estimate intrinsic gene-specific dye bias, apply slide-specific bias correction, or visualize dye bias reduction in marray objects.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/dyebias.html"
+  }
+}

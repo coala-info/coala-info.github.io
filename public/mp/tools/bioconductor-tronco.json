@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tronco",
+  "category": "bioconductor",
+  "name": "bioconductor-tronco",
+  "description": "\"TRONCO infers cancer progression models from genomic data using Suppes-Bayes Causal Networks. Use when user asks to import MAF or GISTIC data, visualize genomic alterations with oncoprints, manipulate cancer datasets, or infer progression models using algorithms like CAPRI and CAPRESE.\"",
+  "overview": "The **TRONCO** (TRanslational ONCOlogy) package implements algorithms to infer cancer progression models from cross-sectional (ensemble-level) or multi-region/single-cell (individual-level) genomic data. It represents progression as a Suppes-Bayes Causal Network (SBCN) where nodes are genomic alterations and edges represent selective advantage relations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TRONCO.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/BIMIB-DISCo/TRONCO",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TRONCO"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TRONCO.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/BIMIB-DISCo/TRONCO",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tronco\n\nname: bioconductor-tronco\ndescription: Inference of cancer progression models from heterogeneous genomic data (mutations, CNAs) using Suppes-Bayes Causal Networks. Use for importing MAF/GISTIC/Boolean data, data manipulation, oncoprint visualization, and running inference algorithms like CAPRI, CAPRESE, and MST-based methods (Edmonds, Gabow, Chow-Liu, Prim).\n\n# bioconductor-tronco\n\n## Overview\nThe **TRONCO** (TRanslational ONCOlogy) package implements algorithms to infer cancer progression models from cross-sectional (ensemble-level) or multi-region/single-cell (individual-level) genomic data. It represents progression as a Suppes-Bayes Causal Network (SBCN) where nodes are genomic alterations and edges represent selective advantage relations.\n\n## Core Workflow\n\n### 1. Data Import\nTRONCO uses a specific object structure. Import data from common formats:\n\n```r\nlibrary(TRONCO)\n\n# From MAF (Mutation Annotation Format)\n# merge.mutation.types = TRUE combines different mutations in the same gene into one 'Mutation' event\ndataset_maf = import.MAF(maf_dataframe, merge.mutation.types = TRUE)\n\n# From GISTIC (Copy Number Alterations)\n# 1: low-level gain, 2: high-level gain, -1: het loss, -2: hom loss\ndataset_gistic = import.GISTIC(gistic_matrix)\n\n# From custom Boolean Matrix (Samples x Events)\ndataset_custom = import.genotypes(boolean_matrix, event.type = 'variant')\n\n# Annotate dataset description\ndataset = annotate.description(dataset_maf, 'My Cancer Study')\n```\n\n### 2. Data Visualization & Inspection\nUse \"as\" functions to view internal data and `oncoprint` for heatmaps.\n\n```r\n# Summary view\nview(dataset)\n\n# Access components\ngenotypes = as.genotypes(dataset)\nevents = as.events(dataset)\ngenes = as.genes(dataset)\n\n# Oncoprint visualization\n# Automatically sorts to highlight mutual exclusivity\noncoprint(dataset, title = 'Study Oncoprint')\n\n# Grouped by clinical stage (if annotated)\ndataset = annotate.stages(dataset, stages_matrix)\noncoprint(dataset, group.samples = as.stages(dataset))\n```\n\n### 3. Data Manipulation\nFilter and consolidate data before inference.\n\n```r\n# Filter by frequency (e.g., genes mutated in > 5% of samples)\ndataset_filtered = events.selection(dataset, filter.freq = 0.05)\n\n# Force inclusion/exclusion\ndataset_filtered = events.selection(dataset, \n                                    filter.in.names = c('TP53', 'KRAS'),\n                                    filter.out.names = 'TTN')\n\n# Join events (e.g., treat different mutation types as one)\ndataset_joined = join.types(dataset, 'Missense_Mutation', 'Nonsense_Mutation')\n\n# Check for zeroes, ones, or indistinguishable events (required before inference)\nconsolidate.data(dataset_filtered)\n```\n\n### 4. Model Inference\nChoose an algorithm based on data type (Ensemble vs. Individual).\n\n#### CAPRI (Ensemble-level)\nSupports complex hypotheses (logical formulas).\n```r\n# Add a XOR hypothesis: either KRAS or NRAS mutation\ndataset_hypo = hypothesis.add(dataset_filtered, 'RAS_xor', XOR('KRAS', 'NRAS'))\n\n# Run CAPRI\nmodel_capri = tronco.capri(dataset_hypo, nboot = 100, boot.seed = 123)\n```\n\n#### Individual-level Algorithms (Single-cell/Multi-region)\n```r\n# CAPRESE: Quick, returns a forest of trees\nmodel_caprese = tronco.caprese(dataset_filtered)\n\n# MST-based methods (Edmonds, Gabow, Chow-Liu, Prim)\nmodel_edmonds = tronco.edmonds(dataset_filtered, nboot = 100)\n```\n\n## Tips for Success\n- **Compliance**: Use `is.compliant(dataset)` to ensure the TRONCO object is valid after manual edits.\n- **Hypotheses**: CAPRI is unique in its ability to test if a group of genes (e.g., in a pathway) collectively acts as a \"cause\" for a downstream event using `hypothesis.add.group`.\n- **Homologous Events**: Use `hypothesis.add.homologous(dataset)` to automatically create OR/XOR patterns for different types of alterations affecting the same gene.\n\n## Reference documentation\n- [An introduction to the TRONCO R package](./references/f1_introduction.md)\n- [Loading data](./references/f2_loading_data.md)\n- [Data visualization](./references/f3_data_visualization.md)\n- [Data manipulation](./references/f4_data_manipulation.md)\n- [Model inference](./references/f5_model_inference.md)\n- [Post reconstruction](./references/f6_post_reconstruction.md)\n- [Import and export to other tools](./references/f7_import_export.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tronco",
+    "description": "TRONCO infers cancer progression models from genomic data using Suppes-Bayes Causal Networks. Use when user asks to import MAF or GISTIC data, visualize genomic alterations with oncoprints, manipulate cancer datasets, or infer progression models using algorithms like CAPRI and CAPRESE.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TRONCO.html"
+  }
+}

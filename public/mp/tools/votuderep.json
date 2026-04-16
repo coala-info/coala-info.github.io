@@ -1,0 +1,54 @@
+{
+  "id": "votuderep",
+  "category": "CLI",
+  "name": "votuderep",
+  "description": "votuderep is a command-line tool designed to curate viral metagenomic data by filtering sequences based on quality and performing dereplication to define non-redundant viral populations. Use when user asks to dereplicate viral sequences, cluster sequences into vOTUs, or filter contigs based on CheckV quality, completeness, and contamination metrics.",
+  "overview": "votuderep is a Python-based command-line interface designed to streamline the curation of viral metagenomic data. It is particularly useful in workflows involving CheckV, as it provides automated methods to filter contigs by quality, completeness, and contamination levels. The tool also handles sequence dereplication, which is a critical step in defining a non-redundant set of viral populations (vOTUs) from large-scale assembly projects.",
+  "homepage": "https://github.com/quadram-institute-bioscience/votuderep",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/votuderep/overview",
+  "github": "https://github.com/quadram-institute-bioscience/votuderep",
+  "conda_downloads": "235",
+  "conda_downloads_num": 235,
+  "last_updated": "2025-10-31",
+  "cwl_count": 5,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "votuderep_derep",
+      "votuderep_filter",
+      "votuderep_getdbs",
+      "votuderep_splitcoverm",
+      "votuderep_tabulate",
+      "votuderep_trainingdata"
+    ],
+    "description": "Dereplicate vOTUs using BLAST and ANI clustering.\nThis command: 1. Creates a BLAST database from input sequences 2. Performs\nall-vs-all BLAST comparison 3. Calculates ANI and coverage for sequence pairs\n4. Clusters sequences by ANI using greedy algorithm 5. Outputs cluster\nrepresentatives (longest sequences)\nThe algorithm selects the longest sequence from each cluster as the\nrepresentative, effectively removing shorter redundant sequences.",
+    "docker_image": "quay.io/biocontainers/votuderep:0.6.0--pyhdfd78af_0",
+    "homepage": "https://github.com/quadram-institute-bioscience/votuderep",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/votuderep/overview",
+    "github": "https://github.com/quadram-institute-bioscience/votuderep",
+    "conda_downloads": "235",
+    "last_updated": "2025-10-31",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "votuderep_derep.cwl",
+    "votuderep_filter.cwl",
+    "votuderep_getdbs.cwl",
+    "votuderep_tabulate.cwl",
+    "votuderep_trainingdata.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# votuderep\n\n## Overview\nvotuderep is a Python-based command-line interface designed to streamline the curation of viral metagenomic data. It is particularly useful in workflows involving CheckV, as it provides automated methods to filter contigs by quality, completeness, and contamination levels. The tool also handles sequence dereplication, which is a critical step in defining a non-redundant set of viral populations (vOTUs) from large-scale assembly projects.\n\n## Core Workflows\n\n### Sequence Dereplication\nUse the `derep` command to cluster similar sequences and keep only a single representative for each cluster. This is essential for reducing computational overhead in mapping and annotation.\n\n```bash\n# Standard dereplication (95% ANI, 85% coverage)\nvotuderep derep -i viral_contigs.fasta -o dereplicated_vOTUs.fasta -t 8\n\n# Stringent dereplication for closely related populations\nvotuderep derep -i input.fasta --min-ani 97 --min-tcov 90\n```\n\n**Expert Tips:**\n* **Threads**: Always specify `-t` to match your available CPU cores, as BLAST+ is the primary bottleneck.\n* **Intermediate Files**: Use `--keep` and `--tmp` if you need to inspect the BLAST results or the clustering assignments for troubleshooting.\n\n### Quality Filtering with CheckV\nThe `filter` command integrates directly with CheckV output to prune low-quality or contaminated viral sequences.\n\n```bash\n# Filter for high-quality, complete genomes only\nvotuderep filter input.fasta checkv_output.tsv \\\n  --min-quality high \\\n  --complete \\\n  -o high_quality_complete.fasta\n\n# Filter by specific completeness and contamination thresholds\nvotuderep filter input.fasta checkv_output.tsv \\\n  --min-completeness 50 \\\n  --max-contam 5 \\\n  --no-warnings\n```\n\n**Best Practices:**\n* **Length Constraints**: Use `-m` (min-len) to remove short fragments that may pass quality checks but lack sufficient biological context.\n* **Undetermined Quality**: By default, CheckV may label some contigs as \"Not-determined.\" Use `--exclude-undetermined` to ensure your final set only contains contigs with confident quality assignments.\n\n### Utility Operations\n* **Database Management**: Before running workflows, ensure dependencies are met using `votuderep getdbs` to fetch Genomad and CheckV databases.\n* **Coverage Analysis**: If using CoverM for abundance estimation, use `votuderep splitcoverm` to separate multi-metric TSV files into individual files per metric (e.g., mean, relative abundance).\n* **Nextflow Preparation**: Use `votuderep tabulate` to quickly generate the sample sheets required for Nextflow-based viral pipelines from a directory of paired-end reads.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| votuderep derep | Dereplicate vOTUs using BLAST and ANI clustering. This command: 1. Creates a BLAST database from input sequences 2. Performs all-vs-all BLAST comparison 3. Calculates ANI and coverage for sequence pairs 4. Clusters sequences by ANI using greedy algorithm 5. Outputs cluster representatives (longest sequences) The algorithm selects the longest sequence from each cluster as the representative, effectively removing shorter redundant sequences. |\n| votuderep filter | Filter FASTA file using CheckV quality metrics. |\n| votuderep getdbs | Download geNomad, CheckV, and PHROGs databases. Downloads and extracts viral classification and quality control databases required for viral metagenomics analysis. The command is resumable: if interrupted, it will skip already downloaded and extracted files when re-run. |\n| votuderep tabulate | Generate CSV file from a directory containing sequencing reads. Scans INPUT_DIR for paired-end sequencing reads and generates a CSV table mapping sample names to their R1 and R2 file paths. The command identifies read pairs by looking for forward/reverse tags in filenames, extracts sample names, and outputs a table suitable for downstream analysis tools. |\n| votuderep trainingdata | Download training dataset from the internet. Uses a registry (DATASETS) of named datasets, each containing a set of {url, path} items. Adds new datasets by extending the DATASETS dict. |\n\n## Reference documentation\n- [votuderep GitHub Repository](./references/github_com_quadram-institute-bioscience_votuderep.md)\n- [votuderep README and Usage Guide](./references/github_com_quadram-institute-bioscience_votuderep_blob_main_README.md)",
+  "skill_front_matter": {
+    "name": "votuderep",
+    "description": "votuderep is a command-line tool designed to curate viral metagenomic data by filtering sequences based on quality and performing dereplication to define non-redundant viral populations. Use when user asks to dereplicate viral sequences, cluster sequences into vOTUs, or filter contigs based on CheckV quality, completeness, and contamination metrics.",
+    "homepage": "https://github.com/quadram-institute-bioscience/votuderep"
+  }
+}

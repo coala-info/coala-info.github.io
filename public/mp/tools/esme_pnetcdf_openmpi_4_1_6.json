@@ -1,0 +1,52 @@
+{
+  "id": "esme_pnetcdf_openmpi_4_1_6",
+  "category": "CLI",
+  "name": "esme_pnetcdf_openmpi_4_1_6",
+  "description": "PnetCDF provides high-performance parallel access to NetCDF files using MPI-IO for concurrent reading and writing. Use when user asks to compare NetCDF files, validate file formats, inspect variable offsets, check library configurations, or optimize parallel I/O performance.",
+  "overview": "PnetCDF (Parallel NetCDF) is a high-performance library designed for concurrent access to NetCDF files in classic formats (CDF-1, CDF-2, and CDF-5). By leveraging MPI-IO, it allows multiple processes to read and write to a single file efficiently. This skill provides guidance on using the bundled utility programs for file validation, comparison, and metadata inspection, as well as expert tips for tuning I/O performance on parallel file systems.",
+  "homepage": "https://parallel-netcdf.github.io/",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/esme_pnetcdf_openmpi_4_1_6/overview",
+  "github": "N/A",
+  "conda_downloads": "448",
+  "conda_downloads_num": 448,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "esme_pnetcdf_openmpi_4_1_6_ncvalidator",
+      "esme_pnetcdf_openmpi_4_1_6_ncmpidiff",
+      "esme_pnetcdf_openmpi_4_1_6_ncoffsets",
+      "esme_pnetcdf_openmpi_4_1_6_pnetcdf-config",
+      "esme_pnetcdf_openmpi_4_1_6_pnetcdf_version"
+    ],
+    "description": "Validate a netCDF file.",
+    "docker_image": "quay.io/biocontainers/esme_pnetcdf_openmpi_4_1_6:1.14.0--hcc24ad4_0",
+    "homepage": "https://parallel-netcdf.github.io/",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/esme_pnetcdf_openmpi_4_1_6/overview",
+    "github": "N/A",
+    "conda_downloads": "448",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "esme_pnetcdf_openmpi_4_1_6_ncoffsets.cwl",
+    "esme_pnetcdf_openmpi_4_1_6_ncvalidator.cwl",
+    "esme_pnetcdf_openmpi_4_1_6_pnetcdf-config.cwl",
+    "esme_pnetcdf_openmpi_4_1_6_pnetcdf_version.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# esme_pnetcdf_openmpi_4_1_6\n\n## Overview\n\nPnetCDF (Parallel NetCDF) is a high-performance library designed for concurrent access to NetCDF files in classic formats (CDF-1, CDF-2, and CDF-5). By leveraging MPI-IO, it allows multiple processes to read and write to a single file efficiently. This skill provides guidance on using the bundled utility programs for file validation, comparison, and metadata inspection, as well as expert tips for tuning I/O performance on parallel file systems.\n\n## Utility Programs\n\nThe following CLI tools are essential for managing PnetCDF files and verifying library configurations:\n\n- **ncmpidiff**: Compares two NetCDF files in parallel and reports differences in header metadata or variable data.\n  - Usage: `mpiexec -n <procs> ncmpidiff file1.nc file2.nc`\n- **ncvalidator**: Validates a classic NetCDF file against CDF-1, CDF-2, and CDF-5 format specifications.\n  - Usage: `ncvalidator <filename>`\n- **ncoffsets**: Reports the starting and ending file offsets of NetCDF variables, which is useful for debugging alignment and layout issues.\n  - Usage: `ncoffsets <filename>`\n- **pnetcdf-config**: Reports the configuration and compilation options used to build the PnetCDF library.\n  - Usage: `pnetcdf-config --all`\n- **pnetcdf_version**: Reports the version information of the PnetCDF library.\n- **cdfdiff**: A serial version of `ncmpidiff` for comparing files without requiring an MPI environment.\n\n## Performance Tuning and Best Practices\n\nTo achieve maximum I/O throughput, especially on parallel file systems like Lustre or GPFS, follow these expert guidelines:\n\n### 1. Use Collective APIs\nAlways prefer collective APIs (e.g., `ncmpi_put_vara_all`) over independent APIs. Collective I/O allows the library and the underlying MPI-IO implementation to coordinate requests, merge small accesses, and optimize the pattern for the file system's striping.\n\n### 2. File Alignment\nAligning the start of variables to file system block boundaries (striping size) can eliminate \"unaligned\" access penalties.\n- **Hint**: Use `nc_var_align_size` to set the alignment (e.g., 1MB or 4MB depending on the OST striping).\n- **Header Alignment**: Use `nc_header_align_size` to reserve extra space in the file header. This prevents a \"data shift penalty\" if you later add attributes or variables that cause the header to grow beyond its initial allocation.\n\n### 3. Nonblocking APIs for Small Requests\nIf your application performs many small I/O requests, use nonblocking APIs (e.g., `ncmpi_iput_vara`).\n- Post multiple requests using `iput`/`iget`.\n- Commit them all at once using `ncmpi_wait_all`.\n- This allows PnetCDF to aggregate multiple small requests into a single large, contiguous I/O operation.\n\n### 4. Lustre Striping\nOn Lustre file systems, set the striping count to the maximum allowable for large files to distribute I/O across multiple Object Storage Targets (OSTs).\n- Command: `lfs setstripe -c -1 -s 1M <directory>`\n\n## Runtime Environment Variables\n\nYou can tune PnetCDF behavior without recompiling by setting these environment variables:\n\n- **PNETCDF_HINTS**: Pass I/O hints directly to the library.\n  - Example: `export PNETCDF_HINTS=\"nc_header_align_size=1048576;nc_var_align_size=1048576\"`\n- **PNETCDF_SAFE_MODE**: Set to `1` to enable internal consistency checking for attributes and arguments across all processes (useful for debugging).\n- **PNETCDF_VERBOSE_DEBUG_MODE**: Set to `1` to print the source code location where error codes originate (requires library built with `--enable-debug`).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| esme_pnetcdf_openmpi_4_1_6_pnetcdf_version | PnetCDF Version Information |\n| ncoffsets | Prints offsets of variables in a netCDF file. |\n| ncvalidator | Validate a netCDF file. |\n| pnetcdf-config | A utility program to display the build and installation information of the PnetCDF library. |\n\n## Reference documentation\n\n- [PnetCDF C Interface Guide](./references/parallel-netcdf_github_io_doc_c-reference_pnetcdf-c_index.html.md)\n- [PnetCDF Q&A and Performance Tuning](./references/parallel-netcdf_github_io_doc_faq.html.md)\n- [PnetCDF I/O Aggregation (Nonblocking APIs)](./references/parallel-netcdf_github_io_wiki_CombiningOperations.html.md)\n- [CDF-5 File Format Specification](./references/parallel-netcdf_github_io_doc_c-reference_pnetcdf-c_CDF_002d5-file-format-specification.html.md)",
+  "skill_front_matter": {
+    "name": "esme_pnetcdf_openmpi_4_1_6",
+    "description": "PnetCDF provides high-performance parallel access to NetCDF files using MPI-IO for concurrent reading and writing. Use when user asks to compare NetCDF files, validate file formats, inspect variable offsets, check library configurations, or optimize parallel I/O performance.",
+    "homepage": "https://parallel-netcdf.github.io/"
+  }
+}

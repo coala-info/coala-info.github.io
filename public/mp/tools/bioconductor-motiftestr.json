@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-motiftestr",
+  "category": "bioconductor",
+  "name": "bioconductor-motiftestr",
+  "description": "This tool analyzes transcription factor binding motifs in genomic sequences to identify positional bias and statistical enrichment. Use when user asks to find motif occurrences, test for motif centrality relative to peak centers, perform motif enrichment analysis against background sequences, or cluster redundant motifs.",
+  "overview": "The `motifTestR` package provides tools for analyzing transcription factor binding motifs within genomic sequences (typically from ChIP-Seq or ATAC-Seq). It offers two primary statistical approaches:\n1.  **Positional Bias Testing**: Identifying if a motif is non-randomly distributed relative to the center of a set of sequences (e.g., centered at peaks).\n2.  **Enrichment Testing**: Determining if a motif occurs more frequently in a test set than in a matched background set.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/motifTestR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/smped/motifTestR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "motifTestR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/motifTestR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/smped/motifTestR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-motiftestr\n\nname: bioconductor-motiftestr\ndescription: Analysis of transcription factor binding motifs (TFBMs) using Position Weight Matrices (PWMs) in R. Use this skill to identify motifs with positional bias (centrality or specific distance from peak centers) and to test for motif enrichment against background sequences. Supports clustering of similar motifs to reduce redundancy.\n\n# bioconductor-motiftestr\n\n## Overview\n\nThe `motifTestR` package provides tools for analyzing transcription factor binding motifs within genomic sequences (typically from ChIP-Seq or ATAC-Seq). It offers two primary statistical approaches:\n1.  **Positional Bias Testing**: Identifying if a motif is non-randomly distributed relative to the center of a set of sequences (e.g., centered at peaks).\n2.  **Enrichment Testing**: Determining if a motif occurs more frequently in a test set than in a matched background set.\n\nThe package integrates with the Bioconductor ecosystem, utilizing `GRanges`, `XStringSet`, and `universalmotif` objects.\n\n## Core Workflow\n\n### 1. Data Preparation\nPrepare your test sequences and motifs. Motifs are typically provided as a list of Position Frequency Matrices (PFMs).\n\n```r\nlibrary(motifTestR)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# 1. Define peaks as GRanges\n# 2. Extract sequences\ntest_seq <- getSeq(BSgenome.Hsapiens.UCSC.hg19, ar_er_peaks)\nnames(test_seq) <- as.character(ar_er_peaks)\n\n# 3. Load motifs (PFMs)\ndata(\"ex_pfm\") \n```\n\n### 2. Searching for Matches\nUse `getPwmMatches` to find occurrences of motifs.\n\n```r\n# Find best matches per sequence\nbm_all <- getPwmMatches(\n  ex_pfm, \n  test_seq, \n  min_score = \"70%\", \n  best_only = TRUE, \n  break_ties = \"all\"\n)\n\n# Count matches across all sequences\ncounts <- countPwmMatches(ex_pfm, test_seq, min_score = \"70%\")\n```\n\n### 3. Testing Positional Bias\n`testMotifPos` bins distances from the sequence center and uses a binomial test to detect deviations from a uniform distribution.\n\n```r\n# Test for bias (symmetrical around center)\nres_pos <- testMotifPos(bm_all)\n\n# Test for absolute distance from center (0 to edge)\nres_abs <- testMotifPos(bm_all, abs = TRUE)\n\n# Visualize results\nplotMatchPos(bm_all[top_motifs], binwidth = 10)\n```\n\n### 4. Testing Motif Enrichment\nRequires a set of background (control) sequences. `motifTestR` provides `makeRMRanges` to create Randomly-selected, size-Matched ranges.\n\n```r\n# Create background ranges matched by genomic feature (e.g., enhancers)\nrm_ranges <- makeRMRanges(\n  test_ranges_split_by_feature,\n  bg_ranges_list, \n  exclude = hg19_mask,\n  n_iter = 100\n)\nrm_seq <- getSeq(BSgenome.Hsapiens.UCSC.hg19, rm_ranges)\nmcols(rm_seq) <- mcols(rm_ranges)\n\n# Test enrichment using different models: \"quasi\" (recommended), \"poisson\", or \"iteration\"\nenrich_res <- testMotifEnrich(\n  ex_pfm, \n  test_seq, \n  rm_seq, \n  model = \"quasi\"\n)\n```\n\n### 5. Handling Redundant Motifs (Clustering)\nGroup similar motifs into clusters to simplify results and reduce multiple testing burdens.\n\n```r\n# Cluster motifs based on similarity\ncl <- clusterMotifs(ex_pfm, plot = TRUE)\nex_cl <- split(ex_pfm, cl)\n\n# Test clusters for bias or enrichment\ncl_matches <- getClusterMatches(ex_cl, test_seq, min_score = \"70%\")\nres_cl_pos <- testClusterPos(cl_matches, test_seq)\n```\n\n## Tips and Best Practices\n- **Sequence Width**: Ensure all test sequences have the same width (e.g., using `resize(peaks, width = 400, fix = 'center')`) for accurate positional analysis.\n- **Parallelization**: Most functions support `mc.cores` for multi-threaded execution.\n- **Model Selection**: \n    - Use `quasi` for a balance of speed and reliability (handles over-dispersion).\n    - Use `iteration` for the most robust results if you have >1000 iterations.\n    - Use `poisson` for quick exploratory checks.\n- **Tie Breaking**: When `best_only = TRUE`, use `break_ties = \"central\"` if you specifically expect motifs to be near the peak center.\n\n## Reference documentation\n- [Motif Analysis Using motifTestR](./references/motifAnalysis.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-motiftestr",
+    "description": "This tool analyzes transcription factor binding motifs in genomic sequences to identify positional bias and statistical enrichment. Use when user asks to find motif occurrences, test for motif centrality relative to peak centers, perform motif enrichment analysis against background sequences, or cluster redundant motifs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/motifTestR.html"
+  }
+}

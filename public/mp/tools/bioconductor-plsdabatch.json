@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-plsdabatch",
+  "category": "bioconductor",
+  "name": "bioconductor-plsdabatch",
+  "description": "Bioconductor-plsdabatch performs multivariate batch-effect correction and visualization for microbiome data using PLS-DA frameworks. Use when user asks to detect batch effects, visualize data using PCA with density overlays, or correct batch effects in compositional data using PLSDA-batch or sPLSDA-batch.",
+  "overview": "The `PLSDAbatch` package provides a framework for correcting batch effects based on Projection to Latent Structures Discriminant Analysis (PLS-DA). It is specifically designed for microbiome data, handling non-parametric distributions and compositionality. It allows users to estimate and remove variation associated with batch effects while preserving treatment-related variation.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/PLSDAbatch.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/EvaYiwenWang/PLSDAbatch",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "PLSDAbatch"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PLSDAbatch.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/EvaYiwenWang/PLSDAbatch",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-plsdabatch\n\nname: bioconductor-plsdabatch\ndescription: Multivariate batch-effect correction for microbiome data using PLSDA-batch, sPLSDA-batch, and weighted PLSDA-batch. Use this skill when performing batch-effect detection, visualization, and correction in R, particularly for compositional data (e.g., OTU counts) requiring CLR transformation.\n\n## Overview\nThe `PLSDAbatch` package provides a framework for correcting batch effects based on Projection to Latent Structures Discriminant Analysis (PLS-DA). It is specifically designed for microbiome data, handling non-parametric distributions and compositionality. It allows users to estimate and remove variation associated with batch effects while preserving treatment-related variation.\n\n## Core Workflow\n\n### 1. Data Pre-processing\nBefore correction, data should be filtered and transformed to handle the characteristics of microbiome count data.\n\n```r\nlibrary(PLSDAbatch)\nlibrary(mixOmics)\n\n# Pre-filtering: Remove low-abundance OTUs\n# data: raw count matrix (samples as rows, OTUs as columns)\nfilter.res <- PreFL(data = raw_counts)\ndata.filter <- filter.res$data.filter\n\n# Transformation: Centered Log-Ratio (CLR)\n# Use offset = 1 for raw counts\ndata.clr <- logratio.transfo(X = data.filter, logratio = \"CLR\", offset = 1)\ndata.clr <- as.matrix(data.clr)\n```\n\n### 2. Batch Effect Detection\nVisualize the data to confirm the presence of batch effects using PCA and density plots.\n\n```r\n# PCA with density overlays\npca.before <- mixOmics::pca(data.clr, ncomp = 3, scale = TRUE)\nScatter_Density(\n    components = pca.before$variates$X, \n    batch = batch_factor, \n    trt = treatment_factor,\n    title = \"PCA Before Correction\"\n)\n\n# Statistical check for specific variables\n# type = \"linear model\" or \"linear mixed model\"\notu.lm <- linear_regres(data = data.clr[, \"OTU_ID\"], trt = treatment_factor, batch.fix = batch_factor)\nsummary(otu.lm$model$data)\n```\n\n### 3. Batch Effect Correction (PLSDA-batch)\nThe primary function `PLSDA_batch()` requires specifying the number of components for treatment and batch.\n\n**Component Selection Rule:** Generally, `nlevels(factor) - 1`.\n\n```r\n# Standard PLSDA-batch (Regression mode recommended for version > 1.6.0)\nres.plsda <- PLSDA_batch(\n    X = data.clr,\n    Y.trt = treatment_factor,\n    Y.bat = batch_factor,\n    ncomp.trt = nlevels(treatment_factor) - 1,\n    ncomp.bat = nlevels(batch_factor) - 1,\n    mode = \"regression\"\n)\ndata.corrected <- res.plsda$X.nobatch\n\n# sPLSDA-batch (with variable selection to reduce overfitting)\n# keepX.trt: number of variables to keep for treatment components\nres.splsda <- PLSDA_batch(\n    X = data.clr,\n    Y.trt = treatment_factor,\n    Y.bat = batch_factor,\n    ncomp.trt = 1,\n    keepX.trt = 100, \n    ncomp.bat = 4,\n    mode = \"regression\"\n)\n```\n\n**Special Cases:**\n- **Unbalanced Designs:** Set `balance = FALSE` to use weighted PLSDA-batch.\n- **Legacy Support:** Set `mode = \"canonical\"` to reproduce results from `PLSDAbatch` versions ≤ 1.6.0.\n\n### 4. Post-Correction Evaluation\nAssess the success of the correction using Alignment Scores or pRDA.\n\n```r\n# Alignment Score: Higher score = better mixing (less batch effect)\nscore <- alignment_score(\n    data = data.corrected,\n    batch = batch_factor,\n    var = 0.95, # variance to explain\n    k = 8       # nearest neighbors\n)\n\n# pRDA: Partitioning variance\nlibrary(vegan)\nrda.res <- varpart(data.corrected, ~treatment_factor, ~batch_factor, scale = TRUE)\n# Plotting the proportions\npartVar_plot(prop.df = as.data.frame(rda.res$part$indfract))\n```\n\n## Tips for Success\n- **Component Tuning:** Use `mixOmics::tune.splsda` to find the optimal `keepX.trt` for the sparse version.\n- **Scaling:** When calculating $R^2$ or creating heatmaps for evaluation, ensure the corrected data is scaled (`scale(data.corrected)`).\n- **Input Format:** Ensure the input `X` is a matrix and `Y.trt`/`Y.bat` are factors.\n\n## Reference documentation\n- [PLSDA-batch Vignette](./references/brief_vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-plsdabatch",
+    "description": "Bioconductor-plsdabatch performs multivariate batch-effect correction and visualization for microbiome data using PLS-DA frameworks. Use when user asks to detect batch effects, visualize data using PCA with density overlays, or correct batch effects in compositional data using PLSDA-batch or sPLSDA-batch.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/PLSDAbatch.html"
+  }
+}

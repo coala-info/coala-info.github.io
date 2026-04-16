@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-atsnp",
+  "category": "bioconductor",
+  "name": "bioconductor-atsnp",
+  "description": "Bioconductor-atsnp identifies SNPs that disrupt transcription factor binding by computing affinity scores and significance levels for allele-specific changes. Use when user asks to compute binding affinity scores for SNPs, calculate p-values for regulatory SNP detection, load motif libraries from ENCODE or JASPAR, and process SNP data from rsids or genomic coordinates.",
+  "overview": "The `atSNP` package (Affinity Test for regulatory SNP detection) provides a high-performance framework for identifying SNPs that disrupt transcription factor binding. It uses an importance sampling algorithm to compute p-values for allele-specific binding affinity and, crucially, the significance of the change in affinity between alleles.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/atSNP.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-atsnp/overview",
+  "github": "https://github.com/sunyoungshin/atSNP",
+  "conda_downloads": "24.8K",
+  "conda_downloads_num": 24800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "atSNP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/atSNP.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-atsnp/overview",
+    "github": "https://github.com/sunyoungshin/atSNP",
+    "conda_downloads": "24.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-atsnp\n\nname: bioconductor-atsnp\ndescription: Comprehensive analysis of SNP effects on transcription factor binding affinity. Use when Claude needs to: (1) Compute binding affinity scores for SNPs and motifs, (2) Calculate p-values for allele-specific binding and affinity changes, (3) Load motif libraries (ENCODE, JASPAR, or custom), (4) Process SNP data from tables, rsids, or fasta files, and (5) Visualize motif matches.\n\n# bioconductor-atsnp\n\n## Overview\n\nThe `atSNP` package (Affinity Test for regulatory SNP detection) provides a high-performance framework for identifying SNPs that disrupt transcription factor binding. It uses an importance sampling algorithm to compute p-values for allele-specific binding affinity and, crucially, the significance of the change in affinity between alleles.\n\n## Core Workflow\n\n### 1. Load Motif Libraries\n\nUse built-in libraries or load custom PWMs.\n\n```r\nlibrary(atSNP)\n\n# Load built-in ENCODE or JASPAR libraries\ndata(encode_library) # encode_motif, encode_motifinfo\ndata(jaspar_library) # jaspar_motif, jaspar_motifinfo\n\n# Load custom library from URL or file\npwms <- LoadMotifLibrary(\n  urlname = \"path/to/motifs.txt\",\n  tag = \">\", \n  transpose = FALSE, \n  field = 1, \n  sep = c(\"\\t\", \" \"), \n  skipcols = 1, \n  skiprows = 1, \n  pseudocount = 0\n)\n```\n\n### 2. Load SNP Data\n\n`atSNP` requires SNP coordinates and alleles. It integrates with `BSgenome` for sequence extraction and `SNPlocs` for rsid lookups.\n\n**From a table:**\nThe table must have columns: `chr`, `snp` (coordinate), `snpid`, `a1`, `a2`.\n\n```r\nsnp_info <- LoadSNPData(\n  \"snp_file.txt\", \n  genome.lib = \"BSgenome.Hsapiens.UCSC.hg38\", \n  half.window.size = 30, \n  mutation = FALSE, # FALSE matches alleles to reference; TRUE replaces ref with a1/a2\n  default.par = TRUE # Use TRUE for < 1000 SNPs\n)\n```\n\n**From rsids:**\n```r\nsnp_info <- LoadSNPData(\n  snpids = c(\"rs5050\", \"rs616488\"), \n  genome.lib = \"BSgenome.Hsapiens.UCSC.hg38\", \n  snp.lib = \"SNPlocs.Hsapiens.dbSNP144.GRCh38\", \n  half.window.size = 30\n)\n```\n\n### 3. Compute Affinity Scores\n\nCalculate the log-likelihood of binding for both the reference and SNP alleles.\n\n```r\natsnp.scores <- ComputeMotifScore(motif_library, snp_info, ncores = 1)\n# Result contains $snp.tbl (sequences) and $motif.scores (affinity scores)\n```\n\n### 4. Compute P-values\n\nTest the significance of the scores and the change between alleles.\n\n```r\natsnp.result <- ComputePValues(\n  motif.lib = motif_library, \n  snp.info = snp_info,\n  motif.scores = atsnp.scores$motif.scores, \n  testing.mc = TRUE,\n  ncores = 1\n)\n```\n\n**Key Output Columns:**\n- `pval_ref` / `pval_snp`: Significance of binding for each allele.\n- `pval_rank`: Significance of the SNP effect on affinity change (recommended for identifying regulatory SNPs).\n- `log_lik_ratio`: The difference in log-likelihood scores.\n\n### 5. Visualization and Subsequence Analysis\n\nExtract the specific sequences matching the motif and visualize the alignment.\n\n```r\n# Extract matching subsequences\nmatch_res <- MatchSubsequence(\n  snp.tbl = atsnp.scores$snp.tbl, \n  motif.scores = atsnp.result, \n  motif.lib = motif_library, \n  snpids = \"rs53576\"\n)\n\n# Plot motif match\nmatch.seq <- dtMotifMatch(\n  atsnp.scores$snp.tbl, \n  atsnp.scores$motif.scores, \n  snpids = \"rs53576\", \n  motifs = \"SIX5_disc1\", \n  motif.lib = motif_library\n)\nplotMotifMatch(match.seq, motif.lib = motif_library)\n```\n\n## Tips and Best Practices\n\n- **Mutation Argument**: Set `mutation = TRUE` in `LoadSNPData` if working with general single nucleotide mutations where neither allele necessarily matches the reference genome.\n- **Markov Model**: `default.par = TRUE` uses pre-fitted parameters from the GWAS catalog, which is more stable for small SNP sets.\n- **Parallelization**: Use the `ncores` argument in `ComputeMotifScore` and `ComputePValues` to speed up analysis for large datasets.\n- **Multiple Testing**: `atSNP` does not adjust p-values automatically. Use `p.adjust(atsnp.result$pval_rank, method = \"BH\")` or the `qvalue` package for FDR control.\n\n## Reference documentation\n\n- [atSNP Vignette](./references/atsnp-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-atsnp",
+    "description": "Bioconductor-atsnp identifies SNPs that disrupt transcription factor binding by computing affinity scores and significance levels for allele-specific changes. Use when user asks to compute binding affinity scores for SNPs, calculate p-values for regulatory SNP detection, load motif libraries from ENCODE or JASPAR, and process SNP data from rsids or genomic coordinates.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/atSNP.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bayespeak",
+  "category": "bioconductor",
+  "name": "bioconductor-bayespeak",
+  "description": "BayesPeak performs Bayesian analysis of ChIP-seq data to identify genomic sites of protein-DNA interactions using a Hidden Markov Model and Markov Chain Monte Carlo sampling. Use when user asks to call peaks, identify transcription factor binding sites, detect histone modifications, or estimate the posterior probability of enrichment in sequencing data.",
+  "overview": "BayesPeak is a Bayesian methodology for identifying enriched regions in ChIP-seq data. It divides the genome into \"jobs,\" fits a Hidden Markov Model to bins within those jobs, and uses Markov Chain Monte Carlo (MCMC) to estimate the posterior probability (PP) of enrichment. It is particularly effective for transcription factor data and specific histone marks.",
+  "homepage": "https://bioconductor.org/packages/3.11/bioc/html/BayesPeak.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bayespeak/overview",
+  "github": "N/A",
+  "conda_downloads": "36.9K",
+  "conda_downloads_num": 36900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BayesPeak"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/BayesPeak.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bayespeak/overview",
+    "github": "N/A",
+    "conda_downloads": "36.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bayespeak\n\nname: bioconductor-bayespeak\ndescription: Bayesian analysis of ChIP-seq data to identify genomic sites of protein-DNA interactions, such as transcription factor binding sites or histone modifications (e.g., H3K4me3). Use this skill to perform peak-calling using a Hidden Markov Model (HMM) and negative binomial distribution, handle overdispersion in read counts, and utilize posterior probabilities for peak certainty.\n\n# bioconductor-bayespeak\n\n## Overview\nBayesPeak is a Bayesian methodology for identifying enriched regions in ChIP-seq data. It divides the genome into \"jobs,\" fits a Hidden Markov Model to bins within those jobs, and uses Markov Chain Monte Carlo (MCMC) to estimate the posterior probability (PP) of enrichment. It is particularly effective for transcription factor data and specific histone marks.\n\n## Simple Workflow\nThe standard workflow involves running the MCMC algorithm and then summarizing the resulting bins into contiguous peaks.\n\n```r\nlibrary(BayesPeak)\n\n# 1. Run the BayesPeak algorithm\n# Inputs can be .bed files, data.frames, or RangedData objects\nraw.output <- bayespeak(\"treatment.bed\", \"control.bed\")\n\n# 2. Summarize bins into peaks\n# \"lowerbound\" is the recommended method for calculating peak-level PP\noutput <- summarize.peaks(raw.output, method = \"lowerbound\")\n\n# 3. Export results\nwrite.csv(as.data.frame(output), file = \"peaks.csv\")\n```\n\n## Core Functions\n\n### bayespeak()\nThe primary function for peak calling.\n- **Input**: Supports `.bed` files (columns: chr, start, end, strand), `data.frame`, or `RangedData`.\n- **Jobs**: The genome is processed in partitions (default `job.size = 6E6`) to account for local variation.\n- **Offset**: Runs twice by default (offset and non-offset) to ensure peaks straddling bin boundaries are captured.\n- **Iterations**: Control MCMC length with `iterations` (default 10,000).\n\n### summarize.peaks()\nConsolidates the raw bin calls into peaks.\n- **threshold**: The PP threshold for calling a bin enriched (default 0.5).\n- **method**: Use `\"lowerbound\"` (dynamic programming approach) or `\"max\"` (maximum bin PP).\n- **exclude.jobs**: A logical vector used to filter out jobs identified as \"overfit\" or unenriched.\n\n## Parallelization\nBayesPeak is computationally intensive and benefits from parallel processing.\n\n- **Multicore (Linux/Mac)**:\n  ```r\n  raw.output <- bayespeak(treatment, control, use.multicore = TRUE, mc.cores = 4)\n  ```\n- **SNOW (Windows/Clusters)**:\n  ```r\n  library(parallel)\n  cl <- makeCluster(4, type = \"PSOCK\")\n  clusterEvalQ(cl, library(BayesPeak))\n  raw.output <- bayespeak(treatment, control, snow.cluster = cl)\n  ```\n\n## Quality Control and Overfitting\nIn regions with low read density (e.g., centromeres), the model may \"overfit\" by trying to find enriched states in background noise.\n\n### Diagnostic Plots\n- **plot.PP(raw.output, job = i)**: Visualizes the distribution of PP values. Enriched jobs typically show a \"U-shape\" (values clustered at 0 and 1). Unenriched/overfit jobs show a uniform distribution.\n- **plot.overfitdiag(raw.output)**: Plots job characteristics (e.g., `lambda1` vs `calls`) to identify clusters of overfit jobs.\n\n### Filtering Overfit Jobs\nIdentify and exclude jobs that exhibit low mean counts in enriched bins (`lambda1`) or an unusually high number of calls.\n\n```r\n# Identify jobs where log(lambda1) < 1.5\nunreliable <- log(raw.output$QC$lambda1) < 1.5\n\n# Summarize while excluding those jobs\noutput <- summarize.peaks(raw.output, exclude.jobs = unreliable)\n```\n\n## Reference documentation\n- [BayesPeak](./references/BayesPeak.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bayespeak",
+    "description": "BayesPeak performs Bayesian analysis of ChIP-seq data to identify genomic sites of protein-DNA interactions using a Hidden Markov Model and Markov Chain Monte Carlo sampling. Use when user asks to call peaks, identify transcription factor binding sites, detect histone modifications, or estimate the posterior probability of enrichment in sequencing data.",
+    "homepage": "https://bioconductor.org/packages/3.11/bioc/html/BayesPeak.html"
+  }
+}

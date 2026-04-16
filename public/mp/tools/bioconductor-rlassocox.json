@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rlassocox",
+  "category": "bioconductor",
+  "name": "bioconductor-rlassocox",
+  "description": "bioconductor-rlassocox performs survival prediction and biomarker discovery by integrating gene interaction network information into a Lasso-Cox regularization framework. Use when user asks to perform survival analysis on high-dimensional data, incorporate gene network topology into Cox models, or identify stable biomarkers using the RLasso-Cox model.",
+  "overview": "RLassoCox implements the RLasso-Cox model, which improves upon the standard Lasso-Cox model by incorporating gene interaction information. It uses a random walk algorithm on a gene interaction network to calculate topological weights for genes. These weights are then used as penalty factors in the L1-norm constraint of the Cox proportional hazards model. This approach prioritizes topologically important genes, leading to more stable biomarker discovery and better generalization in survival predi",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RLassoCox.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/weiliu123/RLassoCox",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RLassoCox"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RLassoCox.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/weiliu123/RLassoCox",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rlassocox\n\nname: bioconductor-rlassocox\ndescription: Perform survival prediction and biomarker discovery using the RLasso-Cox model. Use this skill when you need to integrate gene interaction network information (topological weights) into a Lasso-Cox regularization framework for high-dimensional survival data analysis.\n\n# bioconductor-rlassocox\n\n## Overview\n\nRLassoCox implements the RLasso-Cox model, which improves upon the standard Lasso-Cox model by incorporating gene interaction information. It uses a random walk algorithm on a gene interaction network to calculate topological weights for genes. These weights are then used as penalty factors in the L1-norm constraint of the Cox proportional hazards model. This approach prioritizes topologically important genes, leading to more stable biomarker discovery and better generalization in survival prediction.\n\n## Installation\n\nInstall the package from Bioconductor:\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"RLassoCox\")\n```\n\n## Core Workflow\n\n### 1. Data Preparation\nThe model requires three primary inputs:\n- **Gene Expression Matrix**: A matrix where rows are samples and columns are genes.\n- **Survival Data**: An $n \\times 2$ matrix or data frame with columns `time` (failure/censoring time) and `status` (1 for failure, 0 for censoring).\n- **Interaction Network**: An `igraph` object representing the gene interaction network (e.g., KEGG).\n\n```r\nlibrary(RLassoCox)\ndata(mRNA_matrix)\ndata(survData)\ndata(dGMMirGraph)\n```\n\n### 2. Training the Model\nUse `RLassoCox` to fit the model over a grid of $\\lambda$ values.\n\n```r\n# Train the model\nmod <- RLassoCox(x = x.train, y = y.train, globalGraph = dGMMirGraph)\n\n# View topological weights calculated via random walk\nhead(mod$PT)\n\n# Access the underlying glmnet object\nprint(mod$glmnetRes)\nplot(mod$glmnetRes)\n```\n\n### 3. Cross-Validation\nUse `cvRLassoCox` to determine the optimal $\\lambda$ via k-fold cross-validation.\n\n```r\ncv.mod <- cvRLassoCox(x = x.train, y = y.train, globalGraph = dGMMirGraph, nfolds = 5)\n\n# Plot cross-validation error\nplot(cv.mod$glmnetRes)\n\n# Get optimal lambda values\nbest_lambda <- cv.mod$glmnetRes$lambda.min\nlambda_1se <- cv.mod$glmnetRes$lambda.1se\n```\n\n### 4. Feature Selection and Prediction\nExtract coefficients and predict risk scores for new patients.\n\n```r\n# Extract coefficients at optimal lambda\ncoef_min <- coef(cv.mod$glmnetRes, s = \"lambda.min\")\n\n# Identify selected features (non-zero coefficients)\nactive_genes <- rownames(coef_min)[which(coef_min[,1] != 0)]\n\n# Predict risk scores for test data\nrisk_scores <- predict(cv.mod, newx = x.test, s = \"lambda.min\")\n```\n\n## Key Functions\n\n- `RLassoCox()`: Fits the topologically weighted Lasso-Cox model. Returns a list containing the `glmnet` object and the topological weight vector `PT`.\n- `cvRLassoCox()`: Performs k-fold cross-validation. Returns a `cv.glmnet` object and the topological weights.\n- `predict.cvRLassoCox()`: Predicts survival risk for new samples using the cross-validated model.\n\n## Tips for Success\n\n- **Gene Identifiers**: Ensure that the gene names in your expression matrix match the node names in the `igraph` object.\n- **Survival Format**: The `y` input must strictly contain `time` and `status` columns. If using a `Surv` object, convert it to a matrix or data frame first.\n- **Network Choice**: The quality of the biomarkers depends heavily on the relevance of the `globalGraph` provided. Common choices include KEGG pathways or protein-protein interaction (PPI) networks.\n- **Glmnet Integration**: Since the package returns `glmnet` objects, you can use standard `glmnet` methods like `coef()`, `plot()`, and `print()` on the `$glmnetRes` component.\n\n## Reference documentation\n\n- [RLassoCox](./references/RLassoCox.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rlassocox",
+    "description": "bioconductor-rlassocox performs survival prediction and biomarker discovery by integrating gene interaction network information into a Lasso-Cox regularization framework. Use when user asks to perform survival analysis on high-dimensional data, incorporate gene network topology into Cox models, or identify stable biomarkers using the RLasso-Cox model.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RLassoCox.html"
+  }
+}

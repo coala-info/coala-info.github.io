@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-riboprofiling",
+  "category": "bioconductor",
+  "name": "bioconductor-riboprofiling",
+  "description": "This tool performs analysis and quality assessment of ribosome-profiling data to identify translated regions and quantify protein synthesis. Use when user asks to process BAM files for Ribo-seq analysis, estimate ribosome P-site offsets, quantify coverage across genomic features, or analyze codon-level translation dynamics.",
+  "overview": "RiboProfiling is designed to process Ribosome-profiling data starting from BAM files. It enables the identification of translated regions by accounting for the fact that ribosomes protect mRNA fragments (footprints) from RNAse digestion. The package provides tools for quality control, P-site offset calibration, feature quantification, and codon-level analysis including Principal Component Analysis (PCA) of codon coverage.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RiboProfiling.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RiboProfiling"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RiboProfiling.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-riboprofiling\n\nname: bioconductor-riboprofiling\ndescription: Analysis and quality assessment of Ribosome-profiling (Ribo-seq) data. Use this skill to process BAM files to determine read match length distributions, estimate ribosome P-site offsets, quantify coverage across genomic features (CDS, UTRs), and analyze codon-level translation dynamics.\n\n## Overview\n\nRiboProfiling is designed to process Ribosome-profiling data starting from BAM files. It enables the identification of translated regions by accounting for the fact that ribosomes protect mRNA fragments (footprints) from RNAse digestion. The package provides tools for quality control, P-site offset calibration, feature quantification, and codon-level analysis including Principal Component Analysis (PCA) of codon coverage.\n\n## Data Input and Preparation\n\nLoad the library and prepare BAM file references.\n\nlibrary(RiboProfiling)\nlibrary(GenomicAlignments)\n\n# Define BAM files\nbam_url <- \"http://genomique.info/data/public/RiboProfiling/ctrl.bam\"\nlistInputBam <- c(BamFile(bam_url))\n\n# Load as GAlignments for manual processing\naln <- readGAlignments(BamFile(bam_url))\n\n## Quick Start Workflow\n\nThe `riboSeqFromBAM` function is a wrapper that performs read length histograms, offset estimation, and feature counting in one step.\n\n# Requires a genome name (e.g., \"hg19\") or a TxDb object\ncovData <- riboSeqFromBAM(listInputBam, genomeName=\"hg19\")\n\n## Quality Assessment: Read Match Length\n\nUse `histMatchLength` to visualize the distribution of footprint sizes. Ribosome footprints are typically around 30bp.\n\nmatchLenDistr <- histMatchLength(aln, 0)\n# Plot the histogram\nmatchLenDistr[[2]]\n\n## P-site Offset Estimation\n\nRibosome P-site positions must be inferred from the read starts. This is done by analyzing coverage around the Transcription Start Site (TSS).\n\n1. Convert alignments to start positions:\nalnGRanges <- readsToStartOrEnd(aln, what=\"start\")\n\n2. Define regions around promoters:\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ntxdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\noneBinRanges <- aroundPromoter(txdb, alnGRanges, percBestExpressed=0.001)\n\n3. Calculate and plot coverage:\nlistPromoterCov <- readStartCov(\n    alnGRanges,\n    oneBinRanges,\n    matchSize=c(29:31),\n    fixedInterval=c(-20, 20),\n    renameChr=\"aroundTSS\",\n    charPerc=\"perc\"\n)\nplotSummarizedCov(listPromoterCov)\n\n## Feature Quantification\n\nQuantify reads on 5'UTR, CDS, and 3'UTR after applying the calculated offset (e.g., -14).\n\n# Get annotations\ncds <- cdsBy(txdb, by=\"tx\", use.names=TRUE)\nexonGRanges <- exonsBy(txdb, by=\"tx\", use.names=TRUE)\ncdsPosTransc <- orfRelativePos(cds, exonGRanges)\n\n# Count shifted reads\ncountsData <- countShiftReads(\n    exonGRanges=exonGRanges[names(cdsPosTransc)],\n    cdsPosTransc=cdsPosTransc,\n    alnGRanges=alnGRanges,\n    shiftValue=-14\n)\n\n# Visualize counts\nlistCountsPlots <- countsPlot(list(countsData[[1]]), grep(\"_counts$\", colnames(countsData[[1]])), 1)\n\n## Codon-Level Analysis\n\nAnalyze translation dynamics by looking at codon usage and stalling.\n\n1. Associate coverage with codon types:\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\ngenomeSeq <- BSgenome.Hsapiens.UCSC.hg19\nlistReadsCodon <- countsData[[2]]\norfCoord <- cds[names(cds) %in% names(listReadsCodon)]\ncodonData <- codonInfo(listReadsCodon, genomeSeq, orfCoord)\n\n2. Perform PCA on codon coverage:\ncodonCovMatrix <- codonData[[2]]\n# Filter for expressed genes\nixExpGenes <- which(apply(codonCovMatrix, 1, sum) >= 50)\nlistPCACodonCoverage <- codonPCA(t(codonCovMatrix[ixExpGenes, ]), \"codonCoverage\")\nlistPCACodonCoverage[[2]]\n\n## Reference documentation\n\n- [RiboProfiling](./references/RiboProfiling.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-riboprofiling",
+    "description": "This tool performs analysis and quality assessment of ribosome-profiling data to identify translated regions and quantify protein synthesis. Use when user asks to process BAM files for Ribo-seq analysis, estimate ribosome P-site offsets, quantify coverage across genomic features, or analyze codon-level translation dynamics.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RiboProfiling.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-oncoscanr",
+  "category": "bioconductor",
+  "name": "bioconductor-oncoscanr",
+  "description": "This tool analyzes Copy Number Variation (CNV) data to identify chromosomal alterations and calculate genomic instability scores. Use when user asks to compute HRD or TDplus scores, identify arm-level chromosomal alterations, or process CNV data from OncoScan or ASCAT outputs.",
+  "overview": "The `oncoscanR` package performs secondary analysis on CNV data. While tailored for ThermoFisher OncoScan assays analyzed with the Chromosome Alteration Suite (ChAS), it can process any segmented CNV data (including ASCAT) to identify arm-level alterations and calculate genomic instability signatures like HRD and TDplus scores.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/oncoscanR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/yannchristinat/oncoscanR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "oncoscanR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/oncoscanR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/yannchristinat/oncoscanR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-oncoscanr\n\nname: bioconductor-oncoscanr\ndescription: Analyze Copy Number Variation (CNV) data from ThermoFisher OncoScan assays (ChAS exports) or ASCAT outputs. Use this skill to compute Homologous Recombination Deficiency (HRD) scores (LST, HR-LOH, nLST, gLOH), Tandem Duplication plus (TDplus) scores, and identify arm-level chromosomal alterations (gains, losses, LOH).\n\n# bioconductor-oncoscanr\n\n## Overview\nThe `oncoscanR` package performs secondary analysis on CNV data. While tailored for ThermoFisher OncoScan assays analyzed with the Chromosome Alteration Suite (ChAS), it can process any segmented CNV data (including ASCAT) to identify arm-level alterations and calculate genomic instability signatures like HRD and TDplus scores.\n\n## Installation\nInstall the package using BiocManager:\n```R\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(\"oncoscanR\")\n```\n\n## Data Loading\nThe package supports two primary input formats. Both require a kit coverage object (default is `oncoscan_na33.cov` for hg19).\n\n### ChAS Export Files\nLoad text files exported from ChAS. The file must contain columns: `Type`, `CN State`, and `Full Location`.\n```R\nlibrary(oncoscanR)\nchas.fn <- \"path/to/chas_export.txt\"\nsegments <- load_chas(chas.fn, oncoscan_na33.cov)\n```\n\n### ASCAT Files\nLoad ASCAT output files. Required columns: `chr`, `startpos`, `endpos`, `nMajor`, `nMinor`.\n```R\nascat.fn <- \"path/to/ascat_output.txt\"\nascat.segments <- load_ascat(ascat.fn, oncoscan_na33.cov)\n```\n\n## Automated Workflows\nUse the high-level workflow functions to perform cleaning, arm-level analysis, and scoring in one step.\n\n```R\n# For ChAS data\nresults <- workflow_oncoscan.chas(\"chas_file.txt\")\n\n# For ASCAT data\nresults <- workflow_oncoscan.ascat(\"ascat_file.txt\")\n\n# Access results\nresults$armlevel$LOSS  # List of arms with losses\nresults$scores$HRD     # nLST score and status\nresults$scores$TDplus  # TDplus score\n```\n\n## Custom Analysis Pipeline\nFor granular control, follow the manual cleaning and scoring steps.\n\n### 1. Data Cleaning\nClean segments by trimming to kit coverage, adjusting LOH overlaps, and merging small gaps.\n```R\nlibrary(magrittr)\nsegs.clean <- segments %>%\n    trim_to_coverage(oncoscan_na33.cov) %>%\n    adjust_loh() %>%\n    merge_segments() %>%\n    prune_by_size()\n```\n\n### 2. Arm-Level Alterations\nIdentify arms where >80% (default) of the arm is altered.\n```R\n# Identify LOH arms\narms.loh <- get_loh_segments(segs.clean) %>%\n    armlevel_alt(kit.coverage = oncoscan_na33.cov) %>%\n    names()\n```\n\n### 3. Computing HRD Scores\nCalculate specific genomic signatures:\n- **LST (Large-scale State Transitions):** Breakpoints between adjacent segments >10Mb.\n- **HR-LOH:** Number of LOH segments >15Mb (excluding whole-arm LOH).\n- **nLST:** LST score normalized by whole-genome doubling (WGD) events.\n- **gLOH:** Percentage of the genome exhibiting LOH.\n\n```R\n# Calculate WGD and nLST\nwgd <- score_estwgd(segs.clean, oncoscan_na33.cov)\nnlst <- score_nlst(segs.clean, wgd[\"WGD\"], oncoscan_na33.cov)\n\n# Calculate gLOH\ngloh <- score_gloh(segs.clean, arms.loh, arms.loss, oncoscan_na33.cov)\n```\n\n### 4. TDplus Score\nIdentify CDK12-mutated tumor signatures by counting tandem duplications (gains of 1-2 copies) between 1Mb and 10Mb.\n```R\ntd_results <- score_td(segs.clean)\ntd_plus_score <- td_results$TDplus\n```\n\n## Global Genomic Metrics\n- `score_avgcn(segments, coverage)`: Average copy number.\n- `score_estwgd(segments, coverage)`: Estimated whole-genome doubling events.\n- `score_mbalt(segments, coverage)`: Total Megabases altered.\n\n## Reference documentation\n- [Secondary analyses of CNV data (HRD and more) with oncoscanR](./references/oncoscanR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-oncoscanr",
+    "description": "This tool analyzes Copy Number Variation (CNV) data to identify chromosomal alterations and calculate genomic instability scores. Use when user asks to compute HRD or TDplus scores, identify arm-level chromosomal alterations, or process CNV data from OncoScan or ASCAT outputs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/oncoscanR.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-flowmerge",
+  "category": "bioconductor",
+  "name": "bioconductor-flowmerge",
+  "description": "This tool performs automated gating and cluster merging for flow cytometry data to identify distinct cell populations. Use when user asks to refine flowClust results, merge mixture components based on entropy or Mahalanobis distance, or find a parsimonious model for cell sub-populations.",
+  "overview": "The `flowMerge` package addresses the tendency of mixture model-based clustering (like `flowClust`) to overestimate the number of cell populations. While the Bayesian Information Criterion (BIC) is excellent for model fitting, it often requires more components than there are biological populations. `flowMerge` takes a max BIC solution and systematically merges components using an entropy-based criterion to find a parsimonious model that accurately reflects true cell sub-populations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/flowMerge.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowmerge/overview",
+  "github": "N/A",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "flowMerge"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowMerge.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-flowmerge/overview",
+    "github": "N/A",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-flowmerge\n\nname: bioconductor-flowmerge\ndescription: Automated gating and cluster merging for flow cytometry data using the flowMerge package. Use this skill to refine flowClust results by merging mixture components based on entropy or Mahalanobis distance criteria to better identify distinct cell populations.\n\n# bioconductor-flowmerge\n\n## Overview\n\nThe `flowMerge` package addresses the tendency of mixture model-based clustering (like `flowClust`) to overestimate the number of cell populations. While the Bayesian Information Criterion (BIC) is excellent for model fitting, it often requires more components than there are biological populations. `flowMerge` takes a max BIC solution and systematically merges components using an entropy-based criterion to find a parsimonious model that accurately reflects true cell sub-populations.\n\n## Core Workflow\n\nThe typical workflow involves fitting a range of models, selecting the best fit, and then merging clusters.\n\n### 1. Initial Clustering with flowClust\nFirst, perform clustering across a range of $K$ (number of clusters) values.\n```r\nlibrary(flowMerge)\nlibrary(flowClust)\n\n# Fit models for K=1 to 10\nres <- flowClust(myFlowFrame, varNames=c(\"FSC.H\", \"SSC.H\"), K=1:10, trans=1, nu.est=1)\n\n# Identify the max BIC solution\nbest_k <- which.max(flowMerge:::BIC(res))\nflowClust.maxBIC <- res[[best_k]]\n```\n\n### 2. Creating a flowObj and Merging\nConvert the `flowClust` result into a `flowObj` to enable merging operations.\n```r\n# Create flowObj\nobj <- flowObj(flowClust.maxBIC, myFlowFrame)\n\n# Perform merging (default metric is \"entropy\")\n# Can also use metric=\"mahalanobis\"\nmerged_list <- merge(obj, metric=\"entropy\")\n```\n\n### 3. Selecting the Optimal Merged Solution\nUse piecewise linear regression on the entropy vs. cluster number to find the \"elbow\" or changepoint.\n```r\n# Find the changepoint index\ni <- fitPiecewiseLinreg(merged_list)\n\n# Extract the optimal merged model\noptimal_model <- merged_list[[i]]\n```\n\n## Parallel Processing\n\nFor high-throughput analysis of `flowSets` or lists of `flowFrames`, use `pFlowMerge`.\n\n```r\n# Non-parallel call (cl=NULL)\n# This wraps flowClust, BIC selection, and merging into one step\nresult <- pFlowMerge(cl=NULL, data=myFlowSet, varNames=c(\"FL1.H\", \"FL3.H\"), K=1:10)\n```\n\n## Visualization and Population Extraction\n\n### Plotting Results\n```r\n# Compare models\npar(mfrow=c(1,2))\nplot(flowClust.maxBIC, data=myFlowFrame, main=\"Before Merging\")\nplot(optimal_model, main=\"After Merging\")\n```\n\n### Extracting Populations\nYou can split the data based on the merged populations to perform downstream analysis on specific subsets (e.g., lymphocytes).\n```r\n# Get estimates to identify population indices\nestimates <- getEstimates(optimal_model)\n\n# Split the model to get a specific population\n# 'pop' should be the index of the cluster of interest\nsub_population <- split(optimal_model, population=list(\"target\"=pop))$target\n```\n\n### Merging Tree\nVisualize the merging process and marker expression across the hierarchy.\n```r\n# Requires Rgraphviz\nf <- ptree(\"merged_list_name\", i)\nf(1) # Plot for first marker\n```\n\n## Tips and Best Practices\n- **Metric Selection**: While \"entropy\" is the default and generally preferred for identifying distinct populations, \"mahalanobis\" is available for distance-based merging.\n- **Memory Management**: `pFlowMerge` does not manage memory aggressively. When processing large `flowSets`, process them in smaller batches if RAM is limited.\n- **Outlier Detection**: The `plot` method for merged objects often defaults to a specific outlier quantile (e.g., 90%). Adjust the `level` parameter in `plot()` to change the confidence interval of the clusters.\n\n## Reference documentation\n- [Merging Mixture Components for Cell Population Identification in Flow Cytometry Data](./references/flowmerge.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-flowmerge",
+    "description": "This tool performs automated gating and cluster merging for flow cytometry data to identify distinct cell populations. Use when user asks to refine flowClust results, merge mixture components based on entropy or Mahalanobis distance, or find a parsimonious model for cell sub-populations.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/flowMerge.html"
+  }
+}

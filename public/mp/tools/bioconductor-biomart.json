@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biomart",
+  "category": "bioconductor",
+  "name": "bioconductor-biomart",
+  "description": "This tool retrieves genomic data and annotations from BioMart databases like Ensembl using the biomaRt R package. Use when user asks to map gene identifiers, retrieve genomic sequences, fetch SNP information, or perform cross-species homology queries.",
+  "overview": "The `biomaRt` package provides a uniform R interface to various BioMart databases. It is primarily used for annotating biological identifiers and retrieving sequences. The workflow typically involves selecting a BioMart service (e.g., Ensembl), choosing a specific dataset (e.g., human genes), and then constructing a query using filters (inputs) and attributes (outputs).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/biomaRt.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biomart/overview",
+  "github": "https://github.com/Huber-group-EMBL/biomaRt",
+  "conda_downloads": "350.9K",
+  "conda_downloads_num": 350900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "biomaRt"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/biomaRt.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biomart/overview",
+    "github": "https://github.com/Huber-group-EMBL/biomaRt",
+    "conda_downloads": "350.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biomart\n\nname: bioconductor-biomart\ndescription: Retrieval of genomic data and annotations from BioMart databases (Ensembl, Wormbase, Phytozome) using the biomaRt R package. Use this skill when you need to map gene identifiers (e.g., Entrez, Ensembl, HGNC), retrieve genomic sequences (cDNA, peptide, UTR), fetch SNP information, or perform cross-species homology queries without writing SQL.\n\n# bioconductor-biomart\n\n## Overview\n\nThe `biomaRt` package provides a uniform R interface to various BioMart databases. It is primarily used for annotating biological identifiers and retrieving sequences. The workflow typically involves selecting a BioMart service (e.g., Ensembl), choosing a specific dataset (e.g., human genes), and then constructing a query using filters (inputs) and attributes (outputs).\n\n## Core Workflow\n\n### 1. Connecting to a Mart\nFor Ensembl (the most common use case), use `useEnsembl()`. For other marts, use `useMart()`.\n\n```r\nlibrary(biomaRt)\n\n# Connect to the latest Ensembl human genes dataset\nensembl <- useEnsembl(biomart = \"genes\", dataset = \"hsapiens_gene_ensembl\")\n\n# Connect to a specific Ensembl mirror if the default is slow\nensembl_east <- useEnsembl(biomart = \"genes\", dataset = \"hsapiens_gene_ensembl\", mirror = \"useast\")\n\n# Connect to an archived version for reproducibility\nlistEnsemblArchives()\nensembl_95 <- useEnsembl(biomart = \"genes\", dataset = \"hsapiens_gene_ensembl\", version = 95)\n```\n\n### 2. Exploring Filters and Attributes\n*   **Filters**: The input criteria (e.g., a list of gene IDs).\n*   **Attributes**: The data you want to retrieve (e.g., gene symbols, chromosome positions).\n\n```r\n# List all available options\nfilters <- listFilters(ensembl)\nattributes <- listAttributes(ensembl)\n\n# Search for specific terms\nsearchFilters(mart = ensembl, pattern = \"hgnc\")\nsearchAttributes(mart = ensembl, pattern = \"entrez\")\n```\n\n### 3. Executing Queries with getBM\nThe `getBM()` function is the primary workhorse.\n\n```r\n# Example: Map Affy IDs to Entrez IDs and HGNC Symbols\naffyids <- c(\"202763_at\", \"209310_s_at\")\nresults <- getBM(attributes = c('affy_hg_u133_plus_2', 'entrezgene_id', 'hgnc_symbol'),\n                 filters = 'affy_hg_u133_plus_2',\n                 values = affyids,\n                 mart = ensembl)\n```\n\n## Specialized Queries\n\n### Retrieving Sequences\nUse `getSequence()` for genomic, protein, or flanking sequences.\n\n```r\n# Get peptide sequences for Entrez IDs\nproteins <- getSequence(id = c(\"673\", \"837\"),\n                        type = \"entrezgene_id\",\n                        seqType = \"peptide\",\n                        mart = ensembl)\n```\n\n### Cross-Species Homology\nUse `getLDS()` to link two different datasets.\n\n```r\nhuman <- useEnsembl(\"genes\", dataset = \"hsapiens_gene_ensembl\")\nmouse <- useEnsembl(\"genes\", dataset = \"mmusculus_gene_ensembl\")\n\n# Find mouse homologs for human TP53\nhomologs <- getLDS(attributes = c(\"hgnc_symbol\"),\n                   filters = \"hgnc_symbol\", \n                   values = \"TP53\", \n                   mart = human,\n                   attributesL = c(\"ensembl_gene_id\"), \n                   martL = mouse)\n```\n\n## Troubleshooting & Tips\n\n*   **SSL Errors**: If you encounter \"SSL certificate problem\", run: `httr::set_config(httr::config(ssl_verifypeer = FALSE))`.\n*   **Caching**: `biomaRt` caches results. Use `biomartCacheInfo()` to check status and `biomartCacheClear()` to reset if data seems stale.\n*   **Ensembl Genomes**: For non-vertebrates (Plants, Fungi, etc.), use `listEnsemblGenomes()` and `useEnsemblGenomes()`.\n*   **Select Interface**: `biomaRt` supports the standard Bioconductor `select()` interface: `select(ensembl, keys = ids, columns = c(\"hgnc_symbol\"), keytype = \"ensembl_gene_id\")`.\n\n## Reference documentation\n- [Accessing Ensembl annotation with biomaRt](./references/accessing_ensembl.md)\n- [Using a BioMart other than Ensembl](./references/accessing_other_marts.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biomart",
+    "description": "This tool retrieves genomic data and annotations from BioMart databases like Ensembl using the biomaRt R package. Use when user asks to map gene identifiers, retrieve genomic sequences, fetch SNP information, or perform cross-species homology queries.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/biomaRt.html"
+  }
+}

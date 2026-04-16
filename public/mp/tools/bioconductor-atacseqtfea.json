@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-atacseqtfea",
+  "category": "bioconductor",
+  "name": "bioconductor-atacseqtfea",
+  "description": "This package identifies differential transcription factor activity between experimental conditions by analyzing TF footprints in ATAC-seq data. Use when user asks to identify transcription factor binding sites, calculate weighted binding scores, or perform transcription factor enrichment analysis.",
+  "overview": "The `ATACseqTFEA` package identifies differential transcription factor (TF) activity between experiment conditions using ATAC-seq data. Unlike tools that only consider chromatin openness, `ATACseqTFEA` incorporates TF footprints—the specific patterns of protection from transposase cleavage caused by TF binding. It uses an enrichment score approach to assess the activity of hundreds of TFs simultaneously.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ATACseqTFEA.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-atacseqtfea/overview",
+  "github": "https://github.com/jianhong/ATACseqTFEA",
+  "conda_downloads": "5.1K",
+  "conda_downloads_num": 5100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ATACseqTFEA"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ATACseqTFEA.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-atacseqtfea/overview",
+    "github": "https://github.com/jianhong/ATACseqTFEA",
+    "conda_downloads": "5.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-atacseqtfea\n\n## Overview\n\nThe `ATACseqTFEA` package identifies differential transcription factor (TF) activity between experiment conditions using ATAC-seq data. Unlike tools that only consider chromatin openness, `ATACseqTFEA` incorporates TF footprints—the specific patterns of protection from transposase cleavage caused by TF binding. It uses an enrichment score approach to assess the activity of hundreds of TFs simultaneously.\n\n## Core Workflow\n\n### 1. Preparation of Binding Sites\nYou must first identify potential TF binding sites across the genome or within specific peak regions.\n\n```r\nlibrary(ATACseqTFEA)\nlibrary(BSgenome.Hsapiens.UCSC.hg38) # Example genome\n\n# Load provided motifs (Human, Zebrafish, or DeepSTARR clusters)\nmotifs <- readRDS(system.file(\"extdata\", \"PWMatrixList.rds\", package=\"ATACseqTFEA\"))\n\n# Scan for binding sites\nbindingSites <- prepareBindingSites(\n  motifs, \n  genome = Hsapiens, \n  grange = peaks, # GRanges object of ATAC-seq peaks\n  p.cutoff = 5e-05\n)\n```\n\n### 2. One-Step TFEA\nFor standard analysis with biological replicates, use the wrapper function. Note: Input BAM files should ideally be pre-shifted using `ATACseqQC::shiftGAlignmentsList`.\n\n```r\nres <- TFEA(\n  bamExp = c(\"exp_rep1.bam\", \"exp_rep2.bam\"),\n  bamCtl = c(\"ctl_rep1.bam\", \"ctl_rep2.bam\"),\n  bindingSites = bindingSites,\n  positive = 0, negative = 0 # Set to 0 if BAMs are already shifted\n)\n```\n\n### 3. Step-by-Step Analysis\nFor fine-tuning parameters (e.g., filtering criteria or custom weighting), execute the pipeline manually:\n\n1.  **Expand Sites**: Define proximal and distal regions around motifs.\n    ```r\n    exbs <- expandBindingSites(bindingSites, proximal=40, distal=40, gap=10)\n    ```\n2.  **Count Insertions**: Count 5' ends in the defined regions.\n    ```r\n    counts <- count5ends(bam = all_bams, bindingSites = bindingSites, ...)\n    ```\n3.  **Filter & Normalize**: Remove sites with low coverage and convert to counts per base (CPB).\n    ```r\n    counts <- eventsFilter(counts, \"proximalRegion > 0\")\n    counts <- countsNormalization(counts, proximal=40, distal=40)\n    ```\n4.  **Score & Differential Analysis**: Calculate weighted binding scores and use `limma` logic for differential testing.\n    ```r\n    counts <- getWeightedBindingScore(counts)\n    design <- cbind(CTL=1, EXPvsCTL=c(1, 1, 0, 0)) # Example design\n    counts <- DBscore(counts, design=design, coef=\"EXPvsCTL\")\n    ```\n5.  **Enrichment**: Run the final TFEA.\n    ```r\n    res <- doTFEA(counts)\n    ```\n\n## Visualization and Results\n\n*   **Volcano Plot**: View global TF enrichment.\n    ```r\n    ESvolcanoplot(TFEAresults = res, TFnameToShow = \"CTCF\")\n    ```\n*   **Enrichment Score Plot**: View the GSEA-style running enrichment for a specific TF.\n    ```r\n    plotES(res, TF = \"TAL1\", outfolder = NA)\n    ```\n*   **Footprinting**: Use `ATACseqQC` to visualize the aggregate footprint at the identified sites.\n    ```r\n    library(ATACseqQC)\n    sigs <- factorFootprints(bams, pfm = motifs[[\"TF_NAME\"]], \n                             bindingSites = getBindingSites(res, TF=\"TF_NAME\"), ...)\n    ```\n\n## Tips\n*   **BAM Shifting**: Accurate footprinting requires 5' end shifting (+4bp for positive strand, -5bp for negative strand). Use `ATACseqQC` before running `TFEA`.\n*   **Species Support**: Ensure the `BSgenome` and `TxDb` packages match your experimental organism and assembly (e.g., `BSgenome.Mmusculus.UCSC.mm10`).\n*   **Motif Selection**: The package provides `best_curated_Human.rds` (1279 motifs) and `cluster_PWMs.rds` (6502 motifs) in its `extdata` directory.\n\n## Reference documentation\n- [ATACseqTFEA Guide](./references/ATACseqTFEA.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-atacseqtfea",
+    "description": "This package identifies differential transcription factor activity between experimental conditions by analyzing TF footprints in ATAC-seq data. Use when user asks to identify transcription factor binding sites, calculate weighted binding scores, or perform transcription factor enrichment analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ATACseqTFEA.html"
+  }
+}

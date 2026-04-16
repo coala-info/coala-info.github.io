@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-samspectral",
+  "category": "bioconductor",
+  "name": "bioconductor-samspectral",
+  "description": "SamSPECTRAL performs modified spectral clustering on large flow cytometry datasets using a faithful sampling strategy to reduce computational complexity. Use when user asks to cluster high-dimensional flow cytometry data, build data communities for reduction, tune spectral clustering parameters, or merge clusters based on a separation factor.",
+  "overview": "SamSPECTRAL is a Bioconductor package designed to overcome the memory and time limitations of classical spectral clustering when applied to large biological datasets, such as flow cytometry. It uses a \"faithful sampling\" strategy to reduce data into \"communities\" before performing spectral clustering on those representatives. The final step involves a post-processing stage that merges clusters based on a separation factor.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SamSPECTRAL.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SamSPECTRAL"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SamSPECTRAL.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-samspectral\n\nname: bioconductor-samspectral\ndescription: Expert guidance for using the SamSPECTRAL R package to perform modified spectral clustering on large flow cytometry datasets. Use this skill when a user needs to cluster high-dimensional flow cytometry data (FCS files or data matrices), specifically when traditional spectral clustering is too computationally expensive. It includes workflows for data reduction (building communities), parameter tuning (sigma and separation factor), and final cluster assignment.\n\n# bioconductor-samspectral\n\n## Overview\n\nSamSPECTRAL is a Bioconductor package designed to overcome the memory and time limitations of classical spectral clustering when applied to large biological datasets, such as flow cytometry. It uses a \"faithful sampling\" strategy to reduce data into \"communities\" before performing spectral clustering on those representatives. The final step involves a post-processing stage that merges clusters based on a separation factor.\n\n## Core Workflow\n\nThe package can be used via a high-level wrapper or a step-by-step manual process for fine-tuning.\n\n### 1. High-Level Usage\nThe `SamSPECTRAL()` function wraps the entire process. It is recommended to test parameters on a subset of data first.\n\n```r\nlibrary(SamSPECTRAL)\ndata(small_data) # Example data: 'small' matrix\n\n# Run SamSPECTRAL\n# normal.sigma: scaling parameter (1/sigma^2)\n# separation.factor: controls cluster merging (higher = more clusters)\nlabels <- SamSPECTRAL(small, \n                      dimension=c(1,2,3), \n                      normal.sigma=200, \n                      separation.factor=0.39)\n\n# Plot results\nplot(small, pch='.', col=labels)\n```\n\n### 2. Parameter Tuning Workflow\nIf the high-level function does not yield optimal results, follow this manual workflow to find the best `normal.sigma` and `separation.factor`.\n\n#### Step A: Data Scaling and Community Building\nScale data to [0,1] and reduce the dataset size.\n```r\n# Scale columns\nfull <- small\nfor (i in 1:ncol(full)) {\n  full[,i] <- (full[,i] - min(full[,i])) / (max(full[,i]) - min(full[,i]))\n}\n\n# Build communities (m=3000 is usually sufficient for speed)\nsociety <- Building_Communities(full, m=3000, space.length=1, community.weakness.threshold=1)\n```\n\n#### Step B: Adjusting normal.sigma\nCalculate conductance and check the eigenvalue plot for a \"knee\" shape.\n```r\nconductance <- Conductance_Calculation(full, normal.sigma=250, space.length=1, society, precision=6)\n\nclust_result <- Civilized_Spectral_Clustering(full, maximum.number.of.clusters=30, \n                                              society, conductance, stabilizer=1)\n\n# Look for a 'knee' in the plot\nplot(clust_result@eigen.space$values[1:50])\n```\n*   **Too small sigma (high normal.sigma):** No knee, values drop too fast.\n*   **Too large sigma (low normal.sigma):** Too many eigenvalues close to 1.\n\n#### Step C: Adjusting separation.factor\nUse the `Connecting` function to merge spectral clusters into biological populations.\n```r\n# Extract labels from spectral step\nlabels.for_num.of.clusters <- clust_result@labels.for_num.of.clusters\nnumber.of.clusters <- clust_result@number.of.clusters\n\n# Apply separation factor\nres <- Connecting(full, society, conductance, number.of.clusters, \n                  labels.for_num.of.clusters, separation.factor=0.5)\nplot(full, pch='.', col=res$label)\n```\n*   **Low separation.factor:** Merges distinct populations (under-clustering).\n*   **High separation.factor:** Keeps populations separate (over-clustering).\n\n## Tips for Large Datasets\n*   **Memory Management:** For very large datasets, ensure `m` (number of communities) is kept around 3000 to keep execution under one minute on standard hardware.\n*   **Consistency:** Once parameters are tuned on 2-3 representative samples, they can typically be applied to the rest of the dataset if experimental conditions are consistent.\n*   **Outliers:** SamSPECTRAL labels isolated outliers as `NA`.\n\n## Reference documentation\n- [Clustering by SamSPECTRAL](./references/Clustering_by_SamSPECTRAL.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-samspectral",
+    "description": "SamSPECTRAL performs modified spectral clustering on large flow cytometry datasets using a faithful sampling strategy to reduce computational complexity. Use when user asks to cluster high-dimensional flow cytometry data, build data communities for reduction, tune spectral clustering parameters, or merge clusters based on a separation factor.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SamSPECTRAL.html"
+  }
+}

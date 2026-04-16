@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-masigpro",
+  "category": "bioconductor",
+  "name": "bioconductor-masigpro",
+  "description": "This tool performs regression-based analysis of single and multiseries time course transcriptomics data to identify genes with significant temporal expression changes. Use when user asks to identify differentially expressed genes in time-course experiments, find significant differences between experimental groups, or analyze isoform switches and alternative splicing.",
+  "overview": "maSigPro (microarray Significant Profiles) is a Bioconductor package designed for time-course transcriptomics analysis. It uses a two-step regression strategy:\n1.  **Global Regression**: Identifies genes with any significant temporal or group-related changes using an F-test.\n2.  **Stepwise Regression**: Refines the model for each significant gene to identify specific variables (Time, Group, or Interactions) that drive the expression profile.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/maSigPro.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "maSigPro"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maSigPro.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-masigpro\n\nname: bioconductor-masigpro\ndescription: Analysis of single and multiseries time course transcriptomics data (Microarray and RNA-Seq). Use this skill to identify genes with significant temporal expression changes and significant differences between experimental groups using a two-step regression approach.\n\n## Overview\nmaSigPro (microarray Significant Profiles) is a Bioconductor package designed for time-course transcriptomics analysis. It uses a two-step regression strategy:\n1.  **Global Regression**: Identifies genes with any significant temporal or group-related changes using an F-test.\n2.  **Stepwise Regression**: Refines the model for each significant gene to identify specific variables (Time, Group, or Interactions) that drive the expression profile.\n\nIt supports both normal-distributed data (Microarrays) and count data (RNA-Seq) via Generalized Linear Models (GLMs).\n\n## Core Workflow\n\n### 1. Experimental Design\nThe `edesign` matrix is critical. Rows are arrays/samples; columns must include `Time`, `Replicate`, and binary dummy variables for each experimental group.\n\n```r\nlibrary(maSigPro)\n# Example edesign structure:\n#               Time Replicate Control Cold Heat\n# Control_3H_1     3         1       1    0    0\n# Cold_3H_1        3         4       0    1    0\n```\n\n### 2. Define Regression Model\nCreate the design matrix based on the polynomial degree (e.g., degree 2 for quadratic).\n```r\ndesign <- make.design.matrix(edesign, degree = 2)\n```\n\n### 3. Find Significant Genes (Step 1)\nUse `p.vector` to run the initial F-test. For RNA-Seq, set `counts = TRUE`.\n```r\n# Microarray\nfit <- p.vector(data, design, Q = 0.05, MT.adjust = \"BH\")\n\n# RNA-Seq (Negative Binomial)\nfit.seq <- p.vector(rnaseq_counts, design, counts = TRUE, theta = 10)\n```\n\n### 4. Variable Selection (Step 2)\nUse `T.fit` to perform stepwise regression on the genes selected in Step 1.\n```r\ntstep <- T.fit(fit, step.method = \"backward\", alfa = 0.05)\n```\n\n### 5. Extract and Visualize Results\nUse `get.siggenes` to filter by R-squared and group results.\n```r\n# Filter by R-squared > 0.6\nsigs <- get.siggenes(tstep, rsq = 0.6, vars = \"groups\")\n\n# Visualization\nsuma2Venn(sigs$summary[, c(1:3)]) # Venn diagram of group differences\nsee.genes(sigs$sig.genes$ColdvsControl, k = 9) # Cluster profiles\n```\n\n## Iso-maSigPro (Isoform Analysis)\nFor alternative splicing/isoform analysis, provide transcript-level data with Gene IDs in the first column.\n\n```r\n# Identify Differentially Spliced Genes (DSG)\nMyIso <- IsoModel(data = ISOdata[,-1], gen = ISOdata[,1], design = design, counts = TRUE)\nMyget <- getDS(MyIso)\n\n# Find isoform switches (Podium Changes)\nPC <- PodiumChange(Myget, comparison = \"specific\", group.name = \"Group2\", time.points = c(18, 24))\n\n# Plot specific gene isoforms\nIsoPlot(Myget, \"Gene1005\")\n```\n\n## Key Functions\n- `make.design.matrix()`: Converts `edesign` into a regression-ready matrix.\n- `p.vector()`: Performs the first regression to select genes with significant profiles.\n- `T.fit()`: Performs the second regression (stepwise) to find significant variables.\n- `get.siggenes()`: Generates lists of significant genes based on R-squared and experimental groups.\n- `see.genes()`: Clusters and plots expression profiles.\n- `PlotGroups()`: Plots the profile of a single gene across all experimental groups.\n\n## Tips\n- **Polynomial Degree**: `degree` should be at most `(number of time points - 1)`.\n- **Reference Group**: The first binary column in `edesign` (after Time and Replicate) is treated as the reference group (Control).\n- **RNA-Seq Normalization**: Data must be normalized (e.g., TMM, DESeq2) before running maSigPro; the package does not perform normalization.\n\n## Reference documentation\n- [maSigPro](./references/maSigPro.md)\n- [maSigProUsersGuide](./references/maSigProUsersGuide.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-masigpro",
+    "description": "This tool performs regression-based analysis of single and multiseries time course transcriptomics data to identify genes with significant temporal expression changes. Use when user asks to identify differentially expressed genes in time-course experiments, find significant differences between experimental groups, or analyze isoform switches and alternative splicing.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/maSigPro.html"
+  }
+}

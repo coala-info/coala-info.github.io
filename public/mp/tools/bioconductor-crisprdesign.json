@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-crisprdesign",
+  "category": "bioconductor",
+  "name": "bioconductor-crisprdesign",
+  "description": "The crisprDesign package provides a comprehensive framework for designing, annotating, and scoring CRISPR guide RNAs across multiple modalities and nucleases. Use when user asks to design gRNAs, perform off-target searches, calculate on-target efficiency scores, or annotate spacers with genomic features and SNPs.",
+  "overview": "The `crisprDesign` package is a central component of the crisprVerse ecosystem, providing a unified framework for designing and annotating CRISPR guide RNAs (gRNAs). It supports multiple CRISPR modalities including CRISPRko, CRISPRa, CRISPRi, CRISPRbe (base editing), and CRISPRkd (knockdown). The package integrates with `crisprBase` for nuclease specifications and `crisprScore` for efficiency predictions.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/crisprDesign.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/crisprVerse/crisprDesign",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "crisprDesign"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/crisprDesign.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/crisprVerse/crisprDesign",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-crisprdesign\n\nname: bioconductor-crisprdesign\ndescription: Comprehensive CRISPR guide RNA (gRNA) design and annotation using the crisprDesign package. Use this skill to design gRNAs for various modalities (knockout, activation, interference, base editing, knockdown), perform off-target searches, calculate on/off-target scores, and annotate gRNAs with gene context, SNPs, and sequence features.\n\n# bioconductor-crisprdesign\n\n## Overview\nThe `crisprDesign` package is a central component of the crisprVerse ecosystem, providing a unified framework for designing and annotating CRISPR guide RNAs (gRNAs). It supports multiple CRISPR modalities including CRISPRko, CRISPRa, CRISPRi, CRISPRbe (base editing), and CRISPRkd (knockdown). The package integrates with `crisprBase` for nuclease specifications and `crisprScore` for efficiency predictions.\n\n## Core Workflow\n\n### 1. Nuclease and Target Specification\nDefine the nuclease (e.g., SpCas9, AsCas12a) and the genomic target.\n\n```r\nlibrary(crisprDesign)\nlibrary(crisprBase)\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\n\n# Load a pre-defined nuclease\ndata(SpCas9, package=\"crisprBase\")\n\n# Define target region (e.g., CDS of a gene)\n# Assuming grListExample is loaded from the package\ndata(grListExample, package=\"crisprDesign\")\ngr <- queryTxObject(txObject=grListExample,\n                    featureType=\"cds\",\n                    queryColumn=\"gene_symbol\",\n                    queryValue=\"IQSEC3\")\n```\n\n### 2. Finding Spacers\nGenerate a `GuideSet` object containing all possible gRNAs in the target region.\n\n```r\nbsgenome <- BSgenome.Hsapiens.UCSC.hg38\nguideSet <- findSpacers(gr[1], \n                        bsgenome=bsgenome, \n                        crisprNuclease=SpCas9)\n```\n\n### 3. Annotation and Feature Characterization\nAdd sequence-level features and genomic context.\n\n```r\n# Basic sequence features (GC content, poly-T, self-complementarity)\nguideSet <- addSequenceFeatures(guideSet)\n\n# Gene and TSS context\nguideSet <- addGeneAnnotation(guideSet, txObject=grListExample)\ndata(tssObjectExample, package=\"crisprDesign\")\nguideSet <- addTssAnnotation(guideSet, tssObject=tssObjectExample)\n\n# Restriction enzymes and SNPs\nguideSet <- addRestrictionEnzymes(guideSet)\n# vcf_path should point to a local .vcf.gz file\nguideSet <- addSNPAnnotation(guideSet, vcf=vcf_path)\n```\n\n### 4. Off-target Search and Scoring\nAlign spacers to the genome to identify potential off-targets and calculate specificity scores.\n\n```r\n# Requires bowtie index\nguideSet <- addSpacerAlignments(guideSet,\n                                txObject=grListExample,\n                                aligner_index=\"path/to/bowtie_index\",\n                                bsgenome=bsgenome,\n                                n_mismatches=2)\n\n# Calculate MIT and CFD scores (SpCas9 specific)\nguideSet <- addOffTargetScores(guideSet)\n\n# Calculate on-target efficiency scores (requires crisprScore)\nguideSet <- addOnTargetScores(guideSet, methods=\"crisprater\")\n```\n\n### 5. Filtering and Ranking\nSubset the `GuideSet` based on annotations and rank by quality.\n\n```r\n# Filter by GC content and polyT\nguideSet <- guideSet[guideSet$percentGC >= 20 & guideSet$percentGC <= 80]\nguideSet <- guideSet[!guideSet$polyT]\n\n# Rank spacers using recommended heuristics\nguideSet <- rankSpacers(guideSet, tx_id=\"ENST00000538872\")\n```\n\n## Specialized Modalities\n\n### CRISPR Base Editing (CRISPRbe)\nPredicts edited alleles and functional consequences.\n\n```r\ndata(BE4max, package=\"crisprBase\")\n# Requires a transcript table from getTxInfoDataFrame\nguideSet <- addEditedAlleles(guideSet,\n                             baseEditor=BE4max,\n                             txTable=txTable,\n                             editingWindow=c(-20, -8))\n```\n\n### CRISPR Knockdown (CRISPRkd)\nDesign gRNAs targeting mRNA sequences using RNA-targeting nucleases like Cas13d.\n\n```r\ndata(CasRx, package=\"crisprBase\")\nmrnas <- getMrnaSequences(txid=\"ENST00000538872\", bsgenome=bsgenome, txObject=grListExample)\nguideSet <- findSpacers(mrnas[[1]], crisprNuclease=CasRx)\n```\n\n### Paired gRNA Design\nDesign pairs of gRNAs for large deletions or dual-targeting.\n\n```r\npairs <- findSpacerPairs(gr, gr, bsgenome=bsgenome, crisprNuclease=SpCas9)\n# Access individual guides\nfirst_guides <- first(pairs)\nsecond_guides <- second(pairs)\n```\n\n## Tips for Success\n- **Memory Management**: For genome-wide off-target searches, use `addSpacerAlignmentsIterative` to curtail searches for highly unspecific spacers.\n- **Custom Sequences**: Use `findSpacers` with a character vector of sequences if working with synthesized constructs instead of a reference genome.\n- **Non-Targeting Controls**: Use `addNtcs` to append negative control sequences to your `GuideSet` for library design.\n- **Data Access**: Use accessor functions like `alignments()`, `onTargets()`, `offTargets()`, and `snps()` to extract detailed DataFrames from the `GuideSet`.\n\n## Reference documentation\n- [Introduction to crisprDesign](./references/intro.md)\n- [Introduction to crisprDesign (Rmd)](./references/intro.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-crisprdesign",
+    "description": "The crisprDesign package provides a comprehensive framework for designing, annotating, and scoring CRISPR guide RNAs across multiple modalities and nucleases. Use when user asks to design gRNAs, perform off-target searches, calculate on-target efficiency scores, or annotate spacers with genomic features and SNPs.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/crisprDesign.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-isoformswitchanalyzer",
+  "category": "bioconductor",
+  "name": "bioconductor-isoformswitchanalyzer",
+  "description": "IsoformSwitchAnalyzeR identifies and analyzes isoform switches with functional consequences from RNA-seq data. Use when user asks to identify differential transcript usage, predict functional consequences of isoform switches, or visualize alternative splicing events and their genomic impacts.",
+  "overview": "IsoformSwitchAnalyzeR is a Bioconductor package designed to identify and analyze isoform switches with functional consequences. Unlike standard gene-level differential expression, this package focuses on changes in the relative usage of transcripts (isoform fractions) within a gene. It integrates sequence-level information to predict how switches affect protein domains, signal peptides, and coding potential.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/IsoformSwitchAnalyzeR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-isoformswitchanalyzer/overview",
+  "github": "https://github.com/kvittingseerup/IsoformSwitchAnalyzeR",
+  "conda_downloads": "45.0K",
+  "conda_downloads_num": 45000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "IsoformSwitchAnalyzeR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/IsoformSwitchAnalyzeR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-isoformswitchanalyzer/overview",
+    "github": "https://github.com/kvittingseerup/IsoformSwitchAnalyzeR",
+    "conda_downloads": "45.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-isoformswitchanalyzer\n\nname: bioconductor-isoformswitchanalyzer\ndescription: Statistical identification and functional annotation of isoform switches from RNA-seq data. Use this skill when analyzing differential transcript usage (DTU), predicting functional consequences of isoform switches (e.g., protein domain gain/loss, NMD sensitivity), or visualizing alternative splicing events and their genomic impacts.\n\n# bioconductor-isoformswitchanalyzer\n\n## Overview\nIsoformSwitchAnalyzeR is a Bioconductor package designed to identify and analyze isoform switches with functional consequences. Unlike standard gene-level differential expression, this package focuses on changes in the relative usage of transcripts (isoform fractions) within a gene. It integrates sequence-level information to predict how switches affect protein domains, signal peptides, and coding potential.\n\n## Core Workflow\n\n### 1. Data Import and Object Creation\nThe package uses a `switchAnalyzeRlist` object. You can import data from Salmon, Kallisto, RSEM, or StringTie.\n\n```r\nlibrary(IsoformSwitchAnalyzeR)\n\n# Import quantification data (Salmon example)\nsalmonQuant <- importIsoformExpression(parentDir = \"path/to/data\")\n\n# Create design matrix\nmyDesign <- data.frame(\n    sampleID = colnames(salmonQuant$abundance)[-1],\n    condition = c(\"Ctrl\", \"Ctrl\", \"Treat\", \"Treat\")\n)\n\n# Create the switchAnalyzeRlist\naSwitchList <- importRdata(\n    isoformCountMatrix   = salmonQuant$counts,\n    isoformRepExpression = salmonQuant$abundance,\n    designMatrix         = myDesign,\n    isoformExonAnnoation = \"annotation.gtf\",\n    isoformNtFasta       = \"transcripts.fasta\"\n)\n```\n\n### 2. Part 1: Identification and Sequence Extraction\nThis stage filters data, tests for differential isoform usage (DTU), and prepares sequences for external tools (Pfam, CPAT, etc.).\n\n```r\n# High-level wrapper for Part 1\naSwitchList <- isoformSwitchAnalysisPart1(\n    switchAnalyzeRlist = aSwitchList,\n    pathToOutput = \"isoform_analysis/\",\n    outputSequences = TRUE # Generates fasta files for external tools\n)\n\n# Summary of switches found\nextractSwitchSummary(aSwitchList)\n```\n\n### 3. External Analysis (Manual Step)\nRun the generated fasta files through external servers/tools:\n- **Pfam**: Protein domain identification.\n- **CPAT/CPC2**: Coding potential.\n- **SignalP**: Signal peptide prediction.\n- **IUPred2A**: Intrinsically Disordered Regions (IDR).\n\n### 4. Part 2: Functional Annotation and Visualization\nImport external results and predict the consequences of the switches.\n\n```r\n# High-level wrapper for Part 2\naSwitchList <- isoformSwitchAnalysisPart2(\n    switchAnalyzeRlist = aSwitchList,\n    pathToCPC2resultFile = \"cpc2_results.txt\",\n    pathToPFAMresultFile = \"pfam_results.txt\",\n    pathToSignalPresultFile = \"signalP_results.txt\",\n    outputPlots = TRUE # Generates PDF reports for top switches\n)\n```\n\n## Visualization and Analysis\n\n### Individual Gene Plots\nVisualize specific genes showing the transcript structure, expression, and isoform fraction changes.\n```r\nswitchPlot(aSwitchList, gene = \"ZAK\")\n```\n\n### Genome-wide Summaries\nAnalyze global patterns of splicing and consequences.\n```r\n# Summarize functional consequences (e.g., domain loss vs gain)\nextractConsequenceSummary(aSwitchList)\n\n# Analyze enrichment of specific splicing events\nextractSplicingEnrichment(aSwitchList)\n```\n\n## Key Functions and Tips\n- **`preFilter()`**: Always use this to remove lowly expressed isoforms or single-isoform genes before testing to increase statistical power.\n- **`isoformSwitchTestDEXSeq()`**: The recommended statistical test for DTU. It handles complex designs and batch effects if they are included in the design matrix.\n- **`extractTopSwitches()`**: Quickly identify the most significant switches filtered by dIF (delta Isoform Fraction) and Q-value.\n- **dIF (delta Isoform Fraction)**: This is the effect size. A dIF > 0.1 means an isoform's usage changed by more than 10% of the total gene output.\n\n## Reference documentation\n- [IsoformSwitchAnalyzeR Vignette](./references/IsoformSwitchAnalyzeR.md)\n- [IsoformSwitchAnalyzeR RMarkdown Source](./references/IsoformSwitchAnalyzeR.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-isoformswitchanalyzer",
+    "description": "IsoformSwitchAnalyzeR identifies and analyzes isoform switches with functional consequences from RNA-seq data. Use when user asks to identify differential transcript usage, predict functional consequences of isoform switches, or visualize alternative splicing events and their genomic impacts.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/IsoformSwitchAnalyzeR.html"
+  }
+}

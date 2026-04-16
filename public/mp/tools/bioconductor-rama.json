@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rama",
+  "category": "bioconductor",
+  "name": "bioconductor-rama",
+  "description": "The rama package provides tools for the robust estimation of gene expression levels in two-color microarray experiments using a Bayesian hierarchical model. Use when user asks to estimate gene expression from microarray data, handle outliers with t-distributions, or perform robust normalization of two-color intensity data.",
+  "overview": "The `rama` package provides tools for the robust estimation of gene expression levels in two-color microarray experiments. It employs a Bayesian hierarchical model that explicitly accounts for outliers using a t-distribution and addresses common microarray issues such as design effects, normalization, and nonconstant variance. It is particularly effective for datasets with replicates where traditional linear models might be sensitive to technical artifacts.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/rama.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "rama"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/rama.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rama\n\n## Overview\n\nThe `rama` package provides tools for the robust estimation of gene expression levels in two-color microarray experiments. It employs a Bayesian hierarchical model that explicitly accounts for outliers using a t-distribution and addresses common microarray issues such as design effects, normalization, and nonconstant variance. It is particularly effective for datasets with replicates where traditional linear models might be sensitive to technical artifacts.\n\n## Data Preparation\n\nThe package requires raw (untransformed) intensity data. You must organize your data into two separate matrices or data frames: one for the control sample and one for the treatment sample.\n\n- **Rows**: Genes\n- **Columns**: Replicates\n- **Dye-swap**: If using a dye-swap design, group replicates with the same dye together.\n\n```r\n# Example: Loading the built-in HIV dataset\nlibrary(rama)\ndata(hiv)\n\n# hiv contains 640 genes. \n# Columns 1:4 = Treatment (HIV infected)\n# Columns 5:8 = Control\n# Columns 9:10 = Row/Col positions on array\n```\n\n## Typical Workflow\n\n### 1. Estimating the Shift (Optional)\nThe model uses a log-transformation with a shifted origin: `log2(intensity + kappa)`. You can estimate `kappa` (the shift) separately or let the main fitting function handle it.\n\n```r\n# Manual estimation of the shift\nmcmc.shift <- est.shift(hiv[, 1:4], hiv[, 5:8], B=2000, min.iter=1000, dye.swap=TRUE, nb.col1=2)\n# The posterior mean of the shift is used in the next step\n```\n\n### 2. Fitting the Robust Model\nThe `fit.model` function performs the MCMC sampling.\n\n```r\n# Fit the model (B = total iterations, min.iter = burn-in)\n# If shift=NULL, it is estimated automatically\nmcmc.hiv <- fit.model(hiv[, 1:4], \n                      hiv[, 5:8], \n                      B=5000, \n                      min.iter=4000, \n                      shift=30, \n                      dye.swap=TRUE, \n                      nb.col1=2)\n```\n\n### 3. Extracting Results\nPoint estimates for gene effects (log intensities) can be extracted using `mat.mean`.\n\n```r\n# Extract posterior means for gene effects in both samples\ngamma1 <- mat.mean(mcmc.hiv$gamma1)[, 1]\ngamma2 <- mat.mean(mcmc.hiv$gamma2)[, 1]\n\n# Calculate log ratios\nlog_ratio <- gamma1 - gamma2\n```\n\n## Visualization and Diagnostics\n\n### Ratio Plots\nVisualize the log ratios against overall intensity.\n```r\nratio.plot(mcmc.hiv, col=1, pch=1)\n```\n\n### Outlier Detection (Weights)\nThe model assigns weights to each replicate. Lower weights indicate potential outliers.\n```r\n# Plot weights spatially to identify array artifacts\n# Requires gene coordinates (e.g., columns 9 and 10 of the hiv data)\nweight.plot(mcmc.hiv, hiv[, 9:10], array=3)\n```\n\n### Degrees of Freedom\nCheck the posterior distribution of the degrees of freedom for the t-distribution. Low values suggest the presence of many outliers in that specific array.\n```r\nhist(mcmc.hiv$df[3,], main=\"Posterior df, array 3\", xlab=\"df\")\n```\n\n## Performance Tips\n\n- **MCMC Convergence**: 50,000 iterations are generally recommended for final results, though 5,000 may suffice for exploratory analysis.\n- **Batch Mode**: For large datasets (many genes), use `R CMD BATCH` as the computational cost is high.\n- **Memory**: Save the resulting MCMC object to disk using `save(mcmc.hiv, file=\"results.RData\")` to avoid re-running long simulations.\n\n## Reference documentation\n\n- [Robust Analysis of MicroArray](./references/rama.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rama",
+    "description": "The rama package provides tools for the robust estimation of gene expression levels in two-color microarray experiments using a Bayesian hierarchical model. Use when user asks to estimate gene expression from microarray data, handle outliers with t-distributions, or perform robust normalization of two-color intensity data.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/rama.html"
+  }
+}

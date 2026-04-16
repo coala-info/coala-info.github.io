@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-allelicimbalance",
+  "category": "bioconductor",
+  "name": "bioconductor-allelicimbalance",
+  "description": "This package provides a framework for investigating allele-specific expression in RNA-seq data by analyzing allele counts at heterozygous SNP positions. Use when user asks to import BAM or VCF files into ASEset objects, perform statistical tests for allelic imbalance, or visualize allele-specific expression using barplots and genomic location plots.",
+  "overview": "The `AllelicImbalance` package provides a framework for investigating Allele-Specific Expression (ASE) in RNA-seq data. It centers around the `ASEset` object (extending `RangedSummarizedExperiment`), which stores allele counts for heterozygous SNPs across multiple samples. The package facilitates the transition from raw BAM files to statistical significance testing and high-quality visualizations of genomic imbalance.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AllelicImbalance.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-allelicimbalance/overview",
+  "github": "https://github.com/pappewaio/AllelicImbalance",
+  "conda_downloads": "24.0K",
+  "conda_downloads_num": 24000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AllelicImbalance"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AllelicImbalance.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-allelicimbalance/overview",
+    "github": "https://github.com/pappewaio/AllelicImbalance",
+    "conda_downloads": "24.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-allelicimbalance\n\nname: bioconductor-allelicimbalance\ndescription: Analysis of allelic imbalance (ASE) in RNA-seq data. Use this skill to import BAM/VCF files into ASEset objects, perform statistical tests for imbalance (chi-square, binomial), and visualize allele-specific expression using barplots and genomic location plots.\n\n# bioconductor-allelicimbalance\n\n## Overview\n\nThe `AllelicImbalance` package provides a framework for investigating Allele-Specific Expression (ASE) in RNA-seq data. It centers around the `ASEset` object (extending `RangedSummarizedExperiment`), which stores allele counts for heterozygous SNPs across multiple samples. The package facilitates the transition from raw BAM files to statistical significance testing and high-quality visualizations of genomic imbalance.\n\n## Core Workflow\n\n### 1. Creating an ASEset Object\n\nThe most common way to start is by importing allele counts from BAM files at specific genomic positions.\n\n```r\nlibrary(AllelicImbalance)\nlibrary(GenomicRanges)\n\n# Define regions of interest\nsearchArea <- GRanges(seqnames = \"17\", ranges = IRanges(79478301, 79478361))\n\n# Import reads from BAM files\npathToFiles <- system.file(\"extdata/ERP000101_subset\", package = \"AllelicImbalance\")\nreads <- impBamGAL(pathToFiles, searchArea)\n\n# Identify heterozygous positions (or provide your own via VCF)\nheterozygotePositions <- scanForHeterozygotes(reads)\n\n# Get allele counts and build the ASEset\ncountList <- getAlleleCounts(reads, heterozygotePositions)\nase <- ASEsetFromCountList(heterozygotePositions, countList)\n```\n\n### 2. Adding Metadata (Genotypes, Phase, and Reference)\n\nFor advanced analysis (like mapping bias detection or maternal/paternal plotting), you must define reference alleles and phase.\n\n```r\n# Set reference alleles (can be from Fasta or manual)\nref(ase) <- c(\"G\", \"T\", \"C\") \n\n# Infer genotypes and alternative alleles from counts\ngenotype(ase) <- inferGenotypes(ase)\nalt(ase) <- inferAltAllele(ase)\n\n# Add phase information (maternal|paternal)\n# Usually imported from VCF via VariantAnnotation::readGT\nphase(ase) <- phase_matrix \n```\n\n### 3. Statistical Testing\n\nTest for significant deviation from the expected 50/50 allele distribution.\n\n```r\n# Binomial test (good for low counts)\nbinom_results <- binom.test(ase, strand = \"*\")\n\n# Chi-square test\nchisq_results <- chisq.test(ase, strand = \"*\")\n```\n\n### 4. Visualization\n\nThe package provides both base R and Grid-based (Gviz compatible) plotting functions.\n\n```r\n# Standard barplot of counts\nbarplot(ase[1], strand = \"+\", type = \"counts\")\n\n# Fraction plot (useful for comparing many samples)\nbarplot(ase[1], type = \"fraction\", top.fraction.criteria = \"ref\")\n\n# Genomic location plot (ASE across a region/gene)\nlocationplot(ase, type = \"fraction\")\n\n# Gviz integration\nlibrary(Gviz)\ngenome(ase) <- \"hg19\"\nglocationplot(ase, strand = \"+\")\n```\n\n## Key Functions Reference\n\n- `impBamGAL`: Imports BAM files into a GAlignmentsList.\n- `getAlleleCounts`: Extracts nucleotide counts per sample at specified GRanges.\n- `ASEsetFromCountList`: Constructor for the main `ASEset` object.\n- `regionSummary`: Summarizes AI effects over a region (e.g., a whole transcript).\n- `fraction`: Calculates the ratio of specific alleles (e.g., reference allele fraction).\n- `getAreaFromGeneNames`: Helper to get GRanges for a gene symbol using `org.Hs.eg.db`.\n\n## Tips for Success\n\n- **Strand Specificity**: If your RNA-seq protocol is strand-specific, ensure you use `strand=\"+\"` and `strand=\"-\"` during import and plotting to avoid mixing signals.\n- **Mapping Bias**: Use `fraction(ase, top.fraction.criteria=\"ref\")` to check if the reference allele is globally over-represented, which indicates alignment bias.\n- **Object Updates**: If using old `ASEset` objects from Bioconductor versions < 3.2, they may need to be recreated or updated to match the modern `SummarizedExperiment` structure.\n\n## Reference documentation\n\n- [AllelicImbalance Vignette](./references/AllelicImbalance-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-allelicimbalance",
+    "description": "This package provides a framework for investigating allele-specific expression in RNA-seq data by analyzing allele counts at heterozygous SNP positions. Use when user asks to import BAM or VCF files into ASEset objects, perform statistical tests for allelic imbalance, or visualize allele-specific expression using barplots and genomic location plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AllelicImbalance.html"
+  }
+}

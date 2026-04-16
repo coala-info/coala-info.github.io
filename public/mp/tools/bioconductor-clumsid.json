@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-clumsid",
+  "category": "bioconductor",
+  "name": "bioconductor-clumsid",
+  "description": "\"Bioconductor-clumsid compares and clusters tandem mass spectrometry data to aid in metabolite identification. Use when user asks to extract MS2 spectra, merge redundant scans, calculate spectral similarity, or visualize metabolite clusters using multidimensional scaling and correlation networks.\"",
+  "overview": "CluMSID (Clustering Spectra for Metabolite Identification) is a tool for the comparison and clustering of tandem mass spectrometry (MS2) data. It facilitates metabolite annotation by grouping features with similar fragmentation patterns, neutral losses, or pseudospectra. It supports high-resolution and low-resolution data from various platforms (LC-MS/MS, Direct Infusion, and GC-MS).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CluMSID.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/tdepke/CluMSID",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CluMSID"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CluMSID.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/tdepke/CluMSID",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-clumsid\n\nname: bioconductor-clumsid\ndescription: Analysis of MS2 spectra from untargeted LC-MS/MS, DI-MS/MS, and GC-EI-MS data. Use this skill for extracting, merging, and clustering mass spectra to aid metabolite identification through cosine similarity, multidimensional scaling (MDS), and correlation networks.\n\n# bioconductor-clumsid\n\n## Overview\nCluMSID (Clustering Spectra for Metabolite Identification) is a tool for the comparison and clustering of tandem mass spectrometry (MS2) data. It facilitates metabolite annotation by grouping features with similar fragmentation patterns, neutral losses, or pseudospectra. It supports high-resolution and low-resolution data from various platforms (LC-MS/MS, Direct Infusion, and GC-MS).\n\n## Core Workflow\n\n### 1. Data Import and Extraction\nExtract MS2 spectra from raw data files (mzXML, mzML, mzTab, or netCDF).\n\n```r\nlibrary(CluMSID)\n# Extract spectra from a file\nms2list <- extractMS2spectra(\"path/to/data.mzXML\", \n                             min_peaks = 2, \n                             recalibrate_precursor = TRUE)\n```\n\n### 2. Merging Redundant Spectra\nConsolidate multiple scans of the same feature into consensus spectra.\n\n*   **Without external peak table:** Groups consecutive spectra by precursor m/z and retention time (RT).\n*   **With external peak table (e.g., from XCMS):** Matches MS2 scans to specific MS1 features.\n\n```r\n# Standard merging\nfeatlist <- mergeMS2spectra(ms2list, rt_tolerance = 30, mz_tolerance = 1e-5)\n\n# Merging with XCMS peak table\n# ptable must have columns: 1=ID, 2=m/z, 3=RT (in seconds)\nfeatlist_matched <- mergeMS2spectra(ms2list, peaktable = ptable, exclude_unmatched = FALSE)\n```\n\n### 3. Adding Annotations\nIntegrate known metabolite identities into the feature list.\n\n```r\n# Write a template for manual annotation\nwriteFeaturelist(featlist, \"features_to_annotate.csv\")\n\n# Add annotations from a CSV (requires 'id' and 'annotation' columns)\nannotatedSpeclist <- addAnnotations(featlist, \"annotated_features.csv\")\n```\n\n### 4. Generating Distance Matrices\nCalculate similarities between features using cosine similarity.\n\n```r\n# Based on product ion spectra\ndistmat <- distanceMatrix(annotatedSpeclist, type = \"spectra\")\n\n# Based on neutral loss patterns\nnlmat <- distanceMatrix(annotatedSpeclist, type = \"neutral_losses\")\n```\n\n## Data Exploration and Visualization\n\n### Multidimensional Scaling (MDS)\nVisualize global spectral similarities in 2D space.\n\n```r\nMDSplot(distmat, highlight_annotated = TRUE, interactive = FALSE)\n# Set interactive = TRUE to generate a plotly object\n```\n\n### Hierarchical Clustering and Heatmaps\nIdentify clusters of similar spectra.\n\n```r\n# Generate a heatmap with dendrograms\nHCplot(distmat, type = \"heatmap\", cexRow = 0.5, cexCol = 0.5)\n\n# Generate a circular dendrogram\nHCplot(distmat, type = \"dendrogram\", h = 0.8)\n```\n\n### Correlation Networks\nView relationships between features as a network graph.\n\n```r\nnetworkplot(distmat, \n            interactive = FALSE, \n            min_similarity = 0.1, \n            exclude_singletons = TRUE)\n```\n\n## Specialized Workflows\n\n### GC-EI-MS and Pseudospectra\nFor GC-MS or MS1-only data, use `CAMERA` to generate pseudospectra.\n\n```r\n# Extract from a CAMERA xsAnnotate object\npslist <- extractPseudospectra(xA, min_peaks = 0)\n# Use distanceMatrix with a higher mz_tolerance for low-res data\npseudodistmat <- distanceMatrix(pslist, mz_tolerance = 0.02)\n```\n\n### Direct Infusion (DI-MS/MS)\nSince RT is absent, set a high `rt_tolerance` in `mergeMS2spectra` to group identical precursors across the entire run.\n\n## Tips for Success\n*   **Mass Tolerance:** For high-res data (Q-TOF, Orbitrap), use `1e-5` (10ppm). For low-res data (Ion Trap, Quadrupole), use absolute values like `0.02` Da.\n*   **RT Units:** Ensure RT in your peak tables matches the units in the raw data (usually seconds).\n*   **Neutral Losses:** Use `type = \"neutral_losses\"` in `distanceMatrix` to find structural similarities that product ion spectra might miss (e.g., shared sugar moieties).\n\n## Reference documentation\n- [CluMSID DI-MS/MS Tutorial](./references/CluMSID_DI-MSMS.md)\n- [CluMSID GC-EI-MS Tutorial](./references/CluMSID_GC-EI-MS.md)\n- [Using CluMSID with MetaboLights Data](./references/CluMSID_MTBLS.md)\n- [Low Resolution LC-MS/MS Tutorial](./references/CluMSID_lowres-LC-MSMS.md)\n- [General CluMSID Tutorial](./references/CluMSID_tutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-clumsid",
+    "description": "Bioconductor-clumsid compares and clusters tandem mass spectrometry data to aid in metabolite identification. Use when user asks to extract MS2 spectra, merge redundant scans, calculate spectral similarity, or visualize metabolite clusters using multidimensional scaling and correlation networks.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CluMSID.html"
+  }
+}

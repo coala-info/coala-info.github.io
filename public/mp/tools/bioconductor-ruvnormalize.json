@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ruvnormalize",
+  "category": "bioconductor",
+  "name": "bioconductor-ruvnormalize",
+  "description": "This tool removes unwanted variation from gene expression microarray data to correct for batch effects and technical biases. Use when user asks to normalize gene expression data, remove unwanted variation or batch effects, perform unsupervised normalization for clustering or PCA, and use negative control genes or replicate samples for dataset correction.",
+  "overview": "The `RUVnormalize` package implements methods to estimate and remove unwanted variation (e.g., batch effects, platform differences, or laboratory bias) from microarray data. It is particularly useful in unsupervised settings where the primary biological signal of interest is not known beforehand. The package provides three main approaches:\n1. **Naive RUV-2**: Uses negative control genes to estimate unwanted factors.\n2. **Replicate-based RUV**: Uses replicate samples to identify variation that sh",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVnormalize.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RUVnormalize"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVnormalize.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ruvnormalize\n\nname: bioconductor-ruvnormalize\ndescription: Normalize gene expression microarray data by removing unwanted variation (RUV) when the factor of interest is unobserved or undefined. Use this skill to perform unsupervised normalization for clustering, PCA, or general dataset correction using negative control genes and replicate samples.\n\n## Overview\n\nThe `RUVnormalize` package implements methods to estimate and remove unwanted variation (e.g., batch effects, platform differences, or laboratory bias) from microarray data. It is particularly useful in unsupervised settings where the primary biological signal of interest is not known beforehand. The package provides three main approaches:\n1. **Naive RUV-2**: Uses negative control genes to estimate unwanted factors.\n2. **Replicate-based RUV**: Uses replicate samples to identify variation that should be removed.\n3. **Iterative RUV**: Alternates between estimating unwanted variation and the signal of interest using sparse dictionary learning (requires the `spams` package).\n\n## Core Workflow\n\n### 1. Data Preparation\nThe input expression matrix `Y` should be organized with samples in rows and genes in columns. It is recommended to center the gene expressions before processing.\n\n```r\nlibrary(RUVnormalize)\n# Y is a matrix: samples x genes\nY <- scale(Y, scale = FALSE) \n\n# Identify negative control genes (indices)\n# These are genes known NOT to be associated with the biological factor of interest\ncIdx <- which(featureData(data)$isNegativeControl)\n```\n\n### 2. Handling Replicates\nIf using replicate-based normalization, you must provide a matrix `scIdx` where each row contains the indices of samples that are replicates of each other.\n\n```r\n# Example: 3 samples are replicates, others are not. \n# Use -1 to pad rows if the number of replicates varies.\nscIdx <- matrix(-1, nrow = 10, ncol = 3)\nscIdx[1, 1:2] <- c(1, 5) # Sample 1 and 5 are replicates\n```\n\n### 3. Normalization Methods\n\n#### Naive RUV-2 (with or without shrinkage)\nUse `naiveRandRUV` when you have negative control genes.\n- `k`: The number of unwanted factors to estimate.\n- `nu.coeff`: Shrinkage parameter. Set to 0 for no shrinkage (standard RUV-2).\n\n```r\n# Without shrinkage (Rank reduction)\ncorrected_Y <- naiveRandRUV(Y, cIdx, k = 20, nu.coeff = 0)\n\n# With shrinkage (Ridge-type)\ncorrected_Y_shrink <- naiveRandRUV(Y, cIdx, k = nrow(Y), nu.coeff = 1e-3)\n```\n\n#### Replicate-based RUV\nUse `naiveReplicateRUV` when you have technical or biological replicates.\n\n```r\nres <- naiveReplicateRUV(Y, cIdx, scIdx, k = 20)\ncorrected_Y_rep <- res$cY\n```\n\n#### Iterative RUV\nUse `iterativeRUV` for a more refined estimation that attempts to separate the signal of interest from noise iteratively. This requires a list of parameters for the `spams` sparse modeling library.\n\n```r\n# Requires library(spams)\nparamXb <- list(K = 20, batch = TRUE, iter = 1, mode = 'PENALTY', lambda = 0.25)\niRes <- iterativeRUV(Y, cIdx, scIdx, paramXb, k = 20, nu.coeff = 0, Wmethod = 'rep')\ncorrected_Y_iter <- iRes$cY\n```\n\n### 4. Visualization and Evaluation\nUse `svdPlot` to visualize the data in the space of the first two principal components to check if batch effects (like Lab or Region) have been removed.\n\n```r\n# Plotting the first two PCs\nsvdRes <- svdPlot(corrected_Y[, top_genes_idx], \n                  annot = sample_annotations, \n                  labels = batch_labels)\n\n# Evaluate clustering quality if ground truth is known\nscore <- clScore(vclust, ground_truth_factor)\n```\n\n## Tips and Best Practices\n- **Gene Selection**: For clustering and PCA visualization, it is often better to use only the top 10-20% of genes with the highest variance after normalization.\n- **Parameter Selection**: The choice of `k` (number of factors) is critical. If `k` is too small, unwanted variation remains; if too large, biological signal may be removed.\n- **Pre-processing**: If a known strong batch effect exists (like a platform difference), centering the data within those specific batches before running RUV can improve results.\n\n## Reference documentation\n- [RUV for normalization of expression array data](./references/RUVnormalize.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ruvnormalize",
+    "description": "This tool removes unwanted variation from gene expression microarray data to correct for batch effects and technical biases. Use when user asks to normalize gene expression data, remove unwanted variation or batch effects, perform unsupervised normalization for clustering or PCA, and use negative control genes or replicate samples for dataset correction.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RUVnormalize.html"
+  }
+}

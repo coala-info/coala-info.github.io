@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-variantannotation",
+  "category": "bioconductor",
+  "name": "bioconductor-variantannotation",
+  "description": "This package provides tools for reading, writing, filtering, and annotating genetic variants in VCF files within the Bioconductor R environment. Use when user asks to import VCF data, locate variants in genomic regions, predict amino acid changes, or filter large variant files.",
+  "overview": "The `VariantAnnotation` package is the primary Bioconductor tool for managing Variant Call Format (VCF) files. It provides a robust framework for importing VCF data into specialized S4 objects (`VCF` class), allowing for efficient manipulation of genomic coordinates, genotype data, and metadata. Key capabilities include functional annotation (determining if a variant is in a coding or regulatory region), predicting the consequences of non-synonymous substitutions, and filtering large VCF files b",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/VariantAnnotation.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "VariantAnnotation"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/VariantAnnotation.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-variantannotation\n\nname: bioconductor-variantannotation\ndescription: Expert guidance for the Bioconductor R package VariantAnnotation. Use this skill when you need to read, write, filter, or annotate genetic variants in VCF (Variant Call Format) files. This includes importing VCF data into R, locating variants in genomic regions (coding, intron, etc.), predicting amino acid changes, and integrating with external databases like SIFT, PolyPhen, or Ensembl VEP.\n\n# bioconductor-variantannotation\n\n## Overview\n\nThe `VariantAnnotation` package is the primary Bioconductor tool for managing Variant Call Format (VCF) files. It provides a robust framework for importing VCF data into specialized S4 objects (`VCF` class), allowing for efficient manipulation of genomic coordinates, genotype data, and metadata. Key capabilities include functional annotation (determining if a variant is in a coding or regulatory region), predicting the consequences of non-synonymous substitutions, and filtering large VCF files based on custom criteria.\n\n## Core Workflows\n\n### 1. Importing VCF Data\nUse `readVcf` to load data. For large files, always use `TabixFile` and `ScanVcfParam` to subset by genomic coordinates or specific fields.\n\n```r\nlibrary(VariantAnnotation)\n\n# Basic import\nfl <- \"path/to/file.vcf.gz\"\nvcf <- readVcf(fl, \"hg19\")\n\n# Targeted import (efficient for large files)\nrng <- GRanges(seqnames=\"22\", ranges=IRanges(50301422, 50312106))\nsvp <- ScanVcfParam(which=rng, info=\"LDAF\", geno=\"GT\")\nvcf_sub <- readVcf(TabixFile(fl), \"hg19\", param=svp)\n\n# Accessors\nrowRanges(vcf) # Genomic positions (GRanges)\ninfo(vcf)      # INFO field data (DataFrame)\ngeno(vcf)      # Genotype data (List of matrices)\n```\n\n### 2. Filtering Variants\nThe `filterVcf` function allows for memory-efficient filtering of large files by processing them in chunks.\n\n```r\n# Define prefilters (string-based, fast) and filters (parsed-based, detailed)\npre <- FilterRules(list(not_dbsnp = function(x) !grepl(\"dbsnp\", x)))\nfilt <- FilterRules(list(is_snv = isSNV))\n\n# Execute filtering\nfilterVcf(TabixFile(fl, yieldSize=10000), \"hg19\", \"filtered.vcf\", \n          prefilters=pre, filters=filt)\n```\n\n### 3. Locating Variants in Gene Models\nUse `locateVariants` with a `TxDb` object to identify where variants fall relative to gene structures.\n\n```r\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ntxdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\n\n# Find variants in coding regions\nloc <- locateVariants(vcf, txdb, CodingVariants())\n\n# Find variants in all regions (intron, UTR, etc.)\nall_loc <- locateVariants(vcf, txdb, AllVariants())\n```\n\n### 4. Predicting Coding Consequences\nFor variants in coding regions, `predictCoding` determines amino acid changes.\n\n```r\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\ncoding_changes <- predictCoding(vcf, txdb, seqSource=Hsapiens)\n\n# Results include CONSEQUENCE (synonymous, nonsynonymous, frameshift), \n# REFAA (reference amino acid), and VARAA (variant amino acid).\n```\n\n### 5. External Annotations (VEP, SIFT, PolyPhen)\nIntegrate with external databases to assess variant impact.\n\n*   **Ensembl VEP**: Use `vep_by_region(vcf)` to query the Ensembl REST API.\n*   **PolyPhen/SIFT**: Use `select` on pre-computed database packages (e.g., `PolyPhen.Hsapiens.dbSNP131`).\n\n```r\n# VEP Example\nres <- vep_by_region(vcf[1:100])\n\n# PolyPhen Example\nlibrary(PolyPhen.Hsapiens.dbSNP131)\npp <- select(PolyPhen.Hsapiens.dbSNP131, keys=rsids, cols=c(\"PREDICTION\", \"PPH2PROB\"))\n```\n\n## Tips for Success\n*   **Coordinate Consistency**: Ensure `seqlevels` match between your VCF and `TxDb` (e.g., \"22\" vs \"chr22\"). Use `seqlevels(vcf) <- \"chr22\"` to fix mismatches.\n*   **Memory Management**: Use `yieldSize` in `TabixFile` to iterate through massive files without crashing R.\n*   **Structural Variants**: For SVs, the `ALT` field is returned as a `CharacterList` rather than a `DNAStringSet`.\n*   **SnpMatrix**: Convert VCF genotypes to `snpStats` format using `genotypeToSnpMatrix(vcf)` for GWAS workflows.\n\n## Reference documentation\n- [Introduction to VariantAnnotation](./references/VariantAnnotation.md)\n- [ensemblVEP: using the REST API with Bioconductor](./references/ensemblVEP.md)\n- [Using filterVcf() to Select Variants from VCF Files](./references/filterVcf.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-variantannotation",
+    "description": "This package provides tools for reading, writing, filtering, and annotating genetic variants in VCF files within the Bioconductor R environment. Use when user asks to import VCF data, locate variants in genomic regions, predict amino acid changes, or filter large variant files.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/VariantAnnotation.html"
+  }
+}

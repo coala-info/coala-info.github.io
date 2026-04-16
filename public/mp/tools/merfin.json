@@ -1,0 +1,51 @@
+{
+  "id": "merfin",
+  "category": "CLI",
+  "name": "merfin",
+  "description": "Merfin improves the accuracy of genomic assemblies and variant calls by evaluating k-mer distributions from sequencing reads. Use when user asks to assess assembly quality, calculate k-mer completeness, or filter and polish variants using k-mer validation.",
+  "overview": "Merfin (k-mer based variant filtering) is a specialized tool designed to improve the accuracy of genomic assemblies and variant calls. It works by comparing the k-mer distribution of raw sequencing reads (the \"truth\" set) against a consensus sequence or a set of variants. By leveraging k-mer multiplicity, Merfin can determine if a variant is supported by the underlying data or if an assembly region is collapsed or duplicated. It is particularly effective when paired with GenomeScope 2.0 for esti",
+  "homepage": "https://github.com/arangrhie/merfin",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/merfin/overview",
+  "github": "https://github.com/arangrhie/merfin",
+  "conda_downloads": "3.9K",
+  "conda_downloads_num": 3900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "merfin_filter",
+      "merfin_polish",
+      "merfin_hist",
+      "merfin_dump"
+    ],
+    "description": "Predict the kmer consequences of variant calls <input.vcf> given the consensus sequence <seq.fasta> and lookup the k-mer multiplicity in the consensus sequence <seq.meryl> and in the reads <read.meryl>.",
+    "docker_image": "quay.io/biocontainers/merfin:1.0--h9948957_3",
+    "homepage": "https://github.com/arangrhie/merfin",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/merfin/overview",
+    "github": "https://github.com/arangrhie/merfin",
+    "conda_downloads": "3.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "merfin_dump.cwl",
+    "merfin_filter.cwl",
+    "merfin_hist.cwl",
+    "merfin_polish.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# merfin\n\n## Overview\n\nMerfin (k-mer based variant filtering) is a specialized tool designed to improve the accuracy of genomic assemblies and variant calls. It works by comparing the k-mer distribution of raw sequencing reads (the \"truth\" set) against a consensus sequence or a set of variants. By leveraging k-mer multiplicity, Merfin can determine if a variant is supported by the underlying data or if an assembly region is collapsed or duplicated. It is particularly effective when paired with GenomeScope 2.0 for estimating k-mer copy number probabilities.\n\n## Core Workflows\n\n### 1. Preparing K-mer Databases\nBefore running Merfin, you must generate a k-mer database from sequencing reads using `meryl`.\n\n```bash\n# Count k-mers (k=21 is standard for human-sized genomes)\nmeryl count k=21 reads.fastq.gz output reads.meryl\n\n# Best Practice: Exclude frequency=1 k-mers to remove errors and accelerate processing\nmeryl greater-than 1 reads.meryl output reads.gt1.meryl\n```\n\n### 2. Assembly Evaluation (QV* and Completeness)\nUse these modes to assess the quality of a *de novo* assembly.\n\n**K* Histogram and QV*:**\nGenerates a 0-centered histogram. Positive values indicate collapsed copies; negative values indicate expansions.\n```bash\nmerfin -hist \\\n       -sequence assembly.fasta \\\n       -readmers reads.gt1.meryl \\\n       -peak <haploid_peak> \\\n       -prob lookup_table.txt \\\n       -output assembly.hist\n```\n\n**Completeness:**\nCalculates how much of the expected k-mer content from the reads is present in the assembly.\n```bash\nmerfin -completeness \\\n       -sequence assembly.fasta \\\n       -readmers reads.gt1.meryl \\\n       -peak <haploid_peak> \\\n       -prob lookup_table.txt\n```\n\n### 3. Variant Filtering and Polishing\nFilter VCF files to ensure only k-mer-validated variants are applied during polishing.\n\n```bash\nmerfin -polish \\\n       -sequence assembly.fasta \\\n       -readmers reads.gt1.meryl \\\n       -vcf input.vcf \\\n       -peak <haploid_peak> \\\n       -prob lookup_table.txt \\\n       -output polished_variants\n```\n\n**Polishing Modes:**\n- `-loose`: Removes variants only if missing k-mers increase. Includes neutral paths. Recommended for highly curated variant sets.\n- `-strict`: Includes variants only if missing k-mers decrease. Excludes neutral paths.\n- `-filter`: Use this mode when the reference sequence comes from a different individual (genotyping mode).\n\n## Expert Tips and Best Practices\n\n- **Peak Estimation**: The `-peak` value is critical. Use GenomeScope 2.0 to find the haploid peak. For a pseudo-haploid assembly of a diploid genome, use the diploid peak (2x haploid).\n- **Probability Tables**: Always provide a `-prob` lookup table (generated by GenomeScope 2.0 with `--fitted_hist`) to significantly improve accuracy.\n- **VCF Requirements**: Merfin expects a proper `GT` (genotype) field in the first sample column. If using Arrow or other tools that omit GT, use a reformating script or `bcftools` to add it.\n- **Haplotype Switching**: For partially phased pseudo-haplotype assemblies, it is recommended to remove heterozygous calls from the VCF before running Merfin to avoid incorrect switching.\n- **Parallelization**: Merfin parallelizes tasks per sequence entry (e.g., per chromosome or scaffold). Ensure your input FASTA is not a single giant line to utilize multiple threads effectively.\n- **Visualization**: The output of `-dump` can be converted to BigWig tracks for IGV/UCSC. The columns are: `seqName`, `seqPos`, `readK` (normalized copies), `asmK` (assembly copies), and `K*` (0-centered value).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| merfin | Predict the kmer consequences of variant calls <input.vcf> given the consensus sequence <seq.fasta> and lookup the k-mer multiplicity in the consensus sequence <seq.meryl> and in the reads <read.meryl>. |\n| merfin | Predict the kmer consequences of variant calls <input.vcf> given the consensus sequence <seq.fasta> and lookup the k-mer multiplicity in the consensus sequence <seq.meryl> and in the reads <read.meryl>. |\n| merfin | Predict the kmer consequences of variant calls <input.vcf> given the consensus sequence <seq.fasta> and lookup the k-mer multiplicity in the consensus sequence <seq.meryl> and in the reads <read.meryl>. |\n| merfin | Predict the kmer consequences of variant calls <input.vcf> given the consensus sequence <seq.fasta> and lookup the k-mer multiplicity in the consensus sequence <seq.meryl> and in the reads <read.meryl>. |\n\n## Reference documentation\n- [Best practices for Merfin](./references/github_com_arangrhie_merfin_wiki_Best-practices-for-Merfin.md)\n- [Merfin Main Documentation](./references/github_com_arangrhie_merfin.md)",
+  "skill_front_matter": {
+    "name": "merfin",
+    "description": "Merfin improves the accuracy of genomic assemblies and variant calls by evaluating k-mer distributions from sequencing reads. Use when user asks to assess assembly quality, calculate k-mer completeness, or filter and polish variants using k-mer validation.",
+    "homepage": "https://github.com/arangrhie/merfin"
+  }
+}

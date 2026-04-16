@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-targetsearch",
+  "category": "bioconductor",
+  "name": "bioconductor-targetsearch",
+  "description": "TargetSearch performs pre-processing and targeted metabolite identification for GC-MS data using retention index correction. Use when user asks to import NetCDF files, perform baseline correction, detect peaks, align retention indices, or search metabolite libraries.",
+  "overview": "TargetSearch is a Bioconductor package designed for the targeted analysis of GC-MS data. It automates the search for specific metabolites in chromatograms by converting retention times (RT) to retention indices (RI) using markers (e.g., alkanes or FAMEs). This allows for robust metabolite identification across different runs and instruments.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TargetSearch.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/acinostroza/TargetSearch",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TargetSearch"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TargetSearch.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/acinostroza/TargetSearch",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-targetsearch\n\nname: bioconductor-targetsearch\ndescription: Pre-processing and targeted metabolite identification for GC-MS data using retention index (RI) correction. Use this skill when analyzing GC-MS metabolomics data in R, specifically for importing NetCDF files, performing baseline correction, peak detection, RI alignment, and library searching against metabolite databases.\n\n## Overview\n\nTargetSearch is a Bioconductor package designed for the targeted analysis of GC-MS data. It automates the search for specific metabolites in chromatograms by converting retention times (RT) to retention indices (RI) using markers (e.g., alkanes or FAMEs). This allows for robust metabolite identification across different runs and instruments.\n\n## Core Workflow\n\n### 1. Data Import and Setup\n\nTargetSearch requires three main inputs: NetCDF files, a sample description file, and a RI marker definition file.\n\n```r\nlibrary(TargetSearch)\nlibrary(TargetSearchData)\n\n# Define paths\ncdf_path <- tsd_data_path()\nsample_file <- tsd_file_path(\"samples.txt\")\n\n# Import samples\nsamples <- ImportSamples(sample_file, CDFpath = cdf_path, RIpath = \".\")\n\n# Import RI marker settings (e.g., FAMEs)\nrim_file <- tsd_file_path(\"rimLimits.txt\")\nrimLimits <- ImportFameSettings(rim_file, mass = 87)\n```\n\n### 2. Pre-processing and RI Correction\n\nIt is highly recommended to convert CDF files to the TargetSearch CDF4 format for faster access and to perform baseline correction if the raw data is not already corrected.\n\n```r\n# Convert to CDF4 and perform baseline correction (optional but recommended)\nsamples <- ncdf4Convert(samples, path=\".\", baseline=TRUE, bsline_method=\"quantiles\")\n\n# Peak detection and RI marker identification\n# Returns a matrix of RI marker retention times\nRImatrix <- RIcorrect(samples, rimLimits, IntThreshold = 100, pp.method = \"ppc\", Window = 15)\n\n# Check for RI marker outliers\noutliers <- FAMEoutliers(samples, RImatrix, threshold = 3)\n```\n\n### 3. Library Search and Metabolite Profiling\n\nMetabolite identification is performed using a reference library containing expected RIs and selective masses.\n\n```r\n# Import reference library\nlib_file <- tsd_file_path(\"library.txt\")\nlib <- ImportLibrary(lib_file, RI_dev = c(2000, 1000, 200))\n\n# Step 1: Update library RIs based on median observed RIs\nlib <- medianRILib(samples, lib)\n\n# Step 2: Search for selective masses and correlate profiles\ncor_RI <- sampleRI(samples, lib, r_thres = 0.95, method = \"dayNorm\")\n\n# Step 3: Find all library masses in the samples\npeakData <- peakFind(samples, lib, cor_RI)\n\n# Create metabolite profile\nMetabProfile <- Profile(samples, lib, peakData, r_thres = 0.95, method = \"dayNorm\")\n\n# Clean up redundancy (grouping similar metabolites)\nfinalProfile <- ProfileCleanUp(MetabProfile, timeSplit = 500, r_thres = 0.95)\n```\n\n## Specialized Scenarios\n\n### External RI Markers\nIf RI markers were injected separately from biological samples (alternating runs), use the `fixRI` function to map the marker times from the standard runs to the biological samples. See [RICorrection.md](./references/RICorrection.md) for the specific mapping logic.\n\n### Untargeted Search\nWhile targeted, you can perform an untargeted search by creating a \"dummy\" library with evenly spaced RIs and a broad range of masses, then refining the library based on correlating masses found.\n\n## Visualization\n\n```r\n# Compare sample spectrum to library reference (head-tail plot)\nplotSpectra(lib, peakData, libID = 3, type = \"ht\")\n\n# Plot chromatographic peak for a specific metabolite\nplotPeak(samples, lib, MetabProfile, rawpeaks, which.smp=1, which.met=3)\n```\n\n## Reference documentation\n\n- [RI Correction Extra](./references/RICorrection.md)\n- [The TargetSearch Package](./references/TargetSearch.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-targetsearch",
+    "description": "TargetSearch performs pre-processing and targeted metabolite identification for GC-MS data using retention index correction. Use when user asks to import NetCDF files, perform baseline correction, detect peaks, align retention indices, or search metabolite libraries.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TargetSearch.html"
+  }
+}

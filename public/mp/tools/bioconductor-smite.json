@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-smite",
+  "category": "bioconductor",
+  "name": "bioconductor-smite",
+  "description": "Bioconductor-smite integrates gene expression and epigenetic data to identify functional modules and subnetworks within gene interaction networks. Use when user asks to integrate multi-omics data, identify significance-based gene interaction networks, or perform pathway enrichment on identified modules.",
+  "overview": "SMITE (Significance-based Modules Integrating Two Ensembles) is an R package designed to integrate results from gene expression and epigenetic studies. It transforms p-values from various genomic features (promoters, gene bodies, enhancers) into a unified scoring system to identify functional modules within gene interaction networks (e.g., REACTOME). This approach allows for the discovery of coordinated molecular changes across different regulatory layers.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SMITE.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/GreallyLab/SMITE",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SMITE"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SMITE.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/GreallyLab/SMITE",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-smite\n\nname: bioconductor-smite\ndescription: Integration of gene expression and epigenome-wide studies to identify functional modules and subnetworks. Use this skill when analyzing multi-omics data (RNA-seq, DNA methylation, ChIP-seq) to identify significance-based gene interaction networks and perform pathway enrichment on identified modules.\n\n# bioconductor-smite\n\n## Overview\n\nSMITE (Significance-based Modules Integrating Two Ensembles) is an R package designed to integrate results from gene expression and epigenetic studies. It transforms p-values from various genomic features (promoters, gene bodies, enhancers) into a unified scoring system to identify functional modules within gene interaction networks (e.g., REACTOME). This approach allows for the discovery of coordinated molecular changes across different regulatory layers.\n\n## Core Workflow\n\n### 1. Data Preparation and Curation\nBefore integration, data must be formatted as data frames with genomic coordinates, effect sizes, and p-values.\n\n```r\nlibrary(SMITE)\n\n# Methylation data: Chr, Start, Stop, Effect, P-value\ndata(methylationdata)\n# Replace p-values of 0 with the minimum non-zero p-value\nmethylation[,5] <- replace(methylation[,5], methylation[,5]==0, \n                           min(subset(methylation[,5], methylation[,5]!=0), na.rm=TRUE))\nmethylation <- methylation[!is.na(methylation[,5]), ]\n\n# Expression data: Gene Symbol, Effect (logFC), P-value\ndata(curated_expressiondata)\n\n# Convert Gene IDs if necessary\n# genes[,1] <- convertGeneIds(gene_IDs=genes[,1], ID_type=\"refseq\", ID_convert_to=\"symbol\")\n```\n\n### 2. Creating Annotations\nDefine the genomic regions (promoters, bodies, enhancers) to be associated with each gene.\n\n```r\n# Load gene bed and other features (e.g., H3K4me1 peaks)\ndata(hg19_genes_bed)\ndata(histone_h3k4me1)\n\ntest_annotation <- makePvalueAnnotation(\n    data=hg19_genes, \n    other_data=list(h3k4me1=h3k4me1), \n    gene_name_col=5, \n    promoter_upstream_distance=1000, \n    promoter_downstream_distance=1000\n)\n```\n\n### 3. Integrating Multi-Omics Data\nLoad expression and epigenetic modifications into the annotation object.\n\n```r\n# Annotate Expression\ntest_annotation <- annotateExpression(test_annotation, expr_data=expression_curated, \n                                      effect_col=1, pval_col=2)\n\n# Annotate Modifications (e.g., Methylation)\n# mod_type can be any custom string (e.g., \"methylation\", \"hydroxymethylation\")\ntest_annotation <- annotateModification(test_annotation, methylation, \n                                      weight_by_method=\"Stouffer\", \n                                      weight_by=c(promoter=\"distance\", body=\"distance\", h3k4me1=\"distance\"),\n                                      mod_type=\"methylation\")\n```\n\n### 4. Scoring and Normalization\nCombine p-values into a single score per gene, accounting for expected effect directions.\n\n```r\n# Define expected relationships (e.g., promoter methylation decreases expression)\ntest_annotation <- makePvalueObject(test_annotation, \n    effect_directions=c(methylation_promoter=\"decrease\", \n                        methylation_body=\"increase\", \n                        methylation_h3k4me1=\"bidirectional\"))\n\n# Normalize scores to the range of expression to prevent bias\ntest_annotation <- normalizePval(test_annotation, ref=\"expression\", method=\"rescale\")\n\n# Calculate final weighted scores\ntest_annotation <- scorePval(test_annotation, \n                             weights=c(methylation_promoter=.3, \n                                       methylation_body=.1,\n                                       expression=.3,\n                                       methylation_h3k4me1=.3))\n```\n\n### 5. Network Analysis and Visualization\nIdentify modules using an interactome and annotate them with pathway analysis.\n\n```r\n# Load an igraph network (e.g., REACTOME)\nload(system.file(\"data\",\"Reactome.Symbol.Igraph.rda\", package=\"SMITE\"))\n\n# Identify modules using Spinglass algorithm\ntest_annotation <- runSpinglass(test_annotation, network=REACTOME, maxsize=50)\n\n# Annotate modules with GO/KEGG\ntest_annotation <- runGOseq(test_annotation, type=\"kegg\")\n\n# Search for specific pathways\nsearchGOseq(test_annotation, search_string=\"cell cycle\")\n\n# Plot a specific module\nplotModule(test_annotation, which_network=1, goseq=TRUE)\n```\n\n## Tips for Success\n- **Gene IDs**: Ensure a consistent Gene ID system (preferably Gene Symbols) is used across all input datasets.\n- **P-value Zeros**: Always replace p-values of 0 with the minimum observed p-value to avoid infinite values during log transformation.\n- **Weighting**: Use the `weights` argument in `scorePval` to prioritize specific biological contexts (e.g., focusing on enhancer methylation).\n- **Visualization**: Use `plotDensityPval` before and after `normalizePval` to ensure scores are comparable across different data types.\n\n## Reference documentation\n- [SMITE Vignette](./references/SMITE.md)\n- [SMITE RMarkdown](./references/SMITE.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-smite",
+    "description": "Bioconductor-smite integrates gene expression and epigenetic data to identify functional modules and subnetworks within gene interaction networks. Use when user asks to integrate multi-omics data, identify significance-based gene interaction networks, or perform pathway enrichment on identified modules.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SMITE.html"
+  }
+}

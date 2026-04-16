@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-bnbc",
+  "category": "bioconductor",
+  "name": "bioconductor-bnbc",
+  "description": "This tool performs normalization and batch correction for Hi-C contact matrices across multiple samples. Use when user asks to normalize Hi-C data, remove batch effects from contact matrices, perform logCPM transformations, or smooth Hi-C replicates using the BNBC algorithm.",
+  "overview": "The `bnbc` package is designed for the normalization and batch effect correction of Hi-C data across multiple samples. It operates on \"bands\" (diagonals) of contact matrices, acknowledging that Hi-C contact frequency decays exponentially with genomic distance. The core workflow involves representing data in `ContactGroup` objects, applying per-sample adjustments (logCPM and smoothing), and then performing cross-sample normalization using quantile normalization and ComBat.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/bnbc.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bnbc/overview",
+  "github": "https://github.com/hansenlab/bnbc",
+  "conda_downloads": "34.4K",
+  "conda_downloads_num": 34400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bnbc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bnbc.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-bnbc/overview",
+    "github": "https://github.com/hansenlab/bnbc",
+    "conda_downloads": "34.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-bnbc\n\nname: bioconductor-bnbc\ndescription: Normalization and batch correction for Hi-C contact matrices across multiple samples. Use this skill when you need to process Hi-C data to remove technical variation, perform logCPM transformations, smooth contact matrices, or apply the BNBC (Band-Wise Normalization and Batch Correction) algorithm to Hi-C replicates.\n\n## Overview\n\nThe `bnbc` package is designed for the normalization and batch effect correction of Hi-C data across multiple samples. It operates on \"bands\" (diagonals) of contact matrices, acknowledging that Hi-C contact frequency decays exponentially with genomic distance. The core workflow involves representing data in `ContactGroup` objects, applying per-sample adjustments (logCPM and smoothing), and then performing cross-sample normalization using quantile normalization and ComBat.\n\n## Core Workflow\n\n### 1. Data Representation: The ContactGroup Class\n`bnbc` uses the `ContactGroup` class to store Hi-C data for a single chromosome across multiple samples.\n\n```r\nlibrary(bnbc)\n\n# Create a ContactGroup from scratch\n# rowData: GRanges of genomic bins\n# contacts: list of square contact matrices (one per sample)\n# colData: DataFrame of sample metadata (e.g., Batch, Condition)\ncg <- ContactGroup(rowData = LociData, contacts = MatsList, colData = SampleData)\n\n# Accessors\nrowData(cg)\ncolData(cg)\ncontacts(cg)\n```\n\n### 2. Data Input\nIf your data is in `.cooler` or `.mcool` format, use the internal helper functions (requires `HiCBricks`).\n\n```r\n# 1. Generate genomic index\nixns <- bnbc:::getChrIdx(seqlengths(hg19)[\"chr22\"], \"chr22\", step = 40000)\n\n# 2. Load from cooler files\ncg <- bnbc:::getChrCGFromCools(\n    files = cool_files,\n    chr = \"chr22\",\n    step = 40000,\n    index.gr = ixns,\n    coldata = sample_metadata\n)\n```\n\n### 3. Per-Sample Adjustments\nBefore cross-sample normalization, data must be transformed to account for sequencing depth and local noise.\n\n```r\n# Log-counts per million transformation\ncg.cpm <- logCPM(cg)\n\n# Smoothing (Box or Gaussian) to reduce binning artifacts\ncg.smooth <- boxSmoother(cg.cpm, h = 5)\n# OR: cg.smooth <- gaussSmoother(cg.cpm, radius = 3, sigma = 4)\n```\n\n### 4. BNBC Normalization\nThe `bnbc` function performs band-wise quantile normalization and batch correction.\n\n```r\n# batch: factor or vector indicating batch membership\n# nbands: number of bands (diagonals) to normalize\ncg.bnbc <- bnbc(cg.smooth, \n                batch = colData(cg.smooth)$Batch, \n                nbands = 11, \n                threshold = 1e7, \n                step = 4e4)\n```\n\n## Matrix Manipulation Utilities\n`bnbc` provides efficient tools for interacting with matrix bands (diagonals).\n\n```r\n# Get a specific band (e.g., the 2nd diagonal)\nb2 <- band(mat = matrix_obj, band.no = 2)\n\n# Set/Update a specific band (maintains symmetry)\nband(mat = matrix_obj, band.no = 2) <- b2 + 1\n\n# Apply a function to all matrices in a ContactGroup\ncg.modified <- cgApply(cg, FUN = my_function)\n```\n\n## Tips and Best Practices\n- **Memory Management**: Process data one chromosome at a time. `ContactGroup` objects are designed for single-chromosome data.\n- **Symmetry**: Ensure input matrices are square and symmetric. If you only have upper triangular data, mirror it to the lower triangle before creating the `ContactGroup`.\n- **Band Selection**: Normalization is typically performed on the first $k$ bands where biological signal is strongest. The `nbands` parameter in `bnbc()` controls this.\n- **Batch Correction**: Ensure the `batch` variable in `colData` correctly reflects the technical groupings (e.g., processing date or flow cell).\n\n## Reference documentation\n- [The bnbc User's Guide](./references/bnbc.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-bnbc",
+    "description": "This tool performs normalization and batch correction for Hi-C contact matrices across multiple samples. Use when user asks to normalize Hi-C data, remove batch effects from contact matrices, perform logCPM transformations, or smooth Hi-C replicates using the BNBC algorithm.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/bnbc.html"
+  }
+}

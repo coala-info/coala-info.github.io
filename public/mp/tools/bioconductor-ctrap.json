@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-ctrap",
+  "category": "bioconductor",
+  "name": "bioconductor-ctrap",
+  "description": "\"bioconductor-ctrap compares differential gene expression results against Connectivity Map perturbations and drug sensitivity data to identify mimicking or reversing compounds. Use when user asks to compare transcriptomic profiles with CMap perturbations, predict targeting drugs based on expression-drug sensitivity associations, or perform drug set enrichment analysis.\"",
+  "overview": "The `cTRAP` package allows users to compare their own differential gene expression results (e.g., from RNA-seq experiments) against a large library of known cellular perturbations from the Connectivity Map (CMap). This helps identify which gene knockdowns or drugs mimic or reverse an observed transcriptomic state. It also supports predicting targeting drugs by correlating expression profiles with drug sensitivity data (NCI60, GDSC, CTRP) and performing Drug Set Enrichment Analysis (DSEA).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cTRAP.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/nuno-agostinho/cTRAP",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cTRAP"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cTRAP.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/nuno-agostinho/cTRAP",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-ctrap\n\n## Overview\nThe `cTRAP` package allows users to compare their own differential gene expression results (e.g., from RNA-seq experiments) against a large library of known cellular perturbations from the Connectivity Map (CMap). This helps identify which gene knockdowns or drugs mimic or reverse an observed transcriptomic state. It also supports predicting targeting drugs by correlating expression profiles with drug sensitivity data (NCI60, GDSC, CTRP) and performing Drug Set Enrichment Analysis (DSEA).\n\n## Typical Workflow\n\n### 1. Prepare Input Data\nThe package requires a named numeric vector of differential expression statistics (e.g., t-statistics or log2 fold changes), where names are Gene Symbols.\n\n```r\nlibrary(cTRAP)\n\n# Example: Using ENCODE data\nmetadata <- downloadENCODEknockdownMetadata(\"HepG2\", \"EIF4G1\")\nsamples <- loadENCODEsamples(metadata)[[1]]\ncounts <- prepareENCODEgeneExpression(samples)\n\n# Convert IDs and perform DE analysis\ncounts$gene_id <- convertGeneIdentifiers(counts$gene_id)\ndiffExpr <- performDifferentialExpression(counts)\n\n# Create the named vector for cTRAP\ndiffExprStat <- diffExpr$t\nnames(diffExprStat) <- diffExpr$Gene_symbol\n```\n\n### 2. Load CMap Perturbations\nCMap data is large and usually downloaded automatically upon first use. You can filter by cell line or perturbation type.\n\n```r\n# Load metadata\ncmapMetadata <- loadCMapData(\"cmapMetadata.txt\", type=\"metadata\")\n\n# Filter for specific conditions (e.g., shRNA knockdown in HepG2)\ncmapMetadataKD <- filterCMapMetadata(\n    cmapMetadata, cellLine=\"HepG2\",\n    perturbationType=\"Consensus signature from shRNAs targeting the same gene\")\n\n# Load the actual z-scores (requires cmapZscores.gctx)\ncmapPerturbationsKD <- prepareCMapPerturbations(\n    metadata=cmapMetadataKD, \n    zscores=\"cmapZscores.gctx\",\n    geneInfo=\"cmapGeneInfo.txt\")\n```\n\n### 3. Rank Similar Perturbations\nCompare your DE profile against CMap using Spearman, Pearson, or GSEA methods.\n\n```r\n# Compare against knockdowns\ncompareKD <- rankSimilarPerturbations(diffExprStat, cmapPerturbationsKD)\n\n# View top hits (positively associated)\nhead(compareKD[order(rankProduct_rank)])\n\n# Plot results\nplot(compareKD, \"spearman\", n=c(10, 3)) # Top 10 positive, 3 negative\n```\n\n### 4. Predict Targeting Drugs\nIdentify compounds likely to target the observed phenotype by comparing DE profiles with drug sensitivity associations.\n\n```r\n# List and load associations (e.g., CTRP 2.1)\nassocName <- listExpressionDrugSensitivityAssociation()[[2]]\nassoc <- loadExpressionDrugSensitivityAssociation(assocName)\n\n# Predict drugs\npredicted <- predictTargetingDrugs(diffExprStat, assoc)\n\n# Plot targeting potential\nplot(predicted, method=\"rankProduct\")\n```\n\n### 5. Molecular Descriptor Enrichment (DSEA)\nAnalyze if the predicted targeting drugs share specific chemical properties.\n\n```r\n# Load descriptors (e.g., CMap 2D)\ndescriptors <- loadDrugDescriptors(\"CMap\", \"2D\")\ndrugSets <- prepareDrugSets(descriptors)\n\n# Perform enrichment\ndsea <- analyseDrugSetEnrichment(drugSets, predicted)\n\n# Plot top enriched descriptors\nplotDrugSetEnrichment(drugSets, predicted, selectedSets=head(dsea$descriptor, 6))\n```\n\n## Key Functions and Tips\n- `convertGeneIdentifiers()`: Essential for ensuring input gene names match CMap/Bioconductor standards.\n- `rankSimilarPerturbations()`: The core comparison engine. Using multiple methods (Spearman, Pearson, GSEA) allows the calculation of a `rankProduct_rank` for more robust results.\n- `filterCMapMetadata()`: Use this to reduce memory usage by only loading relevant slices of the massive CMap GCTX files.\n- **Memory Management**: CMap GCTX files are ~20GB. Ensure sufficient disk space and use the filtering options in `prepareCMapPerturbations` to avoid loading the entire dataset into RAM.\n\n## Reference documentation\n- [cTRAP](./references/cTRAP.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-ctrap",
+    "description": "bioconductor-ctrap compares differential gene expression results against Connectivity Map perturbations and drug sensitivity data to identify mimicking or reversing compounds. Use when user asks to compare transcriptomic profiles with CMap perturbations, predict targeting drugs based on expression-drug sensitivity associations, or perform drug set enrichment analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cTRAP.html"
+  }
+}

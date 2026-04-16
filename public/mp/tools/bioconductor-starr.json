@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-starr",
+  "category": "bioconductor",
+  "name": "bioconductor-starr",
+  "description": "bioconductor-starr analyzes Affymetrix ChIP-chip tiling array data from raw file import through peak detection. Use when user asks to import CEL and bpmap files, perform quality assessment and normalization, find peaks using the CMARRT algorithm, or correlate ChIP signals with genomic features.",
+  "overview": "The `Starr` package is a Bioconductor tool specifically designed for the analysis of Affymetrix tiling arrays. It extends the `Ringo` package's capabilities to Affymetrix platforms, providing a complete workflow from raw data import (CEL/bpmap) to high-level analysis. Key features include automated generation of probe annotations, sequence-specific bias correction, and the CMARRT algorithm for peak detection which accounts for the correlation structure of tiling array data.",
+  "homepage": "https://bioconductor.org/packages/3.5/bioc/html/Starr.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Starr"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/Starr.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-starr\n\nname: bioconductor-starr\ndescription: Analysis of Affymetrix ChIP-chip tiling array data. Use this skill for importing CEL and bpmap files, quality assessment (MA-plots, spatial plots), normalization (cyclic loess, vsn, MAT), peak-finding using the CMARRT algorithm, and correlating ChIP signals with genomic features like TSS/TTS.\n\n# bioconductor-starr\n\n## Overview\nThe `Starr` package is a Bioconductor tool specifically designed for the analysis of Affymetrix tiling arrays. It extends the `Ringo` package's capabilities to Affymetrix platforms, providing a complete workflow from raw data import (CEL/bpmap) to high-level analysis. Key features include automated generation of probe annotations, sequence-specific bias correction, and the CMARRT algorithm for peak detection which accounts for the correlation structure of tiling array data.\n\n## Core Workflow\n\n### 1. Data Import\n`Starr` requires two main file types: `.bpmap` (mapping) and `.cel` (intensities).\n\n```r\nlibrary(Starr)\nlibrary(affxparser)\n\n# Read bpmap file\nbpmap <- readBpmap(\"path/to/file.bpmap\")\n\n# Define CEL files and metadata\ncels <- c(\"sample1.cel\", \"control1.cel\")\nnames <- c(\"IP_1\", \"Control_1\")\ntype <- c(\"IP\", \"CONTROL\")\n\n# Create ExpressionSet\n# featureData=T includes genomic coordinates and sequences from bpmap\ndata <- readCelFile(bpmap, cels, names, type, featureData=TRUE, log.it=TRUE)\n```\n\n### 2. Quality Assessment\nBefore normalization, visualize data to identify technical artifacts or biases.\n\n*   **Spatial Plot:** `plotImage(\"sample.cel\")` reconstructs the array surface.\n*   **Distribution:** `plotDensity(data)` and `plotBoxes(data)`.\n*   **Correlation:** `plotScatter(data, density=TRUE)` shows pairwise sample correlations.\n*   **MA-Plots:** `plotMA(data, ip=ips, control=controls)` identifies saturation-dependent effects.\n*   **Sequence Bias:** `plotGCbias(exprs(data)[,1], featureData(data)$seq)` and `plotPosBias(...)` visualize intensity dependencies on GC content and base position.\n\n### 3. Normalization\nNormalize to correct systematic errors. Cyclic loess is a common choice for tiling arrays.\n\n```r\n# Normalize probes\ndata_norm <- normalize.Probes(data, method=\"loess\")\n\n# Calculate IP/Control ratio\nips <- data_norm$type == \"IP\"\ncontrols <- data_norm$type == \"CONTROL\"\nratio_set <- getRatio(data_norm, ips, controls, \"IPvsWT\", fkt=median, featureData=TRUE)\n```\n\n### 4. Peak Finding with CMARRT\nCMARRT is preferred over simple moving averages as it incorporates the correlation structure between neighboring probes.\n\n```r\n# Create probeAnno object for mapping\nprobeAnno <- bpmapToProbeAnno(bpmap)\n\n# Compute p-values using CMARRT\npeaks_raw <- cmarrt.ma(ratio_set, probeAnno, frag.length=300)\n\n# Diagnostic plots for CMARRT (QQ-plot and p-value histogram)\nplotcmarrt(peaks_raw)\n\n# Identify bound regions (peaks)\npeak_list <- cmarrt.peak(peaks_raw, alpha=0.05, method=\"BH\", minrun=4)\n```\n\n### 5. Genomic Feature Analysis\nAnalyze ChIP signals relative to annotated features (e.g., TSS, TTS).\n\n*   **Import Annotation:** Use `read.gffAnno(\"file.gff\")`.\n*   **Filter Genes:** `filterGenes(anno, minLength=1000)` to remove short or overlapping features.\n*   **Extract Profiles:** `getProfiles(ratio_set, probeAnno, tssAnno, upstream=500, downstream=500)` extracts signal matrices around features.\n*   **Visualization:** `plotProfiles(profiles)` creates mean profile plots and quantile-based profile plots.\n\n## Advanced Features\n\n### Probe Remapping\nIf using an outdated bpmap, remap sequences to a new genome build (FASTA) using the Aho-Corasick algorithm:\n```r\nnew_bpmap <- remap(bpmap, path=\"path/to/fasta_folder\", reverse_complementary=TRUE, return_bpmap=TRUE)\n```\n\n### Correlation with External Data\nUse `getMeans()` to calculate average ChIP signals over specific genomic windows (defined in a data frame) and `correlationPlot()` to visualize how these signals relate to external metrics like gene expression.\n\n## Reference documentation\n- [Starr](./references/Starr.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-starr",
+    "description": "bioconductor-starr analyzes Affymetrix ChIP-chip tiling array data from raw file import through peak detection. Use when user asks to import CEL and bpmap files, perform quality assessment and normalization, find peaks using the CMARRT algorithm, or correlate ChIP signals with genomic features.",
+    "homepage": "https://bioconductor.org/packages/3.5/bioc/html/Starr.html"
+  }
+}

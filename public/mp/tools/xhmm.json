@@ -1,0 +1,49 @@
+{
+  "id": "xhmm",
+  "category": "CLI",
+  "name": "xhmm",
+  "description": "XHMM detects rare de novo or inherited copy number variations from targeted sequencing data. Use when user asks to filter sequencing data, normalize read depth, discover copy number variations, or genotype copy number variations.",
+  "overview": "XHMM (eXome-Hidden Markov Model) is a specialized toolset designed to detect rare de novo or inherited copy number variations from targeted sequencing data. It is particularly effective at filtering out technical artifacts common in exome capture by using Principal Component Analysis (PCA) to normalize read depth across samples and targets before applying a Hidden Markov Model for discovery.",
+  "homepage": "http://atgu.mgh.harvard.edu/xhmm/index.shtml",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/xhmm/overview",
+  "github": "N/A",
+  "conda_downloads": "6.8K",
+  "conda_downloads_num": 6800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "xhmm_preparetargets",
+      "xhmm_mergegatkdepths",
+      "xhmm_matrix"
+    ],
+    "description": "Uses principal component analysis (PCA) normalization and a hidden Markov model (HMM) to detect and genotype copy number variation (CNV) from normalized read-depth data from targeted sequencing experiments.",
+    "docker_image": "quay.io/biocontainers/xhmm:0.0.0.2016_01_04.cc14e52--hedee03e_3",
+    "homepage": "http://atgu.mgh.harvard.edu/xhmm/index.shtml",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/xhmm/overview",
+    "github": "N/A",
+    "conda_downloads": "6.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "xhmm_matrix.cwl",
+    "xhmm_mergegatkdepths.cwl",
+    "xhmm_preparetargets.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# xhmm\n\n## Overview\nXHMM (eXome-Hidden Markov Model) is a specialized toolset designed to detect rare de novo or inherited copy number variations from targeted sequencing data. It is particularly effective at filtering out technical artifacts common in exome capture by using Principal Component Analysis (PCA) to normalize read depth across samples and targets before applying a Hidden Markov Model for discovery.\n\n## Core Workflow and CLI Patterns\n\n### 1. Data Preparation and Filtering\nBefore normalization, filter out extreme targets and samples to ensure PCA stability.\n```bash\nxhmm --filter \\\n  --extremeGC --minTargetSize 10 \\\n  --maxTargetSize 10000 --minMeanTargetRD 10 \\\n  --maxMeanTargetRD 500 \\\n  -G ./targets.interval_list \\\n  -R ./merged_GATK_depths.txt \\\n  --excludeTargets ./extreme_gc_targets.txt \\\n  --excludeSamples ./low_quality_samples.txt \\\n  --outDir ./pre_norm_filter/\n```\n\n### 2. PCA Normalization\nNormalize the filtered read-depth matrix to remove systematic biases.\n```bash\n# Run PCA on the filtered matrix\nxhmm --PCA -R ./pre_norm_filter/filtered.RD.txt --outDir ./pca_results/\n\n# Normalize data using PCA components\nxhmm --normalize -R ./pre_norm_filter/filtered.RD.txt \\\n  --PCAfiles ./pca_results/ \\\n  --normalizeOutput ./normalized.RD.txt \\\n  --PCAnormalizeMaxVarianceProp 0.7\n```\n\n### 3. CNV Discovery and Genotyping\nApply the HMM to the normalized data to call CNVs and then genotype those calls across the cohort.\n```bash\n# Discover CNVs\nxhmm --discover -R ./normalized.RD.txt \\\n  -p ./params.txt \\\n  -G ./targets.interval_list \\\n  -v ./xcnv_calls.xcnv\n\n# Genotype discovered CNVs to get quality scores\nxhmm --genotype -R ./normalized.RD.txt \\\n  -v ./xcnv_calls.xcnv \\\n  -p ./params.txt \\\n  -G ./targets.interval_list \\\n  -o ./genotyped_calls.vcf\n```\n\n## Expert Tips\n- **Parameter Tuning**: The `-p params.txt` file is critical. It defines the transition and emission probabilities for the HMM (e.g., the expected rate of CNVs). Ensure these match your specific population expectations.\n- **Target Intervals**: Always use the same interval list (`-G`) that was used during the GATK DepthOfCoverage step to maintain coordinate consistency.\n- **PCA Components**: If the data remains noisy, adjust `--PCAnormalizeMaxVarianceProp`. Typically, removing components that explain the top 70-90% of variance helps isolate biological signals from capture-related noise.\n- **Visual Validation**: Always cross-reference high-quality XHMM calls (SQ > 60) against the normalized read depth plots to verify the deletion or duplication signal.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| xhmm | Uses principal component analysis (PCA) normalization and a hidden Markov model (HMM) to detect and genotype copy number variation (CNV) from normalized read-depth data from targeted sequencing experiments. |\n| xhmm | Uses principal component analysis (PCA) normalization and a hidden Markov model (HMM) to detect and genotype copy number variation (CNV) from normalized read-depth data from targeted sequencing experiments. |\n| xhmm | Uses principal component analysis (PCA) normalization and a hidden Markov model (HMM) to detect and genotype copy number variation (CNV) from normalized read-depth data from targeted sequencing experiments. |\n\n## Reference documentation\n- [XHMM Overview](./references/anaconda_org_channels_bioconda_packages_xhmm_overview.md)",
+  "skill_front_matter": {
+    "name": "xhmm",
+    "description": "XHMM detects rare de novo or inherited copy number variations from targeted sequencing data. Use when user asks to filter sequencing data, normalize read depth, discover copy number variations, or genotype copy number variations.",
+    "homepage": "http://atgu.mgh.harvard.edu/xhmm/index.shtml"
+  }
+}

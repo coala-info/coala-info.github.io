@@ -1,0 +1,55 @@
+{
+  "id": "outrigger",
+  "category": "CLI",
+  "name": "outrigger",
+  "description": "Outrigger identifies and quantifies alternative splicing events like skipped exons and mutually exclusive exons from RNA-seq data using a graph-based approach. Use when user asks to build a splicing index from junctions or BAM files, validate de novo splice sites against a reference genome, or calculate Percent Spliced-In scores.",
+  "overview": "Outrigger is a specialized bioinformatics tool designed to identify and quantify alternative splicing events—specifically Skipped Exons (SE) and Mutually Exclusive Exons (MXE)—directly from RNA-seq data. Unlike tools that rely solely on existing annotations, Outrigger uses a graph database approach to discover novel exons and junctions present in your specific dataset. The workflow follows a three-step process: indexing junctions to find events, validating those events against biological splice-",
+  "homepage": "https://yeolab.github.io/outrigger",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/outrigger/overview",
+  "github": "N/A",
+  "conda_downloads": "7.9K",
+  "conda_downloads_num": 7900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "outrigger_index",
+      "outrigger_database",
+      "outrigger_validate",
+      "outrigger_correct",
+      "outrigger_psi",
+      "outrigger_splicing"
+    ],
+    "description": "Build an index of alternative splicing events from splice junction data.",
+    "docker_image": "quay.io/biocontainers/outrigger:1.1.1--py35_0",
+    "homepage": "https://yeolab.github.io/outrigger",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/outrigger/overview",
+    "github": "N/A",
+    "conda_downloads": "7.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "outrigger_correct.cwl",
+    "outrigger_database.cwl",
+    "outrigger_index.cwl",
+    "outrigger_psi.cwl",
+    "outrigger_splicing.cwl",
+    "outrigger_validate.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# outrigger\n\n## Overview\nOutrigger is a specialized bioinformatics tool designed to identify and quantify alternative splicing events—specifically Skipped Exons (SE) and Mutually Exclusive Exons (MXE)—directly from RNA-seq data. Unlike tools that rely solely on existing annotations, Outrigger uses a graph database approach to discover novel exons and junctions present in your specific dataset. The workflow follows a three-step process: indexing junctions to find events, validating those events against biological splice-site rules, and calculating the final Psi scores.\n\n## Core Workflow and CLI Patterns\n\n### 1. Building the Splicing Index (`index`)\nThis step is computationally intensive and builds the graph of potential splicing events.\n\n*   **Using STAR Junctions (Recommended):** Faster than BAM files as counts are pre-aggregated.\n    ```bash\n    outrigger index --sj-out-tab *SJ.out.tab --gtf <annotation.gtf>\n    ```\n*   **Using BAM Files:** Slower; requires sorted and indexed BAMs.\n    ```bash\n    outrigger index --bam *sorted.bam --gtf <annotation.gtf>\n    ```\n*   **Optimization Tips:**\n    *   **Parallelization:** Always use multiple cores. Use `--n-jobs -1` to use all available processors.\n    *   **Memory Management:** Use the `--low-memory` flag for large datasets to reduce the RAM footprint during CSV operations.\n    *   **Filtering:** Use `--min-reads` (default 10) to ignore low-confidence junctions and speed up graph construction.\n\n### 2. Validating Splice Sites (`validate`)\nFilters the de novo events to ensure they follow canonical biological rules (e.g., GT/AG or AT/AC).\n\n```bash\noutrigger validate --genome <genome_id> --fasta <reference.fasta>\n```\n*   **Note:** This step requires a genome fasta file and is highly recommended to remove noise from the de novo index.\n\n### 3. Quantifying Splicing (`psi`)\nCalculates the Percent Spliced-In (Ψ) scores for the validated (or indexed) events.\n\n```bash\noutrigger psi\n```\n*   **Execution:** Run this in the same directory where `index` was performed. It automatically looks for the `outrigger_output` folder.\n*   **Output:** The primary result is `outrigger_output/psi/outrigger_psi.csv`, containing a matrix of events (rows) by samples (columns).\n\n## Expert Tips and Best Practices\n*   **Directory Consistency:** Always run `index`, `validate`, and `psi` from the same working directory. Outrigger relies on a specific folder structure (`outrigger_output/`) created during the indexing phase.\n*   **Runtime Expectations:** \n    *   `index`: 24–48 hours (highly dependent on junction count).\n    *   `validate`: 2–4 hours.\n    *   `psi`: 4–8 hours.\n*   **Resuming Interrupted Jobs:** If an indexing job fails, use the `--resume` flag to continue from the last checkpoint, or `--force` to overwrite and start over.\n*   **Multimapping Reads:** By default, Outrigger includes multimapping reads. Use `--ignore-multimapping` if you require higher stringency, particularly when working with repetitive genomic regions.\n*   **Custom Splice Sites:** For non-mammalian systems, you can adjust the valid splice sites during the `validate` step if the defaults (GT/AG, AT/AC) are not applicable.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| outrigger | outrigger: error: invalid choice: 'correct' (choose from 'index', 'validate', 'psi') |\n| outrigger | outrigger: error: invalid choice: 'database' (choose from 'index', 'validate', 'psi') |\n| outrigger | outrigger: error: invalid choice: 'splicing' (choose from 'index', 'validate', 'psi') |\n| outrigger psi | Calculate PSI scores |\n| outrigger validate | Validate splice site sequences against a genome. |\n| outrigger_index | Build an index of alternative splicing events from splice junction data. |\n\n## Reference documentation\n- [Usage Guide](./references/yeolab_github_io_outrigger_usage.html.md)\n- [Index Subcommand](./references/yeolab_github_io_outrigger_subcommands_outrigger_index.html.md)\n- [Validate Subcommand](./references/yeolab_github_io_outrigger_subcommands_outrigger_validate.html.md)\n- [Psi Subcommand](./references/yeolab_github_io_outrigger_subcommands_outrigger_psi.html.md)",
+  "skill_front_matter": {
+    "name": "outrigger",
+    "description": "Outrigger identifies and quantifies alternative splicing events like skipped exons and mutually exclusive exons from RNA-seq data using a graph-based approach. Use when user asks to build a splicing index from junctions or BAM files, validate de novo splice sites against a reference genome, or calculate Percent Spliced-In scores.",
+    "homepage": "https://yeolab.github.io/outrigger"
+  }
+}

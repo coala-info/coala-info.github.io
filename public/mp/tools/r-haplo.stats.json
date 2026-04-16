@@ -1,0 +1,41 @@
+{
+  "id": "r-haplo.stats",
+  "category": "R",
+  "name": "r-haplo.stats",
+  "description": "This tool performs statistical analysis of haplotypes with traits and covariates when linkage phase is ambiguous. Use when user asks to estimate haplotype frequencies, test associations between haplotypes and traits using score statistics, perform haplotype-based regression, or calculate power and sample size for haplotype studies.",
+  "overview": "The `haplo.stats` package provides a suite of R routines for analyzing indirectly measured haplotypes. It handles the ambiguity of linkage phase and missing alleles in unrelated subjects. Key features include the progressive insertion EM algorithm for frequency estimation, score tests for association, and generalized linear models (GLM) for haplotype effects.",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-haplo.stats\n\nname: r-haplo.stats\ndescription: Statistical analysis of haplotypes with traits and covariates when linkage phase is ambiguous. Use this skill when analyzing genetic data from unrelated subjects where phase is unknown, specifically for: (1) Estimating haplotype frequencies (EM algorithm), (2) Testing associations between haplotypes and various traits (Gaussian, Binomial, Ordinal, Poisson) using score statistics, (3) Performing haplotype-based regression (GLM), and (4) Calculating power and sample size for haplotype studies.\n\n## Overview\n\nThe `haplo.stats` package provides a suite of R routines for analyzing indirectly measured haplotypes. It handles the ambiguity of linkage phase and missing alleles in unrelated subjects. Key features include the progressive insertion EM algorithm for frequency estimation, score tests for association, and generalized linear models (GLM) for haplotype effects.\n\n## Installation\n\n```R\ninstall.packages(\"haplo.stats\")\nlibrary(haplo.stats\")\n```\n\n## Core Workflows\n\n### 1. Data Preparation\nHaplotype functions require a genotype matrix where each locus has two adjacent columns (one for each allele).\n\n```R\n# Example: 3 loci (DQB, DRB, B) from hla.demo\ndata(hla.demo)\ngeno <- hla.demo[, c(17, 18, 21:24)]\nlocus.label <- c(\"DQB\", \"DRB\", \"B\")\n\n# Use setupGeno for haplo.glm to handle missing values and allele coding\ngeno.glm <- setupGeno(geno, miss.val = c(0, NA), locus.label = locus.label)\n```\n\n### 2. Frequency Estimation (EM Algorithm)\nUse `haplo.em` to compute maximum likelihood estimates of haplotype probabilities.\n\n```R\nsave.em <- haplo.em(geno = geno, locus.label = locus.label, miss.val = c(0, NA))\nprint(save.em, nlines = 10)\nsummary(save.em, show.haplo = TRUE)\n```\n\n### 3. Haplotype Score Tests\nUse `haplo.score` to test associations without full regression. Supports Gaussian, Binomial, Ordinal, and Poisson traits.\n\n```R\n# Quantitative trait (Gaussian)\nscore.gaus <- haplo.score(hla.demo$resp, geno, trait.type = \"gaussian\", \n                          min.count = 5, locus.label = locus.label)\n\n# Binary trait (Binomial)\ny.bin <- as.numeric(hla.demo$resp.cat == \"low\")\nscore.bin <- haplo.score(y.bin, geno, trait.type = \"binomial\", min.count = 5)\n\n# Plotting scores\nplot(score.gaus)\n```\n\n### 4. Haplotype Regression (GLM)\nUse `haplo.glm` for modeling traits with haplotypes and other covariates.\n\n```R\n# Create data frame with setupGeno object\nglm.data <- data.frame(geno.glm, age = hla.demo$age, male = hla.demo$male, y = hla.demo$resp)\n\n# Fit model (Additive effect is default)\nfit.gaus <- haplo.glm(y ~ male + geno.glm, family = gaussian, data = glm.data,\n                      na.action = \"na.geno.keep\",\n                      control = haplo.glm.control(haplo.freq.min = 0.02))\nsummary(fit.gaus)\n```\n\n### 5. Power and Sample Size\nCalculate requirements for haplotype association studies.\n\n```R\n# Quantitative Traits\nss.qt <- haplo.power.qt(hmat, hfreq, hbase, hbeta, alpha = 0.05, power = 0.80)\n\n# Case-Control\nss.cc <- haplo.power.cc(hmat, hfreq, hbase, hbeta.cc, case.frac = 0.5, prevalence = 0.1)\n```\n\n## Key Functions and Parameters\n\n- `haplo.em.control()`: Adjust `n.try`, `insert.batch.size`, and `min.posterior` to find global maxima or manage memory.\n- `haplo.score.slide()`: Performs a \"sliding window\" analysis across a region.\n- `haplo.design()`: Creates an expected haplotype design matrix for use in other R modeling functions (e.g., `survival::coxph`).\n- `haplo.cc()`: Wrapper that combines `haplo.score`, `haplo.group`, and `haplo.glm` for case-control studies.\n- `min.count` / `haplo.freq.min`: Critical for pooling rare haplotypes to ensure model stability.\n\n## Tips for Success\n\n- **Random Seeds**: Many functions use random starting values. Use `set.seed()` to ensure reproducibility.\n- **Missing Data**: Use `summaryGeno()` to identify subjects with excessive ambiguity (e.g., >50,000 possible pairs) which can cause memory issues.\n- **Rare Haplotypes**: By default, `haplo.glm` pools haplotypes with frequency < 0.01 into a \"rare\" category.\n- **Baseline**: The most frequent haplotype is typically chosen as the baseline. This can be changed via `haplo.glm.control(haplo.base = code)`.\n\n## Reference documentation\n\n- [The haplo.stats package](./references/haplostats.Rmd)",
+  "skill_front_matter": {
+    "name": "r-haplo.stats",
+    "description": "This tool performs statistical analysis of haplotypes with traits and covariates when linkage phase is ambiguous. Use when user asks to estimate haplotype frequencies, test associations between haplotypes and traits using score statistics, perform haplotype-based regression, or calculate power and sample size for haplotype studies.",
+    "homepage": "https://cloud.r-project.org/web/packages/haplo.stats/index.html"
+  }
+}

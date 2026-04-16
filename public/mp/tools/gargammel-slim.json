@@ -1,0 +1,49 @@
+{
+  "id": "gargammel-slim",
+  "category": "CLI",
+  "name": "gargammel-slim",
+  "description": "gargammel-slim simulates ancient DNA sequences by modeling fragment degradation, post-mortem damage, and various sources of contamination. Use when user asks to simulate ancient DNA reads, model post-mortem deamination, add human or microbial contamination to a sample, or benchmark ancient DNA bioinformatic pipelines.",
+  "overview": "gargammel-slim is a specialized toolset designed to simulate the complex degradation and contamination profiles characteristic of ancient DNA. It models the entire \"in vivo to in silico\" process: sampling random fragments from a genome, applying post-mortem damage (deamination), adding adapters, and simulating sequencing errors. It is particularly useful for testing bioinformatic pipelines, evaluating the impact of contamination on downstream analyses, or benchmarking ancient DNA damage detectio",
+  "homepage": "https://github.com/grenaud/gargammel",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/gargammel-slim/overview",
+  "github": "https://github.com/grenaud/gargammel",
+  "conda_downloads": "5.3K",
+  "conda_downloads_num": 5300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gargammel-slim_fragSim",
+      "gargammel-slim_deamSim",
+      "gargammel-slim_adptSim"
+    ],
+    "description": "This program takes a fasta file representing a chromosome and generates\naDNA fragments according to a certain distribution",
+    "docker_image": "quay.io/biocontainers/gargammel-slim:1.1.2--hf107e4d_6",
+    "homepage": "https://github.com/grenaud/gargammel",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/gargammel-slim/overview",
+    "github": "https://github.com/grenaud/gargammel",
+    "conda_downloads": "5.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "gargammel-slim_adptSim.cwl",
+    "gargammel-slim_deamSim.cwl",
+    "gargammel-slim_fragSim.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# gargammel-slim\n\n## Overview\ngargammel-slim is a specialized toolset designed to simulate the complex degradation and contamination profiles characteristic of ancient DNA. It models the entire \"in vivo to in silico\" process: sampling random fragments from a genome, applying post-mortem damage (deamination), adding adapters, and simulating sequencing errors. It is particularly useful for testing bioinformatic pipelines, evaluating the impact of contamination on downstream analyses, or benchmarking ancient DNA damage detection tools.\n\n## Core Workflow\nThe pipeline requires a specific directory structure containing FASTA files for three components:\n1. `endo/`: Endogenous ancient DNA (e.g., a diploid hominin).\n2. `cont/`: Present-day human contamination.\n3. `bact/`: Microbial/bacterial contamination.\n\n### Basic Execution\nRun the main driver script with the input directory and an output prefix:\n```bash\ngargammel.pl -c [coverage] --comp [endo,cont,bact] -o [output_prefix] [input_dir]\n```\n\n## CLI Best Practices and Patterns\n\n### 1. Defining Sample Composition\nThe `--comp` flag defines the ratio of the three components (must sum to 1).\n- **Clean sample**: `--comp 1,0,0`\n- **Contaminated (8% human, 2% microbial)**: `--comp 0.9,0.08,0.02`\n- **High microbial load**: `--comp 0.1,0.05,0.85`\n\n### 2. Modeling DNA Damage (Deamination)\nDamage is critical for realistic aDNA simulation. You can use the Briggs model or empirical matrices.\n\n**Using Briggs Model Parameters:**\nSpecify the four parameters: `[v, λ, δd, δs]`.\n```bash\n# Example: 3% deamination at ends\ngargammel.pl -damage 0.03,0.4,0.01,0.3 ...\n```\n\n**Using mapDamage Matrices:**\nIf you have a `misincorporation.txt` from a real sample, use it to replicate that specific damage profile.\n```bash\n# For double-stranded libraries\n-mapdamage path/to/misincorporation.txt double\n\n# For single-stranded libraries\n-mapdamage path/to/misincorporation.txt single\n```\n\n### 3. Fragment Size Distribution\nAncient DNA is typically short. You can specify a fixed length or a distribution.\n- **Fixed length**: `-l 40`\n- **Log-normal distribution**: `--loc 4.106 --scale 0.358`\n- **Empirical distribution file**: `-f src/sizefreq.size.gz`\n\n### 4. Sequencing Parameters\ngargammel uses ART to simulate Illumina reads.\n- **Platform**: `-ss HS25` (HiSeq 2500), `-ss MSv1` (MiSeq v1).\n- **Read Length**: `-rl 75` (for 75bp reads).\n- **Single-end**: Add `-se` flag. Default is paired-end.\n\n## Expert Tips\n- **Diploid Endogenous**: Ensure the `endo/` folder contains at least two FASTA files to represent a diploid individual.\n- **Microbial Diversity**: For realistic `bact/` simulations, include a diverse set of representative microbial genomes rather than a single species.\n- **Coverage vs. Count**: Use `-c` to target a specific depth of coverage or `-n` to generate an exact number of fragments.\n- **Reference Generation**: Use the included `ms2chromosomes.py` or `msprime_chromosomes.py` scripts to generate synthetic population genetic data as input for gargammel if real genomes are not being used.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| adptSim | This program reads a fasta file containing aDNA fragments and splits them into two records, one containing the forward read and the second containing the reverse read (-fr,-rr) or into a single for single-end mode (-fr) |\n| deamSim | Reads a fasta (default) or BAM file containing aDNA fragments and adds deamination according to a certain model file. Some model files are found in the models/ directory. If the input is fasta, the output will be fasta as well. |\n| fragSim | This program takes a fasta file representing a chromosome and generates aDNA fragments according to a certain distribution |\n\n## Reference documentation\n- [gargammel README](./references/github_com_grenaud_gargammel_blob_master_README.md)\n- [gargammel.pl Source](./references/github_com_grenaud_gargammel_blob_master_gargammel.pl.md)\n- [Conda Environment Specs](./references/github_com_grenaud_gargammel_blob_master_environment.yml.md)",
+  "skill_front_matter": {
+    "name": "gargammel-slim",
+    "description": "gargammel-slim simulates ancient DNA sequences by modeling fragment degradation, post-mortem damage, and various sources of contamination. Use when user asks to simulate ancient DNA reads, model post-mortem deamination, add human or microbial contamination to a sample, or benchmark ancient DNA bioinformatic pipelines.",
+    "homepage": "https://github.com/grenaud/gargammel"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "hisat2",
+  "category": "CLI",
+  "name": "hisat2",
+  "description": "HISAT2 is a fast and sensitive alignment program for mapping next-generation sequencing reads to a population of human genomes or a single reference genome. Use when user asks to align RNA-seq or DNA-seq reads, build a genomic index with splice sites and SNPs, or perform nucleotide conversion mapping for bisulfite sequencing.",
+  "overview": "HISAT2 (Hierarchical Indexing for Spliced Alignment of Transcripts 2) is a highly efficient alignment tool designed for mapping both DNA and RNA-seq reads. It utilizes a Hierarchical Graph FM index (HGFM) to represent a population of genomes, allowing it to account for genomic variations like SNPs and known splice sites during the alignment process. This makes it particularly powerful for transcriptomics workflows where accurate spliced alignment is critical. It is the recommended successor to H",
+  "homepage": "http://daehwankimlab.github.io/hisat2",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/hisat2/overview",
+  "github": "https://github.com/DaehwanKimLab/hisat2",
+  "conda_downloads": "371.3K",
+  "conda_downloads_num": 371300,
+  "last_updated": "2026-01-27",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "hisat2",
+      "hisat2_hisat2-build",
+      "hisat2_hisat2_extract_splice_sites.py",
+      "hisat2_hisat2_extract_exons.py",
+      "hisat2_hisat2_extract_snps_haplotypes_UCSC.py",
+      "hisat2_hisat-3n-build",
+      "hisat2_hisat-3n"
+    ],
+    "description": "HISAT2 is a fast and sensitive alignment program for mapping next-generation sequencing reads (both DNA and RNA) to a population of human genomes as well as to a single reference genome.",
+    "docker_image": "quay.io/biocontainers/hisat2:2.2.2--h503566f_0",
+    "homepage": "http://daehwankimlab.github.io/hisat2",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/hisat2/overview",
+    "github": "https://github.com/DaehwanKimLab/hisat2",
+    "conda_downloads": "371.3K",
+    "last_updated": "2026-01-27",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "hisat2_hisat2_extract_exons.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# hisat2\n\n## Overview\nHISAT2 (Hierarchical Indexing for Spliced Alignment of Transcripts 2) is a highly efficient alignment tool designed for mapping both DNA and RNA-seq reads. It utilizes a Hierarchical Graph FM index (HGFM) to represent a population of genomes, allowing it to account for genomic variations like SNPs and known splice sites during the alignment process. This makes it particularly powerful for transcriptomics workflows where accurate spliced alignment is critical. It is the recommended successor to HISAT and TopHat2.\n\n## Core Workflows\n\n### 1. Building Indexes\nBefore alignment, you must create an index of the reference genome. HISAT2 supports linear indexes and graph-based indexes that include SNPs and transcripts.\n\n**Basic Index (Linear):**\n```bash\nhisat2-build -p 16 genome.fa genome_index\n```\n\n**Index with Splice Sites and Exons (Recommended for RNA-seq):**\nFirst, extract information from your GTF:\n```bash\nhisat2_extract_splice_sites.py genome.gtf > genome.ss\nhisat2_extract_exons.py genome.gtf > genome.exon\n```\nThen build the index:\n```bash\nhisat2-build -p 16 --ss genome.ss --exon genome.exon genome.fa genome_tran_index\n```\n\n**Index with SNPs:**\n```bash\nhisat2_extract_snps_haplotypes_UCSC.py genome.fa snp144Common.txt genome.snp genome.haplotype\nhisat2-build -p 16 --snp genome.snp --haplotype genome.haplotype genome.fa genome_snp_index\n```\n\n### 2. Aligning Reads\nHISAT2 outputs alignments in SAM format.\n\n**RNA-seq Paired-end Alignment (Standard):**\n```bash\nhisat2 -p 16 -x genome_tran_index -1 reads_R1.fastq.gz -2 reads_R2.fastq.gz -S output.sam\n```\n\n**RNA-seq with Downstream Assembly (StringTie/Ballgown):**\nAlways use the `--dta` (reports alignments tailored for transcript assemblers) flag if you plan to use StringTie.\n```bash\nhisat2 -p 16 --dta -x genome_tran_index -1 R1.fq -2 R2.fq -S output.sam\n```\n\n**Handling Strand-Specific Data:**\nSpecify `--rna-strandness <FR/RF>` (for paired-end) or `<F/R>` (for single-end).\n*   `FR`: Second mate (R2) is on the strand as the RNA.\n*   `RF`: First mate (R1) is on the strand as the RNA (common for TruSeq Stranded).\n\n### 3. HISAT-3N (Nucleotide Conversion)\nFor technologies like Bisulfite-seq (C -> T) or SLAM-seq (T -> C).\n\n**Build 3N Index:**\n```bash\nhisat-3n-build --base-change C,T genome.fa genome_3n_index\n```\n\n**Align 3N Reads:**\n```bash\nhisat-3n -x genome_3n_index -U reads.fq --base-change C,T --directional-mapping -S output.sam\n```\n\n## Expert Tips and Best Practices\n*   **Performance:** Use the `-p` flag to match the number of available CPU cores. Speedup is nearly linear.\n*   **Memory Management:** Building a graph index with transcripts and SNPs for the human genome requires significant RAM (up to 160GB+). If memory is limited, stick to the HFM (linear) index.\n*   **Soft-clipping:** By default, HISAT2 allows soft-clipping. To disable this for specific applications (like variant calling where end-to-end alignment is preferred), use `--no-softclip`.\n*   **Summary Files:** Use `--summary-file <path>` to output alignment statistics to a machine-readable file instead of just stderr.\n*   **SAM to BAM:** HISAT2 outputs SAM. Always pipe to `samtools view -bS` or use a post-processing step to save disk space.\n*   **Repeat Reads:** In version 2.2.0+, HISAT2 introduced a \"repeat\" index mode to handle reads mapping to thousands of locations more efficiently.\n\n## Reference documentation\n- [HISAT2 Manual](./references/daehwankimlab_github_io_hisat2_manual.md)\n- [HISAT-3N Guide](./references/daehwankimlab_github_io_hisat2_hisat-3n.md)\n- [HowTo Guide](./references/daehwankimlab_github_io_hisat2_howto.md)",
+  "skill_front_matter": {
+    "name": "hisat2",
+    "description": "HISAT2 is a fast and sensitive alignment program for mapping next-generation sequencing reads to a population of human genomes or a single reference genome. Use when user asks to align RNA-seq or DNA-seq reads, build a genomic index with splice sites and SNPs, or perform nucleotide conversion mapping for bisulfite sequencing.",
+    "homepage": "http://daehwankimlab.github.io/hisat2"
+  }
+}

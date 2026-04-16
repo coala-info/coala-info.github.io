@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-goseq",
+  "category": "bioconductor",
+  "name": "bioconductor-goseq",
+  "description": "The goseq package performs functional enrichment analysis on RNA-seq data while accounting for gene length bias. Use when user asks to perform Gene Ontology or KEGG pathway enrichment analysis, account for selection bias in differential expression results, or fit a probability weighting function to gene data.",
+  "overview": "The `goseq` package is designed to perform functional enrichment analysis (GO, KEGG, etc.) on RNA-seq data. Unlike standard hypergeometric tests (like those used for microarrays), `goseq` accounts for the selection bias introduced by gene length: in RNA-seq, longer genes typically have higher read counts and thus more statistical power to be detected as differentially expressed. The package fits a Probability Weighting Function (PWF) to model this bias and uses it to calculate more accurate p-va",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/goseq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-goseq/overview",
+  "github": "https://github.com/federicomarini/goseq",
+  "conda_downloads": "82.0K",
+  "conda_downloads_num": 82000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "goseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/goseq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-goseq/overview",
+    "github": "https://github.com/federicomarini/goseq",
+    "conda_downloads": "82.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-goseq\n\n## Overview\nThe `goseq` package is designed to perform functional enrichment analysis (GO, KEGG, etc.) on RNA-seq data. Unlike standard hypergeometric tests (like those used for microarrays), `goseq` accounts for the selection bias introduced by gene length: in RNA-seq, longer genes typically have higher read counts and thus more statistical power to be detected as differentially expressed. The package fits a Probability Weighting Function (PWF) to model this bias and uses it to calculate more accurate p-values for category enrichment.\n\n## Core Workflow\n\n### 1. Prepare Input Data\n`goseq` requires a named integer vector where:\n- Names are unique gene identifiers (e.g., Ensembl, Entrez, Gene Symbol).\n- Values are `1` if the gene is differentially expressed (DE) and `0` otherwise.\n\n```r\n# Example: Creating the input vector from a list of all assayed genes and DE genes\ngene.vector <- as.integer(assayed.genes %in% de.genes)\nnames(gene.vector) <- assayed.genes\n```\n\n### 2. Calculate the Probability Weighting Function (PWF)\nThe `nullp` function calculates the probability that a gene is DE based on its length.\n\n```r\nlibrary(goseq)\n# For natively supported organisms (e.g., hg19, mm9) and IDs (e.g., ensGene, knownGene)\npwf <- nullp(gene.vector, \"hg19\", \"ensGene\")\n\n# To use custom bias data (e.g., total read counts instead of length)\npwf.counts <- nullp(gene.vector, bias.data = count_vector)\n```\n\n### 3. Perform Enrichment Testing\nThe `goseq` function tests for over-representation using the Wallenius approximation (default) or random sampling.\n\n```r\n# Default GO analysis (BP, CC, and MF)\nGO.res <- goseq(pwf, \"hg19\", \"ensGene\")\n\n# Limit to specific GO categories or KEGG\nKEGG.res <- goseq(pwf, \"hg19\", \"ensGene\", test.cats = \"KEGG\")\nGO.BP.res <- goseq(pwf, \"hg19\", \"ensGene\", test.cats = \"GO:BP\")\n\n# Using random sampling (more accurate but slower)\nGO.samp <- goseq(pwf, \"hg19\", \"ensGene\", method = \"Sampling\", repcnt = 1000)\n```\n\n## Handling Non-Native Data\nIf your organism or gene ID is not supported by `supportedOrganisms()`, you must provide manual mappings.\n\n### Custom Lengths\n```r\n# Provide a numeric vector of lengths corresponding to the gene.vector\npwf <- nullp(gene.vector, bias.data = manual_lengths)\n```\n\n### Custom Category Mappings\n```r\n# gene2cat can be a data frame with two columns (GeneID, Category) \n# or a list where names are GeneIDs and values are vectors of categories.\nres <- goseq(pwf, gene2cat = my_kegg_mapping)\n```\n\n## Interpreting Results\nThe output is a data frame containing:\n- `category`: The ID (e.g., GO:0005737).\n- `over_represented_pvalue`: The p-value for enrichment (primary metric).\n- `under_represented_pvalue`: The p-value for depletion.\n- `numDEInCat`: Number of DE genes in this category.\n- `numInCat`: Total number of genes in this category.\n- `term`: Descriptive name (if GO).\n\n### Multiple Testing Correction\nAlways apply a correction (e.g., Benjamini-Hochberg) to the results:\n```r\nenriched.GO <- GO.res[p.adjust(GO.res$over_represented_pvalue, method = \"BH\") < 0.05, ]\n```\n\n## Tips and Best Practices\n- **Check Support**: Run `supportedOrganisms()` to see if your genome/ID combination is natively supported for automatic length and GO retrieval.\n- **Manual Lengths**: If you have lengths from your quantification tool (e.g., `featureCounts`), use them via the `bias.data` argument in `nullp` for higher accuracy.\n- **Plotting**: Use `plotPWF(pwf)` to visualize the relationship between gene length and the probability of being DE. A flat line indicates no length bias.\n- **GO.db**: Use the `GO.db` package to look up detailed definitions for the GO IDs returned by `goseq`.\n\n## Reference documentation\n- [goseq](./references/goseq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-goseq",
+    "description": "The goseq package performs functional enrichment analysis on RNA-seq data while accounting for gene length bias. Use when user asks to perform Gene Ontology or KEGG pathway enrichment analysis, account for selection bias in differential expression results, or fit a probability weighting function to gene data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/goseq.html"
+  }
+}

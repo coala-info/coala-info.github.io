@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-biomvrcns",
+  "category": "bioconductor",
+  "name": "bioconductor-biomvrcns",
+  "description": "This tool performs copy number study and segmentation for multivariate biological data using Hidden Semi-Markov Models and other segmentation algorithms. Use when user asks to segment genomic profiles, detect copy number variations, identify transcripts in RNA-seq data, or find differentially methylated regions.",
+  "overview": "The `biomvRCNS` package provides tools for the segmentation of genomic data, specifically designed to handle multiple profiles or samples simultaneously. It is particularly useful for detecting copy number variations (CNV), transcripts in RNA-seq data, and differentially methylated regions (DMR). The package implements three main algorithms:\n1. **HSMM (Hidden Semi-Markov Model)**: The primary model (`biomvRhsmm`) which incorporates positional information via sojourn distributions.\n2. **Homogeneo",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/biomvRCNS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biomvrcns/overview",
+  "github": "N/A",
+  "conda_downloads": "31.3K",
+  "conda_downloads_num": 31300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "biomvRCNS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/biomvRCNS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-biomvrcns/overview",
+    "github": "N/A",
+    "conda_downloads": "31.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-biomvrcns\n\nname: bioconductor-biomvrcns\ndescription: Copy number study and segmentation for multivariate biological data using Hidden Semi-Markov Models (HSMM) and other segmentation algorithms. Use this skill when analyzing genomic profiles (aCGH, RNA-seq, Methylation) to detect segments, transcripts, or differentially methylated regions (DMRs).\n\n## Overview\n\nThe `biomvRCNS` package provides tools for the segmentation of genomic data, specifically designed to handle multiple profiles or samples simultaneously. It is particularly useful for detecting copy number variations (CNV), transcripts in RNA-seq data, and differentially methylated regions (DMR). The package implements three main algorithms:\n1. **HSMM (Hidden Semi-Markov Model)**: The primary model (`biomvRhsmm`) which incorporates positional information via sojourn distributions.\n2. **Homogeneous Segmentation**: A maximum likelihood-based model (`biomvRseg`).\n3. **Max-gap-min-run**: A heuristic algorithm (`biomvRmgmr`) for quick peak/segment detection.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a `GRanges` object where the metadata columns contain the numeric profiles (e.g., log2 ratios, read counts, or p-values). Data must be sorted by genomic position.\n\n```r\nlibrary(biomvRCNS)\nlibrary(GenomicRanges)\n\n# Example: Creating a GRanges object from a data frame\n# x_df contains columns: chr, start, sample1, sample2\nxgr <- GRanges(seqnames = x_df$chr, \n               ranges = IRanges(start = x_df$start, width = 1))\nvalues(xgr) <- x_df[, c(\"sample1\", \"sample2\")]\nxgr <- sort(xgr)\n```\n\n### 2. Genomic Segmentation with HSMM\nUse `biomvRhsmm` for complex segmentation tasks. It allows for different emission distributions (Normal, Poisson, etc.) and sojourn types (Gamma, etc.).\n\n```r\n# J: number of states (e.g., 3 for deletion, neutral, amplification)\n# grp: assign columns to experimental groups\nrhsmm_res <- biomvRhsmm(x = xgr, \n                        maxbp = 1e5, \n                        J = 3, \n                        soj.type = 'gamma', \n                        emis.type = 'norm', \n                        prior.m = 'quantile', \n                        grp = c(1, 2))\n\n# Access results\nsegments <- rhsmm_res@res  # GRanges of segmented regions\n```\n\n### 3. Transcript Detection (RNA-seq)\nFor count data, use `emis.type = 'pois'` or `'nbinom'`. You can provide a `TxDb` object to `xAnno` to estimate state numbers and sojourn parameters automatically.\n\n```r\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\ntxdb <- TxDb.Hsapiens.UCSC.hg19.knownGene\n\n# Detecting transcripts (states: intergenic, intron, exon)\nrna_res <- biomvRhsmm(x = count_gr, \n                      xAnno = txdb, \n                      maxbp = 1e3, \n                      soj.type = 'gamma', \n                      emis.type = 'pois', \n                      prior.m = 'quantile', \n                      q.alpha = 0.01)\n```\n\n### 4. DMR Detection (Methylation)\nFor methylation data, you can model the difference in ratios and p-values simultaneously using a multivariate normal distribution.\n\n```r\n# Multivariate HSMM for methylation difference and p-values\ndmr_res <- biomvRhsmm(x = meth_gr, \n                      J = 6, \n                      maxbp = 100, \n                      emis.type = 'mvnorm', \n                      prior.m = 'cluster', \n                      maxgap = 100, \n                      com.emis = TRUE)\n```\n\n### 5. Alternative Segmentation Methods\n- **biomvRseg**: Likelihood-based. Good for finding a specific number of segments (`maxseg`).\n- **biomvRmgmr**: Fast, heuristic \"max-gap-min-run\". Requires manual tuning of quantiles (`q`).\n\n## Visualization\nThe package integrates with `Gviz` for plotting results.\n\n```r\n# Plotting a specific chromosome/sample\nbiomvRGviz(exprgr = xgr[seqnames(xgr) == '1'], \n           seggr = rhsmm_res@res, \n           tofile = FALSE)\n```\n\n## Tips and Best Practices\n- **Normalization**: `biomvRCNS` does not perform data normalization. Ensure input data is pre-processed (e.g., GC-content corrected, normalized for library size).\n- **Grouping**: Use the `grp` argument to treat replicates together. This improves the estimation of emission parameters.\n- **State Interpretation**: In the output `GRanges`, the `STATE` column is numeric. Lower numbers generally correspond to lower mean values (e.g., State 1 = Deletion/Low expression).\n- **Memory**: For base-pair resolution data, use `Rle` objects within the `GRanges` metadata to save memory.\n\n## Reference documentation\n- [biomvRCNS](./references/biomvRCNS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-biomvrcns",
+    "description": "This tool performs copy number study and segmentation for multivariate biological data using Hidden Semi-Markov Models and other segmentation algorithms. Use when user asks to segment genomic profiles, detect copy number variations, identify transcripts in RNA-seq data, or find differentially methylated regions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/biomvRCNS.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnvranger",
+  "category": "bioconductor",
+  "name": "bioconductor-cnvranger",
+  "description": "CNVRanger summarizes individual CNV calls into population-level regions and performs association testing with expression or quantitative traits. Use when user asks to summarize CNV calls into population-level regions, perform CNV-eQTL analysis, conduct CNV-GWAS, or test for enrichment in functional genomic elements.",
+  "overview": "The `CNVRanger` package provides a comprehensive suite for post-calling CNV analysis. It transforms individual CNV calls into population-level insights by summarizing overlapping regions, assessing enrichment in functional genomic elements, and performing association testing. It is particularly strong in integrating CNV data with RNA-seq (via `edgeR`) and quantitative traits (via linear regression and GDS-backed storage).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVRanger.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/waldronlab/CNVRanger",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNVRanger"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVRanger.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/waldronlab/CNVRanger",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnvranger\n\n## Overview\n\nThe `CNVRanger` package provides a comprehensive suite for post-calling CNV analysis. It transforms individual CNV calls into population-level insights by summarizing overlapping regions, assessing enrichment in functional genomic elements, and performing association testing. It is particularly strong in integrating CNV data with RNA-seq (via `edgeR`) and quantitative traits (via linear regression and GDS-backed storage).\n\n## Key Workflows\n\n### 1. Data Import and Representation\n\nCNV calls must be formatted with at least five columns: `chr`, `start`, `end`, `sample_id`, and `state` (integer copy number: 0=hom. del, 1=het. del, 2=normal, 3=1-copy gain, 4=amplification).\n\n```r\nlibrary(CNVRanger)\nlibrary(GenomicRanges)\nlibrary(RaggedExperiment)\n\n# Import from data.frame\ncalls <- read.csv(\"cnv_calls.csv\")\ngrl <- makeGRangesListFromDataFrame(calls, split.field=\"sample_id\", keep.extra.columns=TRUE)\n\n# Matrix-like representation\nra <- RaggedExperiment(grl)\n```\n\n### 2. Population-level Summarization\n\nSummarize individual calls into CNV Regions (CNVRs) using different logic:\n\n*   **Trimming (CNVRuler style):** Trims low-density margins.\n    ```r\n    cnvrs <- populationRanges(grl, density=0.1)\n    ```\n*   **Reciprocal Overlap (RO):** Merges calls meeting a mutual overlap threshold.\n    ```r\n    ro_cnvrs <- populationRanges(grl, mode=\"RO\", ro.thresh=0.51)\n    ```\n*   **Recurrence Analysis (GISTIC-like):** Identifies regions aberrant more often than chance.\n    ```r\n    cnvrs <- populationRanges(grl, density=0.1, est.recur=TRUE)\n    recurrent <- subset(cnvrs, pvalue < 0.05)\n    plotRecurrentRegions(cnvrs, genome=\"bosTau6\", chr=\"chr1\")\n    ```\n\n### 3. Overlap and Enrichment Analysis\n\nAssess if CNVs preferentially overlap functional features (e.g., genes) using permutation tests from `regioneR`.\n\n```r\nlibrary(regioneR)\n# Find overlaps\nolaps <- findOverlaps(genes, cnvrs)\n\n# Permutation test for depletion/enrichment\nres <- overlapPermTest(A=cnvrs, B=genes, ntimes=100, genome=\"hg19\", count.once=TRUE)\nplot(res)\n\n# Visualization\ncnvOncoPrint(grl, genes_of_interest)\n```\n\n### 4. CNV-Expression Association (eQTL)\n\nLink CNV states to RNA-seq counts using `edgeR` generalized linear models.\n\n```r\n# rse is a RangedSummarizedExperiment of RNA-seq counts\nres <- cnvEQTL(cnvrs, grl, rse, window = \"1Mbp\", filter.by.expr = TRUE)\n\n# Visualize local effects\nplotEQTL(cnvr=cnvrs[1], genes=res[[1]], genome=\"hg19\", cn=\"CN1\")\n```\n\n### 5. CNV-GWAS\n\nPerform genome-wide association with quantitative phenotypes. This workflow uses CNV segments (fine-grained loci within CNVRs).\n\n```r\n# 1. Setup paths and phenotype info\n# re is a RaggedExperiment containing CNV calls and colData(re)$phenotype\nphen_info <- setupCnvGWAS(\"my_study\", cnv.out.loc=re, map.loc=\"probes_map.txt\")\n\n# 2. Run GWAS (linear regression)\n# chr.code.name maps numeric IDs to character chromosome names if needed\ngwas_res <- cnvGWAS(phen_info, chr.code.name=chr_map, method.m.test=\"fdr\")\n\n# 3. Visualize\nplotManhattan(phen_info$all.paths, gwas_res, chr_size_order)\n```\n\n## Tips and Best Practices\n\n*   **Copy State Encoding:** Ensure states are 0-4. If using GISTIC (-2 to 2), add 2 to the values.\n*   **TCGA Integration:** Use `TCGAutils` to convert segmented log2 ratios to integer states: `round(2^log_ratio * 2)`.\n*   **GDS Storage:** `cnvGWAS` automatically creates a `.gds` file in the `Inputs` folder for memory-efficient processing. Use `produce.gds=FALSE` in subsequent runs to save time.\n*   **Signal Intensities:** For SNP-chip data, you can run GWAS on raw Log R Ratio (LRR) values by setting `run.lrr=TRUE` in `cnvGWAS` after importing them with `importLrrBaf`.\n\n## Reference documentation\n\n- [Summarization and quantitative trait analysis of CNV ranges](./references/CNVRanger.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnvranger",
+    "description": "CNVRanger summarizes individual CNV calls into population-level regions and performs association testing with expression or quantitative traits. Use when user asks to summarize CNV calls into population-level regions, perform CNV-eQTL analysis, conduct CNV-GWAS, or test for enrichment in functional genomic elements.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CNVRanger.html"
+  }
+}

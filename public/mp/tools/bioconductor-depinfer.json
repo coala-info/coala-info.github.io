@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-depinfer",
+  "category": "bioconductor",
+  "name": "bioconductor-depinfer",
+  "description": "bioconductor-depinfer is a computational framework that uses regularized multivariate linear regression to infer protein dependencies from drug-protein affinity and phenotypic response data. Use when user asks to identify molecular protein dependencies, deconvolute drug inhibition effects, or prioritize pharmacological targets using LASSO regression.",
+  "overview": "DepInfeR (Dependency Inference in R) is a computational framework that deconvolutes the phenotypic effects of drug inhibition to identify molecular protein dependencies. It uses regularized multivariate linear regression (LASSO) to assign a \"dependence coefficient\" to each protein for every sample. This allows for the identification of functional consequences of genomic aberrations and helps prioritize pharmacological targets for specific cancer subtypes or individual patients.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/DepInfeR.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-depinfer/overview",
+  "github": "https://github.com/Huber-group-EMBL/DepInfeR",
+  "conda_downloads": "5.3K",
+  "conda_downloads_num": 5300,
+  "last_updated": "2026-02-08",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "DepInfeR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DepInfeR.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-depinfer/overview",
+    "github": "https://github.com/Huber-group-EMBL/DepInfeR",
+    "conda_downloads": "5.3K",
+    "last_updated": "2026-02-08",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-depinfer\n\n## Overview\n\nDepInfeR (Dependency Inference in R) is a computational framework that deconvolutes the phenotypic effects of drug inhibition to identify molecular protein dependencies. It uses regularized multivariate linear regression (LASSO) to assign a \"dependence coefficient\" to each protein for every sample. This allows for the identification of functional consequences of genomic aberrations and helps prioritize pharmacological targets for specific cancer subtypes or individual patients.\n\n## Core Workflow\n\n### 1. Data Preparation\n\nDepInfeR requires two primary input matrices:\n- **Drug-Protein Affinity Matrix (Y):** Rows are drugs, columns are proteins. Values are typically Kd (dissociation constants).\n- **Drug Response Matrix (X):** Rows are drugs, columns are samples (e.g., cell lines). Values are phenotypic responses (e.g., z-scored AUC or IC50).\n\n### 2. Pre-processing Affinity Data\n\nUse `processTarget()` to transform Kd values and handle collinearity. Proteins with highly similar drug-binding profiles are grouped into clusters to ensure model stability.\n\n```r\n# targetMatrix: drugs as rows, proteins as columns, values as Kd\nProcessTargetResults <- processTarget(targetMatrix,\n  KdAsInput = TRUE,      # Log and arctan transform Kd values\n  removeCorrelated = TRUE, # Remove/cluster highly correlated targets\n  cutoff = 0.8           # Cosine similarity cutoff\n)\n\n# Extract the processed matrix\ntargetInput <- ProcessTargetResults$targetMatrix\n```\n\n### 3. Pre-processing Response Data\n\nThe response matrix must not contain missing values. Common practices include:\n- Filtering samples with high missingness.\n- Imputing remaining values (e.g., using `missForest`).\n- Scaling/Normalizing (e.g., column-wise z-scores of AUC).\n\n```r\n# Ensure drugs match between matrices\noverlappedDrugs <- intersect(rownames(responseMatrix_scaled), rownames(targetInput))\ntargetInput <- targetInput[overlappedDrugs, ]\nresponseInput <- responseMatrix_scaled[overlappedDrugs, ]\n```\n\n### 4. Running the Inference Model\n\nThe `runLASSORegression()` function performs the multivariate LASSO regression. Use `BiocParallel` for faster execution.\n\n```r\nlibrary(BiocParallel)\nparam <- MulticoreParam(workers = 2, RNGseed = 333)\n\nresult <- runLASSORegression(\n  TargetMatrix = targetInput,\n  ResponseMatrix = responseInput, \n  repeats = 100, # Higher repeats (e.g., 100) for robust estimation\n  BPPARAM = param\n)\n\n# The output coefMat contains the protein dependence coefficients\ndependenceMatrix <- result$coefMat\n```\n\n## Interpreting Results\n\n- **Positive Coefficients:** Indicate a strong reliance on the protein for survival (dependency).\n- **Zero Coefficients:** Indicate the protein is likely not essential in that sample context.\n- **Negative Coefficients:** Suggest that inhibiting the protein might actually increase viability (less common, context-dependent).\n\n## Downstream Analysis Tips\n\n- **Visualization:** Use `pheatmap` to visualize the `coefMat`. Row-normalize (scale) the coefficients to highlight relative dependencies across samples.\n- **Differential Dependency:** Use t-tests (for binary features like mutations) or ANOVA (for categorical features like cancer types) to find proteins associated with specific genotypes.\n- **Target Clusters:** If `removeCorrelated = TRUE` was used, check `ProcessTargetResults$targetCluster` to see which proteins were grouped together. The regression selects one representative from each cluster.\n\n## Reference documentation\n\n- [DepInfeR Vignette (Rmd)](./references/vignette.Rmd)\n- [DepInfeR Vignette (Markdown)](./references/vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-depinfer",
+    "description": "bioconductor-depinfer is a computational framework that uses regularized multivariate linear regression to infer protein dependencies from drug-protein affinity and phenotypic response data. Use when user asks to identify molecular protein dependencies, deconvolute drug inhibition effects, or prioritize pharmacological targets using LASSO regression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/DepInfeR.html"
+  }
+}

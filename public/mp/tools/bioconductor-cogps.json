@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cogps",
+  "category": "bioconductor",
+  "name": "bioconductor-cogps",
+  "description": "The coGPS package identifies genes that exhibit outlier expression patterns across multiple integrated high-throughput data types in a subset of samples. Use when user asks to calculate outlier statistics using PCOPA, perform permutation testing for gene significance, visualize top-ranked outlier genes, or generate patient-specific outlier gene lists.",
+  "overview": "The `coGPS` package is designed to identify genes that are disregulated in only a subset of samples, a common occurrence in cancer studies where traditional differential expression (DE) analysis might fail. It integrates multiple types of high-throughput data (e.g., Gene Expression, Methylation, and Copy Number Variation) to find genes that act as outliers. It supports two primary outlier patterns:\n1. **Uniform Outliers**: Genes that show outlier behavior across all integrated data types.\n2. **S",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/coGPS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "coGPS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/coGPS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cogps\n\n## Overview\nThe `coGPS` package is designed to identify genes that are disregulated in only a subset of samples, a common occurrence in cancer studies where traditional differential expression (DE) analysis might fail. It integrates multiple types of high-throughput data (e.g., Gene Expression, Methylation, and Copy Number Variation) to find genes that act as outliers. It supports two primary outlier patterns:\n1. **Uniform Outliers**: Genes that show outlier behavior across all integrated data types.\n2. **Subtype Outliers**: Genes that show outlier behavior in at least one data type or study, even if they behave normally in others.\n\n## Data Preparation\nInput data must be organized into a specific list structure called `exprslist`.\n\n1.  **Structure**: A list of lists. Each sub-list represents one study or data type.\n2.  **Elements**:\n    *   `exprs`: A matrix where rows are genes and columns are samples. Must have `rownames` (gene symbols) and `colnames` (sample IDs).\n    *   `classlab`: A 0/1 integer vector. `0` for baseline/control, `1` for comparison/tumor.\n\n```r\nlibrary(coGPS)\n\n# Example for one data type\nstudy1 <- list(exprs = as.matrix(exon_data), classlab = as.vector(exon_labels))\nstudy2 <- list(exprs = as.matrix(methy_data), classlab = as.vector(methy_labels))\n\n# Combine into exprslist\ntrylist <- list(study1, study2)\n```\n\n## Main Workflow\n\n### 1. Calculating Outlier Statistics (PCOPA)\nThe `PCOPA` function is the core tool for calculating outlier scores.\n\n*   **side**: Specifies the direction of the outlier for each data type in `trylist`. Use `\"up\"` for over-expression/amplification and `\"down\"` for hypo-methylation/under-expression.\n*   **type**: Either `\"subtype\"` (max outlier count across studies) or `\"uniform\"` (sum of outliers across studies).\n\n```r\n# Find genes over-expressed in Exon, hypo-methylated in Methy, and amplified in CNV\n# Using subtype logic\nresults <- PCOPA(trylist, alpha = 0.05, side = c(\"up\", \"down\", \"up\"), type = \"subtype\")\n```\n\n### 2. Permutation Testing\nTo determine the statistical significance of the PCOPA scores, use `permCOPA`.\n\n```r\n# Run permutations (e.g., 100 permutations)\nperma_results <- permCOPA(trylist, 0.05, side = c(\"up\", \"down\", \"up\"), type = \"subtype\", perms = 100)\n\n# Calculate p-values for each gene\npvalues <- sapply(1:length(results), function(i) {\n  length(which(perma_results[i, ] > results[i])) / ncol(perma_results)\n})\n```\n\n### 3. Visualization\nVisualize the expression patterns of top-ranked outlier genes across the different data types.\n\n```r\n# Plot the top 1 ranked gene\nPlotTopPCOPA(trylist, results, topcut = 1, typelist = c(\"Exon\", \"Methy\", \"CNV\"))\n```\n\n### 4. Patient-Specific Outlier Lists\nIdentify which specific genes are outliers for a specific patient. **Note**: For this function, samples across all data types in `trylist` must be in the same order.\n\n```r\n# Get lists of outlier genes for each individual patient\nindiv_lists <- PatientSpecificGeneList(trylist, 0.05, side = c(\"up\", \"down\", \"up\"), \n                                       type = \"subtype\", TopGeneNum = 100)\n\n# View outlier genes for the first patient in the first data type\nprint(indiv_lists[[1]][[1]])\n```\n\n## Downstream Analysis (GSEA)\nYou can use the PCOPA statistics as a ranking metric for Gene Set Enrichment Analysis using the `wilcoxGST` function from the `limma` package.\n\n```r\nlibrary(limma)\n# Assuming 'gene_set' is a vector of gene names in a pathway\nindex <- rownames(trylist[[1]]$exprs) %in% gene_set\np_gsea <- wilcoxGST(index, results)\n```\n\n## Tips and Best Practices\n*   **Sample Matching**: While `PCOPA` and GSEA do not strictly require samples to be matched across data types (they operate on empirical distributions), `PatientSpecificGeneList` **requires** that `exprslist[[i]]$exprs[,j]` refers to the same patient `j` across all `i`.\n*   **Alpha Parameter**: The `alpha` in `PCOPA` is used for the internal Bonferroni correction when defining the binary outlier matrix.\n*   **Memory**: For large datasets with many permutations, `permCOPA` can be computationally intensive. Consider starting with a low number of permutations to test the pipeline.\n\n## Reference documentation\n- [coGPS](./references/coGPS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cogps",
+    "description": "The coGPS package identifies genes that exhibit outlier expression patterns across multiple integrated high-throughput data types in a subset of samples. Use when user asks to calculate outlier statistics using PCOPA, perform permutation testing for gene significance, visualize top-ranked outlier genes, or generate patient-specific outlier gene lists.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/coGPS.html"
+  }
+}

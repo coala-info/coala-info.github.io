@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-weitrix",
+  "category": "bioconductor",
+  "name": "bioconductor-weitrix",
+  "description": "This tool provides a framework for analyzing matrices with precision weights to handle data with uneven reliability or missing values. Use when user asks to calibrate precision weights, find rows with excess variability, perform weighted differential testing, or extract PCA-like components from matrices with missing values.",
+  "overview": "The `weitrix` package provides a framework for working with \"weitrices\"—SummarizedExperiment objects containing both measurements and associated precision weights. It is particularly powerful for handling data where some observations are more reliable than others or where many values are missing. It integrates with `limma` and `topconfects` for robust differential testing and provides a specialized PCA-like method (`weitrix_components`) that respects weights and supports varimax rotation for int",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/weitrix.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "weitrix"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/weitrix.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-weitrix\n\nname: bioconductor-weitrix\ndescription: Analysis of matrices with precision weights using the weitrix package. Use this skill to calibrate weights for measurements (like poly(A) tail length, alternative polyadenylation, or RNA-seq CPM), find rows with excess variability, perform differential testing using weighted linear models, and extract PCA-like components of variation from matrices with missing values or uneven weights.\n\n## Overview\n\nThe `weitrix` package provides a framework for working with \"weitrices\"—SummarizedExperiment objects containing both measurements and associated precision weights. It is particularly powerful for handling data where some observations are more reliable than others or where many values are missing. It integrates with `limma` and `topconfects` for robust differential testing and provides a specialized PCA-like method (`weitrix_components`) that respects weights and supports varimax rotation for interpretability.\n\n## Core Workflows\n\n### 1. Creating a Weitrix\nA weitrix is a `SummarizedExperiment` with two designated assays (measurements and weights).\n\n```r\nlibrary(weitrix)\n\n# From matrices\nwei <- as_weitrix(measurement_matrix, weights_matrix)\n\n# From SummarizedExperiment\nwei <- bless_weitrix(se, x_name=\"counts\", weights_name=\"precisions\")\n\n# Specialized constructors\n# For alternative polyadenylation (APA) shift scores\nwei_shift <- counts_shift(counts, groups) \n# For proportions (e.g., SLAM-Seq)\nwei_prop <- as_weitrix(conversions/coverage, coverage)\n```\n\n### 2. Weight Calibration\nCalibration ensures that weights accurately represent the inverse of residual variance. This is critical for downstream testing.\n\n*   **`weitrix_calibrate_all`**: Fits a gamma GLM to squared residuals. Use this to account for trends related to the mean (`mu`), existing weights, or other covariates.\n*   **`weitrix_calplot`**: Essential for diagnostic checking. In a well-calibrated weitrix, the red trend lines should be horizontal at 1 and -1.\n\n```r\n# 1. Fit a preliminary model\nfit <- weitrix_components(wei, design=design)\n\n# 2. Calibrate based on mean-variance trend\ncal <- weitrix_calibrate_all(\n    wei, \n    design = fit, \n    trend_formula = ~well_knotted_spline(mu, 5))\n\n# 3. Diagnostic plot\nweitrix_calplot(cal, fit, covar=mu)\n```\n\n### 3. Components of Variation (Weighted PCA)\n`weitrix_components` finds low-rank structures in weighted matrices, even with missing data (weight=0).\n\n```r\n# Find 3 components with varimax rotation\ncomp <- weitrix_components(cal, p=3)\n\n# View sample scores (scores for each column)\ncomp$col\n\n# View gene loadings (loadings for each row)\ncomp$row\n\n# Scree plot to determine number of components\ncomp_seq <- weitrix_components_seq(cal, p=6)\ncomponents_seq_screeplot(comp_seq)\n```\n\n### 4. Differential Testing\nYou can test for differences using the `topconfects` approach (ranking by confident effect size) or by converting to a `limma` EList.\n\n```r\n# Using topconfects (recommended for effect size)\nconfects <- weitrix_confects(cal, design, coef=\"treatment\")\n\n# Finding overdispersed genes (excess variability)\n# Useful for finding marker genes or genes of biological interest\noverdispersed <- weitrix_sd_confects(cal, design=~1)\n\n# Using limma\nelist <- weitrix_elist(cal)\nfit <- lmFit(elist, design) %>% eBayes()\ntopTable(fit, coef=\"treatment\")\n```\n\n## Practical Tips\n*   **Missing Data**: Represent missing values with a weight of 0. `weitrix_components` will naturally impute these values.\n*   **Large Datasets**: `weitrix` supports `DelayedArray` and `HDF5Array`. Use `DelayedArray::setRealizationBackend(\"HDF5Array\")` for datasets that exceed memory.\n*   **Parallelism**: Uses `BiocParallel`. If you encounter errors in interactive sessions, try `BiocParallel::register(BiocParallel::SerialParam())`.\n*   **Dispersion**: In a calibrated weitrix, the expected dispersion is 1. Rows with dispersion significantly > 1 indicate biological variation beyond the modeled noise.\n\n## Reference documentation\n\n- [Concepts and practical details](./references/V1_overview.md)\n- [PAT-Seq poly(A) tail length example](./references/V2_tail_length.md)\n- [PAT-Seq alternative polyadenylation example](./references/V3_shift.md)\n- [RNA-Seq expression example](./references/V4_airway.md)\n- [SLAM-Seq proportion data example](./references/V5_slam_seq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-weitrix",
+    "description": "This tool provides a framework for analyzing matrices with precision weights to handle data with uneven reliability or missing values. Use when user asks to calibrate precision weights, find rows with excess variability, perform weighted differential testing, or extract PCA-like components from matrices with missing values.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/weitrix.html"
+  }
+}

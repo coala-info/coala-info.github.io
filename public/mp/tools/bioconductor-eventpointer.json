@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-eventpointer",
+  "category": "bioconductor",
+  "name": "bioconductor-eventpointer",
+  "description": "Bioconductor-eventpointer identifies and analyzes alternative splicing events from junction arrays or RNA-Seq data using splicing graphs. Use when user asks to detect splicing events, perform statistical analysis for differential splicing, calculate Percent Spliced In, or generate visualization files for IGV.",
+  "overview": "EventPointer is an R package designed to identify alternative splicing events in both microarray (HTA 2.0, Clariom-D, MTA, RTA) and RNA-Seq data. It works by constructing splicing graphs, identifying triplets of subgraphs that represent splicing events, and performing statistical tests to find significant changes in isoform usage across experimental conditions. It supports complex experimental designs, including time-course and paired-sample studies.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/EventPointer.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eventpointer/overview",
+  "github": "https://github.com/jpromeror/EventPointer",
+  "conda_downloads": "26.3K",
+  "conda_downloads_num": 26300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "EventPointer"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EventPointer.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eventpointer/overview",
+    "github": "https://github.com/jpromeror/EventPointer",
+    "conda_downloads": "26.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-eventpointer\n\nname: bioconductor-eventpointer\ndescription: Identification and analysis of alternative splicing events from junction arrays (Affymetrix) or RNA-Seq data. Use this skill to create splicing graphs, detect events (cassette exons, alternative splice sites, etc.), perform statistical analysis for differential splicing, calculate Percent Spliced In (PSI), and generate visualization files for IGV.\n\n# bioconductor-eventpointer\n\n## Overview\n\nEventPointer is an R package designed to identify alternative splicing events in both microarray (HTA 2.0, Clariom-D, MTA, RTA) and RNA-Seq data. It works by constructing splicing graphs, identifying triplets of subgraphs that represent splicing events, and performing statistical tests to find significant changes in isoform usage across experimental conditions. It supports complex experimental designs, including time-course and paired-sample studies.\n\n## Installation\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"EventPointer\")\nlibrary(EventPointer)\n```\n\n## Workflow: RNA-Seq (BAM-based)\n\nThis workflow identifies novel and known events directly from BAM files.\n\n1.  **Prepare BAM files**: Requires `.bam` files with the `XS` flag and corresponding `.bai` indexes.\n    ```r\n    # Create splicing graph and count features\n    SG_RNASeq <- PrepareBam_EP(Samples = sample_names,\n                               SamplePath = \"/path/to/bams\",\n                               Ref_Transc = \"GTF\",\n                               fileTransc = \"reference.gtf\",\n                               cores = 1)\n    ```\n2.  **Event Detection**:\n    ```r\n    AllEvents <- EventDetection(SG_RNASeq, cores = 1, Path = tempdir())\n    ```\n3.  **Statistical Analysis**:\n    ```r\n    # Define Design and Contrast matrices (limma-style)\n    Results <- EventPointer_RNASeq(Events = AllEvents,\n                                   Design = Dmatrix,\n                                   Contrast = Cmatrix,\n                                   Statistic = \"LogFC\",\n                                   PSI = TRUE)\n    ```\n\n## Workflow: RNA-Seq (Transcriptome-based)\n\nThis workflow uses pseudo-alignment results (Kallisto/Salmon) to quantify events in a reference transcriptome.\n\n1.  **Detect Events from GTF**:\n    ```r\n    EventXtrans <- EventDetection_transcriptome(inputFile = \"ref.gtf\",\n                                                Transcriptome = \"MyRef\",\n                                                Pathtxt = tempdir())\n    ```\n2.  **Quantify PSI and Expression**:\n    ```r\n    # Using bootstrap data from Kallisto/Salmon\n    data_exp <- getbootstrapdata(PathSamples = \"/path/to/output\", type = \"kallisto\")\n    PSIss <- GetPSI_FromTranRef(PathsxTranscript = EventXtrans,\n                                Samples = data_exp,\n                                Bootstrap = TRUE)\n    ```\n3.  **Statistical Testing**:\n    ```r\n    # Standard test\n    Fit <- EventPointer_RNASeq_TranRef(Count_Matrix = PSIss$ExpEvs,\n                                      Design = Dmatrix,\n                                      Contrast = Cmatrix)\n\n    # Bootstrap-based test\n    BootFit <- EventPointer_Bootstraps(PSI = PSIss$PSI,\n                                      Design = Dmatrix,\n                                      Contrast = Cmatrix,\n                                      nBootstraps = 10)\n    ```\n\n## Workflow: Junction Arrays\n\n1.  **CDF Creation**: Generate a custom CDF for aroma.affymetrix.\n    ```r\n    CDFfromGTF(input = \"AffyGTF\", inputFile = \"ref.gtf\",\n               PSR = \"ExonProbes.txt\", Junc = \"JuncProbes.txt\",\n               PathCDF = tempdir(), microarray = \"HTA-2_0\")\n    ```\n2.  **Analysis**: After pre-processing with `aroma.affymetrix` to get `ExFit` data.\n    ```r\n    Events <- EventPointer(Design = Dmatrix,\n                           Contrast = Cmatrix,\n                           ExFit = ArraysData,\n                           Eventstxt = \"EventsFound.txt\",\n                           Statistic = \"LogFC\",\n                           PSI = TRUE)\n    ```\n\n## Visualization and Validation\n\n*   **IGV Visualization**: Generate GTF files to view events in IGV.\n    *   RNA-Seq: `EventPointer_RNASeq_IGV(...)` or `EventPointer_RNASeq_TranRef_IGV(...)`\n    *   Arrays: `EventPointer_IGV(...)`\n*   **Primer Design**: Design PCR primers for event validation.\n    ```r\n    # Requires Primer3 installed and in PATH\n    Primers <- FindPrimers(SG = SG_info,\n                           EventNum = 1,\n                           Primer3Path = Sys.which(\"primer3_core\"),\n                           Dir = \"/path/to/primer3_config\",\n                           mygenomesequence = BSgenome.Hsapiens.UCSC.hg38,\n                           taqman = 0)\n    ```\n\n## Key Parameters and Tips\n\n*   **Statistic**: Choose from `\"LogFC\"` (combined fold change of both isoforms), `\"Dif_LogFC\"` (difference of fold changes), or `\"DRS\"` (Difference of Relative Splicing). `\"LogFC\"` is generally recommended for best performance.\n*   **Multi-Path Events**: Use `EventDetectionMultipath` or `CDFfromGTF_Multipath` for events involving more than two alternative paths.\n*   **Complex Events**: Use `Events_ReClassification` to further categorize \"Complex\" events into more descriptive types like \"Multiple Skipping Exons\".\n\n## Reference documentation\n\n- [EventPointer: An effective identification of alternative splicing events using junction arrays and RNA-Seq data](./references/EventPointer.md)\n- [EventPointer Vignette Source](./references/EventPointer.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-eventpointer",
+    "description": "Bioconductor-eventpointer identifies and analyzes alternative splicing events from junction arrays or RNA-Seq data using splicing graphs. Use when user asks to detect splicing events, perform statistical analysis for differential splicing, calculate Percent Spliced In, or generate visualization files for IGV.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/EventPointer.html"
+  }
+}

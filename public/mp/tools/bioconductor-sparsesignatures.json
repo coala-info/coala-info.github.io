@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sparsesignatures",
+  "category": "bioconductor",
+  "name": "bioconductor-sparsesignatures",
+  "description": "SparseSignatures extracts mutational signatures from point mutation data using LASSO regularization and a fixed background signature to improve interpretability. Use when user asks to extract mutational signatures, perform NMF with LASSO regularization, or estimate the optimal number of signatures and sparsity penalty for genomic data.",
+  "overview": "SparseSignatures is an R package designed to extract mutational signatures from point mutation data (96 trinucleotide categories). It improves upon standard Non-negative Matrix Factorization (NMF) by incorporating a background signature (representing replication errors) and using LASSO regularization to produce sparser, more interpretable signatures.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SparseSignatures.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/danro9685/SparseSignatures",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SparseSignatures"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SparseSignatures.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/danro9685/SparseSignatures",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sparsesignatures\n\n## Overview\nSparseSignatures is an R package designed to extract mutational signatures from point mutation data (96 trinucleotide categories). It improves upon standard Non-negative Matrix Factorization (NMF) by incorporating a background signature (representing replication errors) and using LASSO regularization to produce sparser, more interpretable signatures.\n\n## Workflow and Key Functions\n\n### 1. Data Preparation\nTransform raw mutation lists (sample, chrom, start, end, ref, alt) into a 96-column count matrix.\n```r\nlibrary(SparseSignatures)\nlibrary(BSgenome.Hsapiens.1000genomes.hs37d5)\n\n# Load reference genome\nbsg = BSgenome.Hsapiens.1000genomes.hs37d5\n\n# Import data from a data frame or text file\nimported_data = import.trinucleotides.counts(data = ssm_data, reference = bsg)\n\n# Visualize counts for a specific sample\npatients.plot(trinucleotides_counts = imported_data, samples = \"Patient_ID\")\n```\n\n### 2. Parameter Estimation\nBefore running the final discovery, estimate the starting values for the signature matrix (beta) and the range for the LASSO penalty (lambda).\n```r\n# Estimate starting betas for a range of K (number of signatures)\n# Requires a background signature (provided in package or custom)\ndata(background)\nstarting_betas = startingBetaEstimation(x = patients, K = 3:12, background_signature = background)\n\n# Evaluate lambda range to determine sparsity penalty\nlambda_range = lambdaRangeBetaEvaluation(x = patients, K = 10, beta = starting_betas[[8,1]], lambda_values = c(0.05, 0.10))\n```\n\n### 3. Model Selection (Cross-Validation)\nUse cross-validation to find the optimal number of signatures (K) and lambda value. This step is computationally intensive; use parallel processing if available.\n```r\n# Perform cross-validation\ncv_results = nmfLassoCV(x = patients, K = 3:10, lambda_rate_beta = c(0.05, 0.10))\n```\n\n### 4. Signature Discovery\nRun the NMF with LASSO using the chosen parameters.\n```r\n# Extract signatures for K=5\nbest_beta = starting_betas[[\"5_signatures\", \"Value\"]]\nres = nmfLasso(x = patients, K = 5, beta = best_beta, background_signature = background, seed = 12345)\n\n# Access the discovered signatures (beta) and exposures (alpha)\nsignatures = res$beta\nexposures = res$alpha\n```\n\n### 5. Visualization\n```r\n# Plot the discovered signatures\nsignatures.plot(beta = signatures, xlabels = FALSE)\n```\n\n## Tips and Best Practices\n*   **Background Signature:** Always include a background signature (e.g., the one provided in the package) to account for baseline replication errors, which prevents them from being \"discovered\" as a de novo signature.\n*   **Computational Efficiency:** `nmfLassoCV` is slow. For large datasets, split the cross-validation into multiple runs (e.g., 10 runs of 10 iterations) and use the `parallel` options.\n*   **Lambda Selection:** If the likelihood is not increasing during `nmfLasso`, try a lower value of lambda.\n*   **Input Format:** Ensure your input data frame contains the columns: `sample`, `chrom`, `start`, `end`, `ref`, and `alt`.\n\n## Reference documentation\n- [Introduction](./references/v1_introduction.md)\n- [Using the package](./references/v2_using_the_package.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-sparsesignatures",
+    "description": "SparseSignatures extracts mutational signatures from point mutation data using LASSO regularization and a fixed background signature to improve interpretability. Use when user asks to extract mutational signatures, perform NMF with LASSO regularization, or estimate the optimal number of signatures and sparsity penalty for genomic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SparseSignatures.html"
+  }
+}

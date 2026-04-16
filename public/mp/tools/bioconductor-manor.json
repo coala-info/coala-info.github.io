@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-manor",
+  "category": "bioconductor",
+  "name": "bioconductor-manor",
+  "description": "This tool performs normalization and quality assessment of array-CGH data to correct for spatial biases and experimental artifacts. Use when user asks to import spot-level microarray data, apply filtering flags, perform spatial normalization, or calculate quality scores for genomic profiles.",
+  "overview": "The `MANOR` package provides a framework for the normalization of array-CGH data. It is designed to separate biologically relevant signals from experimental artifacts, such as spatial biases (local \"edge\" effects or global gradients). The package utilizes an `arrayCGH` class (extending the `GLAD` package) and introduces two core formalisms:\n1.  **Flags**: Objects used to filter data by either excluding unreliable spots/clones or correcting signal values.\n2.  **Qscores**: Quality scores used to q",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MANOR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/pneuvial/MANOR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MANOR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MANOR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/pneuvial/MANOR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-manor\n\nname: bioconductor-manor\ndescription: Normalization of array-CGH (Comparative Genomic Hybridization) data. Use this skill to import spot-level microarray data, apply filtering flags (exclusion and correction), perform spatial normalization to correct for local bias or global gradients, and calculate quality scores for genomic profiles.\n\n# bioconductor-manor\n\n## Overview\n\nThe `MANOR` package provides a framework for the normalization of array-CGH data. It is designed to separate biologically relevant signals from experimental artifacts, such as spatial biases (local \"edge\" effects or global gradients). The package utilizes an `arrayCGH` class (extending the `GLAD` package) and introduces two core formalisms:\n1.  **Flags**: Objects used to filter data by either excluding unreliable spots/clones or correcting signal values.\n2.  **Qscores**: Quality scores used to quantify the reliability of an array after normalization.\n\n## Core Workflow\n\n### 1. Data Import\nImport data from image analysis software (e.g., GenePix or SPOT) into an `arrayCGH` object.\n\n```r\nlibrary(MANOR)\ndir.in <- system.file(\"extdata\", package=\"MANOR\")\n\n# Import from 'spot' files\nspot.names <- c(\"LogRatio\", \"RefFore\", \"RefBack\", \"DapiFore\", \"DapiBack\", \"SpotFlag\", \"ScaledLogRatio\")\nclone.names <- c(\"PosOrder\", \"Chromosome\")\nedge <- import(paste(dir.in, \"/edge.txt\", sep=\"\"), type=\"spot\", \n               spot.names=spot.names, clone.names=clone.names, add.lines=TRUE)\n```\n\n### 2. Defining Flags\nFlags can be **exclusion** (removing spots) or **correction** (modifying values). They can also be **permanent** or **temporary** (e.g., ignoring X/Y chromosomes during scaling but keeping them in the final data).\n\n```r\n# Define a Signal-to-Noise Ratio (SNR) exclusion flag\nSNR.FUN <- function(arrayCGH, var.FG, var.BG, snr.thr) {\n  which(arrayCGH$arrayValues[[var.FG]] < arrayCGH$arrayValues[[var.BG]]*snr.thr)\n}\nSNR.flag <- to.flag(SNR.FUN, char=\"B\", args=alist(var.FG=\"REF_F_MEAN\", var.BG=\"REF_B_MEAN\", snr.thr=3))\n\n# Define a spatial correction flag (using arrayTrend)\nspatial.flag <- to.flag(function(arrayCGH, var) {\n    Trend <- arrayTrend(arrayCGH, var, span=0.03, degree=1, iterations=3)\n    arrayCGH$arrayValues[[var]] <- Trend$arrayValues[[var]] - Trend$arrayValues$Trend\n    arrayCGH\n}, args=alist(var=\"LogRatio\"))\n```\n\n### 3. Normalization\nApply a list of flags to the data using the `norm` function.\n\n```r\ndata(flags) # Load pre-defined flags\ndata(spatial) # Load spatial bias detection flags\n\nflag.list <- list(spatial=local.spatial.flag, spot=spot.corr.flag, snr=ref.snr.flag)\nedge.norm <- norm(edge, flag.list=flag.list, FUN=median, na.rm=TRUE)\nedge.norm <- sort(edge.norm, position.var=\"PosOrder\")\n```\n\n### 4. Quality Assessment\nEvaluate the success of normalization using quality scores.\n\n```r\ndata(qscores)\nqscore.list <- list(smoothness=smoothness.qscore, \n                    replicates=var.replicate.qscore, \n                    dynamics=dynamics.qscore)\n\nedge.norm$quality <- qscore.summary.arrayCGH(edge.norm, qscore.list)\nprint(edge.norm$quality)\n```\n\n### 5. Visualization and Reporting\nGenerate genomic profiles and spatial plots to inspect the data.\n\n```r\n# Plot signal along the genome\ngenome.plot(edge.norm, chrLim=\"LimitChr\")\n\n# Combined report: array image + genomic profile\nreport.plot(edge.norm, chrLim=\"LimitChr\", zlim=c(-1,1))\n\n# Generate an HTML report\nhtml.report(edge.norm, dir.out=\".\", array.name=\"Sample_Array\", file.name=\"report\")\n```\n\n## Key Functions\n- `import()`: Loads raw data into `arrayCGH` objects.\n- `to.flag()`: Creates a flag object for filtering or correction.\n- `norm()`: Executes the normalization pipeline using a list of flags.\n- `arrayTrend()`: Estimates spatial trends on the array surface.\n- `genome.plot()`: Visualizes log-ratios across chromosomes.\n- `qscore.summary.arrayCGH()`: Computes multiple quality metrics.\n\n## Reference documentation\n- [Overview of the MANOR package](./references/MANOR.Rmd)\n- [MANOR: Micro-Array NORmalization of array-CGH data](./references/MANOR.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-manor",
+    "description": "This tool performs normalization and quality assessment of array-CGH data to correct for spatial biases and experimental artifacts. Use when user asks to import spot-level microarray data, apply filtering flags, perform spatial normalization, or calculate quality scores for genomic profiles.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MANOR.html"
+  }
+}

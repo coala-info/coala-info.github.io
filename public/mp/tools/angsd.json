@@ -1,0 +1,45 @@
+{
+  "id": "angsd",
+  "category": "CLI",
+  "name": "angsd",
+  "description": "ANGSD is a software suite for analyzing next-generation sequencing data using genotype likelihoods to account for uncertainty. Use when user asks to estimate allele frequencies, call SNPs, calculate the site frequency spectrum, or perform population genetics analyses such as Fst and neutrality tests.",
+  "overview": "ANGSD is a specialized suite for analyzing NGS data that accounts for genotype uncertainty. Unlike traditional tools that rely on hard-called genotypes—which can be biased in low-coverage data—ANGSD works with genotype likelihoods. It is the primary tool for population genomics workflows involving site frequency spectrum (SFS) estimation, association mapping, and relatedness testing in non-model organisms or low-depth human sequencing.",
+  "homepage": "http://www.popgen.dk/angsd/index.php/ANGSD",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/angsd/overview",
+  "github": "N/A",
+  "conda_downloads": "50.0K",
+  "conda_downloads_num": 50000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "angsd"
+    ],
+    "description": "Analysis of Next Generation Sequencing Data. Methods for estimating allele frequencies, genotype likelihoods, and other population genetic parameters from NGS data.",
+    "docker_image": "quay.io/biocontainers/angsd:0.940--h13024bc_4",
+    "homepage": "http://www.popgen.dk/angsd/index.php/ANGSD",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/angsd/overview",
+    "github": "N/A",
+    "conda_downloads": "50.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "angsd.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# angsd\n\n## Overview\nANGSD is a specialized suite for analyzing NGS data that accounts for genotype uncertainty. Unlike traditional tools that rely on hard-called genotypes—which can be biased in low-coverage data—ANGSD works with genotype likelihoods. It is the primary tool for population genomics workflows involving site frequency spectrum (SFS) estimation, association mapping, and relatedness testing in non-model organisms or low-depth human sequencing.\n\n## Core Command Patterns\n\n### Basic Input and Global Filters\nMost ANGSD commands require defining the input type and basic quality filters.\n- **Input List**: Use `-bam file.list` where the list contains paths to BAM/CRAM files.\n- **Genotype Likelihoods**: `-GL 1` (SAMtools), `-GL 2` (GATK).\n- **Filters**: Always apply basic filters to avoid artifacts:\n  - `-uniqueOnly 1 -remove_bads 1 -only_proper_pairs 1 -baq 1 -C 50`\n  - `-minMapQ 30 -minQ 20`\n\n### Allele Frequency and SNP Calling\nTo estimate Major/Minor alleles and frequencies:\n```bash\nangsd -bam bam.filelist -out outFileName \\\n    -doMajorMinor 1 -doMaf 1 -GL 1 \\\n    -doPost 1 -doGeno 32\n```\n- `-doMajorMinor 1`: Infer major and minor from GL.\n- `-doMaf 1`: Estimate allele frequencies.\n- `-SNP_pval 1e-6`: Only output sites with a p-value below this threshold (SNP calling).\n\n### Population Genetics (Thetas and SFS)\nCalculating Tajima's D and other neutrality tests is a two-step process using `realSFS`.\n\n1. **Generate Site Allele Frequency (SAF)**:\n   ```bash\n   angsd -bam bam.filelist -doSaf 1 -out outFileName -anc reference.fa -GL 1\n   ```\n2. **Estimate SFS**:\n   ```bash\n   realSFS outFileName.saf.idx > outFileName.sfs\n   ```\n3. **Calculate Thetas**:\n   ```bash\n   angsd -bam bam.filelist -out outFileName -doThetas 1 -doSaf 1 -pest outFileName.sfs -anc reference.fa -GL 1\n   thetaStat do_stat outFileName.thetas.idx\n   ```\n\n### Population Structure and Fst\nFor Fst between two populations:\n1. Generate `.saf.idx` for both populations.\n2. Calculate the 2D-SFS:\n   ```bash\n   realSFS pop1.saf.idx pop2.saf.idx > pop1.pop2.ml\n   ```\n3. Calculate Fst:\n   ```bash\n   realSFS fst index pop1.saf.idx pop2.saf.idx -sfs pop1.pop2.ml -fstout out.fst\n   realSFS fst print out.fst.idx\n   ```\n\n## Expert Tips\n- **Memory Management**: Use `-nThreads <int>` to speed up calculations, but be aware that memory usage scales with the number of sites and individuals.\n- **Ancestral State**: Many population genetic statistics require an ancestral state (`-anc`). If unknown, the reference genome is often used as a proxy, though this can introduce bias.\n- **Beagle Output**: For imputation or downstream PCA/Admixture tools, use `-doGlf 2` to output in Beagle format.\n- **Depth Filters**: In low-coverage data, use `-setMinDepth` and `-setMaxDepth` to exclude regions with extreme coverage that might represent repeats or paralogs.\n\n## Reference documentation\n- [ANGSD Overview](./references/www_popgen_dk_angsd_index.php_ANGSD.md)",
+  "skill_front_matter": {
+    "name": "angsd",
+    "description": "ANGSD is a software suite for analyzing next-generation sequencing data using genotype likelihoods to account for uncertainty. Use when user asks to estimate allele frequencies, call SNPs, calculate the site frequency spectrum, or perform population genetics analyses such as Fst and neutrality tests.",
+    "homepage": "http://www.popgen.dk/angsd/index.php/ANGSD"
+  }
+}

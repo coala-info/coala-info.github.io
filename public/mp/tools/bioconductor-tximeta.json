@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tximeta",
+  "category": "bioconductor",
+  "name": "bioconductor-tximeta",
+  "description": "Bioconductor-tximeta imports transcript-level quantification data into R while automatically attaching metadata and genomic annotations via sequence digests. Use when user asks to import RNA-seq counts into SummarizedExperiment objects, summarize transcript-level data to the gene level, or add alternative identifiers and genomic ranges to quantification data.",
+  "overview": "The `tximeta` package is an extension of `tximport` that automates the addition of annotation metadata to RNA-seq quantification data. It works by identifying the unique \"digest\" (checksum) of the reference transcriptome used during quantification (e.g., Salmon index). If the digest matches a known source (GENCODE, Ensembl, RefSeq), `tximeta` automatically attaches genomic ranges, versioned transcript databases (TxDb/EnsDb), and genome information to the resulting `SummarizedExperiment` object.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/tximeta.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/thelovelab/tximeta",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "tximeta"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tximeta.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/thelovelab/tximeta",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tximeta\n\nname: bioconductor-tximeta\ndescription: Import transcript-level quantification data (from Salmon, Alevin, Oarfish) into R/Bioconductor with automatic metadata and annotation retrieval. Use this skill when you need to: (1) Import RNA-seq counts into SummarizedExperiment objects, (2) Automatically attach genomic ranges and transcript/gene metadata via sequence digests, (3) Summarize transcript-level data to gene-level, (4) Add alternative identifiers (Entrez, Symbol, etc.) to genomic objects, or (5) Prepare quantification data for differential expression tools like DESeq2, edgeR, or Swish.\n\n# bioconductor-tximeta\n\n## Overview\n\nThe `tximeta` package is an extension of `tximport` that automates the addition of annotation metadata to RNA-seq quantification data. It works by identifying the unique \"digest\" (checksum) of the reference transcriptome used during quantification (e.g., Salmon index). If the digest matches a known source (GENCODE, Ensembl, RefSeq), `tximeta` automatically attaches genomic ranges, versioned transcript databases (TxDb/EnsDb), and genome information to the resulting `SummarizedExperiment` object.\n\n## Core Workflow\n\n### 1. Prepare Input\nCreate a `coldata` data frame containing at least two columns: `files` (path to `quant.sf` files) and `names` (unique sample IDs).\n\n```r\nlibrary(tximeta)\ncoldata <- data.frame(\n  files = c(\"path/to/sample1/quant.sf\", \"path/to/sample2/quant.sf\"),\n  names = c(\"Sample1\", \"Sample2\"),\n  condition = c(\"Control\", \"Treatment\"),\n  stringsAsFactors = FALSE\n)\n```\n\n### 2. Import Data\nThe primary function `tximeta()` performs the import and metadata lookup.\n\n```r\nse <- tximeta(coldata)\n# Check assays (counts, abundance, length)\nassayNames(se)\n# Check genomic ranges\nrowRanges(se)\n```\n\n### 3. Summarize to Gene Level\nUse `summarizeToGene()` to aggregate transcript counts to genes. This uses the internal metadata to perform the mapping automatically.\n\n```r\ngse <- summarizeToGene(se)\n\n# Optional: Assign ranges based on the most abundant isoform\ngse_abundant <- summarizeToGene(se, assignRanges=\"abundant\")\n```\n\n### 4. Add Identifiers\nMap between different ID types (e.g., Ensembl to Entrez or Symbol) using `addIds()`.\n\n```r\nlibrary(org.Hs.eg.db)\ngse <- addIds(gse, \"SYMBOL\", gene=TRUE)\n```\n\n## Advanced Features\n\n### Linked Transcriptomes\nIf using a custom or modified transcriptome that `tximeta` doesn't recognize automatically, you must \"link\" it manually before calling `tximeta()`.\n\n```r\nmakeLinkedTxome(\n  indexDir = \"path/to/salmon_index\",\n  source = \"LocalEnsembl\",\n  organism = \"Homo sapiens\",\n  release = \"104\",\n  genome = \"GRCh38\",\n  fasta = \"ftp://path/to/fasta.fa.gz\",\n  gtf = \"path/to/local.gtf.gz\"\n)\n# Subsequent calls to tximeta() will now recognize this index\n```\n\n### Mixed Reference Transcripts (Oarfish)\nFor quantification involving both annotated and novel transcripts:\n1. Use `importData(coldata, type=\"oarfish\")` to get an un-ranged object.\n2. Use `inspectDigests(se)` to check matching status.\n3. Use `updateMetadata(se)` to attach ranges and metadata to the annotated portions.\n\n### Integration with DE Tools\n`tximeta` objects are compatible with major Bioconductor DE packages:\n\n*   **DESeq2**: `dds <- DESeqDataSet(gse, design = ~condition)`\n*   **edgeR**: `y <- makeDGEList(gse)`\n*   **Fishpond (Swish)**: Works directly on `se` (transcript-level) with inferential replicates.\n\n## Tips and Troubleshooting\n\n*   **Cache Management**: `tximeta` uses `BiocFileCache`. If a database connection fails, use `getTximetaBFC()` and `BiocFileCache::bfcremove()` to clear the problematic entry and force regeneration.\n*   **Missing Transcripts**: It is common to see warnings about transcripts missing from the GTF but present in the FASTA. These are dropped from the ranged object by default. Use `skipMeta=TRUE` in `tximeta()` to keep all transcripts without adding ranges.\n*   **Salmon Output**: Do not modify the Salmon output directory structure; `tximeta` relies on the `aux_info` folder to identify the transcriptome digest.\n\n## Reference documentation\n\n- [tximeta](./references/tximeta.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tximeta",
+    "description": "Bioconductor-tximeta imports transcript-level quantification data into R while automatically attaching metadata and genomic annotations via sequence digests. Use when user asks to import RNA-seq counts into SummarizedExperiment objects, summarize transcript-level data to the gene level, or add alternative identifiers and genomic ranges to quantification data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/tximeta.html"
+  }
+}

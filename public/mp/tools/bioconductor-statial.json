@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-statial",
+  "category": "bioconductor",
+  "name": "bioconductor-statial",
+  "description": "Statial performs context-aware statistical analysis of spatial relationships in high-dimensional multiplexed imaging data. Use when user asks to evaluate spatial relationships relative to a specific context, identify marker expression changes based on distance to other cell types, or correct for lateral marker spillover.",
+  "overview": "Statial is a Bioconductor package designed for the statistical analysis of spatial relationships in high-dimensional multiplexed imaging data (e.g., MIBI-TOF, IMC). It provides a suite of tools to move beyond simple proximity metrics by incorporating \"context\"—such as tissue structures or parent cell populations—into spatial quantifications.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/Statial.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/SydneyBioX/Statial",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "Statial"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Statial.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/SydneyBioX/Statial",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-statial\n\n## Overview\n\nStatial is a Bioconductor package designed for the statistical analysis of spatial relationships in high-dimensional multiplexed imaging data (e.g., MIBI-TOF, IMC). It provides a suite of tools to move beyond simple proximity metrics by incorporating \"context\"—such as tissue structures or parent cell populations—into spatial quantifications.\n\nKey capabilities include:\n- **Kontextual**: Evaluates spatial relationships relative to a specific context (e.g., is cell type A closer to B than expected given the distribution of parent population C?).\n- **SpatioMark**: Identifies how marker expression within a cell changes as a function of distance to other cell types.\n- **Contamination Correction**: Accounts for lateral marker spillover (segmentation artifacts) in spatial modeling.\n- **Integration**: Works seamlessly with `SingleCellExperiment`, `spicyR`, and `lisaClust`.\n\n## Typical Workflow\n\n### 1. Data Preparation\nStatial expects a `SingleCellExperiment` (SCE) object with `x` and `y` coordinates in `colData`.\n\n```r\nlibrary(Statial)\nlibrary(SingleCellExperiment)\n\n# Load example data\ndata(\"kerenSCE\")\n```\n\n### 2. Context-Aware Relationships (Kontextual)\nTo use `Kontextual`, you must define a parent population or a hierarchy.\n\n**Defining a Hierarchy:**\n```r\n# Manual list: Parent = vector of children\nbiologicalHierarchy = list(\n  \"tumour\" = c(\"Keratin_Tumour\", \"Tumour\"),\n  \"tcells\" = c(\"CD3_Cell\", \"CD4_Cell\", \"CD8_Cell\", \"Tregs\")\n)\n\n# Or use treekoR for data-driven hierarchies\n# kerenTree <- treekoR::getClusterTree(...)\n# treekorParents = getParentPhylo(kerenTree)\n```\n\n**Running Kontextual:**\n```r\n# Calculate for specific pair\np53_Kontextual <- Kontextual(\n  cells = kerenSCE,\n  r = 100,\n  from = \"Immune\",\n  to = \"p53_Tumour\",\n  parent = c(\"p53_Tumour\", \"Tumour\"),\n  cellType = \"cellTypeNew\"\n)\n\n# Calculate for all pairwise combinations\nparentDf <- parentCombinations(all = unique(kerenSCE$cellType), parentList = biologicalHierarchy)\nallKontextual <- Kontextual(cells = kerenSCE, parentDf = parentDf, r = 100)\n```\n\n### 3. Continuous State Changes (SpatioMark)\nThis workflow identifies if a marker's intensity in one cell type is influenced by proximity to another cell type.\n\n**Step A: Calculate Proximity and Abundance**\n```r\nkerenSCE <- getDistances(kerenSCE, maxDist = 200)\nkerenSCE <- getAbundances(kerenSCE, r = 200)\n```\n\n**Step B: Model State Changes**\n```r\n# Test specific interaction\nstateChanges <- calcStateChanges(\n  cells = kerenSCE,\n  type = \"distances\",\n  image = \"6\",\n  from = \"Keratin_Tumour\",\n  to = \"Macrophages\",\n  marker = \"p53\"\n)\n\n# Visualize the relationship\nplotStateChanges(cells = kerenSCE, type = \"distances\", image = \"6\", \n                 from = \"Keratin_Tumour\", to = \"Macrophages\", marker = \"p53\")\n```\n\n### 4. Handling Contamination\nLateral spillover can cause false positives (e.g., T-cells appearing to express B-cell markers).\n\n```r\n# Calculate contamination probabilities\nkerenSCE <- calcContamination(kerenSCE)\n\n# Include contamination as a covariate in the model\nstateChangesCorrected <- calcStateChanges(\n  cells = kerenSCE,\n  type = \"distances\",\n  contamination = TRUE\n)\n```\n\n### 5. Downstream Analysis (Survival & Classification)\nStatial features can be converted to matrices for survival modeling using `spicyR` or `ClassifyR`.\n\n```r\n# Convert to wide matrix\nkontextMat <- prepMatrix(allKontextual)\n\n# Survival analysis with spicyR\nlibrary(spicyR)\nsurvivalResults <- spicy(cells = kerenSCE, alternateResult = kontextMat, condition = \"survival\")\nsignifPlot(survivalResults)\n```\n\n## Tips for Success\n- **Radius Selection**: Use `kontextCurve` to evaluate how spatial relationships change across multiple radii (`rs`). Small radii capture local interactions; large radii capture global tissue structure.\n- **Parallelization**: Most functions support a `cores` argument. Use `nCores > 1` for large datasets or pairwise calculations.\n- **Missing Values**: `prepMatrix` may produce `NA` values if certain cell types are absent in specific images. Replace these with 0 or use appropriate imputation before classification.\n- **Region Analysis**: Use `lisaClust` to identify spatial domains before running `getMarkerMeans` to see how marker expression varies by tissue region.\n\n## Reference documentation\n- [Statial](./references/Statial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-statial",
+    "description": "Statial performs context-aware statistical analysis of spatial relationships in high-dimensional multiplexed imaging data. Use when user asks to evaluate spatial relationships relative to a specific context, identify marker expression changes based on distance to other cell types, or correct for lateral marker spillover.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/Statial.html"
+  }
+}

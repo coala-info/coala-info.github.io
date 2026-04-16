@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-inpas",
+  "category": "bioconductor",
+  "name": "bioconductor-inpas",
+  "description": "InPAS identifies and quantifies alternative polyadenylation sites from RNA-Seq data by analyzing read coverage profiles. Use when user asks to discover novel cleavage sites, calculate the Percentage of Distal Usage Index, or perform differential analysis of alternative polyadenylation events.",
+  "overview": "InPAS (Identification of Novel Polyadenylation Sites) is a Bioconductor package designed to discover and quantify Alternative Polyadenylation (APA) events using standard RNA-Seq data. It identifies putative cleavage and polyadenylation (CP) sites based on read coverage profiles along 3' UTRs and calculates the Percentage of Distal Usage Index (PDUI) to measure the relative usage of distal vs. proximal sites.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/InPAS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-inpas/overview",
+  "github": "N/A",
+  "conda_downloads": "25.2K",
+  "conda_downloads_num": 25200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "InPAS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/InPAS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-inpas/overview",
+    "github": "N/A",
+    "conda_downloads": "25.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-inpas\n\n## Overview\n\nInPAS (Identification of Novel Polyadenylation Sites) is a Bioconductor package designed to discover and quantify Alternative Polyadenylation (APA) events using standard RNA-Seq data. It identifies putative cleavage and polyadenylation (CP) sites based on read coverage profiles along 3' UTRs and calculates the Percentage of Distal Usage Index (PDUI) to measure the relative usage of distal vs. proximal sites.\n\n## Core Workflow\n\n### 1. Environment Setup\nInPAS requires a SQLite database to manage metadata and intermediate Rle (Run-Length Encoding) coverage objects.\n\n```r\nlibrary(InPAS)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\nlibrary(TxDb.Hsapiens.UCSC.hg19.knownGene)\n\n# Define metadata: tag (sample name), condition, and path to BEDGraph files\nmetadata <- data.frame(\n  tag = c(\"Sample1\", \"Sample2\"),\n  condition = c(\"Control\", \"Treatment\"),\n  bedgraph_file = c(\"path/to/s1.bedgraph\", \"path/to/s2.bedgraph\")\n)\n\nsqlite_db <- setup_sqlitedb(metadata = metadata, outdir = \"analysis_out\")\n```\n\n### 2. Annotation Extraction\nExtract 3' UTR coordinates from TxDb and EnsDb objects.\n\n```r\nset_globals(genome = BSgenome.Hsapiens.UCSC.hg19,\n            TxDb = TxDb.Hsapiens.UCSC.hg19.knownGene,\n            outdir = \"analysis_out\",\n            chr2exclude = c(\"chrM\", \"chrMT\"))\n\nutr3_anno <- extract_UTR3Anno(sqlite_db = sqlite_db)\n```\n\n### 3. Coverage Processing\nConvert BEDGraph files to Rle format. InPAS processes data chromosome by chromosome to manage memory.\n\n```r\n# Convert BEDGraph to Rle\nfor (i in 1:nrow(metadata)) {\n  get_ssRleCov(bedgraph = metadata$bedgraph_file[i],\n               tag = metadata$tag[i],\n               sqlite_db = sqlite_db)\n}\n\n# Assemble coverage for a specific chromosome\ncoverage <- assemble_allCov(sqlite_db, seqname = \"chr1\")\n\n# Optional: Quality Control\nrun_coverageQC(sqlite_db, which = GRanges(\"chr1\", IRanges(1, 10^6)))\n```\n\n### 4. Identifying CP Sites\nSearch for potential cleavage sites. You can use the `cleanUpdTSeq` classifier to filter false positives.\n\n```r\ndata(classifier) # From cleanUpdTSeq\n\nprepared_data <- setup_CPsSearch(sqlite_db, \n                                 seqname = \"chr1\", \n                                 hugeData = TRUE)\n\nCPsites <- search_CPs(seqname = \"chr1\",\n                      sqlite_db = sqlite_db,\n                      classifier = classifier,\n                      classifier_cutoff = 0.8)\n```\n\n### 5. Quantifying Usage (PDUI)\nCalculate the usage of proximal and distal sites and create an ExpressionSet.\n\n```r\nutr3_cds_cov <- get_regionCov(sqlite_db = sqlite_db)\neSet <- get_UTR3eSet(sqlite_db = sqlite_db)\n```\n\n### 6. Differential Analysis\nIdentify genes with significant changes in APA usage between conditions.\n\n```r\ntest_out <- test_dPDUI(eset = eSet, \n                       method = \"fisher.exact\", # or \"limma\" for complex designs\n                       sqlite_db = sqlite_db)\n\nfilter_out <- filter_testOut(res = test_out,\n                             gp1 = \"Control\",\n                             gp2 = \"Treatment\",\n                             dPDUI_cutoff = 0.3,\n                             adj.P.Val_cutoff = 0.05)\n```\n\n## Visualization and Export\nVisualize the coverage and CP site usage for specific genomic regions.\n\n```r\ngr <- GRanges(\"chr1\", IRanges(start, end), strand = \"-\")\ndata4plot <- get_usage4plot(gr, proximalSites = 12345, sqlite_db = sqlite_db)\nplot_utr3Usage(usage_data = data4plot)\n\n# Prepare for GSEA\nsetup_GSEA(eset = test_out, outdir = \"analysis_out\", rankBy = \"logFC\")\n```\n\n## Key Tips\n- **Input Format**: Ensure BEDGraph files are generated from BAMs using `bedtools genomecov -split`. The `-split` flag is critical for RNA-Seq to handle spliced reads correctly.\n- **Memory Management**: For large datasets, set `hugeData = TRUE` in `setup_CPsSearch` and `get_usage4plot`.\n- **Parallelization**: Use the `future` package (e.g., `plan(multicore)`) to speed up `run_coverageQC` and other intensive functions.\n\n## Reference documentation\n- [InPAS Vignette](./references/InPAS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-inpas",
+    "description": "InPAS identifies and quantifies alternative polyadenylation sites from RNA-Seq data by analyzing read coverage profiles. Use when user asks to discover novel cleavage sites, calculate the Percentage of Distal Usage Index, or perform differential analysis of alternative polyadenylation events.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/InPAS.html"
+  }
+}

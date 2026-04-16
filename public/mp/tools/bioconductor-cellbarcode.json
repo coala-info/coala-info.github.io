@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cellbarcode",
+  "category": "bioconductor",
+  "name": "bioconductor-cellbarcode",
+  "description": "This tool performs comprehensive DNA barcode analysis including extraction, quality control, error correction, and quantification from sequencing data. Use when user asks to extract barcodes from FASTQ or BAM files, perform lineage tracing analysis, or conduct clonal tracking using regular expressions.",
+  "overview": "The `CellBarcode` package is a toolkit for DNA barcode analysis, primarily used in genetic lineage tracing and clonal tracking. It handles diverse barcode designs (fixed or flexible length, with or without UMIs) provided they can be defined by a regular expression. The package manages the full pipeline from raw sequencing reads to a quantified barcode-sample matrix.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CellBarcode.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellbarcode/overview",
+  "github": "https://github.com/wenjie1991/CellBarcode",
+  "conda_downloads": "8.7K",
+  "conda_downloads_num": 8700,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CellBarcode"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CellBarcode.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellbarcode/overview",
+    "github": "https://github.com/wenjie1991/CellBarcode",
+    "conda_downloads": "8.7K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cellbarcode\n\nname: bioconductor-cellbarcode\ndescription: Comprehensive cellular DNA barcode analysis including extraction from FASTQ/BAM/SAM files, quality control, error correction (UMI and clustering), and quantification. Use when analyzing lineage tracing, clonal tracking, or amplicon data (CRISPR gRNA, immune repertoire) where barcodes are identifiable via regular expressions.\n\n# bioconductor-cellbarcode\n\n## Overview\n\nThe `CellBarcode` package is a toolkit for DNA barcode analysis, primarily used in genetic lineage tracing and clonal tracking. It handles diverse barcode designs (fixed or flexible length, with or without UMIs) provided they can be defined by a regular expression. The package manages the full pipeline from raw sequencing reads to a quantified barcode-sample matrix.\n\n## Core Workflow\n\n### 1. Quality Control and Filtering\nBefore extraction, evaluate the sequencing quality of FASTQ files.\n\n```r\nlibrary(CellBarcode)\n\n# QC evaluation\nqc <- bc_seq_qc(fq_files)\nbc_plot_seqQc(qc) # Visualize base distribution and quality\n\n# Filter reads based on quality and length\nfq_filtered <- bc_seq_filter(\n  fq_files,\n  min_average_quality = 30,\n  min_read_length = 60,\n  sample_name = sample_names\n)\n```\n\n### 2. Barcode Extraction\nExtraction uses regular expressions where parentheses `()` capture the target sequences.\n\n**Standard FASTQ Extraction:**\n```r\n# Define pattern: UMI (12bp) followed by constant region, then variable barcode\npattern <- \"([ACGT]{12})CTCGAG([ACGT]+)CCGTAG\"\nbc_obj <- bc_extract(\n  fq_filtered,\n  pattern = pattern,\n  pattern_type = c(\"UMI\" = 1, \"barcode\" = 2),\n  sample_name = sample_names\n)\n```\n\n**10X Genomics BAM/SAM Extraction:**\nFor 10X data, use `bc_extract_sc_sam`. It is recommended to use unmapped reads from the BAM file (converted to SAM) to save time.\n```r\nd <- bc_extract_sc_sam(\n  sam = \"scRNASeq_10X.sam\",\n  pattern = \"CONSTANT(.*)CONSTANT\",\n  cell_barcode_tag = \"CR\", # Default 10X cell barcode tag\n  umi_tag = \"UR\"           # Default 10X UMI tag\n)\n```\n\n### 3. Error Correction (Curing)\n`CellBarcode` uses a \"messy\" to \"clean\" transition. Extraction populates `@messyBc`; curing functions populate `@cleanBc`.\n\n*   **bc_cure_umi**: Filters UMI-barcode combinations by read depth.\n*   **bc_cure_depth**: Filters by total barcode count or UMI count.\n*   **bc_cure_cluster**: Merges similar sequences (Hamming/Levenshtein distance) to correct for PCR/sequencing errors.\n\n```r\n# Typical cleaning sequence\nbc_obj <- bc_cure_umi(bc_obj, depth = 2, isUniqueUMI = TRUE) %>%\n          bc_cure_depth(depth = 2) %>%\n          bc_cure_cluster(dist_thresh = 2)\n```\n\n### 4. Data Management and Export\nThe `BarcodeObj` can be subsetted like a matrix `obj[barcodes, samples]`.\n\n```r\n# Export to standard R formats\ndf <- bc_2df(bc_obj)      # Long format data.frame\nmat <- bc_2matrix(bc_obj) # Barcode (row) by Sample (column) matrix\n\n# Set/Get Metadata\nbc_meta(bc_obj)$group <- c(\"A\", \"A\", \"B\", \"B\")\nsub_obj <- bc_subset(bc_obj, sample = group == \"A\")\n```\n\n## Key Patterns and Tips\n\n*   **Function Naming**: Most functions start with `bc_` for easy auto-completion.\n*   **Regex Capture**: The `pattern_type` argument must map the integers to the capture groups `()` in your `pattern` string.\n*   **Set Operations**:\n    *   `+`: Combine two `BarcodeObj` objects.\n    *   `*`: Filter by a whitelist of barcodes.\n    *   `-`: Filter by a blacklist of barcodes.\n*   **Visualization**: Use `bc_plot_single()`, `bc_plot_pair()`, or `bc_plot_mutual()` to inspect barcode distributions and sample correlations.\n\n## Reference documentation\n\n- [Get barcode from 10X Genomics scRNASeq data](./references/Barcode_in_10X_scRNASeq.md)\n- [Analyzing Cellular DNA Barcode with CellBarcode](./references/UMI_VDJ_Barcode.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cellbarcode",
+    "description": "This tool performs comprehensive DNA barcode analysis including extraction, quality control, error correction, and quantification from sequencing data. Use when user asks to extract barcodes from FASTQ or BAM files, perform lineage tracing analysis, or conduct clonal tracking using regular expressions.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CellBarcode.html"
+  }
+}

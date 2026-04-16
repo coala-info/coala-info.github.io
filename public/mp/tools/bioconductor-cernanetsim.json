@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cernanetsim",
+  "category": "bioconductor",
+  "name": "bioconductor-cernanetsim",
+  "description": "This tool simulates and analyzes miRNA-target interaction networks to model how expression changes propagate through competitive endogenous RNA systems. Use when user asks to model ceRNA network perturbations, calculate miRNA-target binding efficiencies, or simulate the ripple effect of RNA expression changes on a network.",
+  "overview": "The `ceRNAnetsim` package simulates the regulation of miRNA-target interactions by distributing miRNA expression across available competing endogenous RNAs (ceRNAs). It models the \"ripple effect\" where a change in one node's expression level affects the entire network. The package represents these interactions as graph objects, allowing for the incorporation of interaction factors like seed type, binding energy, and binding location to modify miRNA effects.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ceRNAnetsim.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cernanetsim/overview",
+  "github": "https://github.com/selcenari/ceRNAnetsim",
+  "conda_downloads": "18.1K",
+  "conda_downloads_num": 18100,
+  "last_updated": "2026-02-07",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ceRNAnetsim"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ceRNAnetsim.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cernanetsim/overview",
+    "github": "https://github.com/selcenari/ceRNAnetsim",
+    "conda_downloads": "18.1K",
+    "last_updated": "2026-02-07",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cernanetsim\n\nname: bioconductor-cernanetsim\ndescription: Analysis and simulation of miRNA-target interaction networks (ceRNA networks). Use when Claude needs to model how changes in expression levels of specific RNAs (miRNAs, circRNAs, lincRNAs, etc.) propagate through a network, calculate perturbation efficiency, or visualize competitive endogenous RNA (ceRNA) behavior using the ceRNAnetsim R package.\n\n# bioconductor-cernanetsim\n\n## Overview\nThe `ceRNAnetsim` package simulates the regulation of miRNA-target interactions by distributing miRNA expression across available competing endogenous RNAs (ceRNAs). It models the \"ripple effect\" where a change in one node's expression level affects the entire network. The package represents these interactions as graph objects, allowing for the incorporation of interaction factors like seed type, binding energy, and binding location to modify miRNA effects.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe input data must contain columns for competing RNAs, miRNAs, and their respective expression counts.\n\n```r\nlibrary(ceRNAnetsim)\nlibrary(dplyr)\n\n# Example using built-in minimal sample\ndata(\"minsamp\")\n\n# Basic structure: competing, miRNA, Competing_expression, miRNA_expression\n# Optional factors: energy, seed_type, region\n```\n\n### 2. Initializing the Network\nConvert the dataframe into a graph object using `priming_graph()`. This calculates the steady-state efficiency of miRNAs for each target.\n\n```r\n# Simple priming\ng <- priming_graph(minsamp, \n                   competing_count = Competing_expression, \n                   miRNA_count = miRNA_expression)\n\n# Priming with interaction factors (affinity and degradation)\ng_factors <- priming_graph(minsamp, \n                           competing_count = Competing_expression, \n                           miRNA_count = miRNA_expression,\n                           aff_factor = c(energy, seed_type), \n                           deg_factor = region)\n```\n\n### 3. Triggering Perturbations\nIntroduce changes to the system (upregulation, downregulation, or knockdown).\n\n```r\n# Method 1: Change a single node (e.g., 2-fold upregulation of Gene2)\ng_triggered <- g %>% update_how(node_name = \"Gene2\", how = 2)\n\n# Method 2: Knockdown (set how to 0)\ng_knockdown <- g %>% update_how(node_name = \"Gene2\", how = 0)\n\n# Method 3: Update multiple variables using a new count dataframe\n# data(new_counts)\ng_multi <- g %>% update_variables(current_counts = new_counts)\n```\n\n### 4. Simulation\nRun the simulation to propagate the trigger through the network until a new steady-state is reached or for a fixed number of cycles.\n\n```r\n# Run for 10 cycles\ng_sim <- g_triggered %>% simulate(cycle = 10, threshold = 0.1)\n\n# Extract results as a tibble\nresults <- g_sim %>% \n  as_tibble() %>% \n  select(name, initial_count, count_current)\n```\n\n## Advanced Analysis\n\n### Finding Optimal Iterations\nUse `find_iteration()` to determine how many cycles are needed for the perturbation to propagate fully.\n\n```r\n# Calculate iteration with maximum node propagation\nopt_iter <- g_triggered %>% \n  simulate(50) %>% \n  find_iteration(limit = 0.1)\n```\n\n### Perturbation Efficiency\nEvaluate how much a specific node disturbs the rest of the network.\n\n```r\n# Efficiency of a specific node\nperf <- g_factors %>% \n  calc_perturbation(node_name = \"Gene17\", how = 3, cycle = 30, limit = 0.1)\n\n# Screen all nodes for their perturbation potential\nall_perf <- g_factors %>% \n  find_node_perturbation(how = 3, cycle = 4, limit = 0.1)\n```\n\n### Visualization\nVisualize the network state at any point.\n\n```r\n# Static plot\nvis_graph(g_sim, title = \"Network State\")\n\n# Step-by-step simulation visualization (generates frames)\ng_triggered %>% simulate_vis(cycle = 5, title = \"Propagation Steps\")\n```\n\n## Tips\n- **Thresholds**: Use the `threshold` argument in `simulate()` to ignore negligible decimal changes and reach steady-state faster.\n- **Graph Manipulation**: Since the output is a `tbl_graph`, you can use `tidygraph` functions like `activate(nodes)` or `activate(edges)` followed by `dplyr` verbs to inspect internal variables like `comp_count_list`.\n- **Column Order**: `priming_graph()` assumes the first column is competing and the second is miRNA unless specified.\n\n## Reference documentation\n- [The auxiliary commands which can help to the users](./references/auxiliary_commands.md)\n- [Basic Use of ceRNAnetsim](./references/basic_usage.md)\n- [Calculating Number of Iterations Required to Reach Steady-State](./references/convenient_iteration.md)\n- [How does the system behave in mirtarbase dataset without interaction factors?](./references/mirtarbase_example.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cernanetsim",
+    "description": "This tool simulates and analyzes miRNA-target interaction networks to model how expression changes propagate through competitive endogenous RNA systems. Use when user asks to model ceRNA network perturbations, calculate miRNA-target binding efficiencies, or simulate the ripple effect of RNA expression changes on a network.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ceRNAnetsim.html"
+  }
+}

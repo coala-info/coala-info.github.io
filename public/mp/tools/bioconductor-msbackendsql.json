@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-msbackendsql",
+  "category": "bioconductor",
+  "name": "bioconductor-msbackendsql",
+  "description": "The MsBackendSql package provides a high-performance infrastructure for managing and analyzing massive mass spectrometry datasets by using SQL databases as on-the-fly storage backends for the Spectra framework. Use when user asks to create a SQL-based mass spectrometry database, import raw MS files into SQL storage, or analyze large-scale proteomics data without loading it entirely into memory.",
+  "overview": "The `MsBackendSql` package provides a high-performance infrastructure for Mass Spectrometry (MS) data by leveraging SQL databases as storage backends for the `Spectra` framework. Unlike in-memory backends, `MsBackendSql` retrieves data on-the-fly, allowing for the analysis of massive datasets on standard hardware. It supports two primary classes: `MsBackendSql` (active connection) and `MsBackendOfflineSql` (connection-less, supporting parallel processing and object serialization).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MsBackendSql.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RforMassSpectrometry/MsBackendSql",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MsBackendSql"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MsBackendSql.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RforMassSpectrometry/MsBackendSql",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-msbackendsql\n\n## Overview\n\nThe `MsBackendSql` package provides a high-performance infrastructure for Mass Spectrometry (MS) data by leveraging SQL databases as storage backends for the `Spectra` framework. Unlike in-memory backends, `MsBackendSql` retrieves data on-the-fly, allowing for the analysis of massive datasets on standard hardware. It supports two primary classes: `MsBackendSql` (active connection) and `MsBackendOfflineSql` (connection-less, supporting parallel processing and object serialization).\n\n## Core Workflows\n\n### 1. Creating a SQL MS Database\nYou can create a database by importing raw MS files (e.g., mzML) or by converting an existing `DataFrame`.\n\n```r\nlibrary(RSQLite)\nlibrary(Spectra)\nlibrary(MsBackendSql)\n\n# Setup SQLite connection\ndbfile <- tempfile()\ncon <- dbConnect(SQLite(), dbfile)\n\n# Import from files\nfls <- c(\"file1.mzML\", \"file2.mzML\")\ncreateMsBackendSqlDatabase(con, fls, blob = TRUE, peaksStorageMode = \"blob2\")\ndbDisconnect(con)\n```\n\n**Storage Modes:**\n*   `blob2` (Default): Stores the entire peak matrix as a BLOB. Fastest for data extraction and smallest disk footprint.\n*   `long`: Stores m/z and intensity values in individual rows. Allows SQL-level filtering but results in much larger databases. Recommended for use with `duckdb`.\n\n### 2. Initializing Spectra with SQL Backends\nUse `MsBackendOfflineSql` for most applications as it is compatible with `saveRDS()` and parallel processing.\n\n```r\n# Connect to existing database\nsps <- Spectra(dbname = dbfile, source = MsBackendOfflineSql(), drv = SQLite())\n\n# For MySQL/MariaDB\n# sps <- Spectra(dbname = \"ms_db\", host = \"localhost\", user = \"admin\", \n#                source = MsBackendOfflineSql(), drv = RMariaDB::MariaDB())\n```\n\n### 3. Data Manipulation and Caching\nData in the SQL database is read-only. Modifications are cached in memory within the R object.\n\n```r\n# Access data (retrieved on-the-fly)\nmz(sps)\nintensity(sps)\n\n# Modify variables (cached in memory, does not change DB)\nsps$rtime <- sps$rtime + 10\n\n# Explicitly cache a variable to improve performance\nsps$msLevel <- msLevel(sps)\n\n# Revert all local changes\nsps <- reset(sps)\n```\n\n### 4. Changing Backends\nMove data between memory and SQL storage seamlessly.\n\n```r\n# Move from SQL to Memory (Download data)\nsps_mem <- setBackend(sps, MsBackendMemory())\n\n# Move from Memory to SQL (Upload/Persist data)\nsps_sql <- setBackend(sps_mem, MsBackendOfflineSql(), \n                      drv = SQLite(), dbname = \"new_storage.db\")\n```\n\n## Performance Tips\n\n*   **Memory Management:** Use `peaksapply()` with `chunkSize` for operations that load peak data (like `lengths()`) to avoid out-of-memory errors on massive datasets.\n*   **Parallel Processing:** `MsBackendSql` (active connection) does NOT support parallel processing. Use `MsBackendOfflineSql` if you need to use `BPPARAM`.\n*   **Subsetting:** Subsetting `Spectra` objects with SQL backends is extremely fast because it only manipulates indices, not the underlying data.\n*   **Database Choice:** SQLite is excellent for local, portable storage. MariaDB/MySQL is preferred for centralized, multi-user environments. DuckDB is recommended specifically for \"long\" format storage.\n\n## Reference documentation\n\n- [Storing Mass Spectrometry Data in SQL Databases](./references/MsBackendSql.Rmd)\n- [Storing Mass Spectrometry Data in SQL Databases (Markdown)](./references/MsBackendSql.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-msbackendsql",
+    "description": "The MsBackendSql package provides a high-performance infrastructure for managing and analyzing massive mass spectrometry datasets by using SQL databases as on-the-fly storage backends for the Spectra framework. Use when user asks to create a SQL-based mass spectrometry database, import raw MS files into SQL storage, or analyze large-scale proteomics data without loading it entirely into memory.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MsBackendSql.html"
+  }
+}

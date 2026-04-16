@@ -1,0 +1,49 @@
+{
+  "id": "slow5curl",
+  "category": "CLI",
+  "name": "slow5curl",
+  "description": "slow5curl enables efficient, range-based retrieval of specific nanopore signal data from remote SLOW5 or BLOW5 files via HTTP/HTTPS. Use when user asks to fetch specific read IDs from a remote URL, inspect metadata headers, list all read IDs in a remote file, or extract raw signal data for downstream analysis.",
+  "overview": "slow5curl is a specialized utility designed for the SLOW5 data ecosystem, enabling efficient access to nanopore signal data hosted on remote servers (via HTTP/HTTPS). It solves the problem of needing to download massive binary BLOW5 files just to access a subset of reads. By utilizing SLOW5 indexes (.idx), it performs range-based fetches to pull only the specific raw signal data requested. This skill provides the necessary command patterns for data extraction, format conversion, and integration ",
+  "homepage": "https://github.com/BonsonW/slow5curl",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/slow5curl/overview",
+  "github": "https://github.com/BonsonW/slow5curl",
+  "conda_downloads": "1.3K",
+  "conda_downloads_num": 1300,
+  "last_updated": "2026-01-30",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "slow5curl_get",
+      "slow5curl_head",
+      "slow5curl_reads"
+    ],
+    "description": "Display the read entry for each specified READ_ID from a blow5 file. If READ_ID is not specified, a newline separated list of read ids will be read from the standard input.",
+    "docker_image": "quay.io/biocontainers/slow5curl:0.3.0--h86e5fe9_0",
+    "homepage": "https://github.com/BonsonW/slow5curl",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/slow5curl/overview",
+    "github": "https://github.com/BonsonW/slow5curl",
+    "conda_downloads": "1.3K",
+    "last_updated": "2026-01-30",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "slow5curl_get.cwl",
+    "slow5curl_head.cwl",
+    "slow5curl_reads.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# slow5curl\n\n## Overview\nslow5curl is a specialized utility designed for the SLOW5 data ecosystem, enabling efficient access to nanopore signal data hosted on remote servers (via HTTP/HTTPS). It solves the problem of needing to download massive binary BLOW5 files just to access a subset of reads. By utilizing SLOW5 indexes (.idx), it performs range-based fetches to pull only the specific raw signal data requested. This skill provides the necessary command patterns for data extraction, format conversion, and integration into bioinformatics pipelines.\n\n## Core Commands\n\n### 1. Fetching Specific Reads (`get`)\nThe primary use case is retrieving specific records from a remote URL.\n- **Single/Multiple IDs**: `slow5curl get https://url/file.blow5 read_id1 read_id2`\n- **Batch from List**: `slow5curl get https://url/file.blow5 --list read_ids.txt -o output.blow5`\n- **Format Conversion**: Use `--to slow5` to output in ASCII format for human inspection or `--to blow5` (default) for compressed binary.\n\n### 2. Inspecting Metadata (`head`)\nView the SLOW5 header to check run information, sample IDs, and attribute metadata.\n- `slow5curl head https://url/file.blow5`\n\n### 3. Listing All Read IDs (`reads`)\nRetrieve a complete list of every read ID present in the remote file.\n- `slow5curl reads https://url/file.blow5`\n\n## Expert Tips and Best Practices\n\n### Index Management\nslow5curl requires an index file. By default, it looks for `https://url/file.blow5.idx`.\n- **Avoid Repeated Downloads**: Use `--cache my_index.idx` to save the index locally on the first run.\n- **Use Local Index**: If you already have the index, use `--index my_index.idx` to skip the remote check entirely.\n\n### Performance Tuning\n- **Thread Count**: The default is 128 threads. For high-latency connections or large batches, you can increase this (e.g., `-t 256`), but be mindful of server-side rate limits.\n- **Batch Size**: Use `-K [size]` to adjust the number of records kept in memory. Larger batches improve multi-threaded throughput at the cost of RAM.\n\n### Signal Extraction One-Liners\nTo quickly \"eyeball\" raw signal data without permanent files:\n- **Extract Raw Signal Column**:\n  `slow5curl get --to slow5 https://url/file.blow5 \"read_id\" | grep -v '^[#@]' | awk '{print $8}'`\n- **Extract Specific Signal Samples (e.g., 100-200)**:\n  `slow5curl get --to slow5 https://url/file.blow5 \"read_id\" | grep -v '^[#@]' | awk '{print $8}' | cut -d, -f 100-200`\n\n### Compression Options\nWhen saving to BLOW5, you can specify compression to save space:\n- **Standard**: `-c zlib` (most compatible).\n- **High Performance**: `-c zstd` (requires zstd-enabled build).\n- **Signal Compression**: `-s svb-zd` (StreamVByte zig-zag delta) is the default and highly recommended for raw signal data.\n\n## Common Workflows\n\n### Genomic Region Extraction\nTo get reads mapping to a specific genomic coordinate:\n1. Get Read IDs from a BAM/PAF file for that region.\n2. Pass the list to `slow5curl get`.\n3. Pipe to a basecaller like `buttery-eel`.\n\n```bash\n# Example: Extracting reads for a specific region\nsamtools view https://url/reads.bam chr1:1000-2000 | cut -f1 | sort -u > rids.txt\nslow5curl get https://url/reads.blow5 --list rids.txt -o region_reads.blow5\n```\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| slow5curl head | Prints the header for a remote BLOW5 file. |\n| slow5curl_get | Display the read entry for each specified READ_ID from a blow5 file. If READ_ID is not specified, a newline separated list of read ids will be read from the standard input. |\n| slow5curl_reads | Prints the reads in a remote BLOW5 file. |\n\n## Reference documentation\n- [Commands and Options](./references/bonsonw_github_io_slow5curl_commands.html.md)\n- [Bash One-liners](./references/bonsonw_github_io_slow5curl_oneliners.html.md)\n- [Example Workflows](./references/bonsonw_github_io_slow5curl_workflows.html.md)\n- [C API Reference](./references/bonsonw_github_io_slow5curl_slow5curl_api_slow5curl.html.md)",
+  "skill_front_matter": {
+    "name": "slow5curl",
+    "description": "slow5curl enables efficient, range-based retrieval of specific nanopore signal data from remote SLOW5 or BLOW5 files via HTTP/HTTPS. Use when user asks to fetch specific read IDs from a remote URL, inspect metadata headers, list all read IDs in a remote file, or extract raw signal data for downstream analysis.",
+    "homepage": "https://github.com/BonsonW/slow5curl"
+  }
+}

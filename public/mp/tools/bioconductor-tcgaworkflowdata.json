@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tcgaworkflowdata",
+  "category": "bioconductor",
+  "name": "bioconductor-tcgaworkflowdata",
+  "description": "This package provides subsets of The Cancer Genome Atlas (TCGA) data to support bioinformatic workflows and pipeline testing. Use when user asks to load example TCGA datasets, perform differential expression or methylation analysis, identify master regulators using ELMER, or visualize genomic alterations with maftools.",
+  "overview": "The `TCGAWorkflowData` package is an experiment data package that provides subsets of The Cancer Genome Atlas (TCGA) data. It is designed to support the \"TCGA Workflow\" which demonstrates how to download, process, and integrate data from the Genomic Data Commons (GDC), ENCODE, and Roadmap Epigenomics projects. This skill guides the use of these data subsets for testing and executing complex bioinformatic pipelines including differential expression, differential methylation, and master regulator ",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/TCGAWorkflowData.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/BioinformaticsFMRP/TCGAWorkflow",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TCGAWorkflowData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/TCGAWorkflowData.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/BioinformaticsFMRP/TCGAWorkflow",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tcgaworkflowdata\n\n## Overview\n\nThe `TCGAWorkflowData` package is an experiment data package that provides subsets of The Cancer Genome Atlas (TCGA) data. It is designed to support the \"TCGA Workflow\" which demonstrates how to download, process, and integrate data from the Genomic Data Commons (GDC), ENCODE, and Roadmap Epigenomics projects. This skill guides the use of these data subsets for testing and executing complex bioinformatic pipelines including differential expression, differential methylation, and master regulator analysis.\n\n## Core Workflows\n\n### 1. Loading Example Data\nThe package contains pre-processed objects for various cancer types (primarily LGG and GBM). Use `data()` to load specific datasets into your R session.\n\n```r\nlibrary(TCGAWorkflowData)\n\n# Load gene expression data (SummarizedExperiment)\ndata(\"TCGA_GBM_Transcriptome_20_samples\")\ndata(\"TCGA_LGG_Transcriptome_20_samples\")\n\n# Load DNA methylation and expression data for ELMER analysis\ndata(elmerExample)\n\n# Load mutation data (MAF format)\ndata(maf_lgg_gbm)\n\n# Load GISTIC (Copy Number) results\ndata(gbm_gistic)\n```\n\n### 2. Transcriptomic Analysis\nUse the loaded `SummarizedExperiment` objects to perform normalization and Differential Expression Analysis (DEA).\n\n```r\nlibrary(TCGAbiolinks)\n\n# Pre-processing and Normalization\nexp_lgg_preprocessed <- TCGAanalyze_Preprocessing(object = exp_lgg, cor.cut = 0.6)\nexp_normalized <- TCGAanalyze_Normalization(\n  tabDF = exp_lgg_preprocessed,\n  geneInfo = TCGAbiolinks::geneInfoHT,\n  method = \"gcContent\"\n)\n\n# Filtering and DEA\nexp_filtered <- TCGAanalyze_Filtering(tabDF = exp_normalized, method = \"quantile\", qnt.cut = 0.25)\ndiff_expressed_genes <- TCGAanalyze_DEA(\n  mat1 = exp_filtered[, 1:10], \n  mat2 = exp_filtered[, 11:20],\n  Cond1type = \"Group1\", Cond2type = \"Group2\",\n  fdr.cut = 0.01, logFC.cut = 1\n)\n```\n\n### 3. Epigenetic Analysis (DMR)\nIdentify Differentially Methylated CpG sites (DMC) using the methylation data provided in the package.\n\n```r\n# met is a SummarizedExperiment object from elmerExample\ndmc <- TCGAanalyze_DMC(\n  data = met,\n  groupCol = \"project_id\",\n  group1 = \"TCGA-GBM\",\n  group2 = \"TCGA-LGG\",\n  p.cut = 0.05,\n  diffmean.cut = 0.15\n)\n```\n\n### 4. Master Regulator Analysis (ELMER)\n`TCGAWorkflowData` provides the `mae` (MultiAssayExperiment) object required for ELMER to identify enhancers and their target genes.\n\n```r\nlibrary(ELMER)\n# mae is loaded from elmerExample\n# Identify distal probes\ndistal.probes <- get.feature.probe(genome = \"hg19\", met.platform = \"450K\")\n\n# Identify Differentially Methylated CpGs (DMCs)\nSig.probes <- get.diff.meth(\n  data = mae, \n  group.col = \"project_id\",\n  group1 = \"TCGA-GBM\", group2 = \"TCGA-LGG\",\n  diff.dir = \"hypo\"\n)\n```\n\n### 5. Genomic Alterations (maftools)\nVisualize mutations using the provided MAF data.\n\n```r\nlibrary(maftools)\ndata(maf_lgg_gbm)\n# Create maftools object\nmaf_obj <- read.maf(maf = maf)\n# Plot summary\nplotmafSummary(maf = maf_obj)\n# Generate Oncoplot\noncoplot(maf = maf_obj, top = 20)\n```\n\n## Tips for Success\n- **Data Subsets**: Remember that `TCGAWorkflowData` contains *subsets* (e.g., only chromosome 9 or a few samples) to ensure speed. For real-world discovery, use `TCGAbiolinks` to download full cohorts.\n- **Genome Builds**: Most example data in this package refers to `hg19`. Ensure your `ELMER` or `ChIPseeker` parameters match this genome build.\n- **Object Access**: Use `assay(se)` for data matrices, `colData(se)` for clinical metadata, and `rowRanges(se)` for genomic coordinates.\n\n## Reference documentation\n- [TCGA Workflow: Analyze cancer genomics and epigenomics data using Bioconductor packages](./references/TCGAWorkflow.Rmd)\n- [Example data for TCGA Workflow](./references/TCGAWorkflowData.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tcgaworkflowdata",
+    "description": "This package provides subsets of The Cancer Genome Atlas (TCGA) data to support bioinformatic workflows and pipeline testing. Use when user asks to load example TCGA datasets, perform differential expression or methylation analysis, identify master regulators using ELMER, or visualize genomic alterations with maftools.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/TCGAWorkflowData.html"
+  }
+}

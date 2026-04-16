@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spotlight",
+  "category": "bioconductor",
+  "name": "bioconductor-spotlight",
+  "description": "SPOTlight deconvolutes cell-type proportions in spatial transcriptomics data by leveraging single-cell RNA-seq references through seeded Non-Negative Matrix Factorization. Use when user asks to deconvolute spatial transcriptomics spots, estimate cell-type composition using scRNA-seq references, or integrate spatial and single-cell datasets to analyze cell-type co-localization.",
+  "overview": "`SPOTlight` is a computational tool designed to deconvolute spatial transcriptomics (ST) capture locations (spots) that typically contain multiple cells. It leverages a single-cell RNA-seq (scRNA-seq) reference to learn cell-type-specific \"topic profiles\" via a seeded NMF regression. These profiles are then used to estimate the composition of cell types within each spatial spot.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SPOTlight.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/MarcElosua/SPOTlight",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SPOTlight"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPOTlight.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/MarcElosua/SPOTlight",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spotlight\n\nname: bioconductor-spotlight\ndescription: Deconvolution of cell types in spatial transcriptomics (ST) data using single-cell RNA-seq (scRNA-seq) references. Use this skill to integrate scRNA-seq and ST datasets (like 10X Visium) to estimate cell-type proportions within spatial spots using seeded Non-Negative Matrix Factorization (NMF) and Non-negative Least Squares (NNLS).\n\n# bioconductor-spotlight\n\n## Overview\n\n`SPOTlight` is a computational tool designed to deconvolute spatial transcriptomics (ST) capture locations (spots) that typically contain multiple cells. It leverages a single-cell RNA-seq (scRNA-seq) reference to learn cell-type-specific \"topic profiles\" via a seeded NMF regression. These profiles are then used to estimate the composition of cell types within each spatial spot.\n\nThe workflow generally involves:\n1.  **Preprocessing**: Feature selection (HVGs) and identifying marker genes for the scRNA-seq reference.\n2.  **Deconvolution**: Running the `SPOTlight` function to decompose ST spots.\n3.  **Visualization**: Analyzing topic profiles, spatial correlation, and co-localization of cell types.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package accepts `SingleCellExperiment` (SCE) for the reference and `SpatialExperiment` (SPE) for the spatial data.\n\n```r\nlibrary(SPOTlight)\nlibrary(scran)\nlibrary(scater)\n\n# 1. Feature Selection (Reference)\n# Identify marker genes for each cell type\nmgs <- scoreMarkers(sce)\nmgs_fil <- lapply(names(mgs), function(i) {\n    x <- mgs[[i]]\n    x <- x[x$mean.AUC > 0.8, ] # Filter for high-quality markers\n    x$gene <- rownames(x)\n    x$cluster <- i\n    data.frame(x)\n})\nmgs_df <- do.call(rbind, mgs_fil)\n\n# Identify Highly Variable Genes (HVGs)\ndec <- modelGeneVar(sce)\nhvg <- getTopHVGs(dec, n = 3000)\n```\n\n### 2. Deconvolution\nThe main function `SPOTlight` performs both the training of the NMF model and the deconvolution of the spatial spots.\n\n```r\nres <- SPOTlight(\n    x = sce,                # SingleCellExperiment reference\n    y = spe,                # SpatialExperiment target\n    groups = sce$type,      # Cell type annotations\n    mgs = mgs_df,           # Marker gene dataframe\n    hvg = hvg,              # Highly variable genes\n    weight_id = \"mean.AUC\", # Column in mgs_df for weighting\n    group_id = \"cluster\",   # Column in mgs_df for cell types\n    gene_id = \"gene\"        # Column in mgs_df for gene names\n)\n\n# Extract the deconvolution matrix (proportions)\ndecon_matrix <- res$mat\n```\n\n### 3. Advanced: Two-Step Execution\nFor large datasets or when reusing a reference, you can split the process:\n\n```r\n# Step 1: Train the model\nmod_ls <- trainNMF(x = sce, groups = sce$type, mgs = mgs_df, hvg = hvg, ...)\n\n# Step 2: Run deconvolution on spatial data\nres <- runDeconvolution(x = spe, mod = mod_ls[[\"mod\"]], ref = mod_ls[[\"topic\"]])\n```\n\n## Visualization and Interpretation\n\n### Topic Profiles\nVerify that the model learned distinct signatures for each cell type.\n```r\nplotTopicProfiles(x = res$NMF, y = sce$type, facet = FALSE)\n```\n\n### Spatial Scatterpie\nVisualize cell type proportions directly on the spatial coordinates.\n```r\nplotSpatialScatterpie(\n    x = spe,\n    y = decon_matrix,\n    cell_types = colnames(decon_matrix),\n    pie_scale = 0.4\n)\n```\n\n### Co-localization\nIdentify which cell types frequently appear together in the same spots.\n```r\n# Network representation\nplotInteractions(decon_matrix, which = \"network\")\n\n# Heatmap representation\nplotInteractions(decon_matrix, which = \"heatmap\", metric = \"prop\")\n```\n\n## Tips for Success\n- **Downsampling**: For the reference SCE, using ~100 cells per cell type is usually sufficient and significantly reduces computation time without sacrificing accuracy.\n- **Gene Filtering**: Exclude ribosomal and mitochondrial genes from the marker selection to avoid noise from metabolic activity.\n- **Residuals**: Check `res[[2]]` (Sum of Squares) to identify spots where the model fit is poor, which may indicate the presence of cell types not included in your reference.\n\n## Reference documentation\n- [Spatial Transcriptomics Deconvolution with SPOTlight](./references/SPOTlight_kidney.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spotlight",
+    "description": "SPOTlight deconvolutes cell-type proportions in spatial transcriptomics data by leveraging single-cell RNA-seq references through seeded Non-Negative Matrix Factorization. Use when user asks to deconvolute spatial transcriptomics spots, estimate cell-type composition using scRNA-seq references, or integrate spatial and single-cell datasets to analyze cell-type co-localization.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPOTlight.html"
+  }
+}

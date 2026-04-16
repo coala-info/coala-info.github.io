@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-batchqc",
+  "category": "bioconductor",
+  "name": "bioconductor-batchqc",
+  "description": "BatchQC identifies, evaluates, and corrects batch effects in high-throughput genomic data using diagnostic tests and established correction methods. Use when user asks to identify batch effects, evaluate data confounding, perform kBET analysis, or correct batch effects using ComBat or ComBat-Seq.",
+  "overview": "BatchQC is a Bioconductor package designed to identify, evaluate, and correct batch effects in high-throughput genomic data. It provides both an interactive Shiny application and a suite of R functions for programmatic analysis. The package streamlines the workflow of data normalization, batch diagnostic testing (kBET, AIC, Pearson correlation), and correction using established methods like ComBat and ComBat-Seq.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/BatchQC.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-batchqc/overview",
+  "github": "https://github.com/wejlab/BatchQC",
+  "conda_downloads": "34.0K",
+  "conda_downloads_num": 34000,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "BatchQC"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BatchQC.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-batchqc/overview",
+    "github": "https://github.com/wejlab/BatchQC",
+    "conda_downloads": "34.0K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-batchqc\n\n## Overview\nBatchQC is a Bioconductor package designed to identify, evaluate, and correct batch effects in high-throughput genomic data. It provides both an interactive Shiny application and a suite of R functions for programmatic analysis. The package streamlines the workflow of data normalization, batch diagnostic testing (kBET, AIC, Pearson correlation), and correction using established methods like ComBat and ComBat-Seq.\n\n## Core Workflow\n\n### 1. Data Preparation\nBatchQC primarily operates on `SummarizedExperiment` (SE) objects. You can create one from a feature matrix and metadata.\n\n```R\nlibrary(BatchQC)\n# Example using provided protein data\ndata(protein_data)\ndata(protein_sample_info)\nse_object <- BatchQC::summarized_experiment(protein_data, protein_sample_info)\n\n# Ensure batch and condition variables are factors\nse_object$batch <- as.factor(se_object$batch)\nse_object$condition <- as.factor(se_object$condition)\n```\n\n### 2. Diagnostic Analysis\nBefore correction, evaluate the extent of batch effects.\n\n*   **Confounding Metrics:** Check correlation between batch and condition.\n    ```R\n    confound_table <- BatchQC::confound_metrics(se = se_object, batch = \"batch\")\n    ```\n*   **kBET:** Quantify batch effects using a chi-square test on local neighborhoods.\n    ```R\n    kbet_results <- BatchQC::run_kBET(se = se_object, assay_to_normalize = \"counts\", batch = \"batch\")\n    BatchQC::plot_kBET(kbet_results)\n    ```\n*   **Distribution Check:** Use AIC to determine if data fits Negative Binomial, Lognormal, or Voom distributions.\n    ```R\n    aic_results <- compute_aic(se = se_object, assay_of_interest = \"counts\", batchind = \"batch\", groupind = \"condition\")\n    ```\n\n### 3. Normalization and Batch Correction\nApply normalization followed by the appropriate correction method based on your data distribution.\n\n*   **Normalization:**\n    ```R\n    se_object <- BatchQC::normalize_SE(se = se_object, method = \"CPM\", assay_to_normalize = \"counts\", output_assay_name = \"CPM_norm\")\n    ```\n*   **Correction:**\n    *   **ComBat-Seq:** Use for raw, untransformed count data (Negative Binomial).\n    *   **ComBat:** Use for normalized, log-transformed data (Lognormal).\n    *   **limma:** Use for log-transformed data.\n\n    ```R\n    # Example: ComBat correction\n    se_object <- BatchQC::batch_correct(se = se_object, method = \"ComBat\", \n                                        assay_to_normalize = \"CPM_norm\", \n                                        batch = \"batch\", covar = \"condition\", \n                                        output_assay_name = \"ComBat_corrected\")\n    ```\n\n### 4. Visualization\nCompare raw and corrected data to verify batch removal.\n\n*   **PCA Plot:**\n    ```R\n    pca_plot <- BatchQC::PCA_plotter(se = se_object, assays = c(\"counts\", \"ComBat_corrected\"), \n                                     color = \"batch\", shape = \"condition\")\n    pca_plot$plot\n    ```\n*   **Explained Variation:**\n    ```R\n    ex_var <- batchqc_explained_variation(se = se_object, batch = \"batch\", \n                                          condition = \"condition\", assay_name = \"ComBat_corrected\")\n    BatchQC::EV_plotter(batchqc_ev = ex_var[[1]])\n    ```\n*   **Heatmaps:**\n    ```R\n    heatmaps <- BatchQC::heatmap_plotter(se = se_object, assay = \"ComBat_corrected\", \n                                         annotation_column = c(\"batch\", \"condition\"))\n    heatmaps$correlation_heatmap\n    ```\n\n### 5. Differential Expression\nPerform DE analysis while accounting for batch.\n```R\nde_results <- BatchQC::DE_analyze(se = se_object, method = \"limma\", \n                                  batch = \"batch\", conditions = c(\"condition\"), \n                                  assay_to_analyze = \"ComBat_corrected\")\n```\n\n## Tips for Success\n*   **Interactive Mode:** Use `BatchQC()` to launch the Shiny app for exploratory analysis, then use the R functions for reproducible scripts.\n*   **Assay Management:** BatchQC functions often return the SE object with a new assay added. Always keep track of the `output_assay_name`.\n*   **Factor Check:** Ensure your batch and covariate columns in the SE metadata are explicitly set as `factors` to avoid errors in modeling.\n\n## Reference documentation\n- [Introduction to BatchQC](./references/BatchQC_Intro.md)\n- [BatchQC Examples](./references/BatchQC_examples.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-batchqc",
+    "description": "BatchQC identifies, evaluates, and corrects batch effects in high-throughput genomic data using diagnostic tests and established correction methods. Use when user asks to identify batch effects, evaluate data confounding, perform kBET analysis, or correct batch effects using ComBat or ComBat-Seq.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/BatchQC.html"
+  }
+}

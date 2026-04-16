@@ -1,0 +1,41 @@
+{
+  "id": "r-bayesprism",
+  "category": "R",
+  "name": "r-bayesprism",
+  "description": "BayesPrism performs Bayesian deconvolution of bulk RNA-seq data using single-cell references to estimate cell type proportions and gene expression profiles. Use when user asks to deconvolve bulk RNA-seq samples, estimate cell type fractions, or infer cell type-specific gene expression in tumor microenvironments.",
+  "overview": "BayesPrism is a fully Bayesian inference framework designed to deconvolve bulk RNA-seq samples. It jointly estimates the posterior distribution of cell type composition (fractions) and cell type-specific gene expression. It includes a deconvolution module for cell type fractions and an embedding learning module to model malignant gene programs using Expectation-Maximization (EM).",
+  "homepage": "",
+  "validation": "",
+  "conda_home": "",
+  "github": "",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [],
+    "description": "",
+    "docker_image": "",
+    "homepage": "",
+    "validation": "",
+    "conda_home": "",
+    "github": "",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# r-bayesprism\n\nname: r-bayesprism\ndescription: Bayesian cell Proportion Reconstruction Inferred using Statistical Marginalization (BayesPrism). Use this skill to perform deconvolution of bulk RNA-seq data using scRNA-seq references to estimate cell type fractions and cell type-specific gene expression, particularly in tumor microenvironments.\n\n# r-bayesprism\n\n## Overview\nBayesPrism is a fully Bayesian inference framework designed to deconvolve bulk RNA-seq samples. It jointly estimates the posterior distribution of cell type composition (fractions) and cell type-specific gene expression. It includes a deconvolution module for cell type fractions and an embedding learning module to model malignant gene programs using Expectation-Maximization (EM).\n\n## Installation\n```R\n# Install dependencies\ninstall.packages(c(\"snowfall\", \"NMF\", \"gplots\", \"devtools\"))\nif (!require(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\")\nBiocManager::install(c(\"scran\", \"BiocParallel\"))\n\n# Install BayesPrism from GitHub\nlibrary(devtools)\ninstall_github(\"Danko-Lab/BayesPrism/BayesPrism\")\n```\n\n## Core Workflow\n\n### 1. Data Preparation and QC\nUse `cleanup.genes` to remove problematic genes (ribosomal, mitochondrial, sex-chromosome linked) and lowly expressed genes that may introduce batch effects.\n\n```R\nlibrary(BayesPrism)\n\n# Clean up reference and mixture\nsc.dat.filtered <- cleanup.genes(input=sc.dat,\n                                 input.type=\"count.matrix\",\n                                 species=\"hs\", \n                                 gene.group=c(\"Rb\",\"Mt\",\"X\",\"Y\"),\n                                 exp.cells=5)\n```\n\n### 2. Constructing the Prism Object\nThe `new.prism` function aligns the reference and bulk data, collapses cell states into cell types, and performs normalization.\n\n```R\nmyPrism <- new.prism(reference=sc.dat.filtered, \n                     mixture=bulk.dat, \n                     input.type=\"count.matrix\", \n                     cell.type.labels=cell.type.labels, \n                     cell.state.labels=cell.state.labels,\n                     key=\"tumor\") # 'key' specifies the malignant cell type\n```\n\n### 3. Running Deconvolution\nThe `run.prism` function executes the Bayesian inference.\n\n```R\nbp.res <- run.prism(prism=myPrism, n.cores=10)\n```\n\n### 4. Extracting Results\n*   **Cell Type Fractions:** Use `get.fraction` to retrieve the updated posterior estimates ($\\theta_f$).\n*   **Cell Type Specific Expression:** Use `get.res` to extract the deconvolved expression profiles.\n\n```R\n# Get cell type fractions\ntheta <- get.fraction(bp.res, which.theta=\"final\", state.or.type=\"type\")\n\n# Get coefficient of variation (uncertainty)\ncv <- bp.res@posterior.theta_f@cv\n```\n\n## Best Practices and Tips\n*   **Malignant Cells:** If malignant cells are unmatched between reference and bulk, ensure they are correctly labeled and use the `key` argument in `new.prism`.\n*   **Missing Cell Types:** BayesPrism assumes a complete reference. If a cell type is missing, its fraction will be redistributed to transcriptionally similar types.\n*   **Initial vs. Final Theta:** Use the updated $\\theta_f$ (final) for most applications. Use $\\theta_0$ (initial) only if tumor fraction is very low (<50%) or if there are no batch effects (e.g., flow-sorted references).\n*   **Marker Genes:** While not required, subsetting on signature genes using `select.marker` can improve accuracy when batch effects are severe or cell types are highly similar.\n\n## Reference documentation\n- [README.md](./references/README.md)\n- [articles.md](./references/articles.md)\n- [home_page.md](./references/home_page.md)\n- [tutorial_deconvolution.html.md](./references/tutorial_deconvolution.html.md)\n- [tutorial_embedding_learning.html.md](./references/tutorial_embedding_learning.html.md)",
+  "skill_front_matter": {
+    "name": "r-bayesprism",
+    "description": "BayesPrism performs Bayesian deconvolution of bulk RNA-seq data using single-cell references to estimate cell type proportions and gene expression profiles. Use when user asks to deconvolve bulk RNA-seq samples, estimate cell type fractions, or infer cell type-specific gene expression in tumor microenvironments.",
+    "homepage": "https://cran.r-project.org/web/packages/bayesprism/index.html"
+  }
+}

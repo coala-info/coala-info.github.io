@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tapseq",
+  "category": "bioconductor",
+  "name": "bioconductor-tapseq",
+  "description": "bioconductor-tapseq provides a workflow for designing nested primers and selecting target genes for targeted single-cell RNA sequencing. Use when user asks to design nested primers for gene panels, infer transcript polyadenylation sites from BAM files, or identify cell-type marker genes for targeted scRNA-seq experiments.",
+  "overview": "The `TAPseq` package provides a complete workflow for designing primers for targeted single-cell RNA sequencing. It allows users to identify optimal target genes, infer transcript 3' ends from pilot data, and design nested primer sets (outer and inner) that are compatible with multiplex PCR and minimize off-target binding.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TAPseq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/argschwind/TAPseq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TAPseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TAPseq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/argschwind/TAPseq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tapseq\n\nname: bioconductor-tapseq\ndescription: Targeted Single-Cell RNA Sequencing (TAP-seq) primer design and target gene selection. Use this skill to design nested primers for gene panels, infer polyadenylation (polyA) sites from BAM files, and identify cell-type marker genes for targeted scRNA-seq experiments.\n\n# bioconductor-tapseq\n\n## Overview\n\nThe `TAPseq` package provides a complete workflow for designing primers for targeted single-cell RNA sequencing. It allows users to identify optimal target genes, infer transcript 3' ends from pilot data, and design nested primer sets (outer and inner) that are compatible with multiplex PCR and minimize off-target binding.\n\n## Core Workflows\n\n### 1. Target Gene Selection\nIdentify marker genes from existing scRNA-seq data (e.g., Seurat objects) to create a targeted panel.\n\n```R\nlibrary(TAPseq)\nlibrary(Seurat)\n\n# Select ~100 target genes using Lasso regularization\ntarget_genes <- selectTargetGenes(seurat_obj, targets = 100)\n\n# Visualize how well target genes distinguish cell types\nplotTargetGenes(seurat_obj, target_genes = target_genes)\n```\n\n### 2. Transcript Sequence Preparation\nBefore designing primers, infer the actual 3' ends of transcripts using pilot data (BAM files) to ensure primers target the correct regions.\n\n```R\n# 1. Infer polyA sites from BAM data\npolyA_sites <- inferPolyASites(target_genes_granges, bam = \"pilot_data.bam\")\n\n# 2. Truncate transcript models at inferred polyA sites\ntruncated_txs <- truncateTxsPolyA(target_genes_granges, polyA_sites = polyA_sites)\n\n# 3. Extract sequences using a BSgenome object\nlibrary(BSgenome.Hsapiens.UCSC.hg38)\ntxs_seqs <- getTxsSeq(truncated_txs, genome = Hsapiens)\n```\n\n### 3. Nested Primer Design\nDesign outer and inner primers. This process requires local installations of **Primer3** and **BLASTn**.\n\n```R\n# Create input objects for Primer3 (outer primers: 350-500 bp product)\nouter_io <- TAPseqInput(txs_seqs, target_annot = truncated_txs, \n                        product_size_range = c(350, 500))\n\n# Design primers\nouter_io <- designPrimers(outer_io)\n\n# Estimate off-targets using a BLAST database\nouter_io <- blastPrimers(outer_io, blastdb = \"path/to/blastdb\")\n\n# Pick the best primer per gene based on lowest off-targets\nbest_outer <- pickPrimers(outer_io, n = 1, by = \"off_targets\")\n\n# Repeat for inner primers with a smaller product size (150-300 bp)\ninner_io <- TAPseqInput(txs_seqs, target_annot = truncated_txs, \n                        product_size_range = c(150, 300))\n# ... follow design, blast, and pick steps ...\n```\n\n### 4. Multiplexing and Export\nCheck if primers in a panel are compatible for multiplexing and export the results.\n\n```R\n# Check for primer-dimer potential\nouter_comp <- checkPrimers(best_outer)\n\n# Export to data.frame\nouter_df <- primerDataFrame(best_outer)\n\n# Create BED tracks for genome browser visualization\ncreatePrimerTrack(best_outer, color = \"steelblue3\")\n```\n\n## Key Tips\n- **Software Paths**: If `primer3` or `blastn` are not in your system PATH, specify them in functions: `designPrimers(io, primer3 = \"/path/to/primer3_core\")`.\n- **PolyA Inference**: Always manually inspect inferred polyA sites in a genome browser (IGV) by exporting to BED format before proceeding to primer design.\n- **BLAST Database**: For best results, create a BLAST database containing both the genome and the transcriptome using `createBLASTDb()`.\n\n## Reference documentation\n\n- [TAP-seq primer design workflow](./references/tapseq_primer_design.md)\n- [Select target genes for TAP-seq](./references/tapseq_target_genes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tapseq",
+    "description": "bioconductor-tapseq provides a workflow for designing nested primers and selecting target genes for targeted single-cell RNA sequencing. Use when user asks to design nested primers for gene panels, infer transcript polyadenylation sites from BAM files, or identify cell-type marker genes for targeted scRNA-seq experiments.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TAPseq.html"
+  }
+}

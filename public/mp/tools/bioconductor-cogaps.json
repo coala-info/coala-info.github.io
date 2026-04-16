@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cogaps",
+  "category": "bioconductor",
+  "name": "bioconductor-cogaps",
+  "description": "CoGAPS is a Bayesian Nonnegative Matrix Factorization algorithm that decomposes gene expression data into amplitude and pattern matrices to identify latent biological processes. Use when user asks to perform matrix factorization on gene expression data, identify marker genes for specific patterns, or discover latent biological features like cell types and pathways.",
+  "overview": "CoGAPS (Coordinated Gene Association in Pattern Sets) is a Bayesian Nonnegative Matrix Factorization (NMF) algorithm designed for gene expression analysis. It decomposes a data matrix into two related matrices: the Amplitude (A) matrix (gene weights/loadings) and the Pattern (P) matrix (sample weights/factors). This additive decomposition allows for the discovery of biologically intuitive latent spaces representing processes like cell types, pathways, or experimental perturbations.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CoGAPS.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CoGAPS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CoGAPS.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cogaps\n\n## Overview\nCoGAPS (Coordinated Gene Association in Pattern Sets) is a Bayesian Nonnegative Matrix Factorization (NMF) algorithm designed for gene expression analysis. It decomposes a data matrix into two related matrices: the Amplitude (A) matrix (gene weights/loadings) and the Pattern (P) matrix (sample weights/factors). This additive decomposition allows for the discovery of biologically intuitive latent spaces representing processes like cell types, pathways, or experimental perturbations.\n\n## Core Workflow\n\n### 1. Parameter Configuration\nCoGAPS uses a `CogapsParams` object to manage execution settings.\n\n```r\nlibrary(CoGAPS)\n\n# Initialize parameters\nparams <- new(\"CogapsParams\", nPatterns=5)\n\n# View and modify parameters\nparams\nparams <- setParam(params, \"nIterations\", 50000)\nparams <- setParam(params, \"seed\", 42)\nparams <- setParam(params, \"sparseOptimization\", TRUE) # Recommended for single-cell\n```\n\n### 2. Running CoGAPS\nThe `CoGAPS()` function accepts matrices, DataFrames, `SummarizedExperiment`, or `SingleCellExperiment` objects.\n\n```r\n# Standard run\nresult <- CoGAPS(data_matrix, params)\n\n# Distributed run (for large datasets)\n# Options: \"genome-wide\" (parallelize genes) or \"single-cell\" (parallelize samples)\nparams <- setParam(params, \"distributed\", \"genome-wide\")\nparams <- setDistributedParams(params, nSets=7)\nresult <- CoGAPS(data_matrix, params)\n```\n\n### 3. Accessing Results\nThe output is a `CogapsResult` object.\n\n```r\n# Extract Sample Factors (P matrix)\nsample_weights <- result@sampleFactors\n\n# Extract Feature Loadings (A matrix)\ngene_loadings <- result@featureLoadings\n\n# Standard deviations for uncertainty\nsample_sd <- result@factorStdDev\ngene_sd <- result@loadingStdDev\n```\n\n## Downstream Analysis\n\n### Pattern Markers\nIdentify genes most uniquely associated with specific patterns.\n\n```r\n# threshold=\"all\" (default): each gene assigned to one pattern\n# threshold=\"cut\": genes can belong to multiple patterns based on rank\npm <- patternMarkers(result, threshold=\"all\")\n\n# Access marker genes for Pattern 1\npm$PatternMarkers[[1]]\n```\n\n### Integration with Seurat\nMap pattern weights back to single-cell embeddings.\n\n```r\nlibrary(Seurat)\n# Add patterns as a new assay\npatterns <- t(result@sampleFactors[colnames(seurat_obj),])\nseurat_obj[[\"CoGAPS\"]] <- CreateAssayObject(counts = patterns)\n\n# Visualize Pattern 1 on UMAP\nDefaultAssay(seurat_obj) <- \"CoGAPS\"\nFeaturePlot(seurat_obj, features = \"Pattern_1\")\n```\n\n### Gene Set Enrichment (GSEA)\nTest for overrepresentation of functional sets in pattern markers.\n\n```r\n# gene_sets should be a named list of gene symbols\ngs_results <- getPatternGeneSet(result, \n                                gene.sets = gene_sets, \n                                method = \"overrepresentation\")\n\n# Plot results for Pattern 1\nplotPatternGeneSet(gs_results, whichpattern = 1, padj_threshold = 0.05)\n```\n\n### Statistical Association (MANOVA)\nTest if patterns correlate with metadata variables (e.g., QC metrics or clinical traits).\n\n```r\nmeta_vars <- cbind(seurat_obj$nCount_RNA, seurat_obj$percent.mt)\nmanova_res <- MANOVA(meta_vars, result)\n```\n\n## Tips for Success\n- **Iterations**: For publication-quality results, 50,000 iterations are typically recommended.\n- **Sparsity**: Always set `sparseOptimization = TRUE` when working with single-cell RNA-seq data.\n- **Parallelization**: Use `distributed = \"genome-wide\"` for datasets with many genes and `\"single-cell\"` for datasets with many cells.\n- **Persistence**: CoGAPS is stochastic and computationally expensive; save results immediately using `saveRDS(result, \"file.Rds\")` or `toCSV(result, \"path\")`.\n\n## Reference documentation\n- [CoGAPS](./references/CoGAPS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cogaps",
+    "description": "CoGAPS is a Bayesian Nonnegative Matrix Factorization algorithm that decomposes gene expression data into amplitude and pattern matrices to identify latent biological processes. Use when user asks to perform matrix factorization on gene expression data, identify marker genes for specific patterns, or discover latent biological features like cell types and pathways.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CoGAPS.html"
+  }
+}

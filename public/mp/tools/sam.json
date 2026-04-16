@@ -1,0 +1,43 @@
+{
+  "id": "sam",
+  "category": "library",
+  "name": "sam",
+  "description": "The sam skill provides an interface for the Samtools ecosystem to manipulate high-throughput sequencing alignment files and perform variant calling. Use when user asks to convert FASTQ to CRAM, mark duplicates, call SNPs and indels, or optimize genomic file compression.",
+  "overview": "The `sam` skill provides a specialized interface for the Samtools ecosystem, the industry standard for handling high-throughput sequencing data. This skill enables efficient manipulation of alignment files, robust variant calling, and advanced file compression techniques. It is designed to help you navigate the transition from raw FASTQ data to analysis-ready CRAM or BAM files and subsequent variant discovery using BCFtools.",
+  "homepage": "https://www.htslib.org/",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/sam/overview",
+  "github": "N/A",
+  "conda_downloads": "7.3K",
+  "conda_downloads_num": 7300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "sam"
+    ],
+    "description": "FAIL to generate CWL: sam not found in Docker image. The image may not provide this executable.",
+    "docker_image": "quay.io/biocontainers/sam:3.5--0",
+    "homepage": "https://www.htslib.org/",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/sam/overview",
+    "github": "N/A",
+    "conda_downloads": "7.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# sam\n\n## Overview\nThe `sam` skill provides a specialized interface for the Samtools ecosystem, the industry standard for handling high-throughput sequencing data. This skill enables efficient manipulation of alignment files, robust variant calling, and advanced file compression techniques. It is designed to help you navigate the transition from raw FASTQ data to analysis-ready CRAM or BAM files and subsequent variant discovery using BCFtools.\n\n## Core Workflows\n\n### FASTQ to Aligned CRAM\nTo produce the most efficient storage format (CRAM) from raw reads, use a piped approach to minimize disk I/O:\n\n```bash\n# Map, fix mates, sort, and mark duplicates in one pipeline\nminimap2 -t 8 -a -x sr reference.fa read1.fq read2.fq | \\\nsamtools fixmate -u -m - - | \\\nsamtools sort -u -@2 -T /tmp/temp_prefix - | \\\nsamtools markdup -@8 --reference reference.fa - final.cram\n```\n\n### Duplicate Marking Procedure\nProper duplicate marking requires specific tags added during the `fixmate` step:\n1. **Collate**: `samtools collate -o name_collate.bam input.bam`\n2. **Fixmate**: `samtools fixmate -m name_collate.bam fixmate.bam` (adds `ms` and `MC` tags)\n3. **Sort**: `samtools sort -o position_sort.bam fixmate.bam`\n4. **Markdup**: `samtools markdup position_sort.bam marked.bam`\n\n### Variant Calling (SNP & Indel)\nUse `mpileup` to generate likelihoods followed by `call` to determine genotypes:\n\n```bash\n# Multi-sample calling\nbcftools mpileup -Ou -f reference.fa sample1.bam sample2.bam | \\\nbcftools call -vmO z -o study.vcf.gz\n```\n\n## Expert Tips & Best Practices\n\n### CRAM Optimization\n*   **Reference-Based Compression**: CRAM requires the reference genome to be accessible. Use `REF_PATH` and `REF_CACHE` environment variables to manage local MD5-summed reference caches to avoid repeated remote downloads.\n*   **Embedding References**: For self-contained files (e.g., de-novo assemblies), use `embed_ref`:\n    `samtools view -O CRAM,embed_ref -T ref.fa in.bam -o out.cram`\n*   **Version Selection**: Use CRAM 3.1 for better compression of quality scores and base modifications (MM/ML tags) compared to 3.0.\n\n### Performance Tuning\n*   **Thread Allocation**: Use `-@` to specify additional threads for compression/decompression in `sort`, `view`, and `markdup`.\n*   **Memory Management**: In `samtools sort`, the `-m` flag is **per-thread**. Ensure `threads * memory_per_thread` does not exceed system limits.\n*   **Fast I/O**: Use `-u` or `-O bam,level=0` for uncompressed BAM output when piping between tools to save CPU cycles on intermediate compression.\n\n### VCF Filtering\n*   **Post-call Filtering**: Prefer `bcftools filter` or `view` with expressions over hard pre-call filters to maintain flexibility.\n*   **Common Expressions**:\n    *   Filter by Quality: `-i 'QUAL > 50'`\n    *   Filter by Depth: `-e 'INFO/DP < 10'`\n    *   Filter by Type: `-i 'TYPE=\"snp\"'`\n\n## Reference documentation\n- [Duplicate Marking](./references/www_htslib_org_algorithms_duplicate.html.md)\n- [CRAM Benchmarks and Versions](./references/www_htslib_org_benchmarks_CRAM.html.md)\n- [Reference Sequence Management](./references/www_htslib_org_doc_reference_seqs.html.md)\n- [FASTQ to BAM/CRAM Workflow](./references/www_htslib_org_workflow_fastq.html.md)\n- [VCF Filtering Guide](./references/www_htslib_org_workflow_filter.html.md)\n- [WGS Variant Calling](./references/www_htslib_org_workflow_wgs-call.html.md)",
+  "skill_front_matter": {
+    "name": "sam",
+    "description": "The sam skill provides an interface for the Samtools ecosystem to manipulate high-throughput sequencing alignment files and perform variant calling. Use when user asks to convert FASTQ to CRAM, mark duplicates, call SNPs and indels, or optimize genomic file compression.",
+    "homepage": "https://www.htslib.org/"
+  }
+}

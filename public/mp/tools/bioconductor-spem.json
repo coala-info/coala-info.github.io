@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-spem",
+  "category": "bioconductor",
+  "name": "bioconductor-spem",
+  "description": "This tool reconstructs gene regulatory networks from time-series expression data by estimating parameters for an S-system model. Use when user asks to estimate S-system parameters, calculate slopes from time-series data, or perform network inference using power-law formalism.",
+  "overview": "The `SPEM` package implements the S-system Parameter Estimation Method to reconstruct gene networks from time-series expression data. It uses a power-law formalism (S-systems) to capture non-linear interactions between genes. The model identifies two types of parameters: scale parameters ($\\alpha, \\beta$) and kinetic orders ($G, H$). The $G$ and $H$ matrices represent activation and inhibition interactions, respectively, which are used to build directed, signed regulatory networks.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SPEM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SPEM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPEM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-spem\n\nname: bioconductor-spem\ndescription: S-system Parameter Estimation Method (SPEM) for reconstructing gene regulatory networks from time-series data. Use this skill to estimate parameters (alpha, beta, G, and H) of an S-system model, calculate slopes from expression data, and perform row-wise or global optimization for network inference.\n\n# bioconductor-spem\n\n## Overview\n\nThe `SPEM` package implements the S-system Parameter Estimation Method to reconstruct gene networks from time-series expression data. It uses a power-law formalism (S-systems) to capture non-linear interactions between genes. The model identifies two types of parameters: scale parameters ($\\alpha, \\beta$) and kinetic orders ($G, H$). The $G$ and $H$ matrices represent activation and inhibition interactions, respectively, which are used to build directed, signed regulatory networks.\n\n## Core Workflow\n\n### 1. Data Preparation\nSPEM requires data in an `ExpressionSet` format. The `phenoData` must contain a column named `\"time\"` indicating the exact time points of the samples.\n\n```r\nlibrary(SPEM)\nlibrary(Biobase)\n\n# Example: Creating a compatible ExpressionSet\ndata_matrix <- matrix(runif(12), nrow=3, ncol=4)\nrownames(data_matrix) <- c(\"G1\", \"G2\", \"G3\")\ntime_info <- data.frame(time = c(0, 2, 4, 6), row.names = colnames(data_matrix))\nmetadata <- data.frame(labelDescription = \"Time points\", row.names = \"time\")\nphenoData <- new(\"AnnotatedDataFrame\", data = time_info, varMetadata = metadata)\neset <- new(\"ExpressionSet\", exprs = data_matrix, phenoData = phenoData)\n```\n\n### 2. Global Parameter Estimation\nUse the `SPEM` function to estimate all parameters for the entire network simultaneously.\n\n```r\n# Parameters\nn <- 10            # Number of times to guess initial beta (higher = more stable)\nsparsity <- 0.1    # Threshold to set small interactions to zero\nlbH <- -3; ubH <- 3 # Bounds for kinetic orders (H)\nlbB <- 0; ubB <- 10 # Bounds for beta\n\nresults <- SPEM(eset, n, sparsity, lbH, ubH, lbB, ubB)\n\n# Accessing results\n# results$alpha, results$g, results$beta, results$h\n```\n\n### 3. Row-wise Optimization\nIf you prefer to estimate parameters for a single gene or need more control over the optimization, use `row_optimize`. This requires pre-calculating the slope.\n\n```r\n# 1. Calculate slopes for all genes\nslopes <- s_diff(eset)\n\n# 2. Optimize for the first gene (row 1)\nS_row1 <- slopes[1, ]\ninitial_beta <- runif(1, 0, 10)\nrow_res <- row_optimize(eset, S_row1, initial_beta, sparsity, lbH, ubH, lbB, ubB)\n```\n\n### 4. Network Reconstruction\nThe interaction matrix $A$ is derived from the $G$ and $H$ matrices. An element $A_{ij}$ represents the influence of gene $j$ on gene $i$.\n\n```r\n# Combine G and H to find the dominant interaction\n# A_ij = max(g_ij, h_ij)\ninteraction_matrix <- pmax(results$g, results$h)\n```\n\n## Key Functions\n\n- `SPEM()`: The primary function for full-network parameter estimation.\n- `s_diff()`: Calculates the slope matrix from time-series data using curve-fitting to reduce noise.\n- `row_optimize()`: Performs optimization for a single gene (row) at a time.\n\n## Tips for Success\n\n- **Stability**: Because initial $\\beta$ values are generated randomly, run the optimization multiple times (set `n` to 10 or higher) to ensure the solution is reliable.\n- **Sparsity**: Biological networks are typically sparse. Adjust the `sparsity` parameter to filter out low-confidence interactions and produce a cleaner topology.\n- **Noise**: `s_diff` uses a curve-fitting algorithm to handle noise in experimental data before calculating slopes. Always use this or a similar smoothing method for real biological datasets.\n\n## Reference documentation\n\n- [SPEM (S-system Parameter Estimation Method)](./references/SPEM-package.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-spem",
+    "description": "This tool reconstructs gene regulatory networks from time-series expression data by estimating parameters for an S-system model. Use when user asks to estimate S-system parameters, calculate slopes from time-series data, or perform network inference using power-law formalism.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SPEM.html"
+  }
+}

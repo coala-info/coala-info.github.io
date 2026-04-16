@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-rcistarget",
+  "category": "bioconductor",
+  "name": "bioconductor-rcistarget",
+  "description": "RcisTarget identifies transcription factor binding motifs over-represented in a gene list or set of genomic regions. Use when user asks to perform motif enrichment analysis, annotate motifs to transcription factors, or identify specific genes and regions regulated by a transcription factor.",
+  "overview": "RcisTarget is an R package designed to identify transcription factor (TF) binding motifs enriched in a gene list or a set of genomic regions. It utilizes pre-computed rankings of genes (or regions) based on motif scores across various species (Human, Mouse, Fly). The workflow typically involves calculating the Area Under the Curve (AUC) for motif recovery, determining a Normalized Enrichment Score (NES) to identify significant motifs, and finally identifying the specific \"enriched genes\" that dr",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/RcisTarget.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/aertslab/RcisTarget",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "RcisTarget"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RcisTarget.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/aertslab/RcisTarget",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-rcistarget\n\nname: bioconductor-rcistarget\ndescription: Identify transcription factor (TF) binding motifs over-represented on a gene list or genomic regions using RcisTarget. Use this skill when you need to perform motif enrichment analysis, annotate motifs to TFs, or identify specific genes/regions regulated by a TF.\n\n# bioconductor-rcistarget\n\n## Overview\nRcisTarget is an R package designed to identify transcription factor (TF) binding motifs enriched in a gene list or a set of genomic regions. It utilizes pre-computed rankings of genes (or regions) based on motif scores across various species (Human, Mouse, Fly). The workflow typically involves calculating the Area Under the Curve (AUC) for motif recovery, determining a Normalized Enrichment Score (NES) to identify significant motifs, and finally identifying the specific \"enriched genes\" that drive the motif's significance.\n\n## Core Workflow\n\n### 1. Setup and Data Loading\nRcisTarget requires specific database files (.feather) containing motif rankings and motif-to-TF annotations.\n\n```r\nlibrary(RcisTarget)\n\n# Load gene sets (as a named list)\ngeneList <- c(\"ADM\", \"ADORA2B\", \"AHNAK2\", \"AK4\")\ngeneLists <- list(hypoxia = geneList)\n\n# Load Motif-TF annotations (provided in package for standard collections)\ndata(motifAnnotations_hgnc) \n\n# Import pre-computed rankings (requires local .feather file)\n# Databases available at: https://resources.aertslab.org/cistarget/\nmotifRankings <- importRankings(\"hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather\")\n```\n\n### 2. Running the Analysis (One-Step)\nThe `cisTarget()` function wraps the entire workflow: enrichment calculation, TF annotation, and significant gene identification.\n\n```r\nmotifEnrichmentTable <- cisTarget(geneLists, \n                                  motifRankings,\n                                  motifAnnot = motifAnnotations)\n```\n\n### 3. Step-by-Step Execution (Advanced)\nFor more control or to optimize performance on large datasets, run the steps individually:\n\n```r\n# Step 1: Calculate AUC\nmotifs_AUC <- calcAUC(geneLists, motifRankings, nCores = 1)\n\n# Step 2: Select significant motifs (NES > 3) and add TF annotations\nmotifEnrichmentTable <- addMotifAnnotation(motifs_AUC, \n                                           nesThreshold = 3,\n                                           motifAnnot = motifAnnotations)\n\n# Step 3: Identify specific genes contributing to the enrichment\nmotifEnrichmentTable_wGenes <- addSignificantGenes(motifEnrichmentTable,\n                                                   rankings = motifRankings, \n                                                   geneSets = geneLists,\n                                                   method = \"aprox\") # \"icistarget\" is slower but more accurate\n```\n\n## Specialized Analyses\n\n### Genomic Regions Analysis\nTo analyze genomic regions (e.g., ChIP-seq peaks) instead of gene symbols:\n1. Import regions as a `GRanges` object.\n2. Convert regions to database-specific IDs using `convertToTargetRegions()`.\n3. Adjust `aucMaxRank` based on the organism (Human/Mouse: 0.005, Fly: 0.01).\n\n```r\n# Convert query regions to DB IDs using a region location mapping\nregionSets_db <- lapply(regionSets, function(x) {\n  convertToTargetRegions(queryRegions = x, targetRegions = dbRegionsLoc)\n})\n\n# Run analysis with adjusted rank\nmotifEnrichmentTable <- cisTarget(regionSets_db, \n                                  motifRankings, \n                                  aucMaxRank = 0.005 * getNumColsInDB(motifRankings))\n```\n\n### Analysis with Background\nIf you have a specific background set of genes (e.g., all genes expressed in an experiment):\n1. Import rankings only for the background genes.\n2. Re-rank the motifs within that subset using `reRank()`.\n3. Run `cisTarget()` using the re-ranked database.\n\n```r\nrankingsDb <- importRankings(dbPath, columns = backgroundGenes)\nbgRanking <- reRank(rankingsDb)\nmotifEnrichmentTable <- cisTarget(geneSets, bgRanking, \n                                  geneErnMethod = \"icistarget\")\n```\n\n## Tips and Interpretation\n- **NES Threshold**: A NES > 3.0 is the standard cutoff for significance.\n- **TF Confidence**: The output table distinguishes between `TF_highConf` (direct evidence) and `TF_lowConf` (inferred via orthology or motif similarity).\n- **Visualization**: Use `showLogo(motifEnrichmentTable)` to view the sequence logos of the enriched motifs.\n- **Parallelization**: Many functions support `nCores` to speed up calculations on multi-core systems.\n\n## Reference documentation\n- [RcisTarget: Transcription factor binding motif enrichment](./references/RcisTarget_MainTutorial.md)\n- [Motif enrichment in genomic regions](./references/Tutorial_AnalysisOfGenomicRegions.md)\n- [Motif enrichment with background](./references/Tutorial_AnalysisWithBackground.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-rcistarget",
+    "description": "RcisTarget identifies transcription factor binding motifs over-represented in a gene list or set of genomic regions. Use when user asks to perform motif enrichment analysis, annotate motifs to transcription factors, or identify specific genes and regions regulated by a transcription factor.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/RcisTarget.html"
+  }
+}

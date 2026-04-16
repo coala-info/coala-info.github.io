@@ -1,0 +1,49 @@
+{
+  "id": "recycler",
+  "category": "CLI",
+  "name": "recycler",
+  "description": "Recycler identifies circular genomic elements like plasmids and phages by analyzing assembly graph topology and read coverage. Use when user asks to identify circularity in genomic assemblies, recover plasmids from metagenomic samples, or find cycles in assembly graphs.",
+  "overview": "Recycler is a specialized tool for identifying circularity in genomic assemblies. It works by analyzing the topology of an assembly graph—specifically looking at contig overlaps and lengths—combined with coverage information and paired-end read alignments. Unlike simple circularity checks, Recycler uses a greedy algorithm to find cycles that are consistent with the observed read coverage, making it effective for recovering plasmids and phages that might otherwise be overlooked in complex metagen",
+  "homepage": "https://github.com/Shamir-Lab/Recycler",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/recycler/overview",
+  "github": "https://github.com/Shamir-Lab/Recycler",
+  "conda_downloads": "20.9K",
+  "conda_downloads_num": 20900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "recycler_make_fasta_from_fastg.py",
+      "recycler_samtools",
+      "recycler_recycle.py"
+    ],
+    "description": "make_fasta_from_fastg converts fastg assembly graph to fasta format",
+    "docker_image": "quay.io/biocontainers/recycler:0.7--py27h24bf2e0_2",
+    "homepage": "https://github.com/Shamir-Lab/Recycler",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/recycler/overview",
+    "github": "https://github.com/Shamir-Lab/Recycler",
+    "conda_downloads": "20.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "recycler_make_fasta_from_fastg.py.cwl",
+    "recycler_recycle.py.cwl",
+    "recycler_samtools.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# recycler\n\n## Overview\n\nRecycler is a specialized tool for identifying circularity in genomic assemblies. It works by analyzing the topology of an assembly graph—specifically looking at contig overlaps and lengths—combined with coverage information and paired-end read alignments. Unlike simple circularity checks, Recycler uses a greedy algorithm to find cycles that are consistent with the observed read coverage, making it effective for recovering plasmids and phages that might otherwise be overlooked in complex metagenomic samples.\n\n## Installation and Requirements\n\nRecycler requires Python 2.7+ and the following dependencies:\n- NumPy, NetworkX (2.0+), PySAM, and nose.\n- External tools for preprocessing: BWA, samtools, and SPAdes (3.6+ recommended).\n\n## Core Workflow\n\n### 1. Prepare the BAM Input\nRecycler requires a BAM file containing only the best primary alignments of your paired-end reads to the assembly nodes.\n\n```bash\n# 1. Generate a fasta file from the assembly graph\nmake_fasta_from_fastg.py -g assembly_graph.fastg -o assembly_graph.nodes.fasta\n\n# 2. Index and align reads\nbwa index assembly_graph.nodes.fasta\nbwa mem assembly_graph.nodes.fasta R1.fastq.gz R2.fastq.gz | samtools view -buS - > reads_pe.bam\n\n# 3. Filter for primary alignments (CRITICAL)\nsamtools view -bF 0x0800 reads_pe.bam > reads_pe_primary.bam\n\n# 4. Sort and index\nsamtools sort reads_pe_primary.bam -o reads_pe_primary.sort.bam\nsamtools index reads_pe_primary.sort.bam\n```\n\n### 2. Run Recycler\nThe command differs slightly based on whether your sample is a single isolate or a metagenome.\n\n**For Isolate Data:**\n```bash\nrecycle.py -g assembly_graph.fastg -k 55 -b reads_pe_primary.sort.bam -i True\n```\n\n**For Metagenome/Plasmidome Data:**\n```bash\nrecycle.py -g assembly_graph.fastg -k 55 -b reads_pe_primary.sort.bam\n```\n\n## Command Line Arguments\n\n| Argument | Description |\n| :--- | :--- |\n| `-g` | **Required.** Path to the assembly graph FASTG file (e.g., `assembly_graph.fastg`). |\n| `-k` | **Required.** The maximum k-mer length used during the assembly process. |\n| `-b` | **Required.** Path to the filtered, sorted, and indexed BAM file. |\n| `-i` | Set to `True` for isolated strains; default is `False` (metagenomes). |\n| `-l` | Minimum length for reporting a circular sequence (default: 1000). |\n| `-m` | Max coefficient of variation for pre-selection (default: 0.5). Higher is less restrictive. |\n| `-o` | Output directory. Defaults to the directory containing the FASTG file. |\n\n## Best Practices and Tips\n\n- **Graph Compatibility**: While designed for SPAdes FASTG files, Recycler can work with other assemblers like MEGAHIT if the output is converted to the expected FASTG format.\n- **K-mer Selection**: Always use the *maximum* k-mer value used by the assembler to ensure the graph overlaps are interpreted correctly.\n- **Filtering BAMs**: The step `samtools view -bF 0x0800` is essential. Recycler's logic depends on primary alignments to calculate coverage accurately; including secondary or supplementary alignments will introduce noise.\n- **Output Interpretation**: \n    - `.cycs.fasta`: Contains the actual sequences of predicted circular elements.\n    - `.cycs.paths_w_cov.txt`: Provides the path through the original graph nodes, which is useful for visualization in tools like Bandage.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| recycle.py | Recycler extracts likely plasmids (and other circular DNA elements) from de novo assembly graphs |\n| recycler_make_fasta_from_fastg.py | make_fasta_from_fastg converts fastg assembly graph to fasta format |\n| samtools | Tools for alignments in the SAM format |\n\n## Reference documentation\n- [Recycler GitHub Repository](./references/github_com_Shamir-Lab_Recycler.md)",
+  "skill_front_matter": {
+    "name": "recycler",
+    "description": "Recycler identifies circular genomic elements like plasmids and phages by analyzing assembly graph topology and read coverage. Use when user asks to identify circularity in genomic assemblies, recover plasmids from metagenomic samples, or find cycles in assembly graphs.",
+    "homepage": "https://github.com/Shamir-Lab/Recycler"
+  }
+}

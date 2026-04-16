@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cellid",
+  "category": "bioconductor",
+  "name": "bioconductor-cellid",
+  "description": "Bioconductor-cellid extracts per-cell gene signatures and performs cell identity recognition using Multiple Correspondence Analysis. Use when user asks to perform clustering-free cell type prediction, match cells across datasets, or conduct functional enrichment analysis on single-cell RNA-seq data.",
+  "overview": "CelliD is a multivariate statistical method for extracting robust gene signatures from single-cell data at the individual cell level. Unlike traditional methods that rely on clustering, CelliD uses Multiple Correspondence Analysis (MCA) to project cells and genes into a shared low-dimensional space. This allows for unbiased cell type assignment, cross-dataset label transfer, and functional annotation by calculating the distance between cells and specific gene sets.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CelliD.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellid/overview",
+  "github": "N/A",
+  "conda_downloads": "14.9K",
+  "conda_downloads_num": 14900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CelliD"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CelliD.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cellid/overview",
+    "github": "N/A",
+    "conda_downloads": "14.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cellid\n\nname: bioconductor-cellid\ndescription: Extraction of per-cell gene signatures and cell identity recognition using Multiple Correspondence Analysis (MCA). Use this skill to perform clustering-free cell type prediction, cell-to-cell matching across datasets, and functional enrichment analysis on single-cell RNA-seq data (Seurat or SingleCellExperiment objects).\n\n# bioconductor-cellid\n\n## Overview\nCelliD is a multivariate statistical method for extracting robust gene signatures from single-cell data at the individual cell level. Unlike traditional methods that rely on clustering, CelliD uses Multiple Correspondence Analysis (MCA) to project cells and genes into a shared low-dimensional space. This allows for unbiased cell type assignment, cross-dataset label transfer, and functional annotation by calculating the distance between cells and specific gene sets.\n\n## Core Workflow\n\n### 1. Data Preparation\nCelliD works with `Seurat` (v3+) or `SingleCellExperiment` objects. It is highly recommended to restrict the analysis to protein-coding genes.\n\n```r\nlibrary(CelliD)\nlibrary(Seurat)\n\n# Load provided protein-coding gene lists\ndata(\"HgProteinCodingGenes\") \n\n# Filter and create Seurat object\ncounts_filtered <- raw_counts[rownames(raw_counts) %in% HgProteinCodingGenes, ]\nseurat_obj <- CreateSeuratObject(counts = counts_filtered)\n\n# Standard normalization\nseurat_obj <- NormalizeData(seurat_obj)\nseurat_obj <- ScaleData(seurat_obj, features = rownames(seurat_obj))\n```\n\n### 2. Dimensionality Reduction (MCA)\nThe core of CelliD is the `RunMCA` function, which replaces or complements PCA.\n\n```r\n# Perform MCA\nseurat_obj <- RunMCA(seurat_obj)\n\n# Visualize cells and specific marker genes in MCA space\nDimPlotMC(seurat_obj, reduction = \"mca\", features = c(\"INS\", \"GCG\"), as.text = TRUE)\n```\n\n### 3. Cell Type Prediction (Hypergeometric Test)\nUse `RunCellHGT` to calculate the enrichment of pre-defined marker lists (e.g., from PanglaoDB) for every single cell.\n\n```r\n# pathways must be a named list of gene vectors\n# n.features = 200 is the default signature size per cell\nhgt_matrix <- RunCellHGT(seurat_obj, pathways = marker_list, dims = 1:50)\n\n# Assign the best-fitting cell type (p-value < 0.01 is -log10 > 2)\npredictions <- rownames(hgt_matrix)[apply(hgt_matrix, 2, which.max)]\nsignificant_preds <- ifelse(apply(hgt_matrix, 2, max) > 2, predictions, \"unassigned\")\nseurat_obj$cellid_type <- significant_preds\n```\n\n### 4. Label Transfer and Cell Matching\nCelliD can match cells across different datasets (e.g., Human to Mouse) by extracting signatures from a reference and testing them on a query.\n\n*   **Cell-to-Cell (CelliD-c):** `GetCellGeneSet(reference_obj)`\n*   **Group-to-Cell (CelliD-g):** `GetGroupGeneSet(reference_obj, group.by = \"label\")`\n\n```r\n# 1. Extract signatures from reference\nref_signatures <- GetGroupGeneSet(reference_obj, group.by = \"celltype\")\n\n# 2. Project query data into MCA space\nquery_obj <- RunMCA(query_obj)\n\n# 3. Test reference signatures on query cells\nhgt_transfer <- RunCellHGT(query_obj, pathways = ref_signatures, dims = 1:50)\n```\n\n### 5. Functional Annotation\nYou can treat pathway databases (KEGG, Reactome, Hallmark) as marker lists to perform per-cell functional enrichment.\n\n```r\n# Hallmark is provided in the package\nhgt_hallmark <- RunCellHGT(seurat_obj, pathways = Hallmark, dims = 1:50)\n\n# Add as an assay for visualization\nseurat_obj[[\"Hallmark\"]] <- CreateAssayObject(hgt_hallmark)\nFeaturePlot(seurat_obj, features = \"GLYCOLYSIS\", reduction = \"umap\")\n```\n\n## Tips for Success\n*   **Gene Symbols:** Ensure your object uses official Gene Symbols, as most reference databases (Panglao, MSigDB) use them.\n*   **Signature Size:** The `n.features` parameter (default 200) defines how many of the top-ranked genes for a cell are used for the enrichment test.\n*   **Significance:** A `-log10(p-value)` threshold of 2 (representing p < 0.01 after BH correction) is the standard for \"assigned\" vs \"unassigned\" cells.\n\n## Reference documentation\n- [CelliD Vignette](./references/BioconductorVignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cellid",
+    "description": "Bioconductor-cellid extracts per-cell gene signatures and performs cell identity recognition using Multiple Correspondence Analysis. Use when user asks to perform clustering-free cell type prediction, match cells across datasets, or conduct functional enrichment analysis on single-cell RNA-seq data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CelliD.html"
+  }
+}

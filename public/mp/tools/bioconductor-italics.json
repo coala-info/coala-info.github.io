@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-italics",
+  "category": "bioconductor",
+  "name": "bioconductor-italics",
+  "description": "The ITALICS package implements an iterative method to normalize Affymetrix SNP arrays by estimating biological signals and non-relevant variations. Use when user asks to normalize Affymetrix 100K or 500K SNP arrays, estimate copy number alterations, or perform iterative normalization and segmentation of genomic data.",
+  "overview": "The `ITALICS` package implements an iterative method to normalize Affymetrix SNP arrays (100K and 500K sets). It addresses the challenge where biological signals (copy number alterations) and non-relevant variations (biases) have similar amplitudes. The method alternatively estimates the biological signal using the `GLAD` algorithm and the non-relevant effects using multiple linear regression.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/ITALICS.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-italics/overview",
+  "github": "N/A",
+  "conda_downloads": "21.3K",
+  "conda_downloads_num": 21300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "ITALICS"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ITALICS.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-italics/overview",
+    "github": "N/A",
+    "conda_downloads": "21.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-italics\n\n## Overview\n\nThe `ITALICS` package implements an iterative method to normalize Affymetrix SNP arrays (100K and 500K sets). It addresses the challenge where biological signals (copy number alterations) and non-relevant variations (biases) have similar amplitudes. The method alternatively estimates the biological signal using the `GLAD` algorithm and the non-relevant effects using multiple linear regression.\n\n## Workflow: Normalizing a Chip\n\nThe standard workflow involves loading the CEL file, retrieving SNP/Quartet information, and running the iterative normalization.\n\n### 1. Data Preparation\nYou must load the CEL file and associated quartet effect data (often provided by `ITALICSData`).\n\n```r\nlibrary(ITALICS)\nlibrary(ITALICSData)\n\n# Define paths\nfilename <- system.file(\"extdata/HF0844_Xba.CEL\", package=\"ITALICSData\")\nquartetEffectFile <- system.file(\"extdata/Xba.QuartetEffect.csv\", package=\"ITALICSData\")\n\n# Get chip type and metadata\nheaddetails <- readCelHeader(filename)\npkgname <- cleanPlatformName(headdetails[[\"chiptype\"]])\n\n# Load SNP and Quartet info\nsnpInfo <- getSnpInfo(pkgname)\nquartet <- getQuartet(pkgname, snpInfo)\nquartetEffect <- read.table(quartetEffectFile, sep=\";\", header=TRUE)\n\n# Read intensities and merge info\ntmpExprs <- readCelIntensities(filename, indices=quartet$fid)\nquartet$quartetInfo$quartetLogRatio <- readQuartetCopyNb(tmpExprs)\nquartet$quartetInfo <- addInfo(quartet, quartetEffect)\nsnpInfo <- fromQuartetToSnp(cIntensity=\"quartetLogRatio\", \n                            quartetInfo=quartet$quartetInfo, \n                            snpInfo=snpInfo)\n```\n\n### 2. Running ITALICS\nThe `ITALICS` function performs the iterative normalization and segmentation.\n\n```r\n# Default run (2 iterations)\nprofilSNPXba <- ITALICS(quartet$quartetInfo, snpInfo)\n\n# Custom formula (e.g., excluding fragment length effects)\nprofilSNPXba <- ITALICS(quartet$quartetInfo, snpInfo,\n                        formule=\"Smoothing+QuartetEffect+GC+I(GC^2)+I(GC^3)\")\n```\n\n### 3. Visualization\nResults are stored in a `profileCGH` object and can be plotted using the `GLAD` package.\n\n```r\nlibrary(GLAD)\ndata(cytoband)\nplotProfile(profilSNPXba, Smoothing=\"Smoothing\", cytoband=cytoband)\n```\n\n## Key Parameters\n\n- `iteration`: Number of iterations (default: 2).\n- `confidence`: Prediction interval (default: 0.95) used to flag and exclude outlier quartets.\n- `formule`: The regression model for non-relevant effects. Components include `Smoothing` (biological signal), `QuartetEffect`, `FL` (fragment length), and `GC` (GC-content).\n- `param`: Penalty term for `GLAD` segmentation. For arrays with low signal-to-noise ratios, use `param=c(d=2)` or `d=1` to detect smaller alterations.\n\n## Data Structures\n\nThe output is a `profileCGH` object. The `profileValues` data frame contains:\n- `LogRatio`: Normalized test/reference ratio.\n- `PosOrder` / `PosBase`: Genomic coordinates.\n- `Chromosome`: Chromosome identifier.\n- `Smoothing`: The estimated biological copy number signal.\n\n## Reference documentation\n- [ITALICS](./references/ITALICS.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-italics",
+    "description": "The ITALICS package implements an iterative method to normalize Affymetrix SNP arrays by estimating biological signals and non-relevant variations. Use when user asks to normalize Affymetrix 100K or 500K SNP arrays, estimate copy number alterations, or perform iterative normalization and segmentation of genomic data.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/ITALICS.html"
+  }
+}

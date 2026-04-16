@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-tcgabiolinks",
+  "category": "bioconductor",
+  "name": "bioconductor-tcgabiolinks",
+  "description": "TCGAbiolinks provides a comprehensive pipeline for searching, downloading, and analyzing cancer genomic data from the GDC portal. Use when user asks to download TCGA datasets, perform differential expression or methylation analysis, conduct survival analysis, or integrate multi-omics data using starburst plots.",
+  "overview": "`TCGAbiolinks` is a Bioconductor package designed to facilitate the analysis of Cancer Genome Atlas (TCGA) data. It provides a complete pipeline for data acquisition from the Genomic Data Commons (GDC), preprocessing, normalization, and downstream analysis. Key capabilities include identifying differentially expressed genes, differentially methylated regions, performing functional enrichment, and visualizing results through heatmaps, volcano plots, and survival curves.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/TCGAbiolinks.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/BioinformaticsFMRP/TCGAbiolinks",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TCGAbiolinks"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TCGAbiolinks.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/BioinformaticsFMRP/TCGAbiolinks",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-tcgabiolinks\n\nname: bioconductor-tcgabiolinks\ndescription: Expert guidance for using the TCGAbiolinks R package to search, download, and analyze TCGA data from the GDC portal. Use this skill when performing genomic data analysis including differential expression (DEA), differential methylation (DMR), survival analysis, and multi-omics integration (starburst plots) using Bioconductor.\n\n# bioconductor-tcgabiolinks\n\n## Overview\n`TCGAbiolinks` is a Bioconductor package designed to facilitate the analysis of Cancer Genome Atlas (TCGA) data. It provides a complete pipeline for data acquisition from the Genomic Data Commons (GDC), preprocessing, normalization, and downstream analysis. Key capabilities include identifying differentially expressed genes, differentially methylated regions, performing functional enrichment, and visualizing results through heatmaps, volcano plots, and survival curves.\n\n## Core Workflow\n\n### 1. Data Acquisition\nThe standard workflow begins with querying, downloading, and preparing data into a `SummarizedExperiment` object.\n\n```r\nlibrary(TCGAbiolinks)\n\n# Query for RNA-Seq data\nquery <- GDCquery(\n    project = \"TCGA-BRCA\",\n    data.category = \"Transcriptome Profiling\",\n    data.type = \"Gene Expression Quantification\",\n    workflow.type = \"STAR - Counts\",\n    sample.type = c(\"Primary Tumor\", \"Solid Tissue Normal\")\n)\n\n# Download and Prepare\nGDCdownload(query)\ndata <- GDCprepare(query)\n```\n\n### 2. Preprocessing and Normalization\nBefore analysis, data must be filtered for outliers and normalized for GC content or sequencing depth.\n\n```r\n# Preprocessing to find outliers\ndataPrep <- TCGAanalyze_Preprocessing(object = data, cor.cut = 0.6)\n\n# Normalization (e.g., gcContent)\ndataNorm <- TCGAanalyze_Normalization(tabDF = dataPrep, geneInfo = geneInfoHT, method = \"gcContent\")\n\n# Filtering low signal genes\ndataFilt <- TCGAanalyze_Filtering(tabDF = dataNorm, method = \"quantile\", qnt.cut = 0.25)\n```\n\n### 3. Differential Expression Analysis (DEA)\nIdentify genes with significant changes between conditions (e.g., Tumor vs. Normal).\n\n```r\n# Define sample groups\nsamplesNT <- TCGAquery_SampleTypes(barcode = colnames(dataFilt), typesample = \"NT\")\nsamplesTP <- TCGAquery_SampleTypes(barcode = colnames(dataFilt), typesample = \"TP\")\n\n# Perform DEA\ndataDEGs <- TCGAanalyze_DEA(\n    mat1 = dataFilt[,samplesNT],\n    mat2 = dataFilt[,samplesTP],\n    Cond1type = \"Normal\",\n    Cond2type = \"Tumor\",\n    fdr.cut = 0.01,\n    logFC.cut = 1,\n    method = \"glmLRT\"\n)\n```\n\n### 4. Survival Analysis\nCorrelate clinical data with genomic features or clusters.\n\n```r\nclinical <- GDCquery_clinic(project = \"TCGA-BRCA\", type = \"clinical\")\n\nTCGAanalyze_survival(\n    data = clinical,\n    clusterCol = \"gender\", # Column for grouping\n    main = \"Survival Analysis\",\n    pvalue = TRUE\n)\n```\n\n### 5. Integration: Starburst Plots\nCombine DNA methylation and gene expression data to identify biologically significant genes.\n\n```r\nstarburst <- TCGAvisualize_starburst(\n    met = dataMet, # SummarizedExperiment from methylation query\n    exp = dataDEGs, # Result from DEA\n    genome = \"hg38\",\n    met.platform = \"450K\",\n    met.p.cut = 10^-5,\n    exp.p.cut = 10^-5,\n    names = TRUE\n)\n```\n\n## Key Functions Reference\n- `GDCquery()`: Search GDC data by project, category, and platform.\n- `GDCdownload()`: Download the queried data to local storage.\n- `GDCprepare()`: Transform downloaded data into a `SummarizedExperiment` object.\n- `TCGAanalyze_DEA()`: Perform differential expression using edgeR.\n- `TCGAanalyze_DMC()`: Identify differentially methylated CpGs.\n- `TCGAanalyze_EAcomplete()`: Perform Gene Ontology and Pathway enrichment.\n- `TCGAvisualize_Heatmap()`: Generate complex heatmaps with metadata bars.\n\n## Reference documentation\n- [Analysis functions](./references/analysis.md)\n- [Case Studies](./references/casestudy.md)\n- [Glioma classifier](./references/classifiers.md)\n- [Clinical data](./references/clinical.md)\n- [Download and Prepare](./references/download_prepare.md)\n- [Other functions](./references/extension.md)\n- [Introduction](./references/index.md)\n- [Mutation data](./references/mutation.md)\n- [Query data](./references/query.md)\n- [Stemness score](./references/stemness_score.md)\n- [Molecular subtypes](./references/subtypes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-tcgabiolinks",
+    "description": "TCGAbiolinks provides a comprehensive pipeline for searching, downloading, and analyzing cancer genomic data from the GDC portal. Use when user asks to download TCGA datasets, perform differential expression or methylation analysis, conduct survival analysis, or integrate multi-omics data using starburst plots.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/TCGAbiolinks.html"
+  }
+}

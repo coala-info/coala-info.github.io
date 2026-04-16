@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-sccb2",
+  "category": "bioconductor",
+  "name": "bioconductor-sccb2",
+  "description": "This tool performs cell detection in droplet-based single-cell RNA sequencing data to distinguish true cells from background empty droplets. Use when user asks to call cells from raw 10x Genomics data, filter empty droplets using the scCB2 algorithm, or prepare high-quality count matrices for downstream analysis.",
+  "overview": "The `scCB2` package provides an improved method for cell calling in droplet-based scRNA-seq. It extends the `EmptyDrops` approach by grouping similar barcodes into clusters before testing them against a background distribution. This increases the power to detect real cells, especially those with lower RNA content, while maintaining control over the False Discovery Rate (FDR).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/scCB2.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/zijianni/scCB2",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "scCB2"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scCB2.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/zijianni/scCB2",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-sccb2\n\nname: bioconductor-sccb2\ndescription: Cell detection in droplet-based single-cell RNA sequencing (scRNA-seq) data using the scCB2 package. Use this skill to distinguish true cells from background empty droplets by clustering similar barcodes and conducting statistical tests. Ideal for processing 10x Genomics raw data (Cell Ranger output or HDF5) and preparing high-quality count matrices for downstream analysis with Seurat or other tools.\n\n## Overview\n\nThe `scCB2` package provides an improved method for cell calling in droplet-based scRNA-seq. It extends the `EmptyDrops` approach by grouping similar barcodes into clusters before testing them against a background distribution. This increases the power to detect real cells, especially those with lower RNA content, while maintaining control over the False Discovery Rate (FDR).\n\n## Core Workflow\n\n### 1. Loading Data\n`scCB2` is designed to work seamlessly with 10x Genomics output.\n\n```r\nlibrary(scCB2)\n\n# Read from a directory containing barcodes.tsv, features.tsv, and matrix.mtx\n# Supports both Cell Ranger v2 and v3 (compressed) formats\nraw_mat <- Read10xRaw(dir = \"/path/to/raw/data\")\n\n# For HDF5 files, use the QuickCB2 wrapper or standard HDF5 readers\n```\n\n### 2. Evaluating Background Cutoff\nThe \"lower\" parameter (default 100) defines which barcodes are used to estimate the background empty droplet distribution.\n\n```r\n# Check if the default cutoff of 100 is appropriate\ncheck_cutoff <- CheckBackgroundCutoff(raw_mat)\ncheck_cutoff$recommended_cutoff\n```\n*Tip: A good cutoff should put >90% of barcodes or >10% of total UMI counts into the background.*\n\n### 3. Cell Calling (The CB2 Algorithm)\nUse `CB2FindCell` for detailed control or `QuickCB2` for an automated pipeline.\n\n**Detailed Approach:**\n```r\n# Run CB2 with FDR control and parallel processing\nCBOut <- CB2FindCell(raw_mat, FDR_threshold = 0.01, lower = 100, Ncores = 2)\n\n# Extract the filtered count matrix\n# MTfilter: removes cells with mitochondrial proportion > 0.25\nreal_cells <- GetCellMat(CBOut, MTfilter = 0.25)\n```\n\n**All-in-One Approach:**\n```r\n# Directly from directory to Seurat object\nseurat_obj <- QuickCB2(dir = \"/path/to/raw/data\", AsSeurat = TRUE)\n```\n\n### 4. Downstream Integration\nThe output of `GetCellMat` is a sparse matrix compatible with standard scRNA-seq workflows.\n\n```r\n# Create Seurat object manually\nlibrary(Seurat)\nseurat_obj <- CreateSeuratObject(counts = real_cells)\n\n# Save to 10x format for other tools\nDropletUtils::write10xCounts(path = \"./filtered_feature_bc_matrix\", x = real_cells)\n```\n\n## Key Considerations\n- **Multiplets:** `scCB2` does not explicitly filter for doublets or multiplets. Use packages like `DoubletFinder` or `scDblFinder` after cell calling.\n- **Low-Quality Cells:** While `scCB2` distinguishes cells from background, some identified \"cells\" may be damaged. Always use `MTfilter` in `GetCellMat` or perform standard QC filtering afterwards.\n- **Computational Speed:** For a dataset with ~8,000 cells, processing typically takes less than 10 minutes using 6 cores.\n\n## Reference documentation\n\n- [CB2 improves power of cell detection in droplet-based single-cell RNA sequencing data](./references/scCB2.md)\n- [scCB2 Vignette Source](./references/scCB2.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-sccb2",
+    "description": "This tool performs cell detection in droplet-based single-cell RNA sequencing data to distinguish true cells from background empty droplets. Use when user asks to call cells from raw 10x Genomics data, filter empty droplets using the scCB2 algorithm, or prepare high-quality count matrices for downstream analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/scCB2.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-qsea",
+  "category": "bioconductor",
+  "name": "bioconductor-qsea",
+  "description": "This tool performs quantitative sequencing enrichment analysis for MeDIP-seq and other enrichment-based sequencing data. Use when user asks to model absolute methylation levels, account for copy number variations, perform TMM normalization, or detect differentially methylated regions using generalized linear models.",
+  "overview": "QSEA is the successor to the MEDIPS package, designed for the quantitative analysis of enrichment-based sequencing data (MeDIP-seq, ChIP-seq, MBD-seq). Its primary strength is the ability to transform relative enrichment into absolute methylation levels (beta values) by modeling background reads and CpG density-dependent enrichment profiles. It also integrates Copy Number Variation (CNV) analysis to normalize read counts.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/qsea.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "qsea"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qsea.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-qsea\n\nname: bioconductor-qsea\ndescription: Quantitative Sequencing Enrichment Analysis (QSEA) for MeDIP-seq and other enrichment-based sequencing data. Use this skill to model absolute methylation levels, account for CNVs, perform normalization (TMM), and detect differentially methylated regions (DMRs) using generalized linear models (GLMs).\n\n# bioconductor-qsea\n\n## Overview\nQSEA is the successor to the MEDIPS package, designed for the quantitative analysis of enrichment-based sequencing data (MeDIP-seq, ChIP-seq, MBD-seq). Its primary strength is the ability to transform relative enrichment into absolute methylation levels (beta values) by modeling background reads and CpG density-dependent enrichment profiles. It also integrates Copy Number Variation (CNV) analysis to normalize read counts.\n\n## Core Workflow\n\n### 1. Data Preparation\nCreate a sample table (data.frame) with `sample_name`, `file_name` (BAM paths), `group`, and optionally `sex`.\n\n```r\nlibrary(qsea)\nlibrary(BSgenome.Hsapiens.UCSC.hg19)\n\n# Initialize the qseaSet\nqset <- createQseaSet(sampleTable = samples, \n                      BSgenome = \"BSgenome.Hsapiens.UCSC.hg19\", \n                      window_size = 500, \n                      chr.select = paste0(\"chr\", 1:22))\n\n# Import coverage from BAM files\nqset <- addCoverage(qset, uniquePos = TRUE, paired = TRUE)\n```\n\n### 2. Normalization and CNV\nQSEA can estimate CNVs directly from MeDIP data (using fragments without CpGs) or from input libraries.\n\n```r\n# Estimate CNV (MeDIP=TRUE uses CpG-free reads for estimation)\nqset <- addCNV(qset, file_name = \"file_name\", window_size = 2e6, MeDIP = TRUE)\n\n# Estimate library scaling factors (TMM normalization)\nqset <- addLibraryFactors(qset)\n```\n\n### 3. Transformation to Absolute Methylation\nTo calculate beta values, QSEA models the enrichment efficiency based on CpG density.\n\n```r\n# Add CpG density information\nqset <- addPatternDensity(qset, \"CG\", name = \"CpG\")\n\n# Estimate background offset\nqset <- addOffset(qset, enrichmentPattern = \"CpG\")\n\n# Calibrate enrichment parameters (requires calibration signal or \"blind\" estimation)\n# Blind calibration example:\nwd <- which(getRegions(qset)$CpG_density > 1 & getRegions(qset)$CpG_density < 15)\nsignal <- (15 - getRegions(qset)$CpG_density[wd]) * .55 / 15 + .25\nqset <- addEnrichmentParameters(qset, enrichmentPattern = \"CpG\", windowIdx = wd, signal = signal)\n```\n\n### 4. Differential Methylation Analysis\nUses GLMs and Likelihood Ratio Tests (LRT) similar to DESeq2/edgeR.\n\n```r\n# Define design and fit model\ndesign <- model.matrix(~group, getSampleTable(qset))\nqseaGLM <- fitNBglm(qset, design, norm_method = \"beta\")\n\n# Perform contrast (e.g., Tumor vs Normal)\nqseaGLM <- addContrast(qset, qseaGLM, coef = 2, name = \"TvN\")\n```\n\n### 5. Results and Visualization\nExtract significant windows and annotate them.\n\n```r\n# Identify significant windows\nsig_idx <- isSignificant(qseaGLM, fdr_th = 0.01)\n\n# Create results table\nres_table <- makeTable(qset, glm = qseaGLM, keep = sig_idx, \n                       groupMeans = getSampleGroups(qset), \n                       norm_method = \"beta\", \n                       annotation = ROIs) # ROIs is a list of GRanges\n\n# Plot coverage for a specific region\nplotCoverage(qset, chr = \"chr20\", start = 38076001, end = 38090000, norm_method = \"beta\")\n```\n\n## Key Functions and Parameters\n- `createQseaSet`: Initializes the analysis object. `window_size` determines resolution.\n- `addCoverage`: Reads BAM files. Use `parallel = TRUE` with `BiocParallel` for speed.\n- `norm_method`: \n    - `\"counts\"`: Raw reads.\n    - `\"nrpkm\"`: CNV-normalized reads.\n    - `\"beta\"`: Absolute methylation (0 to 1).\n- `getOffset`: Check signal-to-noise. Values > 0.9 suggest poor enrichment.\n- `plotEPmatrix`: Visualizes the CpG density-dependent enrichment profile.\n\n## Reference documentation\n- [QSEA Tutorial](./references/qsea_tutorial.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-qsea",
+    "description": "This tool performs quantitative sequencing enrichment analysis for MeDIP-seq and other enrichment-based sequencing data. Use when user asks to model absolute methylation levels, account for copy number variations, perform TMM normalization, or detect differentially methylated regions using generalized linear models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/qsea.html"
+  }
+}

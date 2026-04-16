@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cnvtools",
+  "category": "bioconductor",
+  "name": "bioconductor-cnvtools",
+  "description": "bioconductor-cnvtools performs robust case-control and quantitative trait association testing for Copy Number Variants using mixture model clustering. Use when user asks to perform signal normalization via PCA or LDF, fit mixture models to CNV data, or test for genetic associations between copy number variations and traits.",
+  "overview": "CNVtools is designed for the statistical analysis of CNV data, specifically focusing on robust association testing. It addresses technical artifacts and differential bias by fitting mixture models to one-dimensional signal summaries. The package provides tools to collapse multi-probe signal intensities into a single dimension using Principal Component Analysis (PCA) or Linear Discriminant Analysis (LDF) and then tests for association between these signals and a trait of interest.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/CNVtools.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CNVtools"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/CNVtools.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cnvtools\n\nname: bioconductor-cnvtools\ndescription: Robust case-control and quantitative trait association testing for Copy Number Variants (CNVs). Use this skill when analyzing CNV data to perform signal normalization (PCA/LDF), mixture model clustering, and genetic association testing with binary or quantitative traits.\n\n## Overview\n\nCNVtools is designed for the statistical analysis of CNV data, specifically focusing on robust association testing. It addresses technical artifacts and differential bias by fitting mixture models to one-dimensional signal summaries. The package provides tools to collapse multi-probe signal intensities into a single dimension using Principal Component Analysis (PCA) or Linear Discriminant Analysis (LDF) and then tests for association between these signals and a trait of interest.\n\n## Core Workflow\n\n### 1. Data Preparation and Dimensionality Reduction\nCNVtools requires a one-dimensional signal per sample. If you have multiple probes for a single CNV, use PCA to summarize them.\n\n```R\nlibrary(CNVtools)\n# raw.signal: matrix where rows = samples, columns = probes\npca.signal <- apply.pca(raw.signal)\n```\n\n### 2. Model Selection (BIC)\nDetermine the optimal number of copy number components (clusters) using the Bayesian Information Criterion.\n\n```R\n# v.ncomp: vector of components to test (e.g., 1:5)\nresults <- CNVtest.select.model(signal = pca.signal, \n                                batch = batches, \n                                sample = samples, \n                                method = \"BIC\", \n                                v.ncomp = 1:5)\nncomp <- results$selected\nplot(-results$BIC, type=\"b\") # Minimize BIC\n```\n\n### 3. Initial Clustering (H0)\nCluster the data under the null hypothesis (no association) to obtain posterior probabilities.\n\n```R\nfit.pca <- CNVtest.binary(signal = pca.signal, \n                          sample = samples, \n                          batch = batches, \n                          ncomp = ncomp, \n                          n.H0 = 3, \n                          model.var = \"~ strata(cn)\")\n\n# Check convergence: 'C' is the only acceptable status\nprint(fit.pca$status.H0)\n```\n\n### 4. Signal Improvement (LDF)\nRefine the one-dimensional signal using the posterior probabilities from the PCA fit via Linear Discriminant Functions. This often provides better separation than PCA alone.\n\n```R\npca.posterior <- as.matrix(fit.pca$posterior.H0[, grep(\"P\", colnames(fit.pca$posterior.H0))])\nldf.signal <- apply.ldf(raw.signal, pca.posterior)\n```\n\n### 5. Association Testing\nPerform the actual association test using the refined LDF signal.\n\n**Binary Trait (Case-Control):**\n```R\nfit.ldf <- CNVtest.binary(signal = ldf.signal, \n                          sample = samples, \n                          batch = batches, \n                          disease.status = trait, \n                          ncomp = ncomp, \n                          model.var = \"~cn\")\n\n# Likelihood Ratio Test\nLR.stat <- -2 * (fit.ldf$model.H0$lnL - fit.ldf$model.H1$lnL)\n# Distributed as Chi-squared (df=1 for linear trend, df=ncomp-1 for factor model)\n```\n\n**Quantitative Trait:**\n```R\nfit.qt <- CNVtest.qt(signal = ldf.signal, \n                     sample = samples, \n                     batch = batches, \n                     qt = quantitative_trait, \n                     ncomp = ncomp)\n```\n\n## Key Functions and Parameters\n\n- `CNVtest.binary`: Main function for case-control studies.\n- `CNVtest.qt`: Main function for quantitative traits.\n- `cnv.plot`: Visualizes the clustering and posterior probabilities.\n- `model.var`: Use `\"~ strata(cn)\"` for independent variances per copy number state (robust) or `\"~ cn\"` for proportional variance.\n- `model.disease`: Default is `\"~ cn\"` (linear trend/allelic dosage). Use `\"~ as.factor(cn)\"` for a general model without linear constraints.\n\n## Tips for Success\n- **Convergence**: Always check `fit$status.H0` and `fit$status.H1`. If status is 'M' (max iterations) or 'F' (failed), try increasing `n.H0` to find a better global maximum.\n- **Batches**: If data comes from different cohorts or plates, include the `batch` argument to account for technical variation.\n- **One CNV at a time**: CNVtools is not designed for genome-wide data structures. Loop through your CNVs or use a wrapper to process multiple regions.\n\n## Reference documentation\n- [CNVtools Vignette](./references/CNVtools-vignette.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cnvtools",
+    "description": "bioconductor-cnvtools performs robust case-control and quantitative trait association testing for Copy Number Variants using mixture model clustering. Use when user asks to perform signal normalization via PCA or LDF, fit mixture models to CNV data, or test for genetic associations between copy number variations and traits.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/CNVtools.html"
+  }
+}

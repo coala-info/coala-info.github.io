@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cqn",
+  "category": "bioconductor",
+  "name": "bioconductor-cqn",
+  "description": "This tool performs Conditional Quantile Normalization to remove GC-content and gene length biases from RNA-seq count data. Use when user asks to normalize RNA-seq data for systematic biases, generate offsets for edgeR or DESeq2, or visualize the effects of GC-content and gene length on expression.",
+  "overview": "The `cqn` package implements Conditional Quantile Normalization, a method designed to correct for systematic biases in RNA-seq data, specifically GC-content and gene length effects. Unlike standard RPKM/FPKM which assume a linear relationship, CQN uses non-parametric smooth functions (splines) to model these biases. It produces normalized expression values and, more importantly, offsets that can be integrated into GLM-based differential expression tools like `edgeR`.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cqn.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cqn"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cqn.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cqn\n\nname: bioconductor-cqn\ndescription: Conditional Quantile Normalization (CQN) for RNA-seq data. Use this skill to remove systematic biases such as GC-content and gene length effects from RNA-seq count data, and to generate offsets for differential expression analysis in edgeR or DESeq2.\n\n# bioconductor-cqn\n\n## Overview\n\nThe `cqn` package implements Conditional Quantile Normalization, a method designed to correct for systematic biases in RNA-seq data, specifically GC-content and gene length effects. Unlike standard RPKM/FPKM which assume a linear relationship, CQN uses non-parametric smooth functions (splines) to model these biases. It produces normalized expression values and, more importantly, offsets that can be integrated into GLM-based differential expression tools like `edgeR`.\n\n## Core Workflow\n\n### 1. Data Preparation\nCQN requires four primary inputs with matching row/column orders:\n- `counts`: A matrix of raw reads (rows = genes, columns = samples).\n- `x`: A covariate to normalize for (typically GC-content).\n- `lengths`: A vector of gene/region lengths.\n- `sizeFactors`: A vector of sequencing depths (library sizes).\n\n```r\nlibrary(cqn)\n\n# Example check for alignment\nstopifnot(all(rownames(counts) == names(lengths)))\nstopifnot(all(colnames(counts) == names(sizeFactors)))\n```\n\n### 2. Running Normalization\nThe `cqn()` function fits the model: `log2(RPM) = s(x) + s(log2(length))`.\n\n```r\ncqn.res <- cqn(counts, \n               x = gc_content, \n               lengths = gene_lengths, \n               sizeFactors = lib_sizes, \n               verbose = TRUE)\n```\n\n### 3. Visualizing Bias Correction\nUse `cqnplot()` to inspect the systematic effects of GC-content (`n=1`) and length (`n=2`).\n\n```r\npar(mfrow=c(1,2))\ncqnplot(cqn.res, n = 1, xlab = \"GC content\")\ncqnplot(cqn.res, n = 2, xlab = \"Length\")\n```\n\n### 4. Extracting Results\nCQN provides two main outputs:\n- **Normalized Expression**: `y + offset` provides log2-scale RPKM-like values.\n- **GLM Offsets**: `glm.offset` is the correct scale for `edgeR` or `DESeq2`.\n\n```r\n# For visualization or clustering\nnormalized_log2_rpkm <- cqn.res$y + cqn.res$offset\n\n# For differential expression (edgeR)\ndge <- DGEList(counts = counts, group = groups)\ndge$offset <- cqn.res$glm.offset\n```\n\n## Integration with edgeR\n\nWhen using CQN with `edgeR`, do **not** use `calcNormFactors()`. The CQN offset already accounts for library size and composition biases.\n\n```r\nlibrary(edgeR)\ndesign <- model.matrix(~group)\ndge <- DGEList(counts = counts)\ndge$offset <- cqn.res$glm.offset\n\n# Estimate dispersion and fit GLM\ndge <- estimateGLMCommonDisp(dge, design)\nfit <- glmFit(dge, design)\nlrt <- glmLRT(fit, coef = 2)\n```\n\n## Usage Tips\n\n- **Small RNA-seq**: For microRNAs where lengths are nearly identical, use `lengthMethod = \"fixed\"` or set `lengths = 1` to disable the length-bias spline and avoid mathematical instability.\n- **Single Samples**: While `cqn()` can run on a single sample, it is designed for multi-sample normalization to make biases comparable across the experiment.\n- **Filtering**: Always filter out genes with very low counts before or after normalization, as CQN cannot reliably correct regions with near-zero observations.\n- **Scale Difference**: `cqn$offset` is for log2-RPKM calculation; `cqn$glm.offset` is on the natural log scale for use in count-based GLMs.\n\n## Reference documentation\n- [CQN (Conditional Quantile Normalization)](./references/cqn.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cqn",
+    "description": "This tool performs Conditional Quantile Normalization to remove GC-content and gene length biases from RNA-seq count data. Use when user asks to normalize RNA-seq data for systematic biases, generate offsets for edgeR or DESeq2, or visualize the effects of GC-content and gene length on expression.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cqn.html"
+  }
+}

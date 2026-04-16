@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cfdnakit",
+  "category": "bioconductor",
+  "name": "bioconductor-cfdnakit",
+  "description": "Bioconductor-cfdnakit analyzes cell-free DNA fragment length distributions and infers copy-number variations from shallow whole-genome sequencing data. Use when user asks to extract fragment lengths from BAM files, calculate short-to-long fragment ratios, estimate tumor fraction, or perform fragmentomics-based copy-number analysis.",
+  "overview": "The `cfdnakit` package is designed for the analysis of next-generation sequencing (NGS) data from liquid biopsies. It specializes in fragmentomics—specifically extracting and visualizing cfDNA fragment length information. By analyzing the enrichment of short fragments (typically 100-150 bp) relative to long fragments (151-250 bp), the package allows for the quantification of circulating tumor DNA (ctDNA) and the inference of copy-number aberrations even from shallow sequencing data (~0.3X covera",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/cfdnakit.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cfdnakit/overview",
+  "github": "https://github.com/Pitithat-pu/cfdnakit",
+  "conda_downloads": "1.4K",
+  "conda_downloads_num": 1400,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "cfdnakit"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cfdnakit.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-cfdnakit/overview",
+    "github": "https://github.com/Pitithat-pu/cfdnakit",
+    "conda_downloads": "1.4K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cfdnakit\n\nname: bioconductor-cfdnakit\ndescription: Analyze cell-free DNA (cfDNA) fragment length distributions and infer copy-number variations (CNV) from shallow whole-genome sequencing (sWGS) data. Use this skill to extract fragment lengths from BAM files, calculate short-to-long (S/L) fragment ratios, estimate tumor fraction (TF), and compute the ctDNA estimation score (CES).\n\n# bioconductor-cfdnakit\n\n## Overview\nThe `cfdnakit` package is designed for the analysis of next-generation sequencing (NGS) data from liquid biopsies. It specializes in fragmentomics—specifically extracting and visualizing cfDNA fragment length information. By analyzing the enrichment of short fragments (typically 100-150 bp) relative to long fragments (151-250 bp), the package allows for the quantification of circulating tumor DNA (ctDNA) and the inference of copy-number aberrations even from shallow sequencing data (~0.3X coverage).\n\n## Core Workflow\n\n### 1. Data Input and Binning\nRead coordination-sorted BAM files into non-overlapping genomic bins.\n```r\nlibrary(cfdnakit)\n\n# Path to BAM file\nbam_path <- \"path/to/sample.bam\"\n\n# Read BAM and split into 1000KB bins (default)\n# Supports hg19 (default), hg38, and mm10\nsample_bam <- read_bamfile(bam_path, \n                           apply_blacklist = TRUE, \n                           ref = \"hg19\", \n                           bin_size = 1000)\n```\n\n### 2. Fragment Length Distribution\nVisualize the fragmentation pattern to identify the characteristic 167 bp peak and 10 bp periodicity.\n```r\n# Plot distribution for one or more samples\nplot_fragment_dist(list(\"Patient_A\" = sample_bam, \"Healthy_Control\" = control_bam))\n```\n\n### 3. Quantification of Short Fragments\nExtract the fragment profile and calculate the Short/Long (S/L) ratio.\n```r\n# Get profile (Short: 100-150bp, Long: 151-250bp)\nsample_profile <- get_fragment_profile(sample_bam, sample_id = \"Sample_01\")\n\n# View summary statistics (Mode, Mean, S.L.Ratio)\nprint(sample_profile$sample_profile)\n\n# Plot genome-wide S/L ratio\nplot_sl_ratio(sample_profile)\n```\n\n### 4. Panel of Normal (PoN) and Normalization\nTo infer CNVs, you must compare the sample against a Panel of Normal (PoN) created from healthy individuals.\n```r\n# Create PoN from a text file containing paths to saved SampleFragment RDS files\n# PoN_list.txt should have one path per line\npon_data <- create_PoN(\"PoN_list.txt\")\n\n# Calculate Z-scores relative to PoN\nsample_zscore <- get_zscore_profile(sample_profile, pon_data)\n```\n\n### 5. CNV Calling and Tumor Fraction Estimation\nPerform segmentation and fit solutions for tumor fraction and ploidy.\n```r\n# Circular Binary Segmentation (CBS)\nsample_segmented <- segmentByPSCB(sample_zscore)\n\n# Plot transformed S/L ratio with segments\nplot_transformed_sl(sample_zscore, sample_segmented)\n\n# Call CNV and estimate Tumor Fraction (TF)\n# Searches for solutions at ploidy 2, 3, and 4\ncnv_results <- call_cnv(sample_segmented, sample_zscore)\n\n# View ranked solutions\nsolution_table <- get_solution_table(cnv_results)\nprint(solution_table)\n\n# Plot the best solution (Rank 1)\nplot_cnv_solution(cnv_results, selected_solution = 1)\n```\n\n### 6. ctDNA Estimation Score (CES)\nCalculate the CES score to quantify tumor-derived DNA based on fragmentation instability.\n```r\nces_score <- calculate_CES_score(sample_segmented)\nprint(ces_score)\n```\n\n## Tips and Best Practices\n- **Coverage**: While the package works with shallow WGS, ensure coverage is at least 0.3X for reliable CNV inference.\n- **Reference Genomes**: Ensure the `ref` parameter in `read_bamfile` matches your alignment (e.g., \"hg19\", \"hg38\").\n- **Efficiency**: Reading BAM files is resource-intensive. Save intermediate `SampleBam` and `SampleFragment` objects as `.rds` files using `saveRDS()` to avoid re-processing.\n- **PoN Quality**: The accuracy of Z-scores and CNV calls depends heavily on a high-quality PoN derived from healthy samples processed with the same sequencing protocol.\n\n## Reference documentation\n- [cfdnakit vignette](./references/cfdnakit-vignette.md)\n- [cfdnakit Rmd source](./references/cfdnakit-vignette.Rmd)",
+  "skill_front_matter": {
+    "name": "bioconductor-cfdnakit",
+    "description": "Bioconductor-cfdnakit analyzes cell-free DNA fragment length distributions and infers copy-number variations from shallow whole-genome sequencing data. Use when user asks to extract fragment lengths from BAM files, calculate short-to-long fragment ratios, estimate tumor fraction, or perform fragmentomics-based copy-number analysis.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/cfdnakit.html"
+  }
+}

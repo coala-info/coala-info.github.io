@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-iterclust",
+  "category": "bioconductor",
+  "name": "bioconductor-iterclust",
+  "description": "This package provides a framework for performing iterative clustering to identify subtle sub-populations within heterogeneous biological datasets. Use when user asks to perform recursive clustering, evaluate cluster heterogeneity, or identify nested cell types in expression data.",
+  "overview": "The `iterClust` package provides a framework for iterative clustering. In biological datasets, large differences between major cell types often mask subtle differences within a specific lineage. `iterClust` solves this by clustering data, evaluating heterogeneity, and then recursively clustering the resulting subsets until no further heterogeneity is detected or user-defined thresholds are met.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/iterClust.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iterclust/overview",
+  "github": "https://github.com/hd2326/iterClust",
+  "conda_downloads": "22.8K",
+  "conda_downloads_num": 22800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iterClust"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/iterClust.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iterclust/overview",
+    "github": "https://github.com/hd2326/iterClust",
+    "conda_downloads": "22.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-iterclust\n\n## Overview\n\nThe `iterClust` package provides a framework for iterative clustering. In biological datasets, large differences between major cell types often mask subtle differences within a specific lineage. `iterClust` solves this by clustering data, evaluating heterogeneity, and then recursively clustering the resulting subsets until no further heterogeneity is detected or user-defined thresholds are met.\n\n## Installation\n\n```r\nif (!requireNamespace(\"BiocManager\", quietly=TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"iterClust\")\nlibrary(iterClust)\n```\n\n## Core Workflow\n\nThe `iterClust()` function is the primary interface. It requires several user-defined functions to control the behavior of each iteration.\n\n### 1. Define Component Functions\n\nYou must define functions for feature selection, clustering, and evaluation.\n\n*   **Feature Selection**: Returns features to use for the current iteration.\n    ```r\n    featureSelect <- function(dset, iteration, feature) return(rownames(dset))\n    ```\n*   **Core Clustering**: Returns a list of clustering schemes (e.g., using PAM).\n    ```r\n    library(cluster)\n    coreClust <- function(dset, iteration){\n      dist <- as.dist(1 - cor(dset))\n      range <- 2:5 # Search for 2 to 5 clusters\n      clust <- lapply(range, function(k) pam(dist, k)$clustering)\n      return(clust)\n    }\n    ```\n*   **Cluster Evaluation**: Picks the optimal scheme from the list provided by `coreClust`.\n    ```r\n    clustEval <- function(dset, iteration, clust){\n      dist <- as.dist(1 - cor(dset))\n      # Calculate mean silhouette score for each scheme\n      scores <- sapply(clust, function(x) mean(silhouette(x, dist)[, \"sil_width\"]))\n      return(scores)\n    }\n    ```\n*   **Heterogeneity Check**: Determines if a cluster should be split further.\n    ```r\n    clustHetero <- function(clustEval, iteration){\n      return(clustEval > 0.15) # Split if silhouette score > 0.15\n    }\n    ```\n\n### 2. Run Iterative Clustering\n\nPass the defined functions and data (expression matrix) to `iterClust`.\n\n```r\nresults <- iterClust(exp_matrix, \n                     maxIter = 3, \n                     minFeatureSize = 100, \n                     minClustSize = 5,\n                     featureSelect = featureSelect,\n                     coreClust = coreClust,\n                     clustEval = clustEval,\n                     clustHetero = clustHetero)\n```\n\n### 3. Interpret Results\n\nThe output is a list containing:\n*   `cluster`: A nested list organized by iteration (`Iter1`, `Iter2`, etc.) containing observation names for each cluster.\n*   `feature`: The features used to split clusters in previous iterations.\n*   `clustEval`: Evaluation scores for the clustering schemes.\n*   `obsEval`: Evaluation scores for individual observations.\n\n## Tips for Success\n\n*   **Internal Variables (IV)**: The functions can access `depth` (current iteration round) and `cluster` (previous results) to dynamically adjust parameters.\n*   **Outlier Removal**: Use `obsEval` and `obsOutlier` functions within `iterClust` to remove poorly clustered observations at each step to improve downstream purity.\n*   **Comparison**: `iterClust` is specifically designed to find sub-populations (like purified vs. unpurified B-cells) that standard PAM or Consensus Clustering might miss or incorrectly group.\n\n## Reference documentation\n\n- [Introduction to Iterative Clustering Analysis Using iterClust](./references/introduction.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-iterclust",
+    "description": "This package provides a framework for performing iterative clustering to identify subtle sub-populations within heterogeneous biological datasets. Use when user asks to perform recursive clustering, evaluate cluster heterogeneity, or identify nested cell types in expression data.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/iterClust.html"
+  }
+}

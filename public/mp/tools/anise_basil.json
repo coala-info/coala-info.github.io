@@ -1,0 +1,49 @@
+{
+  "id": "anise_basil",
+  "category": "CLI",
+  "name": "anise_basil",
+  "description": "The anise_basil toolset discovers and reconstructs novel genomic sequences present in a donor sample but absent from a reference genome. Use when user asks to identify insertion breakpoints, assemble novel sequence insertions, or analyze structural variants from paired-end sequencing data.",
+  "overview": "The `anise_basil` toolset is designed for the discovery and characterization of novel genomic sequences that are present in a donor sample but absent from a reference genome. The workflow is split into two primary components: **BASIL** (Breakpoint Analysis and Search for ILlegal insertions), which identifies the genomic coordinates where insertions likely occur, and **ANISE** (Assembler for Novel InSertions), which uses the reads associated with those breakpoints to reconstruct the actual insert",
+  "homepage": "https://github.com/seqan/anise_basil",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/anise_basil/overview",
+  "github": "https://github.com/seqan/anise_basil",
+  "conda_downloads": "15.6K",
+  "conda_downloads_num": 15600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "anise_basil",
+      "anise_basil_filter_basil.py",
+      "anise_basil_anise"
+    ],
+    "description": "Scan SAM/BAM file MAPPING for signatures of structural variations.",
+    "docker_image": "quay.io/biocontainers/anise_basil:1.2.0--py312hdcc493e_9",
+    "homepage": "https://github.com/seqan/anise_basil",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/anise_basil/overview",
+    "github": "https://github.com/seqan/anise_basil",
+    "conda_downloads": "15.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "anise_basil.cwl",
+    "anise_basil_anise.cwl",
+    "anise_basil_filter_basil.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# anise_basil\n\n## Overview\n\nThe `anise_basil` toolset is designed for the discovery and characterization of novel genomic sequences that are present in a donor sample but absent from a reference genome. The workflow is split into two primary components: **BASIL** (Breakpoint Analysis and Search for ILlegal insertions), which identifies the genomic coordinates where insertions likely occur, and **ANISE** (Assembler for Novel InSertions), which uses the reads associated with those breakpoints to reconstruct the actual inserted sequence. This skill should be used when analyzing paired-end HTS data to find large structural variants that standard mappers cannot fully resolve.\n\n## Command-Line Workflow\n\n### 1. Pre-processing\nBefore using BASIL, reads must be mapped to a reference genome and the resulting BAM file must be sorted and indexed.\n\n```bash\n# Example using Samtools\nsamtools sort input.bam -o sorted.bam\nsamtools index sorted.bam\n```\n\n### 2. Breakpoint Detection with BASIL\nBASIL analyzes the BAM file for \"illegal\" read pairs (e.g., one-end anchored reads or discordant pairs) to find tentative insertion sites.\n\n```bash\nbasil -ir reference.fa -im sorted.bam -ov breakpoints.vcf\n```\n*   `-ir`: Path to the reference FASTA file.\n*   `-im`: Path to the sorted/indexed BAM file.\n*   `-ov`: Output VCF file containing candidate breakpoints.\n\n### 3. Filtering Candidate Sites\nTo reduce noise and improve assembly performance, filter the BASIL VCF file. A common heuristic is to require a minimum number of one-end anchored (OEA) reads on each side of the breakpoint.\n\n```bash\nfilter_basil.py -i breakpoints.vcf -o filtered.vcf --min-oea-each-side 10\n```\n\n### 4. Sequence Assembly with ANISE\nANISE takes the filtered breakpoints and performs a localized assembly to reconstruct the inserted sequence.\n\n```bash\nanise -ir reference.fa -im sorted.bam -iv filtered.vcf -of assembly.fa\n```\n*   `-iv`: Input VCF file (filtered breakpoints).\n*   `-of`: Output FASTA file containing assembled contigs.\n\n## Expert Tips and Best Practices\n\n### Identifying High-Confidence Assemblies\nANISE produces a FASTA file where the header lines contain metadata. Look for the `SPANNING=yes` flag. This indicates that the assembly process successfully connected the left and right sides of the breakpoint, representing a complete reconstruction of the insertion.\n\nYou can extract these high-confidence contigs using the provided utility script:\n```bash\nextract_spanning.awk assembly.fa > spanning_contigs.fa\n```\n\n### Handling Complex Regions\n*   **Repeats**: If the assembly stops prematurely (`STOPPED=no_more_reads` or `STOPPED=repeat`), the insertion may be located within or contain repetitive elements that exceed the library's insert size.\n*   **Heuristic Filtering**: For high-coverage data (e.g., 30x-50x), increasing `--min-oea-each-side` in the filtering step can significantly speed up ANISE by ignoring low-support artifacts.\n\n### Validation\nSince ANISE assembles sequence both inside and slightly flanking the insertion, you can validate the assembly by aligning the resulting contigs back to the reference using tools like BLAT. A successful assembly will show the flanking regions matching the reference perfectly, separated by the novel inserted sequence.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| anise | Assembly of Novel Inserted SEquence. ANISE will try to assemble the inserted sequences at the sites in IN.vcf and write the assembled sequences to OUT.vcf. |\n| basil | Scan SAM/BAM file MAPPING for signatures of structural variations. |\n| filter_basil.py | Filter BASIL output VCF. |\n\n## Reference documentation\n- [GitHub Repository and Documentation](./references/github_com_seqan_anise_basil.md)",
+  "skill_front_matter": {
+    "name": "anise_basil",
+    "description": "The anise_basil toolset discovers and reconstructs novel genomic sequences present in a donor sample but absent from a reference genome. Use when user asks to identify insertion breakpoints, assemble novel sequence insertions, or analyze structural variants from paired-end sequencing data.",
+    "homepage": "https://github.com/seqan/anise_basil"
+  }
+}

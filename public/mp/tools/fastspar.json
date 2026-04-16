@@ -1,0 +1,45 @@
+{
+  "id": "fastspar",
+  "category": "CLI",
+  "name": "fastspar",
+  "description": "FastSpar infers correlations in compositional datasets by implementing a scalable and efficient version of the SparCC algorithm. Use when user asks to estimate median correlation and covariance from OTU tables, generate bootstrap samples for significance testing, or calculate p-values for compositional data.",
+  "overview": "FastSpar provides a scalable and efficient way to infer correlations in compositional datasets, overcoming the limitations of traditional correlation measures like Pearson or Spearman which can produce spurious results on relative abundance data. It implements the SparCC algorithm in C++, offering a massive speedup and reduced memory footprint compared to the original Python implementation. The toolset includes utilities for the full analytical pipeline: initial correlation estimation, bootstrap",
+  "homepage": "https://github.com/scwatts/fastspar",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/fastspar/overview",
+  "github": "https://github.com/scwatts/fastspar",
+  "conda_downloads": "24.9K",
+  "conda_downloads_num": 24900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fastspar"
+    ],
+    "description": "c++ implementation of SparCC",
+    "docker_image": "quay.io/biocontainers/fastspar:1.0.0--h1b620e3_6",
+    "homepage": "https://github.com/scwatts/fastspar",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/fastspar/overview",
+    "github": "https://github.com/scwatts/fastspar",
+    "conda_downloads": "24.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "fastspar.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# fastspar\n\n## Overview\nFastSpar provides a scalable and efficient way to infer correlations in compositional datasets, overcoming the limitations of traditional correlation measures like Pearson or Spearman which can produce spurious results on relative abundance data. It implements the SparCC algorithm in C++, offering a massive speedup and reduced memory footprint compared to the original Python implementation. The toolset includes utilities for the full analytical pipeline: initial correlation estimation, bootstrap generation for significance testing, and p-value calculation.\n\n## Usage Patterns\n\n### 1. Correlation Inference\nThe primary command estimates the median correlation and covariance from an OTU table.\n```bash\nfastspar --otu_table input_data.tsv --correlation correlation.tsv --covariance covariance.tsv --threads 8\n```\n*   **Input**: BIOM-formatted TSV (counts only, no metadata).\n*   **Optimization**: Increase `--iterations` (default 20) and `--exclude_iterations` (default 10) for higher precision.\n*   **Thresholding**: Use `--threshold` (default 0.1) to define the correlation strength required to exclude OTU pairs during the iterative estimation process.\n\n### 2. P-value Estimation Workflow\nTo determine the statistical significance of correlations, follow this three-step process:\n\n**Step A: Generate Bootstrap Samples**\nCreate 1000 (or more) random permutations of the original data.\n```bash\nmkdir -p bootstrap_counts\nfastspar_bootstrap --otu_table input_data.tsv --number 1000 --prefix bootstrap_counts/sample\n```\n\n**Step B: Process Bootstraps**\nRun correlation inference on every bootstrap file. Using GNU `parallel` is the standard method to maximize CPU usage.\n```bash\nmkdir -p bootstrap_correlations\nparallel fastspar --otu_table {} --correlation bootstrap_correlations/cor_{/} --covariance bootstrap_correlations/cov_{/} --iterations 5 --threads 1 ::: bootstrap_counts/*\n```\n\n**Step C: Calculate P-values**\nCompare the original correlations against the bootstrap distribution to generate p-values.\n```bash\nfastspar_pvalues --otu_table input_data.tsv --correlation correlation.tsv --prefix bootstrap_correlations/cor_sample_ --permutations 1000 --outfile pvalues.tsv\n```\n\n## Best Practices\n- **Data Preparation**: Ensure the input TSV contains only numeric counts. Metadata columns or non-numeric headers will cause parsing errors.\n- **Threading Strategy**: Use the `--threads` flag for single large runs. However, when processing bootstraps with `parallel`, it is more efficient to set `fastspar --threads 1` and let `parallel` manage the concurrent execution of multiple files.\n- **Memory Management**: FastSpar is memory-efficient, but when running many parallel instances on very large OTU tables, monitor system RAM to avoid OOM (Out Of Memory) errors.\n\n## Reference documentation\n- [FastSpar GitHub Repository](./references/github_com_scwatts_fastspar.md)\n- [FastSpar Bioconda Overview](./references/anaconda_org_channels_bioconda_packages_fastspar_overview.md)",
+  "skill_front_matter": {
+    "name": "fastspar",
+    "description": "FastSpar infers correlations in compositional datasets by implementing a scalable and efficient version of the SparCC algorithm. Use when user asks to estimate median correlation and covariance from OTU tables, generate bootstrap samples for significance testing, or calculate p-values for compositional data.",
+    "homepage": "https://github.com/scwatts/fastspar"
+  }
+}

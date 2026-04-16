@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-trare",
+  "category": "bioconductor",
+  "name": "bioconductor-trare",
+  "description": "This tool identifies transcriptional network disruptions and infers gene regulatory networks from RNA-Seq data using Bayesian machine learning. Use when user asks to infer module-based gene regulatory networks, perform phenotype-associated rewiring tests, or conduct multi-tier analysis of transcriptional disruptions.",
+  "overview": "TraRe (Transcriptional Rewiring) is a Bioconductor package designed to identify disruptions in gene regulatory networks (GRNs) associated with specific phenotypes. It uses Bayesian machine learning (specifically Variational Bayes Spike Regression) to link regulators (e.g., Transcription Factors) to target gene modules. The core workflow involves preprocessing expression data, inferring GRN modules through bootstrapping, and testing for \"rewiring\"—significant changes in gene co-expression pattern",
+  "homepage": "https://bioconductor.org/packages/3.13/bioc/html/TraRe.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/ubioinformat/TraRe",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "TraRe"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.13/bioc/html/TraRe.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/ubioinformat/TraRe",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-trare\n\nname: bioconductor-trare\ndescription: Identification of transcriptional network disruptions via Bayesian machine learning. Use this skill to infer module-based gene regulatory networks (GRNs) from RNA-Seq data, perform phenotype-associated rewiring tests to identify disrupted modules, and conduct three-tier analysis (gene, regulon, and transcriptional module levels).\n\n# bioconductor-trare\n\n## Overview\nTraRe (Transcriptional Rewiring) is a Bioconductor package designed to identify disruptions in gene regulatory networks (GRNs) associated with specific phenotypes. It uses Bayesian machine learning (specifically Variational Bayes Spike Regression) to link regulators (e.g., Transcription Factors) to target gene modules. The core workflow involves preprocessing expression data, inferring GRN modules through bootstrapping, and testing for \"rewiring\"—significant changes in gene co-expression patterns between binary phenotype conditions (e.g., Responders vs. Non-responders).\n\n## Core Workflow\n\n### 1. Data Preparation\nTraRe requires a log-normalized gene expression matrix and information identifying which genes are regulators (drivers).\n\n```r\nlibrary(TraRe)\nlibrary(SummarizedExperiment)\n\n# Create a SummarizedExperiment object\n# counts: log-normalized expression (genes x samples)\n# rowData: must contain a boolean column 'gene_info' (TRUE for regulators)\n# colData: must contain a 'phenotype' column (binary factor)\nse <- SummarizedExperiment(assays = list(counts = exp_matrix),\n                           rowData = gene_info_df,\n                           colData = phenotype_df)\n\n# Preprocess to filter low variance genes/samples\ntrare_obj <- trare_preprocessing(data_matrix = se, verbose = TRUE)\n```\n\n### 2. GRN Inference (LINKER)\nThe `LINKER_run` function performs the primary network inference. It uses bootstrapping to ensure robustness.\n\n```r\n# link_mode and graph_mode: \"VBSR\" (recommended), \"LASSOmin\", \"LASSO1se\", or \"LM\"\nlinker_output <- LINKER_run(trare_obj,\n                            link_mode = \"VBSR\",\n                            graph_mode = \"VBSR\",\n                            NrModules = 50,\n                            Nr_bootstraps = 10)\n```\n\n### 3. Rewiring Test\nIdentify modules where the relationship between regulators and targets changes significantly between phenotypes.\n\n```r\n# Prepare the rewiring object\nprew_output <- preparerewiring(name = \"Analysis_Name\", \n                               TraReObj = trare_obj,\n                               linker_output = linker_output,\n                               final_signif_thresh = 0.05,\n                               outdir = \"results/\")\n\n# Run the test and generate HTML reports/visualizations\nrunrewiring(prew_output)\n```\n\n### 4. Multi-tier Analysis\nAnalyze disruptions at specific biological resolutions.\n\n*   **Gene Level**: Identify specific TFs significantly associated with rewired modules.\n*   **Regulon Level**: Extract curated rewired regulons for specific TFs.\n\n```r\n# Gene level analysis\nimp_genes <- rewiring_gene_level(linker_output = linker_output,\n                                 TraReObj = trare_obj,\n                                 fpath = \"rewired_modules.txt\")\n\n# Regulon level analysis\nregulons <- rewiring_regulon_level(linker_output = linker_output,\n                                   TraReObj = trare_obj,\n                                   fpath = \"rewired_modules.txt\")\n```\n\n## Visualization and Reporting\nTraRe generates automated HTML reports during the rewiring step. You can also manually generate bipartite graphs for specific modules:\n\n```r\n# Generate a single GRN for a specific set of genes\ngraph <- NET_run(lognorm_est_counts = expression_subset,\n                 target_filtered_idx = target_indices,\n                 regulator_filtered_idx = regulator_indices,\n                 graph_mode = \"VBSR\")\n\n# Plot with phenotype-aware layout (uses t-test to sort targets)\nlayout <- return_layout_phenotype(drivers_names, targets_names, varfile)\nplot_igraph(graph$graphs$VBSR, mylayout = layout)\n```\n\n## Tips for Success\n*   **Normalization**: Use `DESeq2::varianceStabilizingTransformation` before inputting data into TraRe.\n*   **Bootstraps**: For publication-quality results, use at least 50 bootstraps in `LINKER_run` to increase the power of the Fisher's test in gene-level analysis.\n*   **Regulators**: Ensure your `gene_info` correctly identifies TFs; the quality of the GRN depends entirely on the provided candidate regulators.\n*   **Cliques**: Use the `include_cliques = TRUE` parameter in `rewiring_gene_level` to recover TFs that might have been dropped due to high correlation with other regulators.\n\n## Reference documentation\n- [TraRe: Identification of transcriptional network disruptions via Bayesian machine learning](./references/TraRe.Rmd)\n- [TraRe: Identification of conditions dependant Gene Regulatory Networks](./references/TraRe.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-trare",
+    "description": "This tool identifies transcriptional network disruptions and infers gene regulatory networks from RNA-Seq data using Bayesian machine learning. Use when user asks to infer module-based gene regulatory networks, perform phenotype-associated rewiring tests, or conduct multi-tier analysis of transcriptional disruptions.",
+    "homepage": "https://bioconductor.org/packages/3.13/bioc/html/TraRe.html"
+  }
+}

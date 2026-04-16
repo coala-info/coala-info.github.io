@@ -1,0 +1,47 @@
+{
+  "id": "bayestyper",
+  "category": "CLI",
+  "name": "bayestyper",
+  "description": "BayesTyper is a probabilistic genotyping framework that uses k-mer alignment to genotype diverse variation types across a variant graph. Use when user asks to genotype SNPs and structural variants, perform k-mer based variant calling, or estimate genotypes for complex genomic regions.",
+  "overview": "BayesTyper is a probabilistic genotyping framework designed to handle diverse variation types, ranging from simple SNPs to complex structural variants (SVs). By representing variants in a graph and performing exact alignment of k-mers, it bypasses the reference bias often inherent in standard linear alignment-based callers. The tool is particularly useful when working with complex genomic regions where traditional realignment might fail. It typically operates in a multi-step workflow: candidate ",
+  "homepage": "https://github.com/bioinformatics-centre/BayesTyper",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bayestyper/overview",
+  "github": "https://github.com/bioinformatics-centre/BayesTyper",
+  "conda_downloads": "4.6K",
+  "conda_downloads_num": 4600,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bayestyper_bayesTyper",
+      "bayestyper_bayesTyperTools"
+    ],
+    "description": "BayesTyper (v1.5 )",
+    "docker_image": "quay.io/biocontainers/bayestyper:1.5--h077b44d_4",
+    "homepage": "https://github.com/bioinformatics-centre/BayesTyper",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bayestyper/overview",
+    "github": "https://github.com/bioinformatics-centre/BayesTyper",
+    "conda_downloads": "4.6K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bayestyper_bayesTyper.cwl",
+    "bayestyper_bayesTyperTools.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bayestyper\n\n## Overview\n\nBayesTyper is a probabilistic genotyping framework designed to handle diverse variation types, ranging from simple SNPs to complex structural variants (SVs). By representing variants in a graph and performing exact alignment of k-mers, it bypasses the reference bias often inherent in standard linear alignment-based callers. The tool is particularly useful when working with complex genomic regions where traditional realignment might fail. It typically operates in a multi-step workflow: candidate variant generation, k-mer counting, and the final genotyping inference.\n\n## Command Line Usage and Best Practices\n\n### Core Genotyping\nThe primary command for inference is `bayesTyper genotype`.\n\n*   **Noise Estimation**: For most large-scale human datasets, the default noise estimation is stable. However, for smaller genomes or variant sets with very few SNVs, use the `--noise-genotyping` flag. This mode estimates noise parameters and genotypes jointly, which is more robust for small datasets but increases memory and time requirements.\n*   **Ploidy Handling**: By default, BayesTyper assumes human ploidy. For other organisms or specific sex chromosome analysis, provide a ploidy file using `--chromosome-ploidy-file`. Supported levels are 0, 1 (haploid), and 2 (diploid).\n*   **Haplotype Candidates**: If genotyping a small number of samples, consider increasing `--max-number-of-sample-haplotypes` (default is 32) to improve sensitivity, though this may increase computation time in complex clusters.\n\n### Sample Batching and Merging\nBayesTyper is optimized for batches of up to 30 samples. To process larger cohorts:\n1.  Generate a unified candidate variant set across all samples.\n2.  Run `bayesTyper genotype` on separate batches (≤ 30 samples each) using the same candidate set.\n3.  Compress the resulting VCFs using `bgzip`.\n4.  Merge batches using `bcftools`:\n    ```bash\n    bcftools merge --filter-logic x --info-rules ACP:max -O z -o merged_output.vcf.gz batch1.vcf.gz batch2.vcf.gz\n    ```\n    *Note: Non-PASS filters may not be consistent after merging.*\n\n### Filtering and Refinement\nBayesTyper applies several \"hard\" filters by default, including Genotype Posterior Probability (GPP < 0.99) and k-mer coverage thresholds (NAK/FAK).\n\n*   **Refiltering**: Use `bayesTyperTools filter` to adjust stringency without rerunning the full genotyping stage.\n    ```bash\n    bayesTyperTools filter -v <input.vcf> -o <output_prefix> -z \\\n        --min-genotype-posterior 0.95 \\\n        --kmer-coverage-file <prefix>_genomic_parameters.txt\n    ```\n*   **Unfiltered Calls**: To retrieve all calls (e.g., for downstream sensitivity analysis), set all filter thresholds to 0.\n\n### Tool-Specific Tips\n*   **K-mer Size**: The k-mer size (default 55) is fixed at compile-time. If your read length or complexity requires a different size (e.g., k=31 for shorter reads), you must recompile from source using `-DKMER_SIZE=<value>`.\n*   **Insertion Alleles**: When converting alleles from other callers (like Manta), ensure insertion sequences are provided in the `SEQ` or `SVINSSEQ` attributes, or provide a fasta file to `bayesTyperTools convertAllele`.\n*   **Memory Management**: Complex variant clusters can significantly increase memory usage. If the tool crashes on specific regions, check the complexity of the input VCF in those clusters.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bayestyper | BayesTyper (v1.5 ) |\n| bayestyper_bayesTyperTools | BayesTyperTools (v1.5 ) |\n\n## Reference documentation\n- [BayesTyper Main Repository](./references/github_com_bioinformatics-centre_BayesTyper.md)\n- [Executing BayesTyper on sample batches](./references/github_com_bioinformatics-centre_BayesTyper_wiki_Executing-BayesTyper-on-sample-batches.md)\n- [Filtering Guide](./references/github_com_bioinformatics-centre_BayesTyper_wiki_Filtering.md)\n- [Building from Source (K-mer configuration)](./references/github_com_bioinformatics-centre_BayesTyper_wiki_Building-BayesTyper-from-source.md)",
+  "skill_front_matter": {
+    "name": "bayestyper",
+    "description": "BayesTyper is a probabilistic genotyping framework that uses k-mer alignment to genotype diverse variation types across a variant graph. Use when user asks to genotype SNPs and structural variants, perform k-mer based variant calling, or estimate genotypes for complex genomic regions.",
+    "homepage": "https://github.com/bioinformatics-centre/BayesTyper"
+  }
+}

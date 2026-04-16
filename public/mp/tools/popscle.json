@@ -1,0 +1,59 @@
+{
+  "id": "popscle",
+  "category": "CLI",
+  "name": "popscle",
+  "description": "Popscle identifies the sample origin of individual cells in multiplexed single-cell experiments by comparing sequencing reads against genetic variants. Use when user asks to generate variant pileups from BAM files, demultiplex cells using external genotypes, or cluster cells by genetic identity when genotypes are unavailable.",
+  "overview": "The `popscle` suite provides high-performance tools for identifying the sample origin of individual cells in multiplexed single-cell experiments. It operates by comparing the genetic variants observed in single-cell sequencing reads against known or inferred genotypes. The workflow typically involves a two-step process: first, generating a pileup of variants across barcodes using `dsc-pileup`, and second, assigning identities using either `demuxlet` (when external genotypes are available) or `fr",
+  "homepage": "https://github.com/statgen/popscle",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/popscle/overview",
+  "github": "https://github.com/statgen/popscle",
+  "conda_downloads": "8.1K",
+  "conda_downloads_num": 8100,
+  "last_updated": "2025-08-28",
+  "cwl_count": 8,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "popscle_demuxlet",
+      "popscle_freemuxlet-old",
+      "popscle_freemuxlet",
+      "popscle_digital-pileup",
+      "popscle_dsc-pileup",
+      "popscle_dsc-dump",
+      "popscle_dsc-dump2plp",
+      "popscle_plp-make-dge-matrix"
+    ],
+    "description": "Deconvolute sample identify of droplet-based sc-RNAseq",
+    "docker_image": "quay.io/biocontainers/popscle:0.1--ha0d7e29_1",
+    "homepage": "https://github.com/statgen/popscle",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/popscle/overview",
+    "github": "https://github.com/statgen/popscle",
+    "conda_downloads": "8.1K",
+    "last_updated": "2025-08-28",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "popscle_demuxlet.cwl",
+    "popscle_digital-pileup.cwl",
+    "popscle_dsc-dump.cwl",
+    "popscle_dsc-dump2plp.cwl",
+    "popscle_dsc-pileup.cwl",
+    "popscle_freemuxlet-old.cwl",
+    "popscle_freemuxlet.cwl",
+    "popscle_plp-make-dge-matrix.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# popscle\n\n## Overview\n\nThe `popscle` suite provides high-performance tools for identifying the sample origin of individual cells in multiplexed single-cell experiments. It operates by comparing the genetic variants observed in single-cell sequencing reads against known or inferred genotypes. The workflow typically involves a two-step process: first, generating a pileup of variants across barcodes using `dsc-pileup`, and second, assigning identities using either `demuxlet` (when external genotypes are available) or `freemuxlet` (when they are not).\n\n## Core Workflow and CLI Patterns\n\n### 1. Data Preparation (dsc-pileup)\nBefore demultiplexing, you must generate pileup files. This avoids re-scanning large BAM files if you need to re-run the deconvolution with different parameters.\n\n```bash\npopscle dsc-pileup \\\n  --sam input.bam \\\n  --vcf reference_panel.vcf.gz \\\n  --out output_prefix\n```\n\n**Expert Tips:**\n- **Speed up processing**: Use `--group-list` to provide a `barcodes.tsv` file (e.g., from CellRanger). This limits analysis to valid cells and significantly reduces runtime.\n- **Reference Panel**: Use a high-quality reference VCF (like 1000 Genomes or HapMap) containing allele frequencies (AF).\n\n### 2. Genotype-Based Demultiplexing (demuxlet)\nUse this when you have a VCF containing the specific genotypes of the individuals pooled in the experiment.\n\n```bash\npopscle demuxlet \\\n  --plp output_prefix \\\n  --vcf sample_genotypes.vcf.gz \\\n  --field GT \\\n  --out demux_results\n```\n\n**Key Parameters:**\n- `--field`: Specify whether to use hard genotypes (`GT`), posterior probabilities (`GP`), or genotype likelihoods (`PL/GL`). `GT` is most common for high-quality SNP arrays.\n- `--alpha`: (Default 0.5) Adjusts the expected proportion of genetic mixture in doublets.\n\n### 3. Genotyping-Free Demultiplexing (freemuxlet)\nUse this when external genotypes are unavailable. It clusters cells based on shared genetic variations.\n\n```bash\npopscle freemuxlet \\\n  --plp output_prefix \\\n  --nsample 5 \\\n  --out freemux_results\n```\n\n**Key Parameters:**\n- `--nsample`: The exact number of unique individuals expected in the pool.\n\n## Interpreting Results\n\n### The .best (demuxlet) and .clust1.samples.gz (freemuxlet) files\nThese are the primary output files. Key columns include:\n- **BARCODE**: The cell barcode.\n- **DROPLET.TYPE**: Classified as `SNG` (Singlet), `DBL` (Doublet), or `AMB` (Ambiguous).\n- **BEST.GUESS**: The assigned sample ID(s). For singlets, it shows the ID twice (e.g., `ID1,ID1`). For doublets, it shows both contributors (e.g., `ID1,ID2`).\n- **BEST.POSTERIOR**: The confidence score of the assignment.\n\n## Best Practices\n- **Memory Management**: For very large datasets, ensure `htslib` is properly configured and use the pileup workflow rather than running `demuxlet --sam` directly to save time on iterations.\n- **Filtering**: Ensure your input VCF is filtered for high-confidence SNPs. Including too many low-quality variants can increase noise and lead to `AMB` (Ambiguous) calls.\n- **ATAC-seq**: While designed for RNA-seq, `popscle` can be used for scATAC-seq demultiplexing provided the BAM file has proper barcode tags (default `--tag-group CB` and `--tag-UMI UB`).\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| popscle_demuxlet | Deconvolute sample identify of droplet-based sc-RNAseq |\n| popscle_digital-pileup | Produce pileup of dsc-RNAseq (old version of dsc-pileup) |\n| popscle_dsc-dump | Produce a file dump of dsc-RNAseq |\n| popscle_dsc-dump2plp | Produce a pileup from a dump of dsc-RNAseq |\n| popscle_dsc-pileup | Produce pileup of dsc-RNAseq |\n| popscle_freemuxlet | Genotype-free deconvolution of sc-RNAseq |\n| popscle_freemuxlet-old | Genotype-free deconvolution of sc-RNAseq (deprecated) |\n| popscle_plp-make-dge-matrix | Make Digital Expression Matrix from Digital Pileups |\n\n## Reference documentation\n- [popscle GitHub Overview](./references/github_com_statgen_popscle.md)\n- [popscle Wiki and Tutorial](./references/github_com_statgen_popscle_wiki.md)",
+  "skill_front_matter": {
+    "name": "popscle",
+    "description": "Popscle identifies the sample origin of individual cells in multiplexed single-cell experiments by comparing sequencing reads against genetic variants. Use when user asks to generate variant pileups from BAM files, demultiplex cells using external genotypes, or cluster cells by genetic identity when genotypes are unavailable.",
+    "homepage": "https://github.com/statgen/popscle"
+  }
+}

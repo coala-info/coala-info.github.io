@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-svm2crm",
+  "category": "bioconductor",
+  "name": "bioconductor-svm2crm",
+  "description": "SVM2CRM is a computational pipeline that uses Support Vector Machines and feature selection to identify cis-regulatory elements like enhancers and promoters from ChIP-seq data. Use when user asks to predict cis-regulatory elements, perform feature selection on histone modification data, or tune SVM parameters for genomic region classification.",
+  "overview": "SVM2CRM is a computational pipeline designed to identify cis-regulatory elements (CREs) like enhancers and promoters using ChIP-seq data. It addresses the challenge of selecting the optimal set of histone modifications for prediction. The package utilizes Support Vector Machines (SVM) via the LibLinear library and includes a specialized feature selection step based on k-means clustering and the Index Coverage of Regulatory Regions (ICRR).",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/SVM2CRM.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SVM2CRM"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/SVM2CRM.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-svm2crm\n\n## Overview\n\nSVM2CRM is a computational pipeline designed to identify cis-regulatory elements (CREs) like enhancers and promoters using ChIP-seq data. It addresses the challenge of selecting the optimal set of histone modifications for prediction. The package utilizes Support Vector Machines (SVM) via the LibLinear library and includes a specialized feature selection step based on k-means clustering and the Index Coverage of Regulatory Regions (ICRR).\n\n## Core Workflow\n\n### 1. Data Pre-processing\nImport signal data from BED files. The package normalizes signals into bins and windows.\n\n```r\nlibrary(SVM2CRM)\nlibrary(SVM2CRMdata)\n\n# Define parameters\nchr <- \"chr1\"\nbin.size <- 100\nwindows <- 1000\n\n# Import signals (example using package data)\n# cisREfindbed creates a data.frame with histone marks in columns\nlist_file <- grep(dir(), pattern=\".bz2\", value=TRUE)\n# completeTABLE <- cisREfindbed(list_file=list_file, chr=chr, bin.size=bin.size, windows=windows)\n```\n\n### 2. Training Set Generation\nGenerate positive (known enhancers, e.g., p300 sites) and negative (random background) training sets.\n\n```r\n# Get signals for specific genomic coordinates\n# reference: path to bed file with coordinates\ntrain_pos <- getSignal(list_file, chr=\"chr1\", reference=\"enhancers.txt\", win.size=500, bin.size=100)\ntrain_neg <- getSignal(list_file, chr=\"chr1\", reference=\"random_regions.txt\", win.size=500, bin.size=100)\n\ntraining_set <- rbind(train_pos, train_neg)\n```\n\n### 3. Feature Selection\nReduce the number of histone marks to avoid redundancy and noise using `smoothInputFS` and `featSelectionWithKmeans`.\n\n```r\n# 1. Smooth signals\nlistcolnames <- c(\"H3K4me1\", \"H3K4me2\", \"H3K27ac\")\ndftotann <- smoothInputFS(train_pos[,c(6:ncol(train_pos))], listcolnames, k=20)\n\n# 2. K-means and ICRR calculation\n# nk: number of clusters\nresults <- featSelectionWithKmeans(dftotann, nk=5)\nresultsFS <- results[[7]] # Contains ICRR values\n\n# 3. Filter by ICRR (lower values indicate better discrimination)\nresultsFSfilter <- resultsFS[which(resultsFS[,3] < 0.26), ]\nlistHM <- resultsFSfilter[,1]\n```\n\n### 4. SVM Parameter Tuning\nFind the best combination of histone marks and SVM parameters (cost, kernel type) using `tuningParametersCombROC`.\n\n```r\n# typeSVM: 0 (L2-reg logistic regression) to 7 (L2-reg logistic regression dual)\n# costV: cost of constraints violation\ntuningTAB <- tuningParametersCombROC(\n  training_set = training_set, \n  typeSVM = 0, \n  costV = 100, \n  different.weight = \"TRUE\", \n  vecS = 2, # Number of histone marks in combination\n  pcClass = 100, # Positive class size\n  ncClass = 400, # Negative class size\n  infofile = infofile\n)\n\n# Select model with best F-score\ntuningTABfilter <- tuningTAB[(tuningTAB$fscore < 0.95), ]\nrow_max <- which.max(tuningTABfilter[,\"fscore\"])\n```\n\n### 5. Genome-Wide Prediction\nApply the trained model to predict putative enhancers across the genome.\n\n```r\npredictionGW(\n  training_set = training_set,\n  data_enhancer_svm = data_enhancer_svm, \n  listHM = columnPR, # Selected histone marks\n  pcClass.string = \"enhancers\",\n  nClass.string = \"not_enhancers\",\n  cost = 100,\n  type = 0,\n  \"output_filename\"\n)\n```\n\n## Key Functions\n- `cisREfindbed`: Imports and bins ChIP-seq signals from BED files.\n- `getSignal`: Extracts signals around specific genomic features for training.\n- `featSelectionWithKmeans`: Performs variable selection using k-means and ICRR.\n- `tuningParametersCombROC`: Iterates through combinations of marks and SVM parameters to find optimal performance.\n- `predictionGW`: Executes the final prediction and outputs a BED file of results.\n\n## Reference documentation\n- [SVM2CRM](./references/SVM2CRM.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-svm2crm",
+    "description": "SVM2CRM is a computational pipeline that uses Support Vector Machines and feature selection to identify cis-regulatory elements like enhancers and promoters from ChIP-seq data. Use when user asks to predict cis-regulatory elements, perform feature selection on histone modification data, or tune SVM parameters for genomic region classification.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/SVM2CRM.html"
+  }
+}

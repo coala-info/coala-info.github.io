@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-comethdmr",
+  "category": "bioconductor",
+  "name": "bioconductor-comethdmr",
+  "description": "This tool identifies co-methylated and differentially methylated regions in Illumina 450k or EPIC array data using mixed-effects models. Use when user asks to identify clusters of correlated CpGs, perform regional methylation analysis, or test associations between genomic regions and continuous phenotypes.",
+  "overview": "coMethDMR is a Bioconductor package designed to identify genomic regions that are both co-methylated and differentially methylated. Unlike methods that test every CpG individually, coMethDMR first identifies co-methylated sub-regions (clusters of CpGs with high correlation) in a data-driven manner without using outcome information. It then tests these sub-regions for association with a continuous phenotype using mixed-effects models, which account for both the correlation between CpGs and the va",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/coMethDMR.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/TransBioInfoLab/coMethDMR",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "coMethDMR"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/coMethDMR.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/TransBioInfoLab/coMethDMR",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-comethdmr\n\nname: bioconductor-comethdmr\ndescription: Identify co-methylated and differentially methylated regions (DMRs) in Illumina 450k/EPIC array data. Use this skill to perform regional methylation analysis using random coefficient mixed effects models, specifically for identifying contiguous co-methylated sub-regions associated with continuous phenotypes.\n\n## Overview\n\ncoMethDMR is a Bioconductor package designed to identify genomic regions that are both co-methylated and differentially methylated. Unlike methods that test every CpG individually, coMethDMR first identifies co-methylated sub-regions (clusters of CpGs with high correlation) in a data-driven manner without using outcome information. It then tests these sub-regions for association with a continuous phenotype using mixed-effects models, which account for both the correlation between CpGs and the variation within the region.\n\n## Core Workflow\n\n### 1. Data Preparation\nInput data should be a data frame of methylation beta values (rows = CpGs, columns = Samples) and a phenotype data frame containing a \"Sample\" column to link to the methylation data.\n\n```r\nlibrary(coMethDMR)\ndata(betasChr22_df)\ndata(pheno_df)\n\n# Optional: Remove technical/biological noise before identifying clusters\nresid_mat <- GetResiduals(\n  dnam = betasChr22_df,\n  betaToM = TRUE, \n  pheno_df = pheno_df,\n  covariates_char = c(\"age.brain\", \"sex\", \"slide\")\n)\n```\n\n### 2. Define Genomic Regions\nYou can use pre-defined regions (genic/intergenic) or define your own based on proximity.\n\n```r\n# Load pre-defined genic regions for 450k array\ngene_ls <- readRDS(system.file(\"extdata\", \"450k_Gene_3_200.rds\", package = 'coMethDMR'))\n\n# Or define regions for a specific set of CpGs\nmy_regions <- CloseBySingleRegion(\n  CpGs_char = c(\"cg00079563\", \"cg01029450\", \"cg02351223\"),\n  arrayType = \"450k\",\n  maxGap = 200,\n  minCpGs = 3\n)\n```\n\n### 3. Identify Co-methylated Sub-regions\nUse `CoMethAllRegions` to find contiguous clusters of CpGs where each CpG has a correlation (r-drop) > 0.4 with the rest of the cluster.\n\n```r\ncoMeth_ls <- CoMethAllRegions(\n  dnam = resid_mat, # Use residuals if available\n  betaToM = FALSE,\n  method = \"pearson\",\n  CpGs_ls = gene_ls,\n  arrayType = \"450k\",\n  nCores_int = 1 # Increase for parallel processing\n)\n```\n\n### 4. Statistical Testing\nTest the identified regions against a continuous phenotype using `lmmTestAllRegions`. The \"randCoef\" model is recommended as it models random probe effects.\n\n```r\nresults_df <- lmmTestAllRegions(\n  betas = betasChr22_df,\n  region_ls = coMeth_ls,\n  pheno_df = pheno_df,\n  contPheno_char = \"stage\",\n  covariates_char = c(\"age.brain\", \"sex\"),\n  modelType = \"randCoef\",\n  arrayType = \"450k\"\n)\n```\n\n### 5. Annotation and Inspection\nAnnotate the results with gene names and relation to CpG islands.\n\n```r\n# Annotate summary results\nannotated_results <- AnnotateResults(lmmRes_df = results_df, arrayType = \"450k\")\n\n# Inspect individual CpG p-values within a specific significant region\ncpg_info <- CpGsInfoOneRegion(\n  regionName_char = \"chr22:18268062-18268249\",\n  betas_df = betasChr22_df,\n  pheno_df = pheno_df,\n  contPheno_char = \"stage\",\n  arrayType = \"450k\"\n)\n```\n\n## Parallel Computing\nFor large datasets (entire arrays), use the `nCores_int` argument in `GetResiduals`, `CoMethAllRegions`, and `lmmTestAllRegions` to leverage `BiocParallel`.\n\n```r\nlibrary(BiocParallel)\n# Example: Using 4 cores\ncoMeth_ls <- CoMethAllRegions(..., nCores_int = 4)\n```\n\n## Tips and Troubleshooting\n- **Convergence Warnings**: If a mixed model fails to converge, the p-value is set to 1. This usually happens in regions with high noise.\n- **Singular Fit**: A \"boundary (singular) fit\" message means a variance component is estimated at 0. The p-values remain valid; the model effectively reduces to a fixed-effects model.\n- **M-values vs Beta-values**: While beta values are used for input, the package often converts them to M-values (`betaToM = TRUE`) for statistical testing as they are more homoscedastic.\n- **Sample Column**: Ensure your phenotype data frame has a column named exactly \"Sample\" to match the column names of your methylation matrix.\n\n## Reference documentation\n- [Introduction to coMethDMR](./references/vin1_Introduction_to_coMethDMR_geneBasedPipeline.md)\n- [coMethDMR with Parallel Computing](./references/vin2_BiocParallel_for_coMethDMR_geneBasedPipeline.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-comethdmr",
+    "description": "This tool identifies co-methylated and differentially methylated regions in Illumina 450k or EPIC array data using mixed-effects models. Use when user asks to identify clusters of correlated CpGs, perform regional methylation analysis, or test associations between genomic regions and continuous phenotypes.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/coMethDMR.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-iterativebmasurv",
+  "category": "bioconductor",
+  "name": "bioconductor-iterativebmasurv",
+  "description": "This tool performs gene selection and survival analysis on high-dimensional microarray data using the iterative Bayesian Model Averaging algorithm. Use when user asks to identify predictive gene subsets for patient survival, account for model uncertainty, predict risk scores, or evaluate survival model performance through cross-validation.",
+  "overview": "The `iterativeBMAsurv` package implements an iterative version of the Bayesian Model Averaging (BMA) algorithm specifically for survival analysis on high-dimensional data (where the number of variables/genes greatly exceeds the number of samples). It ranks genes using a univariate Cox Proportional Hazards Model and then iteratively applies BMA to a sliding window of top-ranked genes, discarding those with low posterior probabilities. This process results in a parsimonious set of genes and a weig",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/iterativeBMAsurv.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iterativebmasurv/overview",
+  "github": "N/A",
+  "conda_downloads": "36.3K",
+  "conda_downloads_num": 36300,
+  "last_updated": "2026-02-06",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "iterativeBMAsurv"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iterativeBMAsurv.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-iterativebmasurv/overview",
+    "github": "N/A",
+    "conda_downloads": "36.3K",
+    "last_updated": "2026-02-06",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-iterativebmasurv\n\nname: bioconductor-iterativebmasurv\ndescription: Use this skill to perform gene selection and survival analysis on high-dimensional microarray data using the iterative Bayesian Model Averaging (BMA) algorithm. This skill is appropriate for: (1) Identifying a small subset of genes predictive of patient survival, (2) Accounting for model uncertainty through weighted averaging, (3) Predicting risk scores and categorizing patients into high-risk or low-risk groups, and (4) Performing cross-validation to evaluate model performance.\n\n# bioconductor-iterativebmasurv\n\n## Overview\n\nThe `iterativeBMAsurv` package implements an iterative version of the Bayesian Model Averaging (BMA) algorithm specifically for survival analysis on high-dimensional data (where the number of variables/genes greatly exceeds the number of samples). It ranks genes using a univariate Cox Proportional Hazards Model and then iteratively applies BMA to a sliding window of top-ranked genes, discarding those with low posterior probabilities. This process results in a parsimonious set of genes and a weighted ensemble of models for robust survival prediction.\n\n## Core Workflow\n\n### 1. Data Preparation\nThe package requires a training data matrix (genes in columns, samples in rows), a survival time vector, and a censoring vector (0 = censored, 1 = event).\n\n```r\nlibrary(iterativeBMAsurv)\nlibrary(BMA)\n\n# Load example data\ndata(trainData)\ndata(trainSurv)\ndata(trainCens)\n```\n\n### 2. Training and Gene Selection\nUse `iterateBMAsurv.train.wrapper` to identify relevant genes. This function assumes the input data is already sorted by univariate rank (e.g., via Cox log-likelihood).\n\n```r\n# nbest specifies the number of models to keep in each BMA iteration\nret.list <- iterateBMAsurv.train.wrapper(x=trainData, surv.time=trainSurv, cens.vec=trainCens, nbest=5)\n\n# Extract results\nret.bic.surv <- ret.list$obj\ngene.names <- ret.list$curr.names\ntop.genes <- gene.names[ret.bic.surv$probne0 > 0]\n```\n\n### 3. Prediction and Risk Assessment\nPredict risk scores for test samples using the weighted average of the selected models.\n\n```r\n# Predict risk scores\ny.pred.test <- apply(testData[, top.genes], 1, predictBicSurv, \n                     postprob.vec=ret.bic.surv$postprob, mle.mat=ret.bic.surv$mle)\n\n# Categorize into High vs Low risk (e.g., 50% cutoff)\nret.table <- predictiveAssessCategory(y.pred.test, y.pred.train, testCens, cutPoint=50)\nrisk.groups <- ret.table$groups\n```\n\n### 4. Integrated Analysis\nThe function `iterateBMAsurv.train.predict.assess` automates the entire pipeline: univariate ranking, iterative BMA training, prediction, and statistical evaluation (p-values and chi-square).\n\n```r\nresult <- iterateBMAsurv.train.predict.assess(\n  train.dat=trainData, test.dat=testData, \n  surv.time.train=trainSurv, surv.time.test=testSurv, \n  cens.vec.train=trainCens, cens.vec.test=testCens, \n  p=100, nbest=20\n)\n```\n\n## Visualization and Evaluation\n\n### Heatmap of Models\nVisualize the relationship between selected genes and models.\n```r\nimageplot.iterate.bma.surv(ret.list$obj)\n```\n\n### Cross-Validation\nEvaluate the robustness of the parameters and gene selection.\n```r\ncv_results <- crossVal(exset=trainData, survTime=trainSurv, censor=trainCens, \n                       diseaseType=\"DLBCL\", noRuns=1, noFolds=5, p=100, nbest=20)\n```\n\n## Key Parameters\n- `p`: The number of top univariate genes to consider in the iterative process.\n- `nbest`: The number of top models to retain in each BMA iteration.\n- `maxNvar`: The window size for BMA (default 25).\n- `cutPoint`: The percentile used to split high-risk and low-risk groups.\n\n## Reference documentation\n- [iterativeBMAsurv](./references/iterativeBMAsurv.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-iterativebmasurv",
+    "description": "This tool performs gene selection and survival analysis on high-dimensional microarray data using the iterative Bayesian Model Averaging algorithm. Use when user asks to identify predictive gene subsets for patient survival, account for model uncertainty, predict risk scores, or evaluate survival model performance through cross-validation.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/iterativeBMAsurv.html"
+  }
+}

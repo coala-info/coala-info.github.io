@@ -1,0 +1,55 @@
+{
+  "id": "fastqpuri",
+  "category": "CLI",
+  "name": "fastqpuri",
+  "description": "FastqPuri is a high-performance suite for the quality assessment, trimming, and contamination filtering of Next-Generation Sequencing data. Use when user asks to generate quality reports, create Bloom filters for contaminants, or perform single-end and paired-end read trimming and filtering.",
+  "overview": "FastqPuri is a high-performance suite designed for the pre-processing of Next-Generation Sequencing (NGS) data. It provides a complete workflow from initial quality assessment to the generation of \"clean\" FASTQ files. Its primary strengths lie in its ability to handle contamination filtering through efficient data structures like Bloom filters and its integrated R-based reporting system that visualizes quality metrics before and after trimming.",
+  "homepage": "https://github.com/jengelmann/FastqPuri",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/fastqpuri/overview",
+  "github": "https://github.com/jengelmann/FastqPuri",
+  "conda_downloads": "22.3K",
+  "conda_downloads_num": 22300,
+  "last_updated": "2025-04-22",
+  "cwl_count": 6,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "fastqpuri_Qreport",
+      "fastqpuri_Sreport",
+      "fastqpuri_makeBloom",
+      "fastqpuri_makeTree",
+      "fastqpuri_trimFilter",
+      "fastqpuri_trimFilterPE"
+    ],
+    "description": "Reads in a fq file (gz, bz2, z formats also accepted) and creates a quality report (html file) along with the necessary data to create it stored in binary format.",
+    "docker_image": "quay.io/biocontainers/fastqpuri:1.0.7--r44hb1d24b7_9",
+    "homepage": "https://github.com/jengelmann/FastqPuri",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/fastqpuri/overview",
+    "github": "https://github.com/jengelmann/FastqPuri",
+    "conda_downloads": "22.3K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "fastqpuri_Qreport.cwl",
+    "fastqpuri_Sreport.cwl",
+    "fastqpuri_makeBloom.cwl",
+    "fastqpuri_makeTree.cwl",
+    "fastqpuri_trimFilter.cwl",
+    "fastqpuri_trimFilterPE.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# fastqpuri\n\n## Overview\nFastqPuri is a high-performance suite designed for the pre-processing of Next-Generation Sequencing (NGS) data. It provides a complete workflow from initial quality assessment to the generation of \"clean\" FASTQ files. Its primary strengths lie in its ability to handle contamination filtering through efficient data structures like Bloom filters and its integrated R-based reporting system that visualizes quality metrics before and after trimming.\n\n## Core Executables and CLI Patterns\n\n### 1. Quality Assessment (Qreport & Sreport)\nGenerate detailed quality metrics. These tools require `Rscript`, `pandoc`, and specific R packages (`pheatmap`, `knitr`, `rmarkdown`) to produce HTML outputs.\n\n*   **Generate a single report:**\n    ```bash\n    Qreport -f input.fastq -o output_prefix\n    ```\n*   **Generate a summary report for multiple samples:**\n    Use `Sreport` to aggregate results from multiple `Qreport` runs to compare sample quality across a project.\n\n### 2. Contamination Preparation (makeBloom & makeTree)\nBefore filtering for contamination (e.g., removing unwanted rRNA), you must represent the contaminant reference sequences in a searchable format.\n\n*   **Create a Bloom filter:**\n    ```bash\n    makeBloom -f contaminants.fasta -o contaminants.bloom -k 25 -s 100M\n    ```\n    *Note: `-k` sets the k-mer size; `-s` sets the filter size.*\n\n*   **Create a Tree filter:**\n    ```bash\n    makeTree -f contaminants.fasta -o contaminants.tree -d 10\n    ```\n\n### 3. Trimming and Filtering (trimFilter & trimFilterPE)\nThis is the primary processing step. It handles adapter trimming, quality filtering, and contamination removal simultaneously.\n\n*   **Single-End Filtering:**\n    ```bash\n    trimFilter -f input.fastq -o filtered_output -q 20 -c contaminants.bloom\n    ```\n\n*   **Paired-End Filtering:**\n    ```bash\n    trimFilterPE -f1 forward.fastq -f2 reverse.fastq -o1 filtered_1.fastq -o2 filtered_2.fastq -q 25 --trim-adapters\n    ```\n\n## Expert Tips and Best Practices\n\n*   **Workflow Sequence:** Always follow the \"Report -> Filter -> Report\" sandwich. Run `Qreport` on raw data, perform `trimFilter`, then run `Qreport` on the output to verify the effectiveness of the parameters.\n*   **Memory Management:** When using `makeBloom`, ensure the size (`-s`) is large enough to minimize false positives but fits within your system's RAM.\n*   **Contamination Strategy:** Bloom filters are generally faster and more memory-efficient for large contaminant databases (like a whole genome), while Trees can be effective for smaller, specific sequences.\n*   **Dependency Check:** If HTML reports are not generating, verify that `Rscript` and `pandoc` are in your PATH. FastqPuri will still perform filtering without them but will skip the visual report generation.\n*   **Maximum Read Length:** By default, the tool is often compiled for a maximum Illumina read length of 400bp. If working with longer reads, ensure the tool was compiled with the appropriate `READ_MAXLEN` flag.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| ./Qreport | Reads in a fq file (gz, bz2, z formats also accepted) and creates a quality report (html file) along with the necessary data to create it stored in binary format. |\n| ./Sreport | Uses all *bin files found in a folder (output of Qreport\\|trimFilter\\|trimFilterPE) and generates a summary report in html format (of Qreport\\|trimFilter\\|trimFilterPE). |\n| makeBloom | makeBloom from FastqPuri |\n| makeTree | Reads a *fa file, constructs a tree of depth DEPTH and saves it compressed in OUTPUT_FILE. |\n| trimFilter | Reads in a fq file (gz, bz2, z formats also accepted) and removes: low quality reads, reads containing N base callings, reads representing contaminations, belonging to sequences in INPUT.fa |\n| trimFilterPE | Reads in paired end fq files (gz, bz2, z formats also accepted) and removes: low quality reads, reads containing N base callings, reads representing contaminations, belonging to sequences in INPUT.fa. Outputs 8 [O_PREFIX][1\\|2]_fq.gz files containing: \"good\" reads, discarded low Q reads, discarded reads containing N's, discarded contaminations. |\n\n## Reference documentation\n- [FastqPuri GitHub Repository](./references/github_com_jengelmann_FastqPuri.md)\n- [FastqPuri README](./references/github_com_jengelmann_FastqPuri_blob_master_README.md)",
+  "skill_front_matter": {
+    "name": "fastqpuri",
+    "description": "FastqPuri is a high-performance suite for the quality assessment, trimming, and contamination filtering of Next-Generation Sequencing data. Use when user asks to generate quality reports, create Bloom filters for contaminants, or perform single-end and paired-end read trimming and filtering.",
+    "homepage": "https://github.com/jengelmann/FastqPuri"
+  }
+}

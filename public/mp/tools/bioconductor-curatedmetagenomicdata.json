@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-curatedmetagenomicdata",
+  "category": "bioconductor",
+  "name": "bioconductor-curatedmetagenomicdata",
+  "description": "This tool provides access to standardized human microbiome data including taxonomic and functional profiles from thousands of curated shotgun metagenomic samples. Use when user asks to retrieve species-level taxonomic profiles, access gene family or metabolic pathway abundances, or perform mega-analyses across multiple microbiome studies.",
+  "overview": "The `curatedMetagenomicData` package provides access to a massive collection of processed human microbiome data. It standardizes data from MetaPhlAn3 (taxonomy) and HUMAnN3 (functional potential) across nearly 100 studies. Data is delivered as `TreeSummarizedExperiment` or `SummarizedExperiment` objects, which integrate abundance matrices with rich, manually curated sample metadata.",
+  "homepage": "https://bioconductor.org/packages/release/data/experiment/html/curatedMetagenomicData.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-curatedmetagenomicdata/overview",
+  "github": "https://github.com/waldronlab/curatedMetagenomicData",
+  "conda_downloads": "40.5K",
+  "conda_downloads_num": 40500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "curatedMetagenomicData"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/curatedMetagenomicData.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-curatedmetagenomicdata/overview",
+    "github": "https://github.com/waldronlab/curatedMetagenomicData",
+    "conda_downloads": "40.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-curatedmetagenomicdata\n\nname: bioconductor-curatedmetagenomicdata\ndescription: Access and analyze standardized human microbiome data from the curatedMetagenomicData Bioconductor package. Use this skill when you need to retrieve species-level taxonomic profiles, gene families, or metabolic pathways from thousands of human shotgun metagenomic samples with curated metadata.\n\n# bioconductor-curatedmetagenomicdata\n\n## Overview\n\nThe `curatedMetagenomicData` package provides access to a massive collection of processed human microbiome data. It standardizes data from MetaPhlAn3 (taxonomy) and HUMAnN3 (functional potential) across nearly 100 studies. Data is delivered as `TreeSummarizedExperiment` or `SummarizedExperiment` objects, which integrate abundance matrices with rich, manually curated sample metadata.\n\n## Core Workflows\n\n### 1. Exploring Metadata\nBefore downloading large datasets, use the `sampleMetadata` data frame to identify studies or samples of interest.\n\n```r\nlibrary(curatedMetagenomicData)\nlibrary(dplyr)\n\n# View available studies and sample counts\nsampleMetadata %>%\n  count(study_name, body_site)\n\n# Filter for specific conditions (e.g., stool samples from healthy adults)\ntarget_samples <- sampleMetadata %>%\n  filter(body_site == \"stool\", disease == \"Healthy\", age_group == \"Adult\")\n```\n\n### 2. Accessing Data by Study\nUse `curatedMetagenomicData()` to query and download specific resources using a regex pattern.\n\n*   **Data Types:** `relative_abundance`, `gene_families`, `pathway_abundance`, `pathway_coverage`, `marker_abundance`, `marker_presence`.\n*   **Dry Run:** By default, it returns only the names of available resources. Set `dryrun = FALSE` to download.\n\n```r\n# Search for available resources for a specific study\ncuratedMetagenomicData(\"AsnicarF_2017.+\", dryrun = TRUE)\n\n# Download relative abundance for a study\ndata_list <- curatedMetagenomicData(\"AsnicarF_2017.relative_abundance\", dryrun = FALSE, rownames = \"short\")\n\n# Merge multiple studies of the same data type\nmerged_data <- mergeData(data_list)\n```\n\n### 3. Accessing Data by Samples (Mega-analysis)\nThe `returnSamples()` function is the most efficient way to build a custom dataset across multiple studies based on filtered metadata.\n\n```r\n# Get relative abundance for the filtered metadata created in step 1\ntse <- target_samples %>%\n  returnSamples(\"relative_abundance\", rownames = \"short\")\n```\n\n## Data Manipulation and Analysis\n\n### Taxonomic Agglomeration\nSince data is returned as a `TreeSummarizedExperiment`, use the `mia` package to aggregate data to specific taxonomic ranks.\n\n```r\nlibrary(mia)\n# Aggregate to Genus level\ntse_genus <- agglomerateByRank(tse, rank = \"genus\")\n```\n\n### Diversity and Differential Abundance\nThe package output is compatible with the `mia`, `scater`, and `lefser` ecosystems.\n\n```r\n# Alpha Diversity (Shannon Index)\ntse_genus <- addAlpha(tse_genus, assay.type = \"relative_abundance\", index = \"shannon_diversity\")\n\n# Beta Diversity (PCoA with Bray-Curtis)\nlibrary(scater)\nlibrary(vegan)\ntse_genus <- runMDS(tse_genus, FUN = vegdist, method = \"bray\", \n                    exprs_values = \"relative_abundance\", name = \"PCoA\")\nplotReducedDim(tse_genus, \"PCoA\", colour_by = \"disease\")\n\n# Differential Abundance (LEfSe)\nlibrary(lefser)\nres <- lefser(tse_genus, groupCol = \"disease\")\n```\n\n## Tips and Best Practices\n*   **Rownames:** Use `rownames = \"short\"` in data retrieval functions to get readable species names instead of long clade strings.\n*   **Counts:** Set `counts = TRUE` in `curatedMetagenomicData()` or `returnSamples()` to convert relative abundances back to estimated reads (relative abundance * read depth).\n*   **Phyloseq Conversion:** If you prefer `phyloseq`, use `mia::makePhyloseqFromTreeSummarizedExperiment(tse)`.\n*   **Memory Management:** These datasets can be large. Filter your `sampleMetadata` as much as possible before calling `returnSamples()`.\n\n## Reference documentation\n- [curatedMetagenomicData](./references/curatedMetagenomicData.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-curatedmetagenomicdata",
+    "description": "This tool provides access to standardized human microbiome data including taxonomic and functional profiles from thousands of curated shotgun metagenomic samples. Use when user asks to retrieve species-level taxonomic profiles, access gene family or metabolic pathway abundances, or perform mega-analyses across multiple microbiome studies.",
+    "homepage": "https://bioconductor.org/packages/release/data/experiment/html/curatedMetagenomicData.html"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-gqtlstats",
+  "category": "bioconductor",
+  "name": "bioconductor-gqtlstats",
+  "description": "This package provides infrastructure for the scalable analysis and FDR estimation of large-scale association studies like eQTL or mQTL. Use when user asks to compute permutation-based FDR, model association-FDR relationships, enumerate significant SNP-probe pairs, or generate annotated Manhattan plots from distributed association statistics.",
+  "overview": "The `gQTLstats` package provides infrastructure for the scalable analysis of large-scale association studies (like eQTL or mQTL). It operates on `ciseStore` objects (from `geuvStore2`) which manage distributed association statistics. Key capabilities include memory-efficient quantile estimation, permutation-based FDR calculation, and smooth modeling of the association-FDR relationship to support variant selection and functional annotation.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/gQTLstats.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gqtlstats/overview",
+  "github": "N/A",
+  "conda_downloads": "10.9K",
+  "conda_downloads_num": 10900,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "gQTLstats"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/gQTLstats.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-gqtlstats/overview",
+    "github": "N/A",
+    "conda_downloads": "10.9K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-gqtlstats\n\n## Overview\n\nThe `gQTLstats` package provides infrastructure for the scalable analysis of large-scale association studies (like eQTL or mQTL). It operates on `ciseStore` objects (from `geuvStore2`) which manage distributed association statistics. Key capabilities include memory-efficient quantile estimation, permutation-based FDR calculation, and smooth modeling of the association-FDR relationship to support variant selection and functional annotation.\n\n## Core Workflow\n\n### 1. Data Initialization\nLoad the necessary libraries and register parallel backends for efficient processing of large stores.\n\n```r\nlibrary(gQTLstats)\nlibrary(geuvStore2)\nlibrary(doParallel)\n\n# Register parallel backend\nregisterDoParallel(cores = parallel::detectCores())\n\n# Load a store (example using geuvStore2)\nprst = makeGeuvStore2()\n```\n\n### 2. FDR Estimation and Filtering\nFDR is computed post-hoc. You can apply filtering functions (e.g., based on MAF or distance) during the FDR estimation process.\n\n```r\n# Define a filter: MAF >= 5% and distance <= 500kb\ndmfilt = function(x) x[which(x$MAF >= 0.05 & x$mindist <= 500000)]\n\n# Compute FDR with filtering\nfiltFDR = storeToFDR(prst, \n                     xprobs = c(seq(.05, .95, .05), .99, .999), \n                     filter = dmfilt)\n\n# View FDR table\ngetTab(filtFDR)\n```\n\n### 3. Modeling the Association-FDR Relationship\nTo avoid \"wiggliness\" in empirical FDR traces, fit a smooth model (GAM) to the association scores.\n\n```r\n# Bind an interpolating model to the FDR estimates\nfiltFDR = setFDRfunc(filtFDR)\n\n# Visualize the relationship\ntxsPlot(filtFDR)     # Transformed score plot\ndirectPlot(filtFDR)  # Direct association vs FDR plot\n```\n\n### 4. Enumerating Significant eQTLs\nExtract specific SNP-probe pairs that meet a defined FDR threshold.\n\n```r\n# List pairs with FDR < 0.05\nsignificant_pairs = enumerateByFDR(prst, filtFDR, threshold = 0.05, filter = dmfilt)\n\n# Result is a GRanges object with metadata (chisq, MAF, probeid, etc.)\nhead(significant_pairs)\n```\n\n### 5. Visualization and Annotation\nCreate Manhattan plots for specific genes, incorporating functional annotations (like ChromHMM states).\n\n```r\n# Load annotation data (e.g., hmm878 provided in package)\ndata(hmm878)\n\n# Generate annotated Manhattan plot for a specific probe\nmanhWngr(store = prst, \n         probeid = \"ENSG00000183814.10\", \n         sym = \"LIN9\",\n         fdrsupp = filtFDR, \n         namedGR = hmm878)\n```\n\n## Trans-eQTL Identification\nFor trans-associations, use `AllAssoc` with a `variantRange` argument to test specific genomic regions against the transcriptome.\n\n```r\n# Define a genomic range for variants\nmysr = GRanges(\"20\", IRanges(33.099e6, 33.52e6))\n\n# Run association test\nresults = AllAssoc(summex = geuFPKM_subset, vcf.tf = tabix_file, variantRange = mysr)\n\n# Use gQTLstats:::collapseToBuf to manage and reduce trans-results\n```\n\n## Tips for Efficiency\n- **Quantile Estimation**: Use `storeToQuantiles` for memory-efficient summaries of association distributions; it uses `ff` representations to handle large vectors.\n- **Parallelization**: Most `storeTo*` functions respect the registered `foreach` backend.\n- **Sensitivity Analysis**: Use `senstab()` to evaluate how different MAF and distance filters impact the yield of significant eQTLs.\n\n## Reference documentation\n- [gQTLstats: computationally efficient analysis and interpretation of large eQTL, mQTL, etc. archives](./references/gQTLstats.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-gqtlstats",
+    "description": "This package provides infrastructure for the scalable analysis and FDR estimation of large-scale association studies like eQTL or mQTL. Use when user asks to compute permutation-based FDR, model association-FDR relationships, enumerate significant SNP-probe pairs, or generate annotated Manhattan plots from distributed association statistics.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/gQTLstats.html"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "basenji",
+  "category": "CLI",
+  "name": "basenji",
+  "description": "Basenji is a deep learning framework that predicts quantitative genomic signals and regulatory activity from chromosome-scale DNA sequences. Use when user asks to predict gene expression from sequence, score the impact of variants using SNP activity difference, perform in silico mutagenesis, or train models on functional genomics data.",
+  "overview": "Basenji is a deep learning framework designed for functional genomics, specifically for predicting regulatory activity along chromosome-scale DNA sequences. Unlike its predecessor Basset, which focused on binary peak classification, Basenji utilizes regression loss functions to predict quantitative signals (such as CAGE, ChIP-seq, or DNase-seq) in bins across long sequences. It is a critical tool for researchers aiming to understand the \"grammar\" of the non-coding genome, allowing for the scorin",
+  "homepage": "https://github.com/calico/basenji",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/basenji/overview",
+  "github": "https://github.com/calico/basenji",
+  "conda_downloads": "10.1K",
+  "conda_downloads_num": 10100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 2,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "basenji",
+      "basenji_bam_cov.py",
+      "basenji_basenji_hdf5_single.py",
+      "basenji_basenji_hdf5_cluster.py",
+      "basenji_basenji_hdf5_genes.py",
+      "basenji_basenji_train.py",
+      "basenji_basenji_test.py",
+      "basenji_basenji_test_genes.py",
+      "basenji_basenji_sad.py",
+      "basenji_basenji_sed.py",
+      "basenji_basenji_sat_vcf.py",
+      "basenji_basenji_sat.py",
+      "basenji_basenji_motifs.py",
+      "basenji_basenji_map.py"
+    ],
+    "description": "The provided text does not contain help information for the tool 'basenji'. It appears to be a system error log from a container runtime (Apptainer/Singularity) indicating a failure to build the image due to insufficient disk space ('no space left on device').",
+    "docker_image": "quay.io/biocontainers/basenji:0.6--pyhdfd78af_0",
+    "homepage": "https://github.com/calico/basenji",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/basenji/overview",
+    "github": "https://github.com/calico/basenji",
+    "conda_downloads": "10.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "basenji_basenji_motifs.py.cwl",
+    "basenji_basenji_sat.py.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# basenji\n\n## Overview\n\nBasenji is a deep learning framework designed for functional genomics, specifically for predicting regulatory activity along chromosome-scale DNA sequences. Unlike its predecessor Basset, which focused on binary peak classification, Basenji utilizes regression loss functions to predict quantitative signals (such as CAGE, ChIP-seq, or DNase-seq) in bins across long sequences. It is a critical tool for researchers aiming to understand the \"grammar\" of the non-coding genome, allowing for the scoring of variants based on their predicted influence on gene expression and the annotation of distal regulatory elements.\n\n## Environment Setup\n\nBefore running Basenji tools, ensure your environment variables are configured to point to the installation directory:\n\n```bash\nexport BASENJIDIR=~/code/Basenji\nexport PATH=$BASENJIDIR/bin:$PATH\nexport PYTHONPATH=$BASENJIDIR/bin:$PYTHONPATH\n```\n\n## Core Workflows and CLI Usage\n\n### 1. Data Preprocessing\nThe goal of preprocessing is to transform raw alignments into a format suitable for deep learning (HDF5).\n\n*   **Generate Coverage Tracks**: Use `bam_cov.py` to convert BAM/CRAM alignments into normalized BigWig or HDF5 tracks.\n    *   `bam_cov.py <bam_file> <output_file>` (Use `.bw` suffix for BigWig).\n*   **Aggregate Samples**: Combine multiple coverage tracks into a single HDF5 file for training.\n    *   **Single Machine**: `basenji_hdf5_single.py <fasta_file> <sample_wigs_file> <output_hdf5_file>`\n    *   **SLURM Cluster**: `basenji_hdf5_cluster.py <fasta_file> <sample_wigs_file> <output_hdf5_file>`\n*   **Gene-Centric Tiling**: To focus on specific genes, use `basenji_hdf5_genes.py` to tile gene sequences.\n    *   `basenji_hdf5_genes.py <fasta_file> <gtf_file> <output_hdf5_file>`\n\n### 2. Model Training\nTraining should always be performed on a GPU for viable performance.\n\n*   **Execute Training**: `basenji_train.py <params_file> <data_file>`\n*   **Expert Tip**: Use the `--log_device_placement` flag to verify that TensorFlow is correctly utilizing the GPU (`gpu:0`). If the output shows `cpu:0` for CNN operations, check your CUDA/cuDNN installation.\n\n### 3. Evaluation and Accuracy\n*   **Standard Test**: `basenji_test.py <params_file> <model_file> <data_file>`\n*   **Gene-Specific Accuracy**: `basenji_test_genes.py <params_file> <model_file> <data_file>`\n\n### 4. Variant and Regulatory Analysis\nBasenji provides specialized tools for interpreting how DNA sequence changes affect function.\n\n*   **SNP Activity Difference (SAD)**: Predict the impact of SNPs on regulatory activity.\n    *   `basenji_sad.py [options] <model_file> <vcf_file>`\n*   **Expression Difference (SED)**: Specifically score variants for their influence on gene expression.\n    *   `basenji_sed.py [options] <model_file> <vcf_file>`\n*   **In Silico Mutagenesis**: Use `basenji_sat.py` or `basenji_sat_vcf.py` to perform saturated mutagenesis, identifying every nucleotide's contribution to a regulatory element's function.\n\n## Best Practices\n\n*   **Binning Strategy**: Basenji makes predictions in bins. If you need to replicate Basset-style peak classification, provide smaller sequences and bin the target for the entire sequence.\n*   **Memory Management**: When processing chromosome-scale sequences, use the cluster-parallelized scripts (`_cluster.py`) if available to avoid OOM (Out of Memory) errors on single nodes.\n*   **Regression vs. Classification**: Always prefer regression loss functions for quantitative signals to capture the full dynamic range of genomic data.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| basenji_motifs.py | Analyze and visualize motifs identified by a trained Basenji model. |\n| basenji_sat.py | Compute saturation mutagenesis scores for sequences in an HDF5 file using a trained Basenji model. |\n\n## Reference documentation\n- [Basenji Main README](./references/github_com_calico_basenji_blob_master_README.md)\n- [Preprocessing Documentation](./references/github_com_calico_basenji_blob_master_docs_preprocess.md)\n- [Training Documentation](./references/github_com_calico_basenji_blob_master_docs_train.md)",
+  "skill_front_matter": {
+    "name": "basenji",
+    "description": "Basenji is a deep learning framework that predicts quantitative genomic signals and regulatory activity from chromosome-scale DNA sequences. Use when user asks to predict gene expression from sequence, score the impact of variants using SNP activity difference, perform in silico mutagenesis, or train models on functional genomics data.",
+    "homepage": "https://github.com/calico/basenji"
+  }
+}

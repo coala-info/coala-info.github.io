@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-affixcan",
+  "category": "bioconductor",
+  "name": "bioconductor-affixcan",
+  "description": "AffiXcan estimates the genetic component of gene expression by modeling the relationship between total binding affinity scores and transcript levels. Use when user asks to train GReX models, impute genetically regulated expression, or perform transcriptome-wide association studies using transcription factor binding affinity.",
+  "overview": "AffiXcan (Total Binding AFFInity-eXpression sCANner) is a functional approach for estimating the genetic component of gene expression (GReX). Unlike SNP-based methods that rely on individual variants with large effect sizes, AffiXcan uses Total Binding Affinity (TBA) scores—calculated from Position-specific Weight Matrices (PWMs) and DNA segments—to capture the aggregate effect of multiple variants in regulatory regions. It employs Principal Component Analysis (PCA) on these scores to build line",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/AffiXcan.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-affixcan/overview",
+  "github": "N/A",
+  "conda_downloads": "25.1K",
+  "conda_downloads_num": 25100,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "AffiXcan"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AffiXcan.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-affixcan/overview",
+    "github": "N/A",
+    "conda_downloads": "25.1K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-affixcan\n\nname: bioconductor-affixcan\ndescription: Training and applying statistical models to estimate Genetically Regulated Expression (GReX) using Total Binding Affinity (TBA) scores. Use this skill when you need to perform eQTL discovery or Transcriptome-Wide Association Studies (TWAS) by modeling gene expression based on transcription factor binding affinity in regulatory regions.\n\n## Overview\nAffiXcan (Total Binding AFFInity-eXpression sCANner) is a functional approach for estimating the genetic component of gene expression (GReX). Unlike SNP-based methods that rely on individual variants with large effect sizes, AffiXcan uses Total Binding Affinity (TBA) scores—calculated from Position-specific Weight Matrices (PWMs) and DNA segments—to capture the aggregate effect of multiple variants in regulatory regions. It employs Principal Component Analysis (PCA) on these scores to build linear models for gene expression.\n\n## Core Workflow\n\n### 1. Training GReX Models\nThe training phase requires real expression data, TBA matrices for regulatory regions, and a mapping between genes and regions.\n\n```r\nlibrary(AffiXcan)\nlibrary(MultiAssayExperiment)\nlibrary(SummarizedExperiment)\n\n# 1. Load TBA matrices (MultiAssayExperiment)\n# Each assay should be a matrix: rows = individuals, cols = PWMs\ntba_data <- readRDS(\"path/to/tba_matrices.rds\")\n\n# 2. Load Expression data (SummarizedExperiment)\n# Rows = genes, columns = individuals\nload(\"exprMatrix.RData\")\n\n# 3. Load Gene-Region associations\n# Must contain columns: \"REGULATORY_REGION\" and \"EXPRESSED_REGION\"\nload(\"regionAssoc.RData\")\n\n# 4. Train the models\ntraining_results <- affiXcanTrain(\n    exprMatrix = exprMatrix, \n    assay = \"values\",           # Name of the assay in exprMatrix\n    tbaPaths = \"path/to/tba.rds\", \n    regionAssoc = regionAssoc, \n    cov = trainingCovariates,   # Optional: population structure PCs\n    varExplained = 80,          # % variance for PCA selection\n    scale = TRUE\n)\n```\n\n### 2. Imputing GReX\nOnce models are trained, you can estimate GReX in a new population using their TBA scores.\n\n```r\n# TBA must be calculated on the same regions/PWMs as training\nimputed_grex <- affiXcanImpute(\n    tbaPaths = \"path/to/testing_tba.rds\",\n    affiXcanTraining = training_results,\n    scale = TRUE\n)\n\n# Access the GReX matrix\ngrex_matrix <- assays(imputed_grex)$GReX\n```\n\n### 3. Cross-Validation\nTo evaluate model performance before final imputation, use the `kfold` argument in the training function.\n\n```r\ncv_results <- affiXcanTrain(\n    exprMatrix = exprMatrix, \n    assay = \"values\",\n    tbaPaths = \"path/to/tba.rds\", \n    regionAssoc = regionAssoc, \n    varExplained = 80, \n    scale = TRUE, \n    kfold = 5  # Performs 5-fold cross-validation\n)\n# Note: CV output is a performance report and cannot be used for imputation.\n```\n\n## Key Considerations\n- **TBA Scores**: These are typically pre-computed using external tools like `vcf_rider` from phased VCF files.\n- **Region Mapping**: A single gene can be associated with multiple regulatory regions. AffiXcan will include PCs from all associated regions in the linear model.\n- **Parallelization**: Functions support `BiocParallel`. You can pass a `BiocParallelParam` object via the `BPPARAM` argument to speed up PCA and model fitting.\n- **Data Consistency**: Ensure that the IDs for individuals and regions match across the TBA matrices, expression matrix, and association table.\n\n## Reference documentation\n- [AffiXcan](./references/AffiXcan.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-affixcan",
+    "description": "AffiXcan estimates the genetic component of gene expression by modeling the relationship between total binding affinity scores and transcript levels. Use when user asks to train GReX models, impute genetically regulated expression, or perform transcriptome-wide association studies using transcription factor binding affinity.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/AffiXcan.html"
+  }
+}

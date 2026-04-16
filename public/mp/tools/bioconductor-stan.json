@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-stan",
+  "category": "bioconductor",
+  "name": "bioconductor-stan",
+  "description": "This tool performs genomic state annotation and genome segmentation using Hidden Markov Models to integrate multivariate genomic data. Use when user asks to learn and annotate genomic states, integrate strand-specific and non-strand-specific data, or perform genome segmentation using various emission distributions.",
+  "overview": "The `STAN` (Genomic STate ANnotation) package provides a framework for genome segmentation using Hidden Markov Models. It is particularly powerful because it supports a wide variety of probability distributions for different data types and implements bidirectional HMMs (bdHMMs) to integrate strand-specific (e.g., RNA) and non-strand-specific (e.g., ChIP) data.",
+  "homepage": "https://bioconductor.org/packages/3.6/bioc/html/STAN.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "STAN"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/STAN.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-stan\n\nname: bioconductor-stan\ndescription: Genomic state annotation using (bidirectional) Hidden Markov Models (HMMs). Use this skill to integrate multivariate genomic data (ChIP-seq, RNA-seq, DNase-seq) to learn and annotate genomic states like promoters, enhancers, or transcription cycles. It supports various emission distributions (Poisson, Negative Binomial, Gaussian, etc.) and can handle strand-specific data.\n\n# bioconductor-stan\n\n## Overview\n\nThe `STAN` (Genomic STate ANnotation) package provides a framework for genome segmentation using Hidden Markov Models. It is particularly powerful because it supports a wide variety of probability distributions for different data types and implements bidirectional HMMs (bdHMMs) to integrate strand-specific (e.g., RNA) and non-strand-specific (e.g., ChIP) data.\n\n## Core Workflow\n\nThe standard workflow for genome segmentation in `STAN` involves four primary steps: initialization, fitting, state path calculation, and conversion to genomic ranges.\n\n### 1. Data Preparation\nData should be a list of matrices where rows are genomic positions (bins) and columns are experiments/tracks.\n\n```R\nlibrary(STAN)\ndata(trainRegions) # Example data list\ndata(pilot.hg19)    # Corresponding GRanges\n\n# Optional: Calculate size factors for sequencing depth normalization\ncelltypes = list(\"K562\"=grep(\"E123\", names(trainRegions)), \n                 \"GM12878\"=grep(\"E116\", names(trainRegions)))\nsizeFactors = getSizeFactors(trainRegions, celltypes)\n```\n\n### 2. Model Initialization (`initHMM` / `initBdHMM`)\nChoose an emission distribution based on your data type:\n*   `NegativeBinomial` or `PoissonLogNormal`: Recommended for overdispersed sequencing count data.\n*   `Poisson`: For count data without overdispersion.\n*   `Bernoulli`: For binarized (presence/absence) data.\n*   `IndependentGaussian`: For log-transformed/continuous data.\n*   `Gaussian`: For multivariate continuous data.\n\n```R\n# Standard HMM\nnStates = 10\nhmm = initHMM(trainRegions, nStates, \"NegativeBinomial\", sizeFactors)\n\n# Bidirectional HMM (for strand-specific data)\n# dirobs: 0 = non-strand-specific, 1 = strand-specific pair\ndirobs = as.integer(c(rep(0, 10), 1, 1)) \nbdhmm = initBdHMM(trainRegions, dStates=6, method=\"Gaussian\", directedObs=dirobs)\n```\n\n### 3. Model Fitting (`fitHMM`)\nOptimizes model parameters using the Expectation-Maximization (EM) algorithm.\n\n```R\n# Increase maxIters for production (default is often low for speed)\nhmm_fitted = fitHMM(trainRegions, hmm, sizeFactors=sizeFactors, maxIters=50)\n```\n\n### 4. State Annotation (`getViterbi`)\nCalculates the most likely state path (Viterbi path) for the given observations.\n\n```R\nviterbi_path = getViterbi(hmm_fitted, trainRegions, sizeFactors=sizeFactors)\n```\n\n### 5. Results and Visualization\nConvert the state path into `GRanges` for downstream analysis or visualization with `Gviz`.\n\n```R\n# Convert to GRanges\n# binSize must match the resolution of your input data\nviterbi_gr = viterbi2GRanges(viterbi_path, regions=pilot.hg19, binSize=200)\n\n# Calculate mean signal per state for biological interpretation\navg_signal = getAvgSignal(viterbi_path, trainRegions)\n```\n\n## Distribution-Specific Tips\n\n*   **Negative Multinomial**: Requires an extra data track representing the sum of counts for each bin.\n    ```R\n    data_nmn = lapply(trainRegions, function(x) cbind(apply(x,1,sum), x))\n    hmm_nmn = initHMM(data_nmn, nStates, \"NegativeMultinomial\")\n    ```\n*   **Gaussian/Continuous**: If using sequencing data with Gaussian models, apply a transformation (e.g., `asinh` or `log(x+1)`) and consider setting `sharedCov=TRUE` in `initHMM` to avoid singularities in zero-inflated regions.\n*   **Bernoulli**: Use `binarizeData(trainRegions)` to convert counts to binary format before initializing with the \"Bernoulli\" method.\n\n## Reference documentation\n- [The genomic STate ANnotation package](./references/STAN.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-stan",
+    "description": "This tool performs genomic state annotation and genome segmentation using Hidden Markov Models to integrate multivariate genomic data. Use when user asks to learn and annotate genomic states, integrate strand-specific and non-strand-specific data, or perform genome segmentation using various emission distributions.",
+    "homepage": "https://bioconductor.org/packages/3.6/bioc/html/STAN.html"
+  }
+}

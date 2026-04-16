@@ -1,0 +1,59 @@
+{
+  "id": "bedops",
+  "category": "CLI",
+  "name": "bedops",
+  "description": "BEDOPS is a suite of command-line tools designed for high-performance manipulation, set operations, and statistical mapping of genomic intervals. Use when user asks to perform set operations on BED files, map signal data to reference regions, sort genomic data, or compress files into the Starch format.",
+  "overview": "BEDOPS is a specialized suite of command-line tools designed for fast and scalable manipulation of genomic intervals. Unlike many other tools, BEDOPS is built on the principle that genomic data should be sorted. By requiring sorted input, BEDOPS tools can process data using a \"streaming\" approach, which minimizes memory usage and allows for operations on datasets that far exceed available RAM.",
+  "homepage": "http://bedops.readthedocs.io",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bedops/overview",
+  "github": "N/A",
+  "conda_downloads": "229.2K",
+  "conda_downloads_num": 229200,
+  "last_updated": "2025-08-05",
+  "cwl_count": 4,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "bedops",
+      "bedops_sort-bed",
+      "bedops_bedmap",
+      "bedops_closest-features",
+      "bedops_bedextract",
+      "bedops_gff2bed",
+      "bedops_starch",
+      "bedops_unstarch",
+      "bedops_starchcat",
+      "bedops_bam2bed",
+      "bedops_gtf2bed",
+      "bedops_vcf2bed"
+    ],
+    "description": "The provided text does not contain help information or usage instructions for the tool. It is a system error log indicating a failure to build or extract a container image due to insufficient disk space ('no space left on device').",
+    "docker_image": "quay.io/biocontainers/bedops:2.4.42--hd6d6fdc_1",
+    "homepage": "http://bedops.readthedocs.io",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bedops/overview",
+    "github": "N/A",
+    "conda_downloads": "229.2K",
+    "last_updated": "2025-08-05",
+    "skill_generated": false,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "bedops_bedmap.cwl",
+    "bedops_closest-features.cwl",
+    "bedops_sort-bed.cwl",
+    "bedops_starchcat.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bedops\n\n## Overview\n\nBEDOPS is a specialized suite of command-line tools designed for fast and scalable manipulation of genomic intervals. Unlike many other tools, BEDOPS is built on the principle that genomic data should be sorted. By requiring sorted input, BEDOPS tools can process data using a \"streaming\" approach, which minimizes memory usage and allows for operations on datasets that far exceed available RAM. \n\nThe toolkit is divided into four primary functional areas:\n1.  **Set Operations**: Performing Boolean logic (AND, OR, NOT) on multiple BED files.\n2.  **Statistical Mapping**: Calculating scores or statistics for features that overlap specific target regions.\n3.  **File Management**: Sorting, compressing (Starch format), and converting various genomic formats (BAM, GFF, VCF) to BED.\n4.  **Extraction**: Rapidly retrieving specific chromosomes or features from large files.\n\n## Core Tool Usage\n\n### 1. Sorting (The Essential First Step)\nAll BEDOPS tools require lexicographically sorted BED files. Use `sort-bed` to prepare your data.\n```bash\n# Sort an unsorted BED file\nsort-bed unsorted.bed > sorted.bed\n\n# Sort and compress in one pipeline\nsort-bed unsorted.bed | starch - > sorted.starch\n```\n\n### 2. Set Operations with `bedops`\nThe `bedops` tool handles multiset operations. It can take any number of input files.\n*   **Union (Everything)**: `bedops --everything A.bed B.bed > union.bed`\n*   **Intersection**: `bedops --intersect A.bed B.bed > intersect.bed`\n*   **Difference**: `bedops --difference A.bed B.bed > A_minus_B.bed`\n*   **Element-of**: `bedops --element-of 1 A.bed B.bed` (Finds elements in A that overlap B by at least 1bp).\n\n### 3. Statistical Mapping with `bedmap`\n`bedmap` maps \"source\" features onto \"reference\" regions and calculates statistics.\n```bash\n# Calculate the mean signal from source.bed for every region in reference.bed\nbedmap --echo --mean reference.bed source.bed > results.bed\n```\n*   **--echo**: Prints the reference element.\n*   **--count**: Counts overlapping elements.\n*   **--min / --max / --mean**: Standard statistical operations.\n\n### 4. Compression and Management (Starch)\nThe Starch format (`.starch`) is a lossless compression format that allows for random access by chromosome.\n*   **Compress**: `starch sorted.bed > sorted.starch`\n*   **Extract**: `unstarch sorted.starch > sorted.bed`\n*   **Extract specific chromosome**: `unstarch chr1 sorted.starch`\n*   **Metadata**: `unstarch --list sorted.starch` (View element counts and attributes without decompressing).\n\n## Expert Tips & Best Practices\n\n*   **Streaming Pipelines**: Use UNIX pipes (`|`) to avoid creating large intermediate files. BEDOPS tools are designed to read from `stdin` (represented by `-`).\n    ```bash\n    bedops --intersect A.bed B.bed | bedmap --echo --count - C.bed\n    ```\n*   **Parallelization**: Use the `--chrom` option or `starchstrip` to split tasks by chromosome. Since BEDOPS is agnostic to the relationship between chromosomes, you can run 23 parallel jobs (for human data) and merge results with `starchcat`.\n*   **Memory Management**: If sorting a file larger than system memory, use `sort-bed --max-mem 2G` to limit memory usage and use disk-based temporary storage.\n*   **Efficient Extraction**: Use `bedextract` to instantly pull specific chromosomes from a sorted BED file. It uses a binary search algorithm that is much faster than `grep`.\n*   **BAM Conversion**: Use `bam2bed` or `bam2starch` for high-performance conversion of alignment files to genomic intervals.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bedmap | The bedmap utility retrieves and processes genomic features from a map file that overlap with features in a reference file. It is part of the BEDOPS suite. |\n| closest-features | For every element in <input-file>, find the closest elements in <query-file>. By default, this tool finds the closest features to the left and right of the input feature. |\n| sort-bed | Sorts BED files. The sorted BED file is sent to standard output. Sorting is required for many BEDOPS utilities to ensure high performance. |\n| starchcat | Concatenate multiple starch files into a single starch file. Note: The provided input text appears to be a system error log rather than help text; arguments are derived from standard tool documentation. |\n\n## Reference documentation\n- [BEDOPS Overview](./references/bedops_readthedocs_io_en_latest_content_overview.html.md)\n- [Set Operations (bedops)](./references/bedops_readthedocs_io_en_latest_content_reference_set-operations_bedops.html.md)\n- [Statistics (bedmap)](./references/bedops_readthedocs_io_en_latest_content_reference_statistics_bedmap.html.md)\n- [Starch Compression](./references/bedops_readthedocs_io_en_latest_content_reference_file-management_compression_starch.html.md)\n- [Sorting (sort-bed)](./references/bedops_readthedocs_io_en_latest_content_reference_file-management_sorting_sort-bed.html.md)",
+  "skill_front_matter": {
+    "name": "bedops",
+    "description": "BEDOPS is a suite of command-line tools designed for high-performance manipulation, set operations, and statistical mapping of genomic intervals. Use when user asks to perform set operations on BED files, map signal data to reference regions, sort genomic data, or compress files into the Starch format.",
+    "homepage": "http://bedops.readthedocs.io"
+  }
+}

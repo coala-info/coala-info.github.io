@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-codex",
+  "category": "bioconductor",
+  "name": "bioconductor-codex",
+  "description": "\"bioconductor-codex performs normalization and copy number variation calling for whole exome sequencing data using a Poisson latent factor model. Use when user asks to normalize exome sequencing data, detect germline or somatic copy number variations, or remove systemic biases from GC content and exon capture.\"",
+  "overview": "CODEX (COpy number determination by EXome sequencing) is a specialized R package for calling copy number variations from whole exome sequencing data. It is designed to work with multiple samples processed via the same pipeline, using a Poisson likelihood-based recursive segmentation procedure. Unlike many other tools, it does not strictly require matched controls, as it can estimate systemic biases across the sample cohort.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CODEX.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "Not found",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CODEX"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CODEX.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "Not found",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-codex\n\nname: bioconductor-codex\ndescription: Normalization and copy number variation (CNV) calling for whole exome sequencing (WES) data. Use this skill to process .bam and .bed files to detect germline or somatic CNVs using a Poisson latent factor model that removes biases from GC content, exon capture, and systemic artifacts.\n\n# bioconductor-codex\n\n## Overview\n\nCODEX (COpy number determination by EXome sequencing) is a specialized R package for calling copy number variations from whole exome sequencing data. It is designed to work with multiple samples processed via the same pipeline, using a Poisson likelihood-based recursive segmentation procedure. Unlike many other tools, it does not strictly require matched controls, as it can estimate systemic biases across the sample cohort.\n\n## Workflow and Usage\n\n### 1. Data Preparation\nCODEX requires BAM files, a BED file defining exon targets, and sample names.\n\n```r\nlibrary(CODEX)\n\n# Define inputs\nbamdir <- c(\"/path/to/sample1.bam\", \"/path/to/sample2.bam\")\nsampname <- as.matrix(c(\"Sample1\", \"Sample2\"))\nbedFile <- \"/path/to/targets.bed\"\nchr <- 22 # Process chromosome by chromosome\n\n# Initialize object\nbambedObj <- getbambed(bamdir = bamdir, bedFile = bedFile, \n                       sampname = sampname, projectname = \"MyProject\", chr = chr)\n```\n\n### 2. Coverage and Feature Extraction\nExtract raw read depths and calculate exon-specific features (GC content and mappability).\n\n```r\n# Get raw read depth (Y)\ncoverageObj <- getcoverage(bambedObj, mapqthres = 20)\nY <- coverageObj$Y\n\n# Get GC and Mappability\ngc <- getgc(chr, bambedObj$ref)\nmapp <- getmapp(chr, bambedObj$ref)\n```\n\n### 3. Quality Control\nFilter exons and samples based on coverage, length, mappability, and GC content.\n\n```r\nqcObj <- qc(Y, sampname, chr, bambedObj$ref, mapp, gc, \n            cov_thresh = c(20, 4000), \n            length_thresh = c(20, 2000), \n            mapp_thresh = 0.9, \n            gc_thresh = c(20, 80))\n\n# Extract QC-passed data\nY_qc <- qcObj$Y_qc\ngc_qc <- qcObj$gc_qc\nref_qc <- qcObj$ref_qc\n```\n\n### 4. Normalization\nFit the Poisson latent factor model. Use `normalize` for general cohorts or `normalize2` if specific control samples are available.\n\n```r\n# General normalization (testing K factors 1 to 9)\nnormObj <- normalize(Y_qc, gc_qc, K = 1:9)\n\n# If using case-control (e.g., samples 1, 3, 5 are controls)\n# normObj <- normalize2(Y_qc, gc_qc, K = 1:9, normal_index = c(1, 3, 5))\n\n# Determine optimal K (usually via BIC)\nchoiceofK(normObj$AIC, normObj$BIC, normObj$RSS, normObj$K, filename = \"K_choice.pdf\")\noptK <- normObj$K[which.max(normObj$BIC)]\n```\n\n### 5. Segmentation and CNV Calling\nCall CNVs using the \"integer\" mode for germline or \"fraction\" mode for somatic/cancer samples.\n\n```r\nfinalcall <- segment(Y_qc, normObj$Yhat, optK = optK, K = normObj$K, \n                     sampname_qc = qcObj$sampname_qc, \n                     ref_qc = qcObj$ref_qc, \n                     chr = chr, lmax = 200, mode = \"integer\")\n\n# View results\nhead(finalcall)\n```\n\n## Key Parameters and Tips\n\n- **Chromosome Consistency**: Ensure the chromosome naming (e.g., \"22\" vs \"chr22\") is identical between your BED file and BAM headers.\n- **Choice of K**: CODEX is conservative. If BIC suggests a very high K that might over-normalize and wash out signals, a smaller K is often preferred.\n- **Output Columns**:\n    - `copy_no`: Estimated copy number.\n    - `lratio`: Likelihood ratio (higher indicates stronger evidence for CNV).\n    - `mBIC`: Modified BIC used for segmentation stopping.\n- **Memory Management**: Process the genome chromosome by chromosome to manage memory usage effectively.\n\n## Reference documentation\n- [CODEX Vignette](./references/CODEX_vignettes.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-codex",
+    "description": "bioconductor-codex performs normalization and copy number variation calling for whole exome sequencing data using a Poisson latent factor model. Use when user asks to normalize exome sequencing data, detect germline or somatic copy number variations, or remove systemic biases from GC content and exon capture.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CODEX.html"
+  }
+}

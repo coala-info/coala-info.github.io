@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-singlemoleculefootprinting",
+  "category": "bioconductor",
+  "name": "bioconductor-singlemoleculefootprinting",
+  "description": "This package analyzes Single Molecule Footprinting data to map molecular occupancy from aligned BAM files. Use when user asks to perform quality control on bait capture, call methylation at single-molecule resolution, sort molecules based on transcription factor binding sites, or perform unsupervised footprint detection.",
+  "overview": "The `SingleMoleculeFootprinting` package provides a comprehensive toolkit for analyzing Single Molecule Footprinting (SMF) data. It enables users to move from aligned BAM files to high-resolution maps of molecular occupancy. The package supports both single-enzyme and double-enzyme SMF protocols. Key capabilities include quality control (bait capture and conversion rate), methylation calling at single-molecule resolution, unsupervised footprint detection via *FootprintCharter*, and supervised so",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/SingleMoleculeFootprinting.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/Krebslabrep/SingleMoleculeFootprinting",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "SingleMoleculeFootprinting"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SingleMoleculeFootprinting.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/Krebslabrep/SingleMoleculeFootprinting",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-singlemoleculefootprinting\n\n## Overview\n\nThe `SingleMoleculeFootprinting` package provides a comprehensive toolkit for analyzing Single Molecule Footprinting (SMF) data. It enables users to move from aligned BAM files to high-resolution maps of molecular occupancy. The package supports both single-enzyme and double-enzyme SMF protocols. Key capabilities include quality control (bait capture and conversion rate), methylation calling at single-molecule resolution, unsupervised footprint detection via *FootprintCharter*, and supervised sorting of molecules based on known Transcription Factor Binding Sites (TFBS).\n\n## Core Workflow\n\n### 1. Setup and Input\nThe package uses `QuasR` pointer files (tab-delimited files with `FileName` and `SampleName`). Experiment types are inferred from the `SampleName` substring:\n* `_NO_`: Single enzyme SMF (DGCHN & NWCGW contexts).\n* `_DE_`: Double enzyme SMF (GCH + HCG contexts).\n* `_SS_`: No enzyme (endogenous mCpG only, CG context).\n\n```r\nlibrary(SingleMoleculeFootprinting)\nlibrary(GenomicRanges)\n\n# Define region and sample\nQinput <- \"path/to/sampleSheet.txt\"\nroi <- GRanges(\"chr6\", IRanges(88106000, 88106500))\n```\n\n### 2. Quality Control\n* **Bait Capture Efficiency**: Ratio of reads in baits vs total.\n* **Conversion Rate**: Percentage of converted cytosines in non-SMF contexts (expected ~95%).\n\n```r\n# Bait efficiency\nBaitCapture(sampleSheet = Qinput, genome = BSgenome.Mmusculus.UCSC.mm10, baits = BaitRegions)\n\n# Conversion rate (slow, recommended for one chromosome)\nConversionRate(sampleSheet = Qinput, genome = BSgenome.Mmusculus.UCSC.mm10, chr = \"chr19\")\n```\n\n### 3. Methylation Calling\n`CallContextMethylation` is the primary function for extracting methylation. Set `returnSM = TRUE` to get the single-molecule matrix.\n\n```r\nMethylation <- CallContextMethylation(\n  sampleSheet = Qinput,\n  sample = \"MySample_DE_\",\n  genome = BSgenome.Mmusculus.UCSC.mm10,\n  RegionOfInterest = roi,\n  coverage = 20,\n  returnSM = TRUE\n)\n# Methylation[[1]] is a GRanges of bulk methylation\n# Methylation[[2]] is a list of sparse single-molecule matrices\n```\n\n### 4. Single Molecule Sorting (Supervised)\nClassify reads based on occupancy at specific TFBS.\n* **Single TF**: Uses 3 bins (upstream, motif, downstream).\n* **TF Cluster**: Uses $n+2$ bins for $n$ motifs.\n\n```r\n# Sort by TF cluster\nSortedReads <- SortReadsByTFCluster(\n  MethSM = Methylation[[2]]$MySample_DE_, \n  TFBSs = TFBSs_GRanges\n)\n\n# Quantify states\nStateQuantification(SortedReads = SortedReads, states = TFPairStates())\n```\n\n### 5. FootprintCharter (Unsupervised)\nDetect footprints without prior motif knowledge using k-medoids partitioning.\n\n```r\nFC_results <- FootprintCharter(\n  MethSM = Methylation[[2]]$MySample_DE_,\n  RegionOfInterest = roi,\n  k = 16, # Number of partitions\n  TF.length = c(5, 75),\n  nucleosome.length = c(120, 1000)\n)\n# Access detected footprints\nhead(FC_results$footprints.df)\n```\n\n### 6. Visualization\n* **Bulk Signal**: `PlotAvgSMF` plots 1 - average methylation.\n* **Single Molecule Heatmap**: `PlotSM` displays binary methylation patterns.\n\n```r\n# Plot average signal with TFBS annotation\nPlotAvgSMF(MethGR = Methylation[[1]], RegionOfInterest = roi, TFBSs = TFBSs_GRanges)\n\n# Plot sorted single molecules\nPlotSM(\n  MethSM = Methylation[[2]], \n  RegionOfInterest = roi, \n  SortedReads = SortedReads, \n  sorting.strategy = \"classical\"\n)\n```\n\n## Tips for Large Scale Analysis\n* **Genome-wide Sorting**: Use `Create_MethylationCallingWindows` to group nearby TFBS into larger windows (e.g., 1Mb) to reduce overhead.\n* **Parallelization**: Many functions (e.g., `BaitCapture`, `CollectCompositeData`) accept a `clObj` or `cores` argument.\n* **Masking SNPs**: In hybrid strains (e.g., BL6xCast), use `MaskSNPs` to remove cytosines disrupted by genetic variants to avoid SMF artifacts.\n\n## Reference documentation\n- [FootprintCharter](./references/FootprintCharter.md)\n- [SingleMoleculeFootprinting Vignette](./references/SingleMoleculeFootprinting.Rmd)\n- [Methylation Calling and QCs](./references/methylation_calling_and_QCs.md)\n- [Single Molecule Sorting by TF](./references/single_molecule_sorting_by_TF.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-singlemoleculefootprinting",
+    "description": "This package analyzes Single Molecule Footprinting data to map molecular occupancy from aligned BAM files. Use when user asks to perform quality control on bait capture, call methylation at single-molecule resolution, sort molecules based on transcription factor binding sites, or perform unsupervised footprint detection.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/SingleMoleculeFootprinting.html"
+  }
+}

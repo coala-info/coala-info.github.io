@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-metaboannotation",
+  "category": "bioconductor",
+  "name": "bioconductor-metaboannotation",
+  "description": "This tool annotates MS-based metabolomics data by matching experimental features like m/z, retention time, and spectra against reference libraries. Use when user asks to perform metabolite annotation, match MS/MS spectra against libraries, compare chemical formulas, or identify compounds using m/z and retention time values.",
+  "overview": "The `MetaboAnnotation` package provides a high-level framework for annotating metabolomics data. It centers around \"matching\" functions that compare query data (experimental features) against target data (reference libraries). The package handles one-to-many and one-to-none relationships through specialized `Matched` and `MatchedSpectra` objects, which preserve both the original data and the matching metadata (scores, adducts, etc.).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaboAnnotation.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/RforMassSpectrometry/MetaboAnnotation",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "MetaboAnnotation"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaboAnnotation.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/RforMassSpectrometry/MetaboAnnotation",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-metaboannotation\n\nname: bioconductor-metaboannotation\ndescription: Annotation of MS-based metabolomics data by matching query entities (m/z, retention time, spectra, formulas) against reference targets. Use this skill when you need to perform metabolite annotation, match experimental MS/MS spectra against libraries (MassBank, CompDb), or organize standard compounds into mixes.\n\n# bioconductor-metaboannotation\n\n## Overview\n\nThe `MetaboAnnotation` package provides a high-level framework for annotating metabolomics data. It centers around \"matching\" functions that compare query data (experimental features) against target data (reference libraries). The package handles one-to-many and one-to-none relationships through specialized `Matched` and `MatchedSpectra` objects, which preserve both the original data and the matching metadata (scores, adducts, etc.).\n\n## Core Matching Functions\n\nThe package provides three primary functions, each using specific parameter objects to define the matching logic:\n\n1.  `matchValues()`: Matches numerical values like m/z and retention time.\n2.  `matchSpectra()`: Matches fragment (MS2) spectra using similarity scores.\n3.  `matchFormula()`: Matches chemical formulas.\n\n## Workflow: Matching m/z and Retention Time\n\nTo match experimental features against a reference data frame or database:\n\n1.  **Define Parameters**: Use `Mass2MzParam` (for m/z only) or `Mass2MzRtParam` (for m/z and RT).\n2.  **Execute Match**: Call `matchValues()`.\n3.  **Extract Results**: Use `matchedData()` to get a combined table.\n\n```r\nlibrary(MetaboAnnotation)\n\n# 1. Setup parameters (matching query m/z to target exact mass via adducts)\nparm <- Mass2MzRtParam(\n    adducts = c(\"[M+H]+\", \"[M+Na]+\"),\n    tolerance = 0.005, \n    ppm = 10,\n    toleranceRt = 10\n)\n\n# 2. Perform matching\n# query can be data.frame, SummarizedExperiment, or QFeatures\n# target is usually a data.frame or CompDb\nmatched_res <- matchValues(query_data, target_data, param = parm, rtColname = \"rtime\")\n\n# 3. Explore results\nmatched_res                 # Summary of matches\nwhichQuery(matched_res)     # Indices of matched query features\nmatchedData(matched_res)    # Full DataFrame of matches (includes target_ prefix columns)\n```\n\n## Workflow: MS/MS Spectra Matching\n\nTo match experimental MS2 spectra against a reference library (e.g., MassBank):\n\n1.  **Prepare Spectra**: Ensure query and target are `Spectra` objects.\n2.  **Define Similarity**: Use `CompareSpectraParam` or `MatchForwardReverseParam`.\n3.  **Execute Match**: Call `matchSpectra()`.\n\n```r\nlibrary(Spectra)\n\n# Define matching parameters\ncsp <- CompareSpectraParam(\n    requirePrecursor = TRUE, # Only compare spectra with similar precursor m/z\n    ppm = 10,\n    tolerance = 0.01,\n    matchedPeaksCount = TRUE\n)\n\n# Perform matching\nmtches <- matchSpectra(query_spectra, target_spectra, param = csp)\n\n# Access results\nmtches$score                # Similarity scores\nmtches$target_compound_name # Names from target library\nplotSpectraMirror(mtches[2]) # Visualize a specific match\n```\n\n### Advanced Spectra Matching Tips\n*   **Alternative Similarity**: To use spectral entropy, set `MAPFUN = joinPeaksNone` and `FUN = msentropy_similarity` within `CompareSpectraParam`.\n*   **Performance**: For large datasets, convert `Spectra` backends to `MsBackendMemory()` using `setBackend()` to speed up calculations.\n*   **Validation**: Use `validateMatchedSpectra(mtches)` to open an interactive Shiny app for manual curation of matches.\n\n## Working with Bioconductor Objects\n\n`MetaboAnnotation` integrates with standard Bioconductor containers:\n*   **SummarizedExperiment**: Pass the object as `query`. Matching is performed on `rowData(se)`.\n*   **QFeatures**: Pass the object and specify the assay with `queryAssay = \"assay_name\"`.\n*   **CompoundDb**: Use a `CompDb` object as the `target` in `matchValues` or `matchSpectra`.\n\n## Utility: Creating Standard Mixes\n\nThe `createStandardMixes()` function helps design experiments by grouping standards so that no two compounds in a mix have overlapping m/z values.\n\n```r\n# x must be a matrix with m/z values (rows = compounds, cols = adducts)\nmixes <- createStandardMixes(\n    standard_matrix, \n    min_diff = 2, \n    max_nstd = 15, \n    iterativeRandomization = TRUE\n)\n```\n\n## Reference documentation\n- [Annotation of MS-based Metabolomics Data](./references/MetaboAnnotation.Rmd)\n- [Annotation of MS-based Metabolomics Data](./references/MetaboAnnotation.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-metaboannotation",
+    "description": "This tool annotates MS-based metabolomics data by matching experimental features like m/z, retention time, and spectra against reference libraries. Use when user asks to perform metabolite annotation, match MS/MS spectra against libraries, compare chemical formulas, or identify compounds using m/z and retention time values.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/MetaboAnnotation.html"
+  }
+}

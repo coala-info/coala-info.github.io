@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-knowseq",
+  "category": "bioconductor",
+  "name": "bioconductor-knowseq",
+  "description": "KnowSeq provides a comprehensive pipeline for processing and analyzing transcriptomic gene expression data from raw sequences to biological insights. Use when user asks to retrieve data from public repositories like GEO or GDC, perform differential expression analysis, remove batch effects, or identify biomarkers using machine learning models.",
+  "overview": "KnowSeq is a modular and flexible R/Bioconductor package designed for transcriptomic gene expression analysis. It covers the entire pipeline from raw data processing to biological knowledge extraction. Its primary strength is the \"Intelligent Automatic Report,\" which can execute and document the full workflow in a single HTML file. The pipeline is modular, allowing users to start at any step (e.g., starting with a count matrix or a pre-processed expression matrix).",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/KnowSeq.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-knowseq/overview",
+  "github": "N/A",
+  "conda_downloads": "20.2K",
+  "conda_downloads_num": 20200,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "KnowSeq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/KnowSeq.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-knowseq/overview",
+    "github": "N/A",
+    "conda_downloads": "20.2K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-knowseq\n\nname: bioconductor-knowseq\ndescription: Comprehensive transcriptomic analysis pipeline for gene expression data. Use when Claude needs to perform end-to-end RNA-seq or microarray analysis, including data retrieval from GEO/ArrayExpress/GDC, raw data alignment, batch effect removal, differential expression analysis (DEGs), machine learning-based biomarker assessment (k-NN, SVM, Random Forest), and biological enrichment (Gene Ontology, KEGG pathways, and disease association).\n\n# bioconductor-knowseq\n\n## Overview\n\nKnowSeq is a modular and flexible R/Bioconductor package designed for transcriptomic gene expression analysis. It covers the entire pipeline from raw data processing to biological knowledge extraction. Its primary strength is the \"Intelligent Automatic Report,\" which can execute and document the full workflow in a single HTML file. The pipeline is modular, allowing users to start at any step (e.g., starting with a count matrix or a pre-processed expression matrix).\n\n## Installation\n\n```R\nif (!requireNamespace(\"BiocManager\", quietly = TRUE))\n    install.packages(\"BiocManager\")\nBiocManager::install(\"KnowSeq\")\nlibrary(KnowSeq)\n```\n\n## Core Workflow\n\n### 1. Data Retrieval and Alignment\nKnowSeq can download series from NCBI/GEO, ArrayExpress, or GDC Portal.\n\n```R\n# Download metadata and series\ndownloadPublicSeries(c(\"GSE74251\"))\ngse_csv <- read.csv(\"ReferenceFiles/GSE74251.csv\")\n\n# Raw alignment (requires 'utils' folder with hisat2/htseq-count)\nrawAlignment(gse_csv, referenceGenome = 38, countFiles = TRUE)\n```\n\n### 2. Processing Count Files\nConvert raw counts into a merged matrix and then into normalized gene expression values.\n\n```R\n# Merge count files into a matrix\ncountsInfo <- countsToMatrix(\"mergedCountsInfo.csv\", extension = \"count\")\ncountsMatrix <- countsInfo$countsMatrix\nlabels <- countsInfo$labels\n\n# Get gene annotations (Ensembl to Gene Symbol)\nmyAnnotation <- getGenesAnnotation(rownames(countsMatrix))\n\n# Calculate normalized expression (CQN method)\nexpressionMatrix <- calculateGeneExpressionValues(countsMatrix, myAnnotation, genesNames = TRUE)\n```\n\n### 3. Batch Effect Removal\nEssential when combining data from different series or platforms.\n\n```R\n# Using ComBat\nexpressionMatrixCorrected <- batchEffectRemoval(expressionMatrix, labels, \n                                               batchGroups = batchGroups, \n                                               method = \"combat\")\n\n# Using SVA\nexpressionMatrixCorrected <- batchEffectRemoval(expressionMatrix, labels, method = \"sva\")\n```\n\n### 4. Differential Expressed Genes (DEGs) Extraction\nExtract DEGs using limma with an optional \"coverage\" parameter for multiclass studies.\n\n```R\nDEGsInformation <- DEGsExtraction(expressionMatrixCorrected, labels, \n                                  lfc = 1.0, pvalue = 0.01, cov = 1)\ntopTable <- DEGsInformation$DEG_Results$DEGs_Table\nDEGsMatrix <- DEGsInformation$DEG_Results$DEGs_Matrix\n```\n\n### 5. Machine Learning Assessment\nAssess the robustness of DEGs as biomarkers using feature selection and classification.\n\n```R\n# Feature Selection (mRMR, Random Forest, or Disease Association 'da')\nranking <- featureSelection(t(DEGsMatrix), labels, colnames(t(DEGsMatrix)), mode = \"mrmr\")\n\n# Cross-validation (k-NN, SVM, or RF)\nresults_cv <- knn_trn(t(DEGsMatrix), labels, names(ranking)[1:10], folds = 5)\n```\n\n### 6. Biological Enrichment\nRetrieve functional information for the identified DEGs.\n\n```R\n# Gene Ontology (BP, MF, CC)\nGOs <- geneOntologyEnrichment(names(ranking)[1:10], pvalCutOff = 0.1)\n\n# KEGG Pathways\npaths <- DEGsToPathways(names(ranking)[1:10])\n\n# Disease Associations (via Open Targets/targetValidation)\ndiseases <- DEGsToDiseases(rownames(DEGsMatrix)[1:5], getEvidences = FALSE)\n```\n\n### 7. Automated Reporting\nThe fastest way to run the full pipeline and generate an HTML summary.\n\n```R\nknowseqReport(expressionMatrix, labels, 'my-study-report', \n              clasifAlgs = c('knn', 'rf'), \n              disease = 'breast-cancer', \n              lfc = 2, pvalue = 0.001, \n              geneOntology = TRUE, getPathways = TRUE)\n```\n\n## Data Visualization\nThe `dataPlot` function is a multipurpose tool for various pipeline stages:\n- `mode = \"boxplot\"`: View sample normalization.\n- `mode = \"orderedBoxplot\"`: View top DEGs expression across classes.\n- `mode = \"heatmap\"`: Standard expression heatmap.\n- `mode = \"classResults\"`: Plot ML metrics (Accuracy, Sensitivity, Specificity).\n- `mode = \"confusionMatrix\"`: Visualize classification performance.\n\n## Reference documentation\n- [Transcriptomic Intelligent Pipeline: The KnowSeq user guide](./references/KnowSeq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-knowseq",
+    "description": "KnowSeq provides a comprehensive pipeline for processing and analyzing transcriptomic gene expression data from raw sequences to biological insights. Use when user asks to retrieve data from public repositories like GEO or GDC, perform differential expression analysis, remove batch effects, or identify biomarkers using machine learning models.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/KnowSeq.html"
+  }
+}

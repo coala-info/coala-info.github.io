@@ -1,0 +1,49 @@
+{
+  "id": "phylobayes-mpi",
+  "category": "CLI",
+  "name": "phylobayes-mpi",
+  "description": "PhyloBayes-MPI is a Bayesian MCMC sampler used for phylogenetic inference under site-heterogeneous models. Use when user asks to perform phylogenetic reconstruction, run CAT-GTR models, assess MCMC convergence, or compare model fit using cross-validation.",
+  "overview": "PhyloBayes-MPI is a specialized Bayesian Monte Carlo Markov Chain (MCMC) sampler designed for phylogenetic inference. Its primary strength lies in its implementation of site-heterogeneous models (like the CAT model), which better account for the varying biochemical constraints across different positions in protein or DNA sequences compared to standard site-homogeneous models. The MPI version allows these computationally intensive models to be scaled across multiple CPU cores. Use this skill to d",
+  "homepage": "https://github.com/bayesiancook/pbmpi",
+  "validation": "PASS",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/phylobayes-mpi/overview",
+  "github": "https://github.com/bayesiancook/pbmpi",
+  "conda_downloads": "12.5K",
+  "conda_downloads_num": 12500,
+  "last_updated": "2025-04-22",
+  "cwl_count": 3,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "phylobayes-mpi_pb_mpi",
+      "phylobayes-mpi_tracecomp",
+      "phylobayes-mpi_bpcomp"
+    ],
+    "description": "creates a new chain, sampling from the posterior distribution, conditional on specified data",
+    "docker_image": "quay.io/biocontainers/phylobayes-mpi:1.9--h5c6ebe3_0",
+    "homepage": "https://github.com/bayesiancook/pbmpi",
+    "validation": "PASS",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/phylobayes-mpi/overview",
+    "github": "https://github.com/bayesiancook/pbmpi",
+    "conda_downloads": "12.5K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "phylobayes-mpi_bpcomp.cwl",
+    "phylobayes-mpi_pb_mpi.cwl",
+    "phylobayes-mpi_tracecomp.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# phylobayes-mpi\n\n## Overview\n\nPhyloBayes-MPI is a specialized Bayesian Monte Carlo Markov Chain (MCMC) sampler designed for phylogenetic inference. Its primary strength lies in its implementation of site-heterogeneous models (like the CAT model), which better account for the varying biochemical constraints across different positions in protein or DNA sequences compared to standard site-homogeneous models. The MPI version allows these computationally intensive models to be scaled across multiple CPU cores. Use this skill to determine the correct command-line arguments for model selection, resource allocation, and post-analysis convergence checks.\n\n## Core Command Line Usage\n\n### Running the Sampler (pb_mpi)\n\nThe primary executable is `pb_mpi`. Because it uses MPI, it must be launched with `mpirun` or `mpiexec`.\n\n*   **Start a new chain with CAT-GTR:**\n    `mpirun -np <number_of_cores> pb_mpi -d <alignment_file> -cat -gtr <chain_name>`\n*   **Start a chain with a fixed topology:**\n    `mpirun -np <number_of_cores> pb_mpi -d <alignment_file> -t <tree_file> -cat -gtr <chain_name>`\n*   **Resume an existing chain:**\n    `mpirun -np <number_of_cores> pb_mpi <chain_name>`\n*   **Specify sampling frequency (thinning):**\n    Use `-x <thinning> <total_samples>` to control how often the MCMC state is saved to disk.\n\n### Model Selection Flags\n\n*   `-cat`: Invokes the Dirichlet process mixture (CAT) model for site-specific amino-acid or nucleotide preferences.\n*   `-gtr`: Uses a General Time Reversible exchangeability matrix.\n*   `-poisson`: Uses a Poisson (F81-style) exchangeability process.\n*   `-ncat <int>`: Sets a fixed number of components for the mixture model (instead of the default Dirichlet process).\n*   `-uniformbaseprior` / `-rigidbaseprior`: Adjusts the priors on the base frequencies for CAT-GTR models.\n\n## Model Fit and Comparison\n\nPhyloBayes-MPI includes tools for assessing model fit and calculating marginal likelihoods.\n\n*   **WAIC and LOO-CV:**\n    Use `-sitecv` or `-jointcv` to perform cross-validation or calculate the Widely Applicable Information Criterion (WAIC).\n*   **Sequential Importance Sampling (SIS):**\n    Use `-sis`, `-self_tuned_sis`, or `-emp_ref` to estimate marginal likelihoods for model comparison.\n*   **Site Log-Likelihoods:**\n    Use `-sitelogl` to output the log-likelihood for each site, which is useful for downstream selection or fit analysis.\n\n## Post-Analysis and Convergence\n\nAfter running at least two independent chains (e.g., `chain1` and `chain2`), you must assess convergence.\n\n*   **Tracecomp (Parameter Convergence):**\n    `tracecomp -x <burn_in> <chain1> <chain2>`\n    *   Check the \"maxdiff\" column. Values < 0.1 indicate good convergence; > 0.3 suggests the chains have not converged.\n*   **Bpcomp (Topological Convergence):**\n    `bpcomp -x <burn_in> <sampling_interval> <chain1> <chain2>`\n    *   This generates a consensus tree and calculates the maximum difference in bipartition frequencies (maxdiff).\n*   **Readpb (Posterior Summary):**\n    `readpb_mpi -x <burn_in> <chain_name>`\n    *   Summarizes the posterior distribution of the parameters for a single chain.\n\n## Expert Tips\n\n1.  **Resource Allocation:** One process (the master) manages the MCMC moves, while the remaining processes (slaves) calculate site likelihoods. For very large alignments, increasing `-np` significantly speeds up the likelihood calculation.\n2.  **Burn-in:** A standard burn-in is 10-20% of the total points. Always verify that the log-likelihood has reached a plateau using `tracecomp` before trusting the results.\n3.  **Effective Sample Size (ESS):** In `tracecomp`, ensure the ESS for all parameters is > 100 (ideally > 500) for reliable posterior estimates.\n4.  **Memory Management:** If the program hangs or crashes with \"singular logl\" errors, it may be due to empty categories in the mixture model; check your data for highly gapped regions or use the `-v` flag for more verbose output during the run.\n\n\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| bpcomp | compare bipartition frequencies between independent chains and build consensus based on merged lists of trees |\n| mpirun -np <np> pb_mpi | creates a new chain, sampling from the posterior distribution, conditional on specified data |\n| tracecomp | measure the effective sizes and overlap between 95% CI of several independent chains |\n\n## Reference documentation\n- [PhyloBayes-MPI GitHub Repository](./references/github_com_bayesiancook_pbmpi.md)\n- [PhyloBayes-MPI Commit History and Feature Updates](./references/github_com_bayesiancook_pbmpi_commits_master.md)",
+  "skill_front_matter": {
+    "name": "phylobayes-mpi",
+    "description": "PhyloBayes-MPI is a Bayesian MCMC sampler used for phylogenetic inference under site-heterogeneous models. Use when user asks to perform phylogenetic reconstruction, run CAT-GTR models, assess MCMC convergence, or compare model fit using cross-validation.",
+    "homepage": "https://github.com/bayesiancook/pbmpi"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-eegc",
+  "category": "bioconductor",
+  "name": "bioconductor-eegc",
+  "description": "bioconductor-eegc evaluates cellular engineering processes by comparing gene expression data across input, output, and target reference samples. Use when user asks to categorize gene induction status, evaluate cell fate conversion efficiency, or perform gene regulatory network analysis on engineered cells.",
+  "overview": "The `eegc` package evaluates the efficiency of cell fate conversion by analyzing the transcriptional distance between engineered cells and their target primary counterparts. It moves beyond simple differential expression by categorizing genes based on their \"induction status\" relative to a starting population and a gold-standard reference.",
+  "homepage": "https://bioconductor.org/packages/3.8/bioc/html/eegc.html",
+  "validation": "",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eegc/overview",
+  "github": "N/A",
+  "conda_downloads": "24.8K",
+  "conda_downloads_num": 24800,
+  "last_updated": "2025-04-22",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "eegc"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/eegc.html",
+    "validation": "",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/bioconductor-eegc/overview",
+    "github": "N/A",
+    "conda_downloads": "24.8K",
+    "last_updated": "2025-04-22",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-eegc\n\nname: bioconductor-eegc\ndescription: Evaluation of cellular engineering processes (differentiation or transdifferentiation) using gene expression data. Use this skill to compare three sample types—input (somatic/stem cells), output (induced cells), and reference (target primary cells)—to categorize genes into five states (Successful, Inactive, Insufficient, Over, Reversed) and perform functional, tissue-specific, and gene regulatory network (GRN) analyses.\n\n## Overview\n\nThe `eegc` package evaluates the efficiency of cell fate conversion by analyzing the transcriptional distance between engineered cells and their target primary counterparts. It moves beyond simple differential expression by categorizing genes based on their \"induction status\" relative to a starting population and a gold-standard reference.\n\n## Typical Workflow\n\n### 1. Data Preparation\nInput data should be a matrix of gene expression (FPKM or counts) with genes in rows and samples in columns. You need samples representing the starting state (from), the engineered state (to), and the target state (target).\n\n```r\nlibrary(eegc)\ndata(SandlerFPKM) # Example dataset\n# Samples: DMEC (input), rEChMPP (output), CB (target)\n```\n\n### 2. Differential Gene Analysis\nUse `diffGene` to perform pair-wise comparisons. It uses `limma` for FPKM/microarray data and `DESeq2` for counts.\n\n```r\ndiff_results = diffGene(expr = SandlerFPKM, \n                        array = FALSE, fpkm = TRUE, counts = FALSE,\n                        from.sample = \"DMEC\", \n                        to.sample = \"rEChMPP\", \n                        target.sample = \"CB\",\n                        filter = TRUE, pvalue = 0.05)\n\nexpr_filter = diff_results[[3]] # Filtered expression matrix\ndiff_genes = diff_results[[2]]  # List of differential genes\n```\n\n### 3. Gene Categorization\nThe core of `eegc` is categorizing genes based on the Expression Difference (ED) ratio:\n$ED\\_ratio = \\frac{Output - Input}{Target - Input}$\n\n```r\ncategories = categorizeGene(expr = expr_filter, \n                            diffGene = diff_genes,\n                            from.sample = \"DMEC\", \n                            to.sample = \"rEChMPP\", \n                            target.sample = \"CB\")\n\n# Access categories: categories[[1]]$Successful, categories[[1]]$Inactive, etc.\n```\n\n| Category | Description |\n| :--- | :--- |\n| **Successful** | Induced cells reached target primary cell levels. |\n| **Inactive** | Genes failed to change from the input state. |\n| **Insufficient** | Genes changed but did not reach target levels. |\n| **Over** | Genes induced far beyond the target level. |\n| **Reversed** | Genes regulated in the opposite direction of the target. |\n\n### 4. Visualization and Quantification\nVisualize the distribution of categories and specific marker genes.\n\n```r\n# Density plot of ED ratios to see global engineering success\ndensityPlot(categories[[2]], proportion = TRUE)\n\n# Scatter plot for specific categories (e.g., Successful, Inactive)\ndata(markers)\nmarkerScatter(expr = expr_filter, samples = c(\"CB\", \"rEChMPP\"), \n              cate.gene = categories[[1]][2:4], markers = markers)\n```\n\n### 5. Functional and Tissue Enrichment\nIdentify which biological functions or tissue-specific signatures are missing (Inactive) or successfully acquired.\n\n```r\n# GO/KEGG Enrichment\ngo_enrich = functionEnrich(categories[[1]], organism = \"human\", GO = TRUE)\n\n# Tissue-specific enrichment (requires tissueGenes and tissueGroup data)\ndata(tissueGenes); data(tissueGroup)\ntissue_enrich = enrichment(cate.gene = categories[[1]], \n                           annotated.gene = tissueGenes, \n                           background.gene = rownames(expr_filter))\n\n# Plot results\nheatmapPlot(tissue_enrich, GO = FALSE)\n```\n\n### 6. Gene Regulatory Network (GRN) Analysis\nEvaluate the importance of specific Transcription Factors (TFs) in the engineering process using CellNet-based GRNs.\n\n```r\ndata(human.grn); data(human.tf)\n\n# TF Enrichment\ntf_enrich = enrichment(cate.gene = categories[[1]], \n                       annotated.gene = human.tf, \n                       background.gene = rownames(expr_filter))\n\n# Network Topological Analysis (Degree Centrality)\ndegree_scores = networkAnalyze(human.grn[[\"Hspc\"]], \n                               cate.gene = categories[[1]], \n                               centrality = \"degree\")\n\n# Plot GRN for specific nodes\ngrnPlot(grn.data = human.grn[[\"Hspc\"]], \n        cate.gene = categories[[1]], \n        nodes = c(\"ZNF641\", \"BCL6\"))\n```\n\n## Reference documentation\n\n- [Engineering Evaluation by Gene Categorization of Microarray and RNA-seq Data with eegc package](./references/eegc.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-eegc",
+    "description": "bioconductor-eegc evaluates cellular engineering processes by comparing gene expression data across input, output, and target reference samples. Use when user asks to categorize gene induction status, evaluate cell fate conversion efficiency, or perform gene regulatory network analysis on engineered cells.",
+    "homepage": "https://bioconductor.org/packages/3.8/bioc/html/eegc.html"
+  }
+}

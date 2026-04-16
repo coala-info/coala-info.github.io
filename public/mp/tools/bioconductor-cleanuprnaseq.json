@@ -1,0 +1,43 @@
+{
+  "id": "bioconductor-cleanuprnaseq",
+  "category": "bioconductor",
+  "name": "bioconductor-cleanuprnaseq",
+  "description": "This tool detects and corrects genomic DNA contamination in RNA-seq data by estimating background noise from intergenic and intronic regions. Use when user asks to identify gDNA contamination, correct gene expression counts for residual DNA, or analyze mapping statistics across genomic features.",
+  "overview": "CleanUpRNAseq provides a workflow to identify and mitigate genomic DNA (gDNA) contamination in RNA-seq data. It uses mapping statistics from intergenic and intronic regions to estimate the background noise contributed by gDNA and provides methods to subtract this noise from gene-level counts. The package supports both unstranded and stranded library protocols.",
+  "homepage": "https://bioconductor.org/packages/release/bioc/html/CleanUpRNAseq.html",
+  "validation": "",
+  "conda_home": "",
+  "github": "https://github.com/haibol2016/CleanUpRNAseq",
+  "conda_downloads": "",
+  "conda_downloads_num": 0,
+  "last_updated": "",
+  "cwl_count": 0,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "CleanUpRNAseq"
+    ],
+    "description": "",
+    "docker_image": "",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CleanUpRNAseq.html",
+    "validation": "",
+    "conda_home": "",
+    "github": "https://github.com/haibol2016/CleanUpRNAseq",
+    "conda_downloads": "",
+    "last_updated": "",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# bioconductor-cleanuprnaseq\n\nname: bioconductor-cleanuprnaseq\ndescription: Detect and correct genomic DNA (gDNA) contamination in RNA-seq data. Use this skill when analyzing RNA-seq datasets (especially rRNA-depleted or SMART-Seq protocols) that exhibit high intergenic or intronic mapping rates, or when gene expression quantitation is suspected to be skewed by residual DNA.\n\n# bioconductor-cleanuprnaseq\n\n## Overview\nCleanUpRNAseq provides a workflow to identify and mitigate genomic DNA (gDNA) contamination in RNA-seq data. It uses mapping statistics from intergenic and intronic regions to estimate the background noise contributed by gDNA and provides methods to subtract this noise from gene-level counts. The package supports both unstranded and stranded library protocols.\n\n## Core Workflow\n\n### 1. Annotation and SAF Preparation\nThe package requires an `EnsDb` object matching the genome version used for alignment. Use `get_saf` to generate Simplified Annotation Format (SAF) files for different genomic features.\n\n```r\nlibrary(CleanUpRNAseq)\nlibrary(EnsDb.Hsapiens.v86)\n\n# Prepare SAF for features\nsaf_list <- get_saf(\n    ensdb_sqlite = EnsDb.Hsapiens.v86,\n    bamfile = \"sample.bam\",\n    mitochondrial_genome = \"MT\"\n)\n```\n\n### 2. Summarizing Reads\nCreate a `SummarizedCounts` object to manage metadata and count data. Use `summarize_reads` to quantify reads across genomic features and `salmon_tximport` for transcript-level data.\n\n```r\n# Define sample metadata\ncol_data <- data.frame(\n    sample_name = c(\"S1\", \"S2\"),\n    BAM_file = c(\"s1.bam\", \"s2.bam\"),\n    salmon_quant_file = c(\"s1/quant.sf\", \"s2/quant.sf\"),\n    group = c(\"Ctrl\", \"Trt\")\n)\n\n# Initialize container\nsc <- create_summarizedcounts(lib_strand = 0, colData = col_data)\n\n# Summarize genomic features\ncounts_list <- summarize_reads(\n    SummarizedCounts = sc,\n    saf_list = saf_list,\n    gtf = \"annotation.gtf\",\n    threads = 4\n)\n\n# Import Salmon counts\nsalmon_counts <- salmon_tximport(sc, ensdb_sqlite = EnsDb.Hsapiens.v86)\n```\n\n### 3. Detecting Contamination\nGenerate diagnostic plots to assess the extent of gDNA contamination. High percentages of reads in intergenic or intronic regions typically indicate contamination.\n\n```r\n# Plot mapping status\np1 <- plot_assignment_stat(sc)\n# Plot distribution over features (genes, introns, intergenic)\np2 <- plot_read_distr(get_region_stat(sc))\n# PCA and Heatmap to see sample clustering\np3 <- plot_pca_heatmap(sc)\n```\n\n### 4. Correcting Contamination\nChoose a correction method based on the library type:\n\n*   **Unstranded (Global):** Uses median per-base read coverage over intergenic regions.\n    ```r\n    corrected_counts <- correct_global(sc)\n    ```\n*   **Unstranded (GC-aware):** Leverages GC-content bias for more granular correction.\n    ```r\n    corrected_counts <- correct_GC(sc, gene_gc = gene_GC_data, intergenic_gc = intergenic_GC_data)\n    ```\n*   **Stranded:** Uses counts from the opposite strand as the contamination estimate.\n    ```r\n    # Requires Salmon quant with opposite strandedness setting\n    corrected_counts <- correct_stranded(sc)\n    ```\n\n## Tips for Success\n*   **EnsDb Consistency:** Ensure the `EnsDb` version exactly matches the GTF used for alignment.\n*   **Strandedness:** For stranded data, you must run Salmon twice (once with the correct `--libType` and once with the opposite) to use `correct_stranded`.\n*   **Wrapper Functions:** For a streamlined experience, use `create_diagnostic_plots()` and `correct_for_contamination()` which bundle multiple steps.\n\n## Reference documentation\n- [CleanUpRNAseq: detecting and correcting gDNA contamination in RNA-seq data](./references/CleanUpRNAseq.md)",
+  "skill_front_matter": {
+    "name": "bioconductor-cleanuprnaseq",
+    "description": "This tool detects and corrects genomic DNA contamination in RNA-seq data by estimating background noise from intergenic and intronic regions. Use when user asks to identify gDNA contamination, correct gene expression counts for residual DNA, or analyze mapping statistics across genomic features.",
+    "homepage": "https://bioconductor.org/packages/release/bioc/html/CleanUpRNAseq.html"
+  }
+}
