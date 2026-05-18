@@ -18,6 +18,7 @@ export default withMermaid(defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
       { text: 'Use Cases', link: '/use-cases/' },
+      { text: 'Marketplace', link: 'https://coala.info/mp' },
       { text: 'GitHub', link: 'https://github.com/coala-info' }
     ],
 
