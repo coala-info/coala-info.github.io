@@ -1,0 +1,48 @@
+{
+  "id": "paperbanana",
+  "category": "CLI",
+  "name": "paperbanana",
+  "description": "PaperBanana is a multi-agent framework that automates the creation of academic illustrations and statistical plots from scientific text or data. Use when user asks to generate methodology diagrams from research text, create statistical plots from raw data, or refine existing images for academic publication.",
+  "overview": "PaperBanana is a multi-agent framework for academic illustrations. The CWL wrapper runs **`python /app/generate.py`** (PaperVizAgent single-sample processing) inside `hubentu/paperbanana`. It accepts direct text or a file, runs the agent pipeline, and writes a JSON trace plus a rendered image.",
+  "homepage": "https://github.com/dwzhu-pku/PaperBanana",
+  "validation": "FAIL (generation failed)",
+  "conda_home": "https://anaconda.org/channels/bioconda/packages/paperbanana/overview",
+  "github": "https://github.com/dwzhu-pku/PaperBanana",
+  "conda_downloads": "N/A",
+  "conda_downloads_num": 0,
+  "last_updated": "N/A",
+  "cwl_count": 1,
+  "has_skill": true,
+  "runtime_summary": [],
+  "report": {
+    "runtime_summary_table": [],
+    "tool_names": [
+      "paperbanana",
+      "python_main_one.py"
+    ],
+    "description": "FAIL to generate CWL: paperbanana not found in Docker image. The image may not provide this executable.",
+    "docker_image": "paperbanana",
+    "homepage": "https://github.com/dwzhu-pku/PaperBanana",
+    "validation": "FAIL (generation failed)",
+    "conda_home": "https://anaconda.org/channels/bioconda/packages/paperbanana/overview",
+    "github": "https://github.com/dwzhu-pku/PaperBanana",
+    "conda_downloads": "N/A",
+    "last_updated": "N/A",
+    "skill_generated": true,
+    "validation_run": "not_done"
+  },
+  "cwl_files": [
+    "paperbanana.cwl"
+  ],
+  "skill_file": "skills/SKILL.md",
+  "skills_repo_link": null,
+  "cwls_repo_link": null,
+  "skill_markdown": "# paperbanana\n\n## Overview\n\nPaperBanana is a multi-agent framework for academic illustrations. The CWL wrapper runs **`python /app/generate.py`** (PaperVizAgent single-sample processing) inside `hubentu/paperbanana`. It accepts direct text or a file, runs the agent pipeline, and writes a JSON trace plus a rendered image.\n\n## Task types (`--task_name`)\n\n| Value | Use for |\n|-------|---------|\n| `diagram` | Methodology / architecture figures from prose (default) |\n| `plot` | Statistical plots from raw data (text or JSON) |\n\n## Core inputs\n\nProvide source content **either** inline or from a file (not both required):\n\n| Parameter | CWL id | Type | Description |\n|-----------|--------|------|-------------|\n| `--task_name` | `task_name` | string | `diagram` or `plot` |\n| `--raw_text` | `raw_text` | string | Methodology text (diagram) or plot data as text/JSON (plot) |\n| `--raw_file` | `raw_file` | File | File containing the same content as `raw_text` |\n| `--caption_intent` | `caption_intent` | string | Figure caption (diagram) or visual intent (plot) |\n\n## Pipeline and retrieval\n\n| Parameter | CWL id | Type | Description |\n|-----------|--------|------|-------------|\n| `--model_config` | `model_config` | File | Path to `model_config.yaml` (default in image: `/app/configs/model_config.yaml`) |\n| `--exp_mode` | `exp_mode` | string | Experiment pipeline mode (default: `demo_full`) |\n| `--retrieval_setting` | `retrieval_setting` | string | Planner retrieval: `auto`, `manual`, `random`, or `none` (default: `auto`) |\n| `--ref_dir` | `ref_dir` | Directory | Directory with `ref.json` and reference images for Retriever/Planner (default: `data/PaperBananaBench/{task_name}`) |\n| `--planner-metaphor` | `planner_metaphor` | boolean | Diagram only: enable Planner visual-metaphor discovery before detailed description |\n| `--max_critic_rounds` | `max_critic_rounds` | int | Maximum critic refinement rounds (default: `3`) |\n\n## Model and image settings\n\n| Parameter | CWL id | Type | Description |\n|-----------|--------|------|-------------|\n| `--main_model_name` | `main_model_name` | string | Main VLM name (default from `model_config` → `defaults.main_model_name`) |\n| `--image_gen_model_name` | `image_gen_model_name` | string | Image generation model (default from `model_config` → `defaults.image_gen_model_name`) |\n| `--aspect_ratio` | `aspect_ratio` | string | Output aspect ratio, e.g. `1:1`, `16:9`, `21:9` (default: `1:1`) |\n| `--image_size` | `image_size` | string | Resolution when supported: `1k`, `2k`, or `4k` (default: `1k`) |\n\n## Outputs (required in CWL jobs)\n\n| Parameter | CWL id | Type | Description |\n|-----------|--------|------|-------------|\n| `--output` | `output` | string | Output JSON path |\n| `--image_output` | `image_output` | string | Output image path |\n\nCWL captures both as File outputs: `output_output` (JSON) and `output_image_output` (image).\n\n## CLI examples\n\n### Diagram from inline text\n\n```bash\npython /app/generate.py \\\n  --task_name diagram \\\n  --raw_text \"$(cat method.md)\" \\\n  --caption_intent \"System architecture overview\" \\\n  --output results/diagram.json \\\n  --image_output results/diagram.jpg\n```\n\n### Diagram from file with retrieval\n\n```bash\npython /app/generate.py \\\n  --task_name diagram \\\n  --raw_file method.md \\\n  --caption_intent \"Pipeline overview\" \\\n  --retrieval_setting auto \\\n  --ref_dir data/PaperBananaBench/diagram \\\n  --max_critic_rounds 3 \\\n  --aspect_ratio 16:9 \\\n  --image_size 2k \\\n  --output results/run.json \\\n  --image_output results/run.jpg\n```\n\n### Plot from JSON data\n\n```bash\npython /app/generate.py \\\n  --task_name plot \\\n  --raw_file plot_data.json \\\n  --caption_intent \"Bar chart comparing model accuracy\" \\\n  --output results/plot.json \\\n  --image_output results/plot.jpg\n```\n\n## Workflows\n\n### 1. Diagram generation\nSet `task_name: diagram`, supply `raw_text` or `raw_file` with methodology prose, and `caption_intent` with the target figure caption. Use `exp_mode` and `retrieval_setting` to control the full PaperBanana pipeline vs simpler modes. Enable `planner_metaphor` for visual-metaphor planning before detailed layout.\n\n### 2. Statistical plotting\nSet `task_name: plot`, pass plot data via `raw_text` or `raw_file` (text/JSON), and describe the desired chart in `caption_intent`.\n\n### 3. Higher quality / iteration\nIncrease `max_critic_rounds`, tune `main_model_name` and `image_gen_model_name` via `model_config` or CLI overrides, and set `aspect_ratio` / `image_size` for publication dimensions.\n\n## Expert tips\n\n- **Context length**: ~3,000 words of source text helps the Planner for complex diagrams.\n- **Retrieval**: Point `ref_dir` at a folder with `ref.json` and reference images (e.g. under `data/PaperBananaBench/diagram`) when using `retrieval_setting: auto` or `manual`.\n- **Connectivity**: If arrows or node links are wrong, run again with higher `max_critic_rounds` or adjust `caption_intent` with specific layout fixes.\n- **Network**: The CWL tool requires `NetworkAccess` for model API calls.\n\n## Subcommands\n\n| Command | Description |\n|---------|-------------|\n| `python /app/generate.py` | PaperVizAgent single-sample processing (direct text or file input) |\n\n## Reference documentation\n\n- [PaperBanana README](./references/github_com_dwzhu-pku_PaperBanana_blob_main_README.md)\n- [PaperBanana Project Page](./references/dwzhu-pku_github_io_PaperBanana.md)\n",
+  "skill_front_matter": {
+    "name": "paperbanana",
+    "description": "PaperBanana is a multi-agent framework that automates the creation of academic illustrations and statistical plots from scientific text or data. Use when user asks to generate methodology diagrams from research text, create statistical plots from raw data, or refine existing images for academic publication.",
+    "homepage": "https://github.com/dwzhu-pku/PaperBanana",
+    "metadata": "",
+    "docker_image": "hubentu/paperbanana"
+  }
+}
